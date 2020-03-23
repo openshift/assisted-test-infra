@@ -1,0 +1,28 @@
+FROM centos:7
+ENV container docker
+
+RUN yum -y install systemd python3 virt-viewer virt-install libvirt-client git libvirt-devel gcc unzip wget && yum clean all; \
+(cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+rm -f /lib/systemd/system/multi-user.target.wants/*;\
+rm -f /etc/systemd/system/*.wants/*;\
+rm -f /lib/systemd/system/local-fs.target.wants/*; \
+rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+rm -f /lib/systemd/system/basic.target.wants/*;\
+rm -f /lib/systemd/system/anaconda.target.wants/*
+
+
+
+VOLUME [ "/var/lib/libvirt/" ]
+
+RUN wget `wget https://www.terraform.io/downloads.html -q -O - | grep -oP "(https://releases.hashicorp.com/terraform/.*linux_amd64\.zip)(?=\")" | head -n 1` && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
+
+RUN wget https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz && tar -C /usr/local -xf go1.13.4.linux-amd64.tar.gz && rm -f go1.13.4.linux-amd64.tar.gz 
+ENV PATH /usr/local/go/bin:$PATH
+RUN mkdir -p ~/.terraform.d/plugins
+RUN go get -v -u github.com/dmacvicar/terraform-provider-libvirt && cd ~/.terraform.d/plugins && go build -a -v github.com/dmacvicar/terraform-provider-libvirt && rm -rf ~/go
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install && rm -rf awscliv2.zip
+COPY requirements.txt /tmp/
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+ADD scripts/install_minikube.sh /root/scripts/install_minikube.sh
+RUN /root/scripts/install_minikube.sh

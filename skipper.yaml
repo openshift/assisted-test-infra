@@ -1,0 +1,14 @@
+registry: quay.io
+build-container-image: test-infra
+
+volumes:
+    - $HOME/.cache/go-build:/go/pkg/mod
+    - $HOME/.docker/config.json:$HOME/.docker/config.json
+    - $HOME/.minikube:$HOME/.minikube
+    - $HOME/.kube/:$HOME/.kube
+    - /var/lib/libvirt:/var/lib/libvirt
+    - /var/run/libvirt:/var/run/libvirt
+    - /tmp:/tmp
+    - $HOME/.cache/libvirt:$HOME/.cache/libvirt
+#env:
+#   AWS_CONFIG_FILE: $AWS_CONFIG_FILE
