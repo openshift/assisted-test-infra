@@ -1,12 +1,16 @@
 BMI_BRANCH ?= master
-IMAGE_PATH ?= /tmp/installer-image-5d2d0e2f-ba40-4b1b-9976-c238cd075d2f.iso
-MASTER_COUNT ?= 3
 
-all: build
 
-.PHONY: image-build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory deploy_s3
+.PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
+
 image_build:
 	docker build -t test-infra -f Dockerfile.test-infra .
+
+create_environment:
+	scripts/install_environment.sh
+	$(MAKE) image_build
+	skipper make bring_bm_inventory
+	$(MAKE) start_minikube
 
 clean:
 	rm -rf build
@@ -52,13 +56,8 @@ destroy: destroy_terraform delete_minikube
 	rm -rf build/terraform/*
 	scripts/virsh-cleanup.sh
 
-create_environment:
-	scripts/install_environment.sh
-	image_build
-	bring_bm_inventory
-
-deploy_bm_inventory:
+deploy_bm_inventory: bring_bm_inventory
 	make -C bm-inventory/ deploy-all
 
 bring_bm_inventory:
-	git clone --single-branch --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory
+	@if cd bm-inventory; then git pull; else git clone --single-branch --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi

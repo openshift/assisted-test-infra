@@ -9,4 +9,3 @@ volumes:
     - /var/run/libvirt:/var/run/libvirt
     - /tmp:/tmp
     - $HOME/.cache/libvirt:$HOME/.cache/libvirt
-

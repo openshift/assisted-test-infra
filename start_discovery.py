@@ -6,6 +6,8 @@ import subprocess
 import shlex
 import waiting
 import os
+import pprint
+from retry import retry
 from distutils.dir_util import copy_tree
 from pathlib import Path
 
@@ -55,13 +57,16 @@ def fill_relevant_tfvars(image_path, nodes_count=3):
         json.dump(tfvars, _file)
 
 
-def run_command(command):
-    process = subprocess.run(shlex.split(command), check=True, stdout=subprocess.PIPE, universal_newlines=True)
+def run_command(command, shell=False):
+    command = command if shell else shlex.split(command)
+    process = subprocess.run(command, shell=shell, check=True, stdout=subprocess.PIPE, universal_newlines=True)
     output = process.stdout.strip()
     return output
 
 
+@retry(tries=5, delay=3, backoff=2)
 def get_inventory_url():
+    print("Getting inventory url")
     cmd = "minikube service bm-inventory --url"
     return run_command(cmd)
 
@@ -76,21 +81,38 @@ def create_nodes(image_path=IMAGE_PATH, nodes_count=3):
 
 def get_registered_nodes(inventory_url):
     print("Getting registered nodes from inventory")
-    result = requests.get(inventory_url + "/api/bm-inventory/v1/hosts/")
+    result = requests.get(inventory_url + "/api/bm-inventory/v1/hosts/", timeout=5)
     result.raise_for_status()
     return result.json()
 
 
 def create_nodes_and_wait_till_registered(inventory_url, image_path=IMAGE_PATH, nodes_count=3):
     create_nodes(image_path, nodes_count)
+    wait_till_nodes_are_ready(nodes_count=nodes_count)
+    print("Wait till nodes will be registered")
     waiting.wait(lambda: len(get_registered_nodes(inventory_url)) >= nodes_count,
                  timeout_seconds=NODES_REGISTERED_TIMEOUT,
                  sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
+    pprint.pprint(get_registered_nodes(inventory_url))
+
+
+def wait_till_nodes_are_ready(nodes_count):
+    print("Wait till ", nodes_count, " will have ips")
+    cmd = "virsh net-dhcp-leases test-infra-net | grep master | wc -l"
+    waiting.wait(lambda: int(run_command(cmd, shell=True).strip()) >= nodes_count,
+                 timeout_seconds=NODES_REGISTERED_TIMEOUT,
+                 sleep_seconds=10, waiting_for="Nodes to have ips")
+    print("All nodes have booted and got ips")
 
 
 if __name__ == "__main__":
     i_url = get_inventory_url()
     print("Inventory url ", i_url)
+    print("Waiting for inventory")
+    waiting.wait(lambda: get_registered_nodes(i_url) is not None,
+                 timeout_seconds=NODES_REGISTERED_TIMEOUT,
+                 sleep_seconds=5, waiting_for="Wait till inventory is ready",
+                 expected_exceptions=Exception)
     image_data = create_image(inventory_url=i_url, name="test-infra")
     print("Image url ", image_data["download_url"])
     download_image(image_url=image_data["download_url"])

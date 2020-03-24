@@ -15,7 +15,7 @@ fi
 }
 
 function install_runtime_container() {
-  if ! [ -x "$(command -v docker)" ] || [ -x "$(command -v podman)" ]; then
+  if ! [ -x "$(command -v docker)" ] && [ -x "$(command -v podman)" ]; then
   dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
 	dnf install docker-ce --nobest -y
 	systemctl enable --now docker
@@ -24,11 +24,17 @@ else
 fi
 }
 
+function install_packages(){
+  yum install -y make python3 git
+}
+
 function install_skipper() {
-   yum install -y python3
    pip3 install strato-skipper
 }
 
+install_packages
 install_libvirt
 install_runtime_container
 install_skipper
+systemctl restart libvirtd
+mkdir -p $HOME/.minikube
