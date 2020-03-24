@@ -22,7 +22,8 @@ ENV PATH /usr/local/go/bin:$PATH
 RUN mkdir -p ~/.terraform.d/plugins
 RUN go get -v -u github.com/dmacvicar/terraform-provider-libvirt && cd ~/.terraform.d/plugins && go build -a -v github.com/dmacvicar/terraform-provider-libvirt && rm -rf ~/go
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install && rm -rf awscliv2.zip
-COPY requirements.txt /tmp/
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 ADD scripts/install_minikube.sh /root/scripts/install_minikube.sh
 RUN /root/scripts/install_minikube.sh
+COPY requirements.txt /tmp/
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+

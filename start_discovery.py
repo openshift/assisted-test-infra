@@ -4,11 +4,17 @@ import requests
 import json
 import subprocess
 import shlex
-import wait
+import waiting
+import os
+from distutils.dir_util import copy_tree
+from pathlib import Path
 
-TFVARS_JSON_FILE = "build/terraform/terraform.tfvars.json"
+
+TF_FOLDER = "build/terraform"
+TFVARS_JSON_FILE = os.path.join(TF_FOLDER, "terraform.tfvars.json")
 IMAGE_PATH = "/tmp/installer-image.iso"
 NODES_REGISTERED_TIMEOUT = 180
+TF_TEMPLATE = "terraform_files"
 
 
 def create_image(inventory_url, name, namespace="test-infra", proxy_ip=None, proxy_port=None, description="nothing"):
@@ -36,6 +42,10 @@ def download_image(image_url, image_path=IMAGE_PATH):
 
 
 def fill_relevant_tfvars(image_path, nodes_count=3):
+    if not os.path.exists(TFVARS_JSON_FILE):
+        Path(TF_FOLDER).mkdir(parents=True, exist_ok=True)
+        copy_tree(TF_TEMPLATE, TF_FOLDER)
+
     with open(TFVARS_JSON_FILE) as _file:
         tfvars = json.load(_file)
     tfvars["image_path"] = image_path
@@ -66,15 +76,16 @@ def create_nodes(image_path=IMAGE_PATH, nodes_count=3):
 
 def get_registered_nodes(inventory_url):
     print("Getting registered nodes from inventory")
-    result = requests.get(inventory_url + "/api/bm-inventory/v1/nodes/")
+    result = requests.get(inventory_url + "/api/bm-inventory/v1/hosts/")
     result.raise_for_status()
     return result.json()
 
 
 def create_nodes_and_wait_till_registered(inventory_url, image_path=IMAGE_PATH, nodes_count=3):
     create_nodes(image_path, nodes_count)
-    wait(lambda: len(get_registered_nodes(inventory_url)) >= nodes_count, timeout=NODES_REGISTERED_TIMEOUT,
-         waiting_for="Nodes to be registered in inventory service")
+    waiting.wait(lambda: len(get_registered_nodes(inventory_url)) >= nodes_count,
+                 timeout_seconds=NODES_REGISTERED_TIMEOUT,
+                 sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
 
 
 if __name__ == "__main__":

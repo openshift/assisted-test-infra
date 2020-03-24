@@ -6,7 +6,7 @@ all: build
 
 .PHONY: image-build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory deploy_s3
 image_build:
-	docker build -t test-infra .
+	docker build -t test-infra -f Dockerfile.test-infra .
 
 clean:
 	rm -rf build
@@ -32,22 +32,30 @@ copy_terraform_files:
 create_network: copy_terraform_files
 	cd build/terraform/network && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=../terraform.tfvars.json
 
+destroy_network:
+	cd build/terraform/network  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=../terraform.tfvars.json || echo "Failed cleanup network"
+
 run_terraform: copy_terraform_files
 	cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 destroy_terraform:
 	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed, cleanup will help"
 
-run: create_network start_minikube
+run: start_minikube deploy_bm_inventory
 
-run_with_deploy: run deploy_bm_inventory
+run_full_flow: run deploy_nodes
+
+deploy_nodes:
+	./start_discovery.py
 
 destroy: destroy_terraform delete_minikube
-	scripts/virsh-cleanup.sh
 	rm -rf build/terraform/*
+	scripts/virsh-cleanup.sh
 
 create_environment:
 	scripts/install_environment.sh
+	image_build
+	bring_bm_inventory
 
 deploy_bm_inventory:
 	make -C bm-inventory/ deploy-all
