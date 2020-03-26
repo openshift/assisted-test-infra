@@ -5,7 +5,7 @@ NODES_COUNT ?= 4
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
 
 image_build:
-	docker build -t test-infra -f Dockerfile.test-infra .
+	docker pull quay.io/itsoiref/test-infra:latest && docker image tag quay.io/itsoiref/test-infra:latest test-infra:latest || docker build -t test-infra -f Dockerfile.test-infra .
 
 create_full_environment:
 	scripts/install_environment.sh

@@ -1,5 +1,6 @@
 registry: quay.io
 build-container-image: test-infra
+build-container-tag: latest
 
 volumes:
     - $HOME/.cache/go-build:/go/pkg/mod
