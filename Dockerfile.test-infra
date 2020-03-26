@@ -26,4 +26,3 @@ ADD scripts/install_minikube.sh /root/scripts/install_minikube.sh
 RUN /root/scripts/install_minikube.sh
 COPY requirements.txt /tmp/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
-

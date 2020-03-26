@@ -7,6 +7,8 @@ import shlex
 import waiting
 import os
 import pprint
+import argparse
+import ipaddress
 from retry import retry
 from distutils.dir_util import copy_tree
 from pathlib import Path
@@ -17,6 +19,7 @@ TFVARS_JSON_FILE = os.path.join(TF_FOLDER, "terraform.tfvars.json")
 IMAGE_PATH = "/tmp/installer-image.iso"
 NODES_REGISTERED_TIMEOUT = 180
 TF_TEMPLATE = "terraform_files"
+STARTING_IP_ADDRESS = "192.168.126.10"
 
 
 def create_image(inventory_url, name, namespace="test-infra", proxy_ip=None, proxy_port=None, description="nothing"):
@@ -43,6 +46,10 @@ def download_image(image_url, image_path=IMAGE_PATH):
     print("Finished image download")
 
 
+def _creat_ip_address_list(node_count):
+    return [str(ipaddress.ip_address(STARTING_IP_ADDRESS) + i) for i in range(node_count)]
+
+
 def fill_relevant_tfvars(image_path, nodes_count=3):
     if not os.path.exists(TFVARS_JSON_FILE):
         Path(TF_FOLDER).mkdir(parents=True, exist_ok=True)
@@ -52,7 +59,7 @@ def fill_relevant_tfvars(image_path, nodes_count=3):
         tfvars = json.load(_file)
     tfvars["image_path"] = image_path
     tfvars["master_count"] = nodes_count
-
+    tfvars["libvirt_master_ips"] = _creat_ip_address_list(nodes_count)
     with open(TFVARS_JSON_FILE, "w") as _file:
         json.dump(tfvars, _file)
 
@@ -89,6 +96,10 @@ def get_registered_nodes(inventory_url):
 def create_nodes_and_wait_till_registered(inventory_url, image_path=IMAGE_PATH, nodes_count=3):
     create_nodes(image_path, nodes_count)
     wait_till_nodes_are_ready(nodes_count=nodes_count)
+    if not inventory_url:
+        print("No inventory url, will not wait till nodes registration")
+        return
+
     print("Wait till nodes will be registered")
     waiting.wait(lambda: len(get_registered_nodes(inventory_url)) >= nodes_count,
                  timeout_seconds=NODES_REGISTERED_TIMEOUT,
@@ -105,15 +116,28 @@ def wait_till_nodes_are_ready(nodes_count):
     print("All nodes have booted and got ips")
 
 
+def main(pargs):
+    i_url = None
+    if not pargs.image:
+        i_url = get_inventory_url()
+        print("Inventory url ", i_url)
+        print("Waiting for inventory")
+        waiting.wait(lambda: get_registered_nodes(i_url) is not None,
+                     timeout_seconds=NODES_REGISTERED_TIMEOUT,
+                     sleep_seconds=5, waiting_for="Wait till inventory is ready",
+                     expected_exceptions=Exception)
+        image_data = create_image(inventory_url=i_url, name="test-infra")
+        print("Image url ", image_data["download_url"])
+        download_image(image_url=image_data["download_url"])
+    create_nodes_and_wait_till_registered(inventory_url=i_url,
+                                          image_path=pargs.image or IMAGE_PATH,
+                                          nodes_count=pargs.nodes_count)
+
+
 if __name__ == "__main__":
-    i_url = get_inventory_url()
-    print("Inventory url ", i_url)
-    print("Waiting for inventory")
-    waiting.wait(lambda: get_registered_nodes(i_url) is not None,
-                 timeout_seconds=NODES_REGISTERED_TIMEOUT,
-                 sleep_seconds=5, waiting_for="Wait till inventory is ready",
-                 expected_exceptions=Exception)
-    image_data = create_image(inventory_url=i_url, name="test-infra")
-    print("Image url ", image_data["download_url"])
-    download_image(image_url=image_data["download_url"])
-    create_nodes_and_wait_till_registered(inventory_url=i_url)
+    parser = argparse.ArgumentParser(description='Run discovery flow')
+    parser.add_argument('-i', '--image', help='Run terraform with given image', type=str, default="")
+    parser.add_argument('-n', '--nodes-count', help='Node count to spawn', type=int, default=3)
+    # parser.add_argument('-si', '--skip-inventory', help='Node count to spawn', type=int, default=3)
+    args = parser.parse_args()
+    main(args)
