@@ -5,12 +5,19 @@ provider "libvirt" {
 resource "libvirt_pool" "storage_pool" {
   name = var.cluster_id
   type = "dir"
-  path = "/var/lib/libvirt/openshift-images/${var.cluster_id}"
+  path = "${var.libvirt_storage_pool_path}/${var.cluster_id}"
 }
 
 resource "libvirt_volume" "master" {
   count          = var.master_count
   name           = "${var.cluster_id}-master-${count.index}"
+  pool           = libvirt_pool.storage_pool.name
+  size           =  5368709120
+}
+
+resource "libvirt_volume" "worker" {
+  count          = var.worker_count
+  name           = "${var.cluster_id}-worker-${count.index}"
   pool           = libvirt_pool.storage_pool.name
   size           =  5368709120
 }
@@ -72,6 +79,43 @@ resource "libvirt_domain" "master" {
     network_name = "test-infra-net"
     hostname   = "${var.cluster_id}-master-${count.index}.${var.cluster_domain}"
     addresses  = [var.libvirt_master_ips[count.index]]
+  }
+
+  boot_device{
+    dev = [ "cdrom"]
+  }
+}
+
+
+resource "libvirt_domain" "worker" {
+  count = var.worker_count
+
+  name = "${var.cluster_id}-worker-${count.index}"
+
+  memory = var.libvirt_worker_memory
+  vcpu   = var.libvirt_worker_vcpu
+
+  disk {
+    volume_id = element(libvirt_volume.worker.*.id, count.index)
+  }
+
+  disk {
+    file = var.image_path
+  }
+
+  console {
+    type        = "pty"
+    target_port = 0
+  }
+
+  cpu = {
+    mode = "host-passthrough"
+  }
+
+  network_interface {
+    network_name = "test-infra-net"
+    hostname   = "${var.cluster_id}-worker-${count.index}.${var.cluster_domain}"
+    addresses  = [var.libvirt_worker_ips[count.index]]
   }
 
   boot_device{

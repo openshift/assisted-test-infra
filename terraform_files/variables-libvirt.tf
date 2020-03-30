@@ -8,6 +8,11 @@ variable "master_count" {
   description = "The identifier for the cluster."
 }
 
+variable "worker_count" {
+  type        = number
+  description = "Number of workers."
+}
+
 //variable "bootstrap_dns" {
 //  default     = true
 //  description = "Whether to include DNS entries for the bootstrap node or not."
@@ -53,6 +58,11 @@ variable "libvirt_master_ips" {
   description = "the list of desired master ips. Must match master_count"
 }
 
+variable "libvirt_worker_ips" {
+  type        = list(string)
+  description = "the list of desired worker ips. Must match master_count"
+}
+
 # It's definitely recommended to bump this if you can.
 variable "libvirt_master_memory" {
   type        = string
@@ -69,7 +79,25 @@ variable "libvirt_master_vcpu" {
   default     = "4"
 }
 
+variable "libvirt_worker_vcpu" {
+  type        = string
+  description = "CPUs allocated to workers"
+  default     = "2"
+}
+
+variable "libvirt_worker_memory" {
+  type        = string
+  description = "RAM in MiB allocated to worker"
+  default     = "4096"
+}
+
+
 variable "image_path" {
   type        = string
   description = "image type"
+}
+
+variable "libvirt_storage_pool_path" {
+  type        = string
+  description = "storage pool path"
 }

@@ -1,6 +1,8 @@
 BMI_BRANCH ?= master
 IMAGE ?= ""
 NODES_COUNT ?= 4
+STORAGE_POOL_PATH ?= "/var/lib/libvirt/openshift-images"
+SSH_KEY ?= "ssh_key/key.pub"
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
 
@@ -58,7 +60,9 @@ run: start_minikube deploy_bm_inventory
 run_full_flow: run deploy_nodes
 
 deploy_nodes:
-	./start_discovery.py -i $(IMAGE) -n $(NODES_COUNT)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NODES_COUNT) -p $(STORAGE_POOL_PATH) -k $(SSH_KEY)
+
+destroy_nodes: destroy_terraform
 
 destroy: destroy_terraform delete_minikube
 	rm -rf build/terraform/*
@@ -69,3 +73,6 @@ deploy_bm_inventory: bring_bm_inventory
 
 bring_bm_inventory:
 	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --single-branch --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
+
+clear_inventory:
+	make -C bm-inventory/ clear-deployment
