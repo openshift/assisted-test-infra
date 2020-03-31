@@ -15,6 +15,5 @@ function init_minikube() {
     fi
 }
 
-mkdir $HOME/.minikube/machines/minikube/
 configure_minikube
 init_minikube
