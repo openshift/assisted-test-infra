@@ -26,9 +26,9 @@ class InventoryClient(object):
         data = {
             "name": name,
             "openshift_version": openshift_version,
-            "base_dns_domain": base_dns_domain,
-            "api_vip": api_vip,
-            "ssh_public_key": ssh_public_key
+            "baseDnsDomain": base_dns_domain,
+            "apiVip": api_vip,
+            "sshPublicKey": ssh_public_key
         }
         print("Creating cluster with params", data)
         result = self.client.register_cluster(new_cluster_params=data)
@@ -56,6 +56,6 @@ class InventoryClient(object):
 
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
         print("Setting roles for hosts", hosts_with_roles, "in cluster", cluster_id)
-        hosts = {"hosts_roles": hosts_with_roles}
+        hosts = {"hostsRoles": hosts_with_roles}
         res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts, _preload_content=False)
         return json.loads(res.data)
