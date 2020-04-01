@@ -2,3 +2,4 @@ build
 bm-inventory
 .idea
 .terraform
+*__pycache__*

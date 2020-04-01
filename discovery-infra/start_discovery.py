@@ -56,7 +56,7 @@ def create_nodes(image_path, storage_path, nodes_count=3):
     return utils.run_command(cmd)
 
 
-def create_nodes_and_wait_till_registered(inventory_client, cluster_id, image_path, storage_path, nodes_count):
+def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path, storage_path, nodes_count):
     create_nodes(image_path, storage_path=storage_path, nodes_count=nodes_count)
     wait_till_nodes_are_ready(nodes_count=nodes_count)
     if not inventory_client:
@@ -64,10 +64,10 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster_id, image_pa
         return
 
     print("Wait till nodes will be registered")
-    waiting.wait(lambda: len(inventory_client.get_cluster_hosts(cluster_id)) >= nodes_count,
+    waiting.wait(lambda: len(inventory_client.get_cluster_hosts(cluster.id)) >= nodes_count,
                  timeout_seconds=NODES_REGISTERED_TIMEOUT,
                  sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
-    pprint.pprint(inventory_client.get_cluster_hosts(cluster_id))
+    pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
 
 
 def wait_till_nodes_are_ready(nodes_count):
@@ -114,15 +114,17 @@ def main(pargs):
 
         cluster = client.create_cluster("test-infra-cluster-%s" % str(uuid.uuid4()),
                                         ssh_public_key=get_ssh_key(pargs.ssh_key))
-        client.download_image(cluster_id=cluster["id"], image_path=IMAGE_PATH)
+        client.download_image(cluster_id=cluster.id, image_path=IMAGE_PATH)
 
     create_nodes_and_wait_till_registered(inventory_client=client,
-                                          cluster_id=cluster.get("id"),
+                                          cluster=cluster,
                                           image_path=pargs.image or IMAGE_PATH,
                                           storage_path=pargs.storage_path,
                                           nodes_count=pargs.nodes_count)
     if client:
-        set_hosts_roles(client, cluster["id"])
+        set_hosts_roles(client, cluster.id)
+        print("Printing after setting roles")
+        pprint.pprint(client.get_cluster_hosts(cluster.id))
 
 
 if __name__ == "__main__":

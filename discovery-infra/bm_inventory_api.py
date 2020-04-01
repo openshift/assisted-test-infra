@@ -1,13 +1,17 @@
-import requests
 import waiting
+import json
 from tqdm import tqdm
+from bm_inventory_client import ApiClient, Configuration, api
 
 
 class InventoryClient(object):
 
     def __init__(self, inventory_url):
         self.inventory_url = inventory_url
-        self.cluster_url = self.inventory_url + "/api/bm-inventory/v1/clusters/"
+        configs = Configuration()
+        configs.host = self.inventory_url + "/api/bm-inventory/v1"
+        self.api = ApiClient(configuration=configs)
+        self.client = api.InventoryApi(api_client=self.api)
 
     def wait_for_api_readiness(self):
         print("Waiting for inventory api to be ready")
@@ -21,52 +25,37 @@ class InventoryClient(object):
 
         data = {
             "name": name,
-            "openshiftVersion": openshift_version,
-            "baseDnsDomain": base_dns_domain,
-            "apiVip": api_vip,
-            "sshPublicKey": ssh_public_key
+            "openshift_version": openshift_version,
+            "base_dns_domain": base_dns_domain,
+            "api_vip": api_vip,
+            "ssh_public_key": ssh_public_key
         }
         print("Creating cluster with params", data)
-        result = requests.post(self.cluster_url, json=data)
-        result.raise_for_status()
-        return result.json()
+        result = self.client.register_cluster(new_cluster_params=data)
+        return result
 
     def get_cluster_hosts(self, cluster_id):
         print("Getting registered nodes for cluster", cluster_id)
-        result = requests.get(self.cluster_url + cluster_id + "/hosts", timeout=5)
-        # result = requests.get(self.cluster_url + cluster_id, timeout=5)
-        result.raise_for_status()
-        return result.json()
+        return self.client.list_hosts(cluster_id=cluster_id)
 
     def clusters_list(self):
-        result = requests.get(self.cluster_url, timeout=5)
-        result.raise_for_status()
-        return result.json()
+        return self.client.list_clusters()
 
     def cluster_get(self, cluster_id):
         print("Getting cluster with id", cluster_id)
-        result = requests.get(self.cluster_url + cluster_id, timeout=5)
-        result.raise_for_status()
-        return result.json()
+        return self.client.get_cluster(cluster_id=cluster_id)
 
     def download_image(self, cluster_id, image_path):
         print("Downloading image for cluster", cluster_id, "to", image_path)
-        response = requests.get(self.cluster_url + cluster_id + "/actions/download", stream=True)
-        response.raise_for_status()
-        total_size = int(response.headers.get('content-length', 0))
-        block_size = 1024
-        progress = tqdm(iterable=response.iter_content(chunk_size=block_size), total=total_size) #, unit='iB', unit_scale=True)
+        response = self.client.download_cluster_iso(cluster_id=cluster_id, _preload_content=False)
+        progress = tqdm(iterable=response.read_chunked())
         with open(image_path, 'wb') as f:
             for chunk in progress:
                 f.write(chunk)
         progress.close()
-        if total_size != 0 and progress.n != total_size:
-            print("ERROR, something went wrong")
 
-    # hosts_with_roles is list of [{"id": <host_id>, "role" : master}]
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
         print("Setting roles for hosts", hosts_with_roles, "in cluster", cluster_id)
-        hosts = {"hostsRoles": hosts_with_roles}
-        result = requests.patch(self.cluster_url + cluster_id, json=hosts)
-        result.raise_for_status()
-        return result.json()
+        hosts = {"hosts_roles": hosts_with_roles}
+        res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts, _preload_content=False)
+        return json.loads(res.data)

@@ -3,6 +3,8 @@ IMAGE ?= ""
 NODES_COUNT ?= 4
 STORAGE_POOL_PATH ?= "/var/lib/libvirt/openshift-images"
 SSH_KEY ?= "ssh_key/key.pub"
+SHELL=/bin/sh
+CURRENT_USER=$(shell id -u $(USER))
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
 
@@ -76,3 +78,10 @@ bring_bm_inventory:
 
 clear_inventory:
 	make -C bm-inventory/ clear-deployment
+
+create_inventory_client: bring_bm_inventory
+	mkdir -p build
+	echo '{"packageName" : "bm_inventory_client", "packageVersion": "1.0.0"}' > build/code-gen-config.json
+	docker run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro -v $(PWD)/build/code-gen-config.json:/config.json:ro jimschubert/swagger-codegen-cli generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
+	
+	# python3 build/bm-inventory-client/setup.py sdist -d build

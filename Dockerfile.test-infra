@@ -1,7 +1,7 @@
-FROM centos:7
+FROM centos:8
 ENV container docker
 
-RUN yum -y install systemd python3 virt-viewer virt-install libvirt-client git libvirt-devel gcc unzip wget && yum clean all; \
+RUN yum -y install systemd make python3 virt-viewer virt-install libvirt-client git libvirt-devel gcc unzip wget && yum clean all; \
 (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
 rm -f /lib/systemd/system/multi-user.target.wants/*;\
 rm -f /etc/systemd/system/*.wants/*;\
@@ -26,3 +26,5 @@ ADD scripts/install_minikube.sh /root/scripts/install_minikube.sh
 RUN /root/scripts/install_minikube.sh
 COPY requirements.txt /tmp/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+ADD build/bm-inventory-client /root/bm-inventory-client
+RUN cd /root/bm-inventory-client/ && python3 setup.py sdist && pip3 install dist/bm-inventory-client-1.0.0.tar.gz && rm -rf /root/bm-inventory-client
