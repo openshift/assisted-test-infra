@@ -74,7 +74,7 @@ deploy_bm_inventory: bring_bm_inventory
 	make -C bm-inventory/ deploy-all
 
 bring_bm_inventory:
-	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --single-branch --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
+	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
 
 clear_inventory:
 	make -C bm-inventory/ clear-deployment
@@ -83,5 +83,3 @@ create_inventory_client: bring_bm_inventory
 	mkdir -p build
 	echo '{"packageName" : "bm_inventory_client", "packageVersion": "1.0.0"}' > build/code-gen-config.json
 	docker run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro -v $(PWD)/build/code-gen-config.json:/config.json:ro jimschubert/swagger-codegen-cli generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
-	
-	# python3 build/bm-inventory-client/setup.py sdist -d build
