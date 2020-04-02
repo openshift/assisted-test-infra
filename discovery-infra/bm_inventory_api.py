@@ -1,7 +1,7 @@
 import waiting
 import json
 from tqdm import tqdm
-from bm_inventory_client import ApiClient, Configuration, api
+from bm_inventory_client import ApiClient, Configuration, api, models
 
 
 class InventoryClient(object):
@@ -23,15 +23,10 @@ class InventoryClient(object):
     def create_cluster(self, name, openshift_version="4.5", base_dns_domain="test-infra.redhat", ssh_public_key=None,
                        api_vip="api-test-infra.redhat"):
 
-        data = {
-            "name": name,
-            "openshift_version": openshift_version,
-            "baseDnsDomain": base_dns_domain,
-            "apiVip": api_vip,
-            "sshPublicKey": ssh_public_key
-        }
-        print("Creating cluster with params", data)
-        result = self.client.register_cluster(new_cluster_params=data)
+        cluster = models.ClusterUpdateParams(name=name, openshift_version=openshift_version,
+                                             ssh_public_key=ssh_public_key, base_dns_domain=base_dns_domain)
+        print("Creating cluster with params", cluster.__dict__)
+        result = self.client.register_cluster(new_cluster_params=cluster)
         return result
 
     def get_cluster_hosts(self, cluster_id):
