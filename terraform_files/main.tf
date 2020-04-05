@@ -39,6 +39,8 @@ resource "libvirt_network" "net" {
       for_each = concat(
       data.libvirt_network_dns_host_template.masters.*.rendered,
       data.libvirt_network_dns_host_template.masters_int.*.rendered,
+      data.libvirt_network_dns_host_template.workers.*.rendered,
+      data.libvirt_network_dns_host_template.workers_int.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -137,3 +139,15 @@ data "libvirt_network_dns_host_template" "masters_int" {
   hostname = "api-int.${var.cluster_domain}"
 }
 
+data "libvirt_network_dns_host_template" "workers" {
+  count    = 1
+  ip       = var.libvirt_worker_ips[count.index]
+  hostname = "api.${var.cluster_domain}"
+}
+
+
+data "libvirt_network_dns_host_template" "workers_int" {
+  count    = 1
+  ip       = var.libvirt_worker_ips[count.index]
+  hostname = "api-int.${var.cluster_domain}"
+}
