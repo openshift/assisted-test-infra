@@ -67,7 +67,7 @@ resource "libvirt_domain" "master" {
 
   disk {
     file = var.image_path
-}
+  }
 
   console {
     type        = "pty"
@@ -85,7 +85,7 @@ resource "libvirt_domain" "master" {
   }
 
   boot_device{
-    dev = [ "cdrom"]
+    dev = ["hd", "cdrom"]
   }
 }
 
@@ -122,7 +122,7 @@ resource "libvirt_domain" "worker" {
   }
 
   boot_device{
-    dev = [ "cdrom"]
+    dev = ["hd", "cdrom"]
   }
 }
 
