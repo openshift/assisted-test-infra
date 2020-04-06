@@ -28,7 +28,7 @@ def _creat_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 
 
-def fill_relevant_tfvars(image_path, storage_path, nodes_count=3):
+def fill_relevant_tfvars(image_path, storage_path, nodes_count, nodes_details):
     if not os.path.exists(TFVARS_JSON_FILE):
         Path(TF_FOLDER).mkdir(parents=True, exist_ok=True)
         copy_tree(TF_TEMPLATE, TF_FOLDER)
@@ -39,25 +39,27 @@ def fill_relevant_tfvars(image_path, storage_path, nodes_count=3):
     tfvars["master_count"] = min(nodes_count, NUMBER_OF_MASTERS)
     tfvars["libvirt_master_ips"] = _creat_ip_address_list(min(nodes_count, NUMBER_OF_MASTERS),
                                                           starting_ip_addr=STARTING_IP_ADDRESS)
-    tfvars["workers_count"] = 0 if nodes_count <= NUMBER_OF_MASTERS else nodes_count - NUMBER_OF_MASTERS
-    tfvars["libvirt_worker_ips"] = _creat_ip_address_list(tfvars["workers_count"] or 1, starting_ip_addr=str(
+    tfvars["worker_count"] = 0 if nodes_count <= NUMBER_OF_MASTERS else nodes_count - NUMBER_OF_MASTERS
+    tfvars["libvirt_worker_ips"] = _creat_ip_address_list(tfvars["worker_count"] or 1, starting_ip_addr=str(
             ipaddress.ip_address(STARTING_IP_ADDRESS) + nodes_count))
     tfvars["libvirt_storage_pool_path"] = storage_path
+    tfvars.update(nodes_details)
 
     with open(TFVARS_JSON_FILE, "w") as _file:
         json.dump(tfvars, _file)
 
 
-def create_nodes(image_path, storage_path, nodes_count=3):
+def create_nodes(image_path, storage_path, nodes_count, nodes_details):
     print("Creating tfvars")
-    fill_relevant_tfvars(image_path, storage_path, nodes_count)
+    fill_relevant_tfvars(image_path, storage_path, nodes_count, nodes_details)
     print("Start running terraform")
     cmd = "make run_terraform"
     return utils.run_command(cmd)
 
 
-def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path, storage_path, nodes_count):
-    create_nodes(image_path, storage_path=storage_path, nodes_count=nodes_count)
+def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path, storage_path,
+                                          nodes_count, nodes_details):
+    create_nodes(image_path, storage_path=storage_path, nodes_count=nodes_count, nodes_details=nodes_details)
     wait_till_nodes_are_ready(nodes_count=nodes_count)
     if not inventory_client:
         print("No inventory url, will not wait till nodes registration")
@@ -116,11 +118,14 @@ def main(pargs):
                                         ssh_public_key=get_ssh_key(pargs.ssh_key))
         client.download_image(cluster_id=cluster.id, image_path=IMAGE_PATH)
 
+    nodes_details = {"libvirt_worker_memory": args.worker_memory,
+                     "libvirt_master_memory": args.master_memory}
     create_nodes_and_wait_till_registered(inventory_client=client,
                                           cluster=cluster,
                                           image_path=pargs.image or IMAGE_PATH,
                                           storage_path=pargs.storage_path,
-                                          nodes_count=pargs.nodes_count)
+                                          nodes_count=pargs.nodes_count,
+                                          nodes_details=nodes_details)
     if client:
         set_hosts_roles(client, cluster.id)
         print("Printing after setting roles")
@@ -136,5 +141,8 @@ if __name__ == "__main__":
     parser.add_argument('-si', '--skip-inventory', help='Node count to spawn', action="store_true")
     parser.add_argument('-k', '--ssh-key', help="Path to ssh key", type=str,
                         default="")
+    parser.add_argument('-mm', '--master-memory', help='Master memory (ram) in mb', type=int, default=8192)
+    parser.add_argument('-wm', '--worker-memory', help='Worker memory (ram) in mb', type=int, default=8192)
+
     args = parser.parse_args()
     main(args)

@@ -1,7 +1,9 @@
 BMI_BRANCH ?= master
 IMAGE ?= ""
 NODES_COUNT ?= 4
-STORAGE_POOL_PATH ?= "/var/lib/libvirt/openshift-images"
+WORKER_MEMORY ?= 8192
+MASTER_MEMORY ?= 8192
+STORAGE_POOL_PATH ?= $(PWD)/storage_pool
 SSH_KEY ?= "ssh_key/key.pub"
 SHELL=/bin/sh
 CURRENT_USER=$(shell id -u $(USER))
@@ -62,7 +64,8 @@ run: start_minikube deploy_bm_inventory
 run_full_flow: run deploy_nodes
 
 deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NODES_COUNT) -p $(STORAGE_POOL_PATH) -k $(SSH_KEY)
+	mkdir -p $(STORAGE_POOL_PATH)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NODES_COUNT) -p $(STORAGE_POOL_PATH) -k $(SSH_KEY) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY)
 
 destroy_nodes: destroy_terraform
 
