@@ -12,14 +12,14 @@ resource "libvirt_volume" "master" {
   count          = var.master_count
   name           = "${var.cluster_id}-master-${count.index}"
   pool           = libvirt_pool.storage_pool.name
-  size           =  5368709120
+  size           =  10737418240
 }
 
 resource "libvirt_volume" "worker" {
   count          = var.worker_count
   name           = "${var.cluster_id}-worker-${count.index}"
   pool           = libvirt_pool.storage_pool.name
-  size           =  5368709120
+  size           =  10737418240
 }
 
 resource "libvirt_network" "net" {
@@ -62,6 +62,7 @@ resource "libvirt_domain" "master" {
 
   disk {
     volume_id = element(libvirt_volume.master.*.id, count.index)
+
   }
 
   disk {
