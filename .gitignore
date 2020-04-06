@@ -3,4 +3,4 @@ bm-inventory
 .idea
 .terraform
 *__pycache__*
-storage_pool
+

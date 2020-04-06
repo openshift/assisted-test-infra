@@ -64,7 +64,6 @@ run: start_minikube deploy_bm_inventory
 run_full_flow: run deploy_nodes
 
 deploy_nodes:
-	mkdir -p $(STORAGE_POOL_PATH)
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NODES_COUNT) -p $(STORAGE_POOL_PATH) -k $(SSH_KEY) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY)
 
 destroy_nodes: destroy_terraform
