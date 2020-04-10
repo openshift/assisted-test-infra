@@ -1,6 +1,8 @@
 import waiting
 import json
 from tqdm import tqdm
+import utils
+import consts
 from bm_inventory_client import ApiClient, Configuration, api, models
 
 
@@ -16,7 +18,7 @@ class InventoryClient(object):
     def wait_for_api_readiness(self):
         print("Waiting for inventory api to be ready")
         waiting.wait(lambda: self.clusters_list() is not None,
-                     timeout_seconds=180,
+                     timeout_seconds=consts.WAIT_FOR_BM_API,
                      sleep_seconds=5, waiting_for="Wait till inventory is ready",
                      expected_exceptions=Exception)
 
@@ -54,3 +56,16 @@ class InventoryClient(object):
         hosts = {"hostsRoles": hosts_with_roles}
         res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts, _preload_content=False)
         return json.loads(res.data)
+
+    def delete_cluster(self, cluster_id):
+        print("Deleting cluster", cluster_id)
+        self.client.deregister_cluster(cluster_id=cluster_id)
+
+
+def create_client():
+    i_url = utils.get_service_url("bm-inventory")
+    print("Inventory url", i_url)
+    client = InventoryClient(inventory_url=i_url)
+    client.wait_for_api_readiness()
+    return client
+

@@ -10,18 +10,8 @@ import uuid
 from distutils.dir_util import copy_tree
 from pathlib import Path
 import utils
+import consts
 import bm_inventory_api
-
-
-TF_FOLDER = "build/terraform"
-TFVARS_JSON_FILE = os.path.join(TF_FOLDER, "terraform.tfvars.json")
-IMAGE_PATH = "/tmp/installer-image.iso"
-STORAGE_PATH = "/var/lib/libvirt/openshift-images"
-SSH_KEY = "ssh_key/key.pub"
-NODES_REGISTERED_TIMEOUT = 120
-TF_TEMPLATE = "terraform_files"
-STARTING_IP_ADDRESS = "192.168.126.10"
-NUMBER_OF_MASTERS = 3
 
 
 def _creat_ip_address_list(node_count, starting_ip_addr):
@@ -29,23 +19,23 @@ def _creat_ip_address_list(node_count, starting_ip_addr):
 
 
 def fill_relevant_tfvars(image_path, storage_path, nodes_count, nodes_details):
-    if not os.path.exists(TFVARS_JSON_FILE):
-        Path(TF_FOLDER).mkdir(parents=True, exist_ok=True)
-        copy_tree(TF_TEMPLATE, TF_FOLDER)
+    if not os.path.exists(consts.TFVARS_JSON_FILE):
+        Path(consts.TF_FOLDER).mkdir(parents=True, exist_ok=True)
+        copy_tree(consts.TF_TEMPLATE, consts.TF_FOLDER)
 
-    with open(TFVARS_JSON_FILE) as _file:
+    with open(consts.TFVARS_JSON_FILE) as _file:
         tfvars = json.load(_file)
     tfvars["image_path"] = image_path
-    tfvars["master_count"] = min(nodes_count, NUMBER_OF_MASTERS)
-    tfvars["libvirt_master_ips"] = _creat_ip_address_list(min(nodes_count, NUMBER_OF_MASTERS),
-                                                          starting_ip_addr=STARTING_IP_ADDRESS)
-    tfvars["worker_count"] = 0 if nodes_count <= NUMBER_OF_MASTERS else nodes_count - NUMBER_OF_MASTERS
+    tfvars["master_count"] = min(nodes_count, consts.NUMBER_OF_MASTERS)
+    tfvars["libvirt_master_ips"] = _creat_ip_address_list(min(nodes_count, consts.NUMBER_OF_MASTERS),
+                                                          starting_ip_addr=consts.STARTING_IP_ADDRESS)
+    tfvars["worker_count"] = 0 if nodes_count <= consts.NUMBER_OF_MASTERS else nodes_count - consts.NUMBER_OF_MASTERS
     tfvars["libvirt_worker_ips"] = _creat_ip_address_list(tfvars["worker_count"] or 1, starting_ip_addr=str(
-            ipaddress.ip_address(STARTING_IP_ADDRESS) + nodes_count))
+            ipaddress.ip_address(consts.STARTING_IP_ADDRESS) + nodes_count))
     tfvars["libvirt_storage_pool_path"] = storage_path
     tfvars.update(nodes_details)
 
-    with open(TFVARS_JSON_FILE, "w") as _file:
+    with open(consts.TFVARS_JSON_FILE, "w") as _file:
         json.dump(tfvars, _file)
 
 
@@ -67,7 +57,7 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
 
     print("Wait till nodes will be registered")
     waiting.wait(lambda: len(inventory_client.get_cluster_hosts(cluster.id)) >= nodes_count,
-                 timeout_seconds=NODES_REGISTERED_TIMEOUT,
+                 timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
                  sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
     pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
 
@@ -77,7 +67,7 @@ def wait_till_nodes_are_ready(nodes_count):
     cmd = "virsh net-dhcp-leases test-infra-net | grep test-infra-cluster | wc -l"
     try:
         waiting.wait(lambda: int(utils.run_command(cmd, shell=True).strip()) >= nodes_count,
-                     timeout_seconds=NODES_REGISTERED_TIMEOUT * nodes_count,
+                     timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,
                      sleep_seconds=10, waiting_for="Nodes to have ips")
         print("All nodes have booted and got ips")
     except:
@@ -108,21 +98,19 @@ def get_ssh_key(ssh_key_path):
 def main(pargs):
     client = None
     cluster = {}
-    if not pargs.image:
-        i_url = utils.get_service_url("bm-inventory")
-        print("Inventory url", i_url)
-        client = bm_inventory_api.InventoryClient(inventory_url=i_url)
-        client.wait_for_api_readiness()
-
-        cluster = client.create_cluster("test-infra-cluster-%s" % str(uuid.uuid4()),
-                                        ssh_public_key=get_ssh_key(pargs.ssh_key))
-        client.download_image(cluster_id=cluster.id, image_path=IMAGE_PATH)
-
     nodes_details = {"libvirt_worker_memory": args.worker_memory,
                      "libvirt_master_memory": args.master_memory}
+    if not pargs.image:
+        client = bm_inventory_api.create_client()
+
+        cluster = client.create_cluster(consts.CLUSTER_PREFIX + str(uuid.uuid4()),
+                                        ssh_public_key=get_ssh_key(pargs.ssh_key))
+        nodes_details["cluster_inventory_id"] = cluster.id
+        client.download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH)
+
     create_nodes_and_wait_till_registered(inventory_client=client,
                                           cluster=cluster,
-                                          image_path=pargs.image or IMAGE_PATH,
+                                          image_path=pargs.image or consts.IMAGE_PATH,
                                           storage_path=pargs.storage_path,
                                           nodes_count=pargs.nodes_count,
                                           nodes_details=nodes_details)
@@ -137,7 +125,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--image', help='Run terraform with given image', type=str, default="")
     parser.add_argument('-n', '--nodes-count', help='Node count to spawn', type=int, default=4)
     parser.add_argument('-p', '--storage-path', help="Path to storage pool", type=str,
-                        default=STORAGE_PATH)
+                        default=consts.STORAGE_PATH)
     parser.add_argument('-si', '--skip-inventory', help='Node count to spawn', action="store_true")
     parser.add_argument('-k', '--ssh-key', help="Path to ssh key", type=str,
                         default="")

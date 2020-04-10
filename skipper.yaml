@@ -9,4 +9,5 @@ volumes:
     - /var/lib/libvirt/:/var/lib/libvirt/
     - /var/run/libvirt/:/var/run/libvirt/
     - /tmp:/tmp/
+    - /var/lib/libvirt/dnsmasq/:/var/lib/libvirt/dnsmasq/
     - $HOME/.cache/libvirt/:$HOME/.cache/libvirt/

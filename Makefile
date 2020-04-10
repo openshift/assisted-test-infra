@@ -66,7 +66,8 @@ run_full_flow: run deploy_nodes
 deploy_nodes:
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NODES_COUNT) -p $(STORAGE_POOL_PATH) -k $(SSH_KEY) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY)
 
-destroy_nodes: destroy_terraform
+destroy_nodes:
+	discovery-infra/delete_nodes.py
 
 destroy: destroy_terraform delete_minikube
 	rm -rf build/terraform/*

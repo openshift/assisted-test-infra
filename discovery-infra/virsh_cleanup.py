@@ -3,6 +3,8 @@
 import argparse
 import subprocess
 
+DEFAULT_SKIP_LIST = ["default"]
+
 
 def run_command(command, check=False, resource_filter=None):
     if resource_filter:
@@ -59,7 +61,7 @@ def clean_virsh_resources(skip_list, resource_filter):
 
 
 def main(p_args):
-    skip_list = ["default"]
+    skip_list = DEFAULT_SKIP_LIST
     resource_filter = None
     if p_args.minikube:
         resource_filter = "minikube"
