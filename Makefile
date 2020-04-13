@@ -1,17 +1,19 @@
 BMI_BRANCH ?= master
 IMAGE ?= ""
 NODES_COUNT ?= 4
-WORKER_MEMORY ?= 8192
-MASTER_MEMORY ?= 8192
+WORKER_MEMORY ?= 12288
+MASTER_MEMORY ?= 12288
 STORAGE_POOL_PATH ?= $(PWD)/storage_pool
 SSH_KEY ?= "ssh_key/key.pub"
 SHELL=/bin/sh
 CURRENT_USER=$(shell id -u $(USER))
+CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
+
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
 
 image_build:
-	docker pull quay.io/itsoiref/test-infra:latest && docker image tag quay.io/itsoiref/test-infra:latest test-infra:latest || docker build -t test-infra -f Dockerfile.test-infra .
+	$(CONTAINER_COMMAND) pull quay.io/itsoiref/test-infra:latest && $(CONTAINER_COMMAND) image tag quay.io/itsoiref/test-infra:latest test-infra:latest || $(CONTAINER_COMMAND) build -t test-infra -f Dockerfile.test-infra .
 
 create_full_environment:
 	scripts/install_environment.sh

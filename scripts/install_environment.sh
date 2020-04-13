@@ -30,7 +30,7 @@ fi
 }
 
 function install_packages(){
-  yum install -y make python3 git
+  yum install -y make python3 git jq bash-completion
 }
 
 function install_skipper() {
