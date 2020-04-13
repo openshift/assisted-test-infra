@@ -10,6 +10,13 @@ TF_TEMPLATE = "terraform_files"
 STARTING_IP_ADDRESS = "192.168.126.10"
 NUMBER_OF_MASTERS = 3
 TEST_INFRA = "test-infra"
-CLUSTER_PREFIX = "%s-cluster-" % TEST_INFRA
+CLUSTER = "%s-cluster" % TEST_INFRA
+CLUSTER_PREFIX = "%s-" % CLUSTER
+TEST_NETWORK = "%s-net" % TEST_INFRA
 
 WAIT_FOR_BM_API = 600
+
+
+class NodeRoles:
+    WORKER = "worker"
+    MASTER = "master"

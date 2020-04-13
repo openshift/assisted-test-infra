@@ -61,6 +61,14 @@ class InventoryClient(object):
         print("Deleting cluster", cluster_id)
         self.client.deregister_cluster(cluster_id=cluster_id)
 
+    def get_hosts_id_with_macs(self, cluster_id):
+        hosts = self.get_cluster_hosts(cluster_id)
+        hosts_data = {}
+        for host in hosts:
+            hw = json.loads(host.hardware_info)
+            hosts_data[host.id] = [nic["mac"] for nic in hw["nics"]]
+        return hosts_data
+
 
 def create_client():
     i_url = utils.get_service_url("bm-inventory")

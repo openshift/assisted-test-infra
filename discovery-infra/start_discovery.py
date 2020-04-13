@@ -50,7 +50,7 @@ def create_nodes(image_path, storage_path, nodes_count, nodes_details):
 def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path, storage_path,
                                           nodes_count, nodes_details):
     create_nodes(image_path, storage_path=storage_path, nodes_count=nodes_count, nodes_details=nodes_details)
-    wait_till_nodes_are_ready(nodes_count=nodes_count)
+    utils.wait_till_nodes_are_ready(nodes_count=nodes_count)
     if not inventory_client:
         print("No inventory url, will not wait till nodes registration")
         return
@@ -62,28 +62,15 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
     pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
 
 
-def wait_till_nodes_are_ready(nodes_count):
-    print("Wait till", nodes_count, "hosts will have ips")
-    cmd = "virsh net-dhcp-leases test-infra-net | grep test-infra-cluster | wc -l"
-    try:
-        waiting.wait(lambda: int(utils.run_command(cmd, shell=True).strip()) >= nodes_count,
-                     timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,
-                     sleep_seconds=10, waiting_for="Nodes to have ips")
-        print("All nodes have booted and got ips")
-    except:
-        cmd = "virsh net-dhcp-leases test-infra-net"
-        print("Not all nodes are ready. Current dhcp leases are", utils.run_command(cmd, shell=True).strip())
-        raise
-
-
 def set_hosts_roles(client, cluster_id):
     hosts = []
-    cluster_hosts = client.get_cluster_hosts(cluster_id)
-    for i in range(len(cluster_hosts)):
-        if i < 3:
-            hosts.append({"id": cluster_hosts[i]["id"], "role": "master"})
-        else:
-            hosts.append({"id": cluster_hosts[i]["id"], "role": "worker"})
+    libvirt_macs = utils.get_libvirt_nodes_mac_role_ip_and_name()
+    inventory_hosts = client.get_cluster_hosts(cluster_id)
+    assert len(libvirt_macs) == len(inventory_hosts)
+    for host in inventory_hosts:
+        hw = json.loads(host["hardware_info"])
+        role = [libvirt_macs[nic["mac"]]["role"] for nic in hw["nics"] if nic["mac"].lower() in libvirt_macs][0]
+        hosts.append({"id": host["id"], "role": role})
     if hosts:
         client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts)
 
