@@ -3,12 +3,10 @@
 import argparse
 import subprocess
 
-DEFAULT_SKIP_LIST = ["default"]
-
 
 def run_command(command, check=False, resource_filter=None):
     if resource_filter:
-        command += "| grep %s" % resource_filter
+        command += "| grep -E \"%s\"" % "|".join(resource_filter)
     process = subprocess.run(command, shell=True, check=check, stdout=subprocess.PIPE, universal_newlines=True)
     output = process.stdout.strip()
     return output
@@ -61,11 +59,11 @@ def clean_virsh_resources(skip_list, resource_filter):
 
 
 def main(p_args):
-    skip_list = DEFAULT_SKIP_LIST
-    resource_filter = None
+    skip_list = ["default"]
+    resource_filter = []
     if p_args.minikube:
-        resource_filter = "minikube"
-    if p_args.filter:
+        resource_filter.append("minikube")
+    elif p_args.filter:
         resource_filter = p_args.filter
     else:
         skip_list.extend(["minikube", "minikube-net"])
@@ -79,6 +77,6 @@ if __name__ == "__main__":
     group.add_argument('-a', '--all', help='Clean all virsh resources', action="store_true")
     group.add_argument('-m', '--minikube', help='Clean minikube resources', action="store_true")
     group.add_argument('-sm', '--skip-minikube', help='Clean all but skip minikube resources', action="store_true")
-    group.add_argument('-f', '--filter', help='Clean all but skip minikube resources', action="store_true")
+    group.add_argument('-f', '--filter', help='List of filter of resources to delete', nargs="*",type=str, default=None)
     args = parser.parse_args()
     main(args)

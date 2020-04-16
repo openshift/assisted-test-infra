@@ -3,27 +3,27 @@ provider "libvirt" {
 }
 
 resource "libvirt_pool" "storage_pool" {
-  name = var.cluster_id
+  name = var.cluster_name
   type = "dir"
-  path = "${var.libvirt_storage_pool_path}/${var.cluster_id}"
+  path = "${var.libvirt_storage_pool_path}/${var.cluster_name}"
 }
 
 resource "libvirt_volume" "master" {
   count          = var.master_count
-  name           = "${var.cluster_id}-master-${count.index}"
+  name           = "${var.cluster_name}-master-${count.index}"
   pool           = libvirt_pool.storage_pool.name
   size           =  10737418240
 }
 
 resource "libvirt_volume" "worker" {
   count          = var.worker_count
-  name           = "${var.cluster_id}-worker-${count.index}"
+  name           = "${var.cluster_name}-worker-${count.index}"
   pool           = libvirt_pool.storage_pool.name
   size           =  10737418240
 }
 
 resource "libvirt_network" "net" {
-  name = "test-infra-net"
+  name = var.libvirt_network_name
 
   mode   = "nat"
   bridge = var.libvirt_network_if
@@ -53,7 +53,7 @@ resource "libvirt_network" "net" {
 resource "libvirt_domain" "master" {
   count = var.master_count
 
-  name = "${var.cluster_id}-master-${count.index}"
+  name = "${var.cluster_name}-master-${count.index}"
 
   memory = var.libvirt_master_memory
   vcpu   = var.libvirt_master_vcpu
@@ -77,8 +77,8 @@ resource "libvirt_domain" "master" {
   }
 
   network_interface {
-    network_name = "test-infra-net"
-    hostname   = "${var.cluster_id}-master-${count.index}.${var.cluster_domain}"
+    network_name = var.libvirt_network_name
+    hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
     addresses  = [var.libvirt_master_ips[count.index]]
   }
 
@@ -91,7 +91,7 @@ resource "libvirt_domain" "master" {
 resource "libvirt_domain" "worker" {
   count = var.worker_count
 
-  name = "${var.cluster_id}-worker-${count.index}"
+  name = "${var.cluster_name}-worker-${count.index}"
 
   memory = var.libvirt_worker_memory
   vcpu   = var.libvirt_worker_vcpu
@@ -114,8 +114,8 @@ resource "libvirt_domain" "worker" {
   }
 
   network_interface {
-    network_name = "test-infra-net"
-    hostname   = "${var.cluster_id}-worker-${count.index}.${var.cluster_domain}"
+    network_name = var.libvirt_network_name
+    hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
     addresses  = [var.libvirt_worker_ips[count.index]]
   }
 
@@ -128,12 +128,12 @@ resource "libvirt_domain" "worker" {
 data "libvirt_network_dns_host_template" "masters" {
   count    = var.master_count
   ip       = var.libvirt_master_ips[count.index]
-  hostname = "api.${var.cluster_domain}"
+  hostname = "api.${var.cluster_name}.${var.cluster_domain}"
 }
 
 
 data "libvirt_network_dns_host_template" "masters_int" {
   count    = var.master_count
   ip       = var.libvirt_master_ips[count.index]
-  hostname = "api-int.${var.cluster_domain}"
+  hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
 }

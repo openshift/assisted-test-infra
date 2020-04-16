@@ -3,7 +3,7 @@ provider "libvirt" {
 }
 
 resource "libvirt_network" "net" {
-  name = "test-infra-net"
+  name = var.libvirt_network_name
 
   mode   = "nat"
   bridge = var.libvirt_network_if
@@ -29,7 +29,6 @@ resource "libvirt_network" "net" {
 
   autostart = true
 }
-
 
 data "libvirt_network_dns_host_template" "masters" {
   count    = var.master_count

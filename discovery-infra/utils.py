@@ -24,15 +24,19 @@ def run_command_with_output(command):
 
 
 @retry(tries=5, delay=3, backoff=2)
+def get_service_url_with_retries(service_name):
+    return get_service_url(service_name)
+
+
 def get_service_url(service_name):
     print("Getting inventory url")
     cmd = "minikube service %s --url" % service_name
     return run_command(cmd)
 
 
-def wait_till_nodes_are_ready(nodes_count):
+def wait_till_nodes_are_ready(nodes_count, cluster_name):
     print("Wait till", nodes_count, "hosts will have ips")
-    cmd = "%s %s| grep %s | wc -l" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK, consts.CLUSTER)
+    cmd = "%s %s| grep %s | wc -l" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK, cluster_name)
     try:
         waiting.wait(lambda: int(run_command(cmd, shell=True).strip()) >= nodes_count,
                      timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,

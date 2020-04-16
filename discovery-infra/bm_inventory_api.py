@@ -22,11 +22,8 @@ class InventoryClient(object):
                      sleep_seconds=5, waiting_for="Wait till inventory is ready",
                      expected_exceptions=Exception)
 
-    def create_cluster(self, name, openshift_version="4.5", base_dns_domain="test-infra.redhat", ssh_public_key=None,
-                       api_vip="api-test-infra.redhat"):
-
-        cluster = models.ClusterUpdateParams(name=name, openshift_version=openshift_version,
-                                             ssh_public_key=ssh_public_key, base_dns_domain=base_dns_domain)
+    def create_cluster(self, name, ssh_public_key=None, **cluster_params):
+        cluster = models.ClusterUpdateParams(name=name, ssh_public_key=ssh_public_key,  **cluster_params)
         print("Creating cluster with params", cluster.__dict__)
         result = self.client.register_cluster(new_cluster_params=cluster)
         return result
@@ -34,6 +31,10 @@ class InventoryClient(object):
     def get_cluster_hosts(self, cluster_id):
         print("Getting registered nodes for cluster", cluster_id)
         return self.client.list_hosts(cluster_id=cluster_id)
+
+    def get_hosts_in_status(self, cluster_id, status):
+        hosts = self.get_cluster_hosts(cluster_id)
+        return [hosts for host in hosts if host["status"] == status]
 
     def clusters_list(self):
         return self.client.list_clusters()
@@ -57,6 +58,12 @@ class InventoryClient(object):
         res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts, _preload_content=False)
         return json.loads(res.data)
 
+    def update_cluster(self, cluster_id, update_params):
+        print("Updating cluster", cluster_id, "params", update_params)
+        res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=update_params,
+                                         _preload_content=False)
+        return json.loads(res.data)
+
     def delete_cluster(self, cluster_id):
         print("Deleting cluster", cluster_id)
         self.client.deregister_cluster(cluster_id=cluster_id)
@@ -70,8 +77,11 @@ class InventoryClient(object):
         return hosts_data
 
 
-def create_client():
-    i_url = utils.get_service_url("bm-inventory")
+def create_client(wait_for_url=True):
+    if wait_for_url:
+        i_url = utils.get_service_url_with_retries("bm-inventory")
+    else:
+        i_url = utils.get_service_url("bm-inventory")
     print("Inventory url", i_url)
     client = InventoryClient(inventory_url=i_url)
     client.wait_for_api_readiness()

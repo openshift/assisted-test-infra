@@ -1,14 +1,18 @@
 BMI_BRANCH ?= master
 IMAGE ?= ""
-NODES_COUNT ?= 4
-WORKER_MEMORY ?= 12288
-MASTER_MEMORY ?= 12288
+NUM_MASTERS ?= 3
+WORKER_MEMORY ?= 8892
+MASTER_MEMORY ?= 16984
+NUM_WORKERS := $(or $(NUM_WORKERS),0)
 STORAGE_POOL_PATH ?= $(PWD)/storage_pool
-SSH_KEY ?= "ssh_key/key.pub"
+SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
+PULL_SECRET :=  $(or $(PULL_SECRET),"")
 SHELL=/bin/sh
 CURRENT_USER=$(shell id -u $(USER))
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
-
+CLUSTER_NAME := $(or $(CLUSTER_NAME),"test-infra-cluster")
+BASE_DOMAIN := $(or $(BASE_DOMAIN),"redhat")
+NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
 
@@ -39,7 +43,7 @@ start_minikube: install_minikube
 
 delete_minikube:
 	minikube delete
-	scripts/virsh_cleanup.py -m
+	discovery-infra/virsh_cleanup.py -m
 
 copy_terraform_files:
 	mkdir -p build/terraform
@@ -58,22 +62,21 @@ run_terraform: copy_terraform_files
 	cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 destroy_terraform:
-	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed, cleanup will help"
-	scripts/virsh_cleanup.py -sm
+	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
+	discovery-infra/virsh_cleanup.py -f test-infra
 
 run: start_minikube deploy_bm_inventory
 
 run_full_flow: run deploy_nodes
 
 deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NODES_COUNT) -p $(STORAGE_POOL_PATH) -k $(SSH_KEY) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR)
 
 destroy_nodes:
 	discovery-infra/delete_nodes.py
 
-destroy: destroy_terraform delete_minikube
+destroy: destroy_nodes delete_minikube
 	rm -rf build/terraform/*
-	scripts/virsh_cleanup.py -a
 
 deploy_bm_inventory: bring_bm_inventory
 	make -C bm-inventory/ deploy-all

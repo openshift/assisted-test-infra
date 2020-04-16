@@ -1,4 +1,4 @@
-variable "cluster_id" {
+variable "cluster_name" {
   type        = string
   description = "The identifier for the cluster."
 }
@@ -41,6 +41,11 @@ variable "libvirt_uri" {
 variable "libvirt_network_if" {
   type        = string
   description = "The name of the bridge to use"
+}
+
+variable "libvirt_network_name" {
+  type        = string
+  description = "The name of the network to use"
 }
 
 //variable "os_image" {
@@ -101,3 +106,4 @@ variable "libvirt_storage_pool_path" {
   type        = string
   description = "storage pool path"
 }
+

@@ -2,7 +2,7 @@
 function install_libvirt() {
   if ! [ -x "$(command -v virsh)" ]; then
     echo "Installing libvirt..."
-    yum install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm
+    dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm
     systemctl enable --now libvirtd
     else
   echo "libvirt is already installed"
@@ -30,7 +30,7 @@ fi
 }
 
 function install_packages(){
-  yum install -y make python3 git jq bash-completion
+  dnf install -y make python3 git jq bash-completion
 }
 
 function install_skipper() {
