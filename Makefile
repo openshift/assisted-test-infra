@@ -14,7 +14,7 @@ CLUSTER_NAME := $(or $(CLUSTER_NAME),"test-infra-cluster")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),"redhat")
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment
+.PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources
 
 image_build:
 	$(CONTAINER_COMMAND) pull quay.io/itsoiref/test-infra:latest && $(CONTAINER_COMMAND) image tag quay.io/itsoiref/test-infra:latest test-infra:latest || $(CONTAINER_COMMAND) build -t test-infra -f Dockerfile.test-infra .
@@ -92,3 +92,6 @@ create_inventory_client: bring_bm_inventory
 	echo '{"packageName" : "bm_inventory_client", "packageVersion": "1.0.0"}' > build/code-gen-config.json
 	sed -i '/pattern:/d' $(PWD)/bm-inventory/swagger.yaml
 	docker run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro -v $(PWD)/build/code-gen-config.json:/config.json:ro jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
+
+delete_all_virsh_resources: destroy_nodes delete_minikube
+	discovery-infra/delete_nodes.py -a
