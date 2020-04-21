@@ -79,6 +79,7 @@ destroy: destroy_nodes delete_minikube
 	rm -rf build/terraform/*
 
 deploy_bm_inventory: bring_bm_inventory
+	discovery-infra/update_bm_inventory_cm.py
 	make -C bm-inventory/ deploy-all
 
 bring_bm_inventory:
