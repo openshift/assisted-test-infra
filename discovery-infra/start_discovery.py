@@ -12,6 +12,7 @@ from pathlib import Path
 import utils
 import consts
 import bm_inventory_api
+import install_cluster
 
 
 def _create_ip_address_list(node_count, starting_ip_addr):
@@ -75,8 +76,8 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
                  sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
     print("Registered nodes are:")
     pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
-    wait_till_all_hosts_are_in_status(client=inventory_client, cluster_id=cluster.id,
-                                      nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
+    utils.wait_till_all_hosts_are_in_status(client=inventory_client, cluster_id=cluster.id,
+                                            nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
 
 
 def set_hosts_roles(client, cluster_id):
@@ -119,7 +120,8 @@ def _create_node_details(cluster_name):
             "worker_count": args.number_of_workers,
             "cluster_name": cluster_name,
             "cluster_domain": args.base_dns_domain,
-            "machine_cidr": args.vm_network_cidr}
+            "machine_cidr": args.vm_network_cidr,
+            "libvirt_network_name": args.network_name}
 
 
 def main():
@@ -150,6 +152,8 @@ def main():
                                           nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
         print("Printing after setting roles")
         pprint.pprint(client.get_cluster_hosts(cluster.id))
+        if args.install_cluster:
+            install_cluster.run_install_flow(client, cluster.id, consts.DEFAULT_CLUSTER_KUBECONFIG_PATH)
 
 
 if __name__ == "__main__":
@@ -172,12 +176,9 @@ if __name__ == "__main__":
     parser.add_argument('-bd', '--base-dns-domain', help='Base dns domain', type=str, default="redhat")
     parser.add_argument('-cN', '--cluster-name', help='Cluster name', type=str, default="")
     parser.add_argument('-vN', '--vm-network-cidr', help="Vm network cidr", type=str, default="192.168.126.0/24")
-
+    parser.add_argument('-nN', '--network-name', help="Network name", type=str, default="test-infra-net")
+    parser.add_argument('-in', '--install-cluster', help="Install cluster, will take latest id", action="store_true")
     args = parser.parse_args()
+    if not args.pull_secret and args.install_cluster:
+        raise Exception("Can't install cluster without pull secret, please provide one")
     main()
-
-
-"""
-echo -e "[main]\ndns=dnsmasq" | sudo tee /etc/NetworkManager/conf.d/openshift.conf
-echo server=/test-infra.redhat/192.168.126.1 | sudo tee /etc/NetworkManager/dnsmasq.d/openshift.conf
-"""

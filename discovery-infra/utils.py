@@ -1,6 +1,9 @@
+import os
 import subprocess
 import shlex
 import waiting
+import json
+import pprint
 from retry import retry
 import consts
 
@@ -29,9 +32,13 @@ def get_service_url_with_retries(service_name):
 
 
 def get_service_url(service_name):
-    print("Getting inventory url")
-    cmd = "minikube service %s --url" % service_name
-    return run_command(cmd)
+    try:
+        print("Getting inventory url")
+        cmd = "minikube service %s --url" % service_name
+        return run_command(cmd)
+    except:
+        print("Failed to get inventory url")
+        raise
 
 
 def wait_till_nodes_are_ready(nodes_count, cluster_name):
@@ -65,4 +72,24 @@ def get_libvirt_nodes_mac_role_ip_and_name():
     except:
         cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
         print("Failed to get nodes macs from libvirt. Output is ", run_command(cmd, shell=False))
+        raise
+
+
+def get_tfvars():
+    if not os.path.exists(consts.TFVARS_JSON_FILE):
+        raise Exception("%s doesn't exists" % consts.TFVARS_JSON_FILE)
+    with open(consts.TFVARS_JSON_FILE) as _file:
+        tfvars = json.load(_file)
+    return tfvars
+
+
+def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, status):
+    print("Wait till", nodes_count, "nodes are in status", status)
+    try:
+        waiting.wait(lambda: len(client.get_hosts_in_status(cluster_id, status)) >= nodes_count,
+                     timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
+                     sleep_seconds=5, waiting_for="Nodes to be in status %s" % status)
+    except:
+        print("All nodes:")
+        pprint.pprint(client.get_cluster_hosts(cluster_id))
         raise

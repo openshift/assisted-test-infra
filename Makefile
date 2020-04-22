@@ -6,24 +6,29 @@ MASTER_MEMORY ?= 16984
 NUM_WORKERS := $(or $(NUM_WORKERS),0)
 STORAGE_POOL_PATH ?= $(PWD)/storage_pool
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
-PULL_SECRET :=  $(or $(PULL_SECRET),"")
+PULL_SECRET :=  $(or $(PULL_SECRET),)
 SHELL=/bin/sh
 CURRENT_USER=$(shell id -u $(USER))
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 CLUSTER_NAME := $(or $(CLUSTER_NAME),"test-infra-cluster")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),"redhat")
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
+CLUSTER_ID := $(or $(CLUSTER_ID), "")
+IMAGE_TAG="latest"
+IMAGE_NAME="test-infra"
+IMAGE_REG_NAME="quay.io/itsoiref/"$(IMAGE_NAME)
+NETWORK_NAME := $(or $(NETWORK_NAME), "test-infra-net")
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources
 
 image_build:
-	$(CONTAINER_COMMAND) pull quay.io/itsoiref/test-infra:latest && $(CONTAINER_COMMAND) image tag quay.io/itsoiref/test-infra:latest test-infra:latest || $(CONTAINER_COMMAND) build -t test-infra -f Dockerfile.test-infra .
+	$(CONTAINER_COMMAND) pull $(IMAGE_REG_NAME):$(IMAGE_TAG) && $(CONTAINER_COMMAND) image tag $(IMAGE_REG_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) || $(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+
+all:
+	./install_env_and_run_full_flow.sh
 
 create_full_environment:
-	scripts/install_environment.sh
-	$(MAKE) image_build
-	skipper make bring_bm_inventory
-	$(MAKE) start_minikube
+	./create_full_environment.sh
 
 create_environment:
 	$(MAKE) image_build
@@ -69,8 +74,16 @@ run: start_minikube deploy_bm_inventory
 
 run_full_flow: run deploy_nodes
 
+run_full_flow_with_install: run deploy_nodes_with_install
+
+install_cluster:
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID)
+
+deploy_nodes_with_install:
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -in
+
 deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME)
 
 destroy_nodes:
 	discovery-infra/delete_nodes.py
@@ -96,3 +109,16 @@ create_inventory_client: bring_bm_inventory
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
 	discovery-infra/delete_nodes.py -a
+
+build_and_push_image:
+	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+	$(CONTAINER_COMMAND) tag  $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_REG_NAME):$(IMAGE_TAG)
+	$(CONTAINER_COMMAND)  push $(IMAGE_REG_NAME)
+
+redeploy_nodes: destroy_nodes deploy_nodes
+
+redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
+
+redeploy_all_with_install: destroy  run_full_flow_with_install
+
+redeploy_all: destroy run_full_flow

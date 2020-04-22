@@ -43,26 +43,26 @@ class InventoryClient(object):
         print("Getting cluster with id", cluster_id)
         return self.client.get_cluster(cluster_id=cluster_id)
 
-    def download_image(self, cluster_id, image_path):
-        print("Downloading image for cluster", cluster_id, "to", image_path)
-        response = self.client.download_cluster_iso(cluster_id=cluster_id, _preload_content=False)
+    def _download(self, response, file_path):
         progress = tqdm(iterable=response.read_chunked())
-        with open(image_path, 'wb') as f:
+        with open(file_path, 'wb') as f:
             for chunk in progress:
                 f.write(chunk)
         progress.close()
 
+    def download_image(self, cluster_id, image_path):
+        print("Downloading image for cluster", cluster_id, "to", image_path)
+        response = self.client.download_cluster_iso(cluster_id=cluster_id, _preload_content=False)
+        self._download(response=response, file_path=image_path)
+
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
         print("Setting roles for hosts", hosts_with_roles, "in cluster", cluster_id)
         hosts = {"hostsRoles": hosts_with_roles}
-        res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts, _preload_content=False)
-        return json.loads(res.data)
+        return self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts)
 
     def update_cluster(self, cluster_id, update_params):
         print("Updating cluster", cluster_id, "params", update_params)
-        res = self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=update_params,
-                                         _preload_content=False)
-        return json.loads(res.data)
+        return self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=update_params)
 
     def delete_cluster(self, cluster_id):
         print("Deleting cluster", cluster_id)
@@ -76,6 +76,20 @@ class InventoryClient(object):
             hosts_data[host.id] = [nic["mac"] for nic in hw["nics"]]
         return hosts_data
 
+    def download_and_save_file(self, cluster_id, file_name, file_path):
+        print("Downloading", file_name, "to", file_path)
+        response = self.client.download_cluster_files(cluster_id=cluster_id, file_name=file_name,
+                                                      _preload_content=False)
+        with open(file_path, "wb") as _file:
+            _file.write(response.data)
+
+    def download_kubeconfig(self, cluster_id, kubeconfig_path):
+        self.download_and_save_file(cluster_id=cluster_id, file_name="kubeconfig", file_path=kubeconfig_path)
+
+    def install_cluster(self, cluster_id):
+        print("Installing cluster", cluster_id)
+        return self.client.install_cluster(cluster_id=cluster_id)
+
 
 def create_client(wait_for_url=True):
     if wait_for_url:
@@ -86,4 +100,3 @@ def create_client(wait_for_url=True):
     client = InventoryClient(inventory_url=i_url)
     client.wait_for_api_readiness()
     return client
-
