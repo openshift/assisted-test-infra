@@ -34,7 +34,7 @@ function install_packages(){
 }
 
 function install_skipper() {
-   pip3 install strato-skipper
+   pip3 install strato-skipper==1.20.0
 }
 
 install_packages
