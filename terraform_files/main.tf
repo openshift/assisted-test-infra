@@ -12,14 +12,14 @@ resource "libvirt_volume" "master" {
   count          = var.master_count
   name           = "${var.cluster_name}-master-${count.index}"
   pool           = libvirt_pool.storage_pool.name
-  size           =  10737418240
+  size           =  21474836480
 }
 
 resource "libvirt_volume" "worker" {
   count          = var.worker_count
   name           = "${var.cluster_name}-worker-${count.index}"
   pool           = libvirt_pool.storage_pool.name
-  size           =  10737418240
+  size           =  21474836480
 }
 
 resource "libvirt_network" "net" {
