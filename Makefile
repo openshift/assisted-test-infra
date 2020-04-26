@@ -1,25 +1,31 @@
+
 BMI_BRANCH ?= master
 IMAGE ?= ""
-NUM_MASTERS ?= 3
+NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
 WORKER_MEMORY ?= 8892
 MASTER_MEMORY ?= 16984
 NUM_WORKERS := $(or $(NUM_WORKERS),0)
-STORAGE_POOL_PATH ?= $(PWD)/storage_pool
+STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET),)
 SHELL=/bin/sh
 CURRENT_USER=$(shell id -u $(USER))
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
-CLUSTER_NAME := $(or $(CLUSTER_NAME),"test-infra-cluster")
-BASE_DOMAIN := $(or $(BASE_DOMAIN),"redhat")
+CLUSTER_NAME := $(or $(CLUSTER_NAME),test-infra-cluster)
+BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat)
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
 CLUSTER_ID := $(or $(CLUSTER_ID), "")
 IMAGE_TAG := latest
 IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
-NETWORK_NAME := $(or $(NETWORK_NAME), "test-infra-net")
+NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
+NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
+OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), "4.4")
+
+.EXPORT_ALL_VARIABLES:
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources
+
 
 image_build:
 	$(CONTAINER_COMMAND) pull $(IMAGE_REG_NAME):$(IMAGE_TAG) && $(CONTAINER_COMMAND) image tag $(IMAGE_REG_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) || $(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
@@ -42,7 +48,7 @@ clean:
 install_minikube:
 	scripts/install_minikube.sh
 
-start_minikube: install_minikube
+start_minikube:
 	scripts/run_minikube.sh
 	eval $(minikube docker-env)
 
@@ -80,10 +86,10 @@ install_cluster:
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID)
 
 deploy_nodes_with_install:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -in
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -in
 
 deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION)
 
 destroy_nodes:
 	discovery-infra/delete_nodes.py

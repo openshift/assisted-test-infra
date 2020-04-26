@@ -32,6 +32,16 @@ else
 fi
 }
 
+function install_oc() {
+  if ! [ -x "$(command -v oc)" ]; then
+    echo "Installing oc..."
+    curl -Lo oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/oc/${OPENSHIFT_VERSION:-4.4}/linux/oc.tar.gz && tar -C /usr/local/bin -xf oc.tar.gz && rm -f oc.tar.gz
+  else
+    echo "oc is already installed"
+  fi
+}
+
 install_minikube
 install_kubectl
 install_kvm2_driver
+install_oc

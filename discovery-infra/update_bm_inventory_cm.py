@@ -7,7 +7,7 @@ CM_PATH = "bm-inventory/deploy/bm-inventory-configmap.yaml"
 ENVS = [("HW_VALIDATOR_MIN_CPU_CORES", "2"), ("HW_VALIDATOR_MIN_CPU_CORES_WORKER", "2"),
         ("HW_VALIDATOR_MIN_CPU_CORES_MASTER", "4"), ("HW_VALIDATOR_MIN_RAM_GIB", "3"),
         ("HW_VALIDATOR_MIN_RAM_GIB_WORKER", "3"), ("HW_VALIDATOR_MIN_RAM_GIB_MASTER", "8"),
-        ("INSTALLER_IMAGE", "quay.io/eranco74/assisted-installer:latest")]
+        ("INSTALLER_IMAGE", "")]
 
 
 def read_yaml():
@@ -20,7 +20,9 @@ def read_yaml():
 def get_relevant_envs():
     data = {}
     for env in ENVS:
-        data[env[0]] = os.getenv(env[0], env[1])
+        evn_data = os.getenv(env[0], env[1])
+        if evn_data:
+            data[env[0]] = os.getenv(env[0], env[1])
     return data
 
 

@@ -121,7 +121,8 @@ def _create_node_details(cluster_name):
             "cluster_name": cluster_name,
             "cluster_domain": args.base_dns_domain,
             "machine_cidr": args.vm_network_cidr,
-            "libvirt_network_name": args.network_name}
+            "libvirt_network_name": args.network_name,
+            "libvirt_network_if": args.network_bridge}
 
 
 def main():
@@ -178,6 +179,7 @@ if __name__ == "__main__":
     parser.add_argument('-vN', '--vm-network-cidr', help="Vm network cidr", type=str, default="192.168.126.0/24")
     parser.add_argument('-nN', '--network-name', help="Network name", type=str, default="test-infra-net")
     parser.add_argument('-in', '--install-cluster', help="Install cluster, will take latest id", action="store_true")
+    parser.add_argument('-nB', '--network-bridge', help="Network bridge to use", type=str, default="tt0")
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:
         raise Exception("Can't install cluster without pull secret, please provide one")
