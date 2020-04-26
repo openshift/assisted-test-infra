@@ -3,7 +3,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 
 # Prerequisites
 - CentOS 8 or RHEL 8 host
-- File system that supports d_type (see Troubleshooting section for more information)
+- File system that supports d_type
 - Ideally on a bare metal host with at least 64G of RAM.
 - Run as a user with passwordless sudo access or be ready to enter sudo password for prepare phase.
 - Get a valid pull secret (json string) from [redhat.com](https://cloud.redhat.com/openshift/install/pull-secret) if you want to test the installation (not needed for testing only the discovery flow). Export it as
