@@ -50,9 +50,10 @@ class InventoryClient(object):
                 f.write(chunk)
         progress.close()
 
-    def download_image(self, cluster_id, image_path):
+    def download_image(self, cluster_id, image_path, ssh_key):
         print("Downloading image for cluster", cluster_id, "to", image_path)
-        response = self.client.download_cluster_iso(cluster_id=cluster_id, _preload_content=False)
+        response = self.client.download_cluster_iso(cluster_id=cluster_id, ssh_public_key=ssh_key,
+                                                    _preload_content=False)
         self._download(response=response, file_path=image_path)
 
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
