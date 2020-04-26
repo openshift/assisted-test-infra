@@ -50,11 +50,24 @@ class InventoryClient(object):
                 f.write(chunk)
         progress.close()
 
-    def download_image(self, cluster_id, image_path, ssh_key):
+    def generate_image(self, cluster_id, ssh_key, proxy_ip=None, proxy_port=None):
+        print("Generating image for cluster", cluster_id)
+        image_create_params = {"ssh_public_key": ssh_key}
+        if proxy_ip:
+            image_create_params["proxy_ip"] = proxy_ip
+        if proxy_port:
+            image_create_params["proxy_port"] = proxy_port
+        return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
+
+    def download_image(self, cluster_id, image_path, image_id):
         print("Downloading image for cluster", cluster_id, "to", image_path)
-        response = self.client.download_cluster_iso(cluster_id=cluster_id, ssh_public_key=ssh_key,
+        response = self.client.download_cluster_iso(cluster_id=cluster_id, image_id=image_id,
                                                     _preload_content=False)
         self._download(response=response, file_path=image_path)
+
+    def generate_and_download_image(self, cluster_id, ssh_key, image_path, proxy_ip=None, proxy_port=None):
+        image = self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, proxy_ip=proxy_ip, proxy_port=proxy_port)
+        self.download_image(cluster_id=cluster_id, image_path=image_path, image_id=image.image_id)
 
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
         print("Setting roles for hosts", hosts_with_roles, "in cluster", cluster_id)

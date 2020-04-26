@@ -137,7 +137,7 @@ def main():
                                         **_cluster_create_params()
                                         )
         nodes_details["cluster_inventory_id"] = cluster.id
-        client.download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key)
+        client.generate_and_download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key)
 
     create_nodes_and_wait_till_registered(inventory_client=client,
                                           cluster=cluster,

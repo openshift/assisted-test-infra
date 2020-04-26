@@ -14,9 +14,9 @@ CLUSTER_NAME := $(or $(CLUSTER_NAME),"test-infra-cluster")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),"redhat")
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
 CLUSTER_ID := $(or $(CLUSTER_ID), "")
-IMAGE_TAG="latest"
-IMAGE_NAME="test-infra"
-IMAGE_REG_NAME="quay.io/itsoiref/"$(IMAGE_NAME)
+IMAGE_TAG := latest
+IMAGE_NAME=test-infra
+IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 NETWORK_NAME := $(or $(NETWORK_NAME), "test-infra-net")
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources
