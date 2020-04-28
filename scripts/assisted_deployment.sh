@@ -54,3 +54,5 @@ function run_skipper_make_command() {
 function run_without_os_envs() {
   run_skipper_make_command $1
 }
+
+"$@"
