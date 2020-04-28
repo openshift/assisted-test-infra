@@ -1,7 +1,7 @@
 FROM centos:8
 ENV container docker
 
-RUN yum -y install systemd make python3 virt-viewer virt-install libvirt-client git libvirt-devel gcc unzip wget && yum clean all; \
+RUN yum -y install systemd make python3 virt-viewer virt-install libvirt-client git libvirt-devel gcc unzip wget jq && yum clean all; \
 (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
 rm -f /lib/systemd/system/multi-user.target.wants/*;\
 rm -f /etc/systemd/system/*.wants/*;\
