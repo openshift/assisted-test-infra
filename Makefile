@@ -88,6 +88,9 @@ install_cluster:
 wait_for_cluster:
 	scripts/assisted_deployment.sh	wait_for_cluster
 
+set_dns:
+	scripts/assisted_deployment.sh	set_dns
+
 deploy_nodes_with_install:
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -in
 
