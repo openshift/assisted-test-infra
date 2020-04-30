@@ -15,11 +15,13 @@ import bm_inventory_api
 import install_cluster
 
 
+# Creates ip list, if will be needed in any other place, please move to utils
 def _create_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 
 
-def fill_relevant_tfvars(image_path, storage_path, master_count, nodes_details):
+# Filling tfvars json files with terraform needed variables to spawn vms
+def fill_tfvars(image_path, storage_path, master_count, nodes_details):
     if not os.path.exists(consts.TFVARS_JSON_FILE):
         Path(consts.TF_FOLDER).mkdir(parents=True, exist_ok=True)
         copy_tree(consts.TF_TEMPLATE, consts.TF_FOLDER)
@@ -41,26 +43,16 @@ def fill_relevant_tfvars(image_path, storage_path, master_count, nodes_details):
         json.dump(tfvars, _file)
 
 
+# Run make run terraform -> creates vms
 def create_nodes(image_path, storage_path, master_count, nodes_details):
     print("Creating tfvars")
-    fill_relevant_tfvars(image_path, storage_path, master_count, nodes_details)
+    fill_tfvars(image_path, storage_path, master_count, nodes_details)
     print("Start running terraform")
     cmd = "make run_terraform"
     return utils.run_command(cmd)
 
 
-def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, status):
-    print("Wait till", nodes_count, "nodes are in status", status)
-    try:
-        waiting.wait(lambda: len(client.get_hosts_in_status(cluster_id, status)) >= nodes_count,
-                     timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
-                     sleep_seconds=5, waiting_for="Nodes to be in status %s" % status)
-    except:
-        print("All nodes:")
-        pprint.pprint(client.get_cluster_hosts(cluster_id))
-        raise
-
-
+# Starts terraform nodes creation, waits till all nodes will get ip and will move to known status
 def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path, storage_path,
                                           master_count, nodes_details):
     nodes_count = master_count + nodes_details["worker_count"]
@@ -80,6 +72,8 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
                                             nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
 
 
+# Set nodes roles by vm name
+# If master in name -> role will be master, same for worker
 def set_hosts_roles(client, cluster_id):
     hosts = []
     libvirt_macs = utils.get_libvirt_nodes_mac_role_ip_and_name()
@@ -93,14 +87,8 @@ def set_hosts_roles(client, cluster_id):
         client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts)
 
 
-def get_ssh_key(ssh_key_path):
-    if not ssh_key_path:
-        return None
-    with open(ssh_key_path, "r+") as ssh_file:
-        return ssh_file.read().strip()
-
-
 # TODO add config file
+# Converts params from args to bm-inventory cluster params
 def _cluster_create_params():
     params = {"openshift_version": args.openshift_version,
               "base_dns_domain": args.base_dns_domain,
@@ -114,6 +102,7 @@ def _cluster_create_params():
     return params
 
 
+# convert params from args to terraform tfvars
 def _create_node_details(cluster_name):
     return {"libvirt_worker_memory": args.worker_memory,
             "libvirt_master_memory": args.master_memory,
@@ -125,21 +114,12 @@ def _create_node_details(cluster_name):
             "libvirt_network_if": args.network_bridge}
 
 
-def main():
-    client = None
-    cluster = {}
-    cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
+# Create vms from downloaded iso that will connect to bm-inventory and register
+# If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
+def nodes_flow(client, cluster_name, cluster):
     nodes_details = _create_node_details(cluster_name)
-    if not args.image:
-        client = bm_inventory_api.create_client()
-
-        cluster = client.create_cluster(cluster_name,
-                                        ssh_public_key=args.ssh_key,
-                                        **_cluster_create_params()
-                                        )
+    if cluster:
         nodes_details["cluster_inventory_id"] = cluster.id
-        client.generate_and_download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key)
-
     create_nodes_and_wait_till_registered(inventory_client=client,
                                           cluster=cluster,
                                           image_path=args.image or consts.IMAGE_PATH,
@@ -149,12 +129,33 @@ def main():
     if client:
         set_hosts_roles(client, cluster.id)
         nodes_count = args.master_count + args.number_of_workers
-        wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
-                                          nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
+        utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
+                                                nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
         print("Printing after setting roles")
         pprint.pprint(client.get_cluster_hosts(cluster.id))
         if args.install_cluster:
             install_cluster.run_install_flow(client, cluster.id, consts.DEFAULT_CLUSTER_KUBECONFIG_PATH)
+
+
+def main():
+    client = None
+    cluster = {}
+    cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
+
+    # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
+    if not args.image:
+        client = bm_inventory_api.create_client()
+
+        cluster = client.create_cluster(cluster_name,
+                                        ssh_public_key=args.ssh_key,
+                                        **_cluster_create_params()
+                                        )
+
+        client.generate_and_download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key)
+
+    # Iso only, cluster will be up and iso downloaded but vm will not be created
+    if not args.iso_only:
+        nodes_flow(client, cluster_name, cluster)
 
 
 if __name__ == "__main__":
@@ -180,6 +181,8 @@ if __name__ == "__main__":
     parser.add_argument('-nN', '--network-name', help="Network name", type=str, default="test-infra-net")
     parser.add_argument('-in', '--install-cluster', help="Install cluster, will take latest id", action="store_true")
     parser.add_argument('-nB', '--network-bridge', help="Network bridge to use", type=str, default="tt0")
+    parser.add_argument('-iO', '--iso-only', help="Create cluster and download iso, no need to spawn cluster",
+                        action="store_true")
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:
         raise Exception("Can't install cluster without pull secret, please provide one")

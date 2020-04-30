@@ -7,6 +7,7 @@ import consts
 import bm_inventory_api
 
 
+# Verify folder to download kubeconfig exists. If will be needed in other places move to utils
 def _verify_kube_download_folder(kubeconfig_path):
     kube_dir = Path(kubeconfig_path).parent
     if not kube_dir:
@@ -14,6 +15,11 @@ def _verify_kube_download_folder(kubeconfig_path):
         exit(1)
 
 
+# Runs installation flow :
+# 1. Verifies cluster id exists
+# 2. Running install cluster api
+# 3. Waiting till all nodes are in installing status
+# 4. Downloads kubeconfig for future usage
 def run_install_flow(client, cluster_id, kubeconfig_path):
     print("Verifying cluster exists")
     client.cluster_get(cluster_id)
@@ -29,6 +35,7 @@ def run_install_flow(client, cluster_id, kubeconfig_path):
 def main():
     _verify_kube_download_folder(args.kubeconfig_path)
     print("Creating bm inventory client")
+    # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
         args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
     client = bm_inventory_api.create_client(wait_for_url=False)

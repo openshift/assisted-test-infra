@@ -7,6 +7,7 @@ import virsh_cleanup
 import bm_inventory_api
 
 
+# Try to delete cluster if bm-inventory is up and such cluster exists
 def try_to_delete_cluster(tfvars):
     try:
         cluster_id = tfvars.get("cluster_inventory_id")
@@ -18,6 +19,7 @@ def try_to_delete_cluster(tfvars):
         print("Failed to delete cluster", str(exc))
 
 
+# Runs terraform destroy and then cleans it with virsh cleanup to delete everything relevant
 def delete_nodes(tfvars):
     try:
         print("Start running terraform delete")
@@ -32,6 +34,7 @@ def delete_nodes(tfvars):
                                              tfvars.get("libvirt_network_name", consts.TEST_INFRA)])
 
 
+# Deletes every single virsh resource, leaves only defaults
 def delete_all():
     print("Deleting all virsh resources")
     virsh_cleanup.clean_virsh_resources(virsh_cleanup.DEFAULT_SKIP_LIST, None)

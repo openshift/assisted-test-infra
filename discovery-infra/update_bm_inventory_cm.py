@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+# Idea is to pass os environments to bm-inventory config map, to make an easy way to configure bm-inventory
+
 import yaml
 import os
 
