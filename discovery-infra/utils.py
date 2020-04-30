@@ -6,6 +6,7 @@ import json
 import pprint
 from retry import retry
 import consts
+from logger import log
 
 VIRSH_LEASES_COMMAND = "virsh -q net-dhcp-leases"
 
@@ -33,31 +34,31 @@ def get_service_url_with_retries(service_name):
 
 def get_service_url(service_name):
     try:
-        print("Getting inventory url")
+        log.info("Getting inventory url")
         cmd = "minikube service %s --url" % service_name
         return run_command(cmd)
     except:
-        print("Failed to get inventory url")
+        log.error("Failed to get inventory url")
         raise
 
 
 def wait_till_nodes_are_ready(nodes_count, cluster_name):
-    print("Wait till", nodes_count, "hosts will have ips")
+    log.info("Wait till %s hosts will have ips", nodes_count)
     cmd = "%s %s| grep %s | wc -l" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK, cluster_name)
     try:
         waiting.wait(lambda: int(run_command(cmd, shell=True).strip()) >= nodes_count,
                      timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,
                      sleep_seconds=10, waiting_for="Nodes to have ips")
-        print("All nodes have booted and got ips")
+        log.info("All nodes have booted and got ips")
     except:
         cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
-        print("Not all nodes are ready. Current dhcp leases are", run_command(cmd, shell=False).strip())
+        log.error("Not all nodes are ready. Current dhcp leases are %s", run_command(cmd, shell=False).strip())
         raise
 
 
 # Require wait_till_nodes_are_ready has finished and all nodes are up
 def get_libvirt_nodes_mac_role_ip_and_name():
-    print("Get nodes macs and roles from libvirt")
+    log.info("Get nodes macs and roles from libvirt")
     cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
     nodes_data = {}
     try:
@@ -71,7 +72,7 @@ def get_libvirt_nodes_mac_role_ip_and_name():
         return nodes_data
     except:
         cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
-        print("Failed to get nodes macs from libvirt. Output is ", run_command(cmd, shell=False))
+        log.error("Failed to get nodes macs from libvirt. Output is %s", run_command(cmd, shell=False))
         raise
 
 
@@ -84,12 +85,12 @@ def get_tfvars():
 
 
 def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, status):
-    print("Wait till", nodes_count, "nodes are in status", status)
+    log.info("Wait till %s nodes are in status %s", nodes_count, status)
     try:
         waiting.wait(lambda: len(client.get_hosts_in_status(cluster_id, status)) >= nodes_count,
                      timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
                      sleep_seconds=5, waiting_for="Nodes to be in status %s" % status)
     except:
-        print("All nodes:")
+        log.info("All nodes:")
         pprint.pprint(client.get_cluster_hosts(cluster_id))
         raise

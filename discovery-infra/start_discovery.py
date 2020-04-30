@@ -13,6 +13,7 @@ import utils
 import consts
 import bm_inventory_api
 import install_cluster
+from logger import log
 
 
 # Creates ip list, if will be needed in any other place, please move to utils
@@ -45,9 +46,9 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
 
 # Run make run terraform -> creates vms
 def create_nodes(image_path, storage_path, master_count, nodes_details):
-    print("Creating tfvars")
+    log.info("Creating tfvars")
     fill_tfvars(image_path, storage_path, master_count, nodes_details)
-    print("Start running terraform")
+    log.info("Start running terraform")
     cmd = "make run_terraform"
     return utils.run_command(cmd)
 
@@ -59,14 +60,14 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
     create_nodes(image_path, storage_path=storage_path, master_count=master_count, nodes_details=nodes_details)
     utils.wait_till_nodes_are_ready(nodes_count=nodes_count, cluster_name=nodes_details["cluster_name"])
     if not inventory_client:
-        print("No inventory url, will not wait till nodes registration")
+        log.info("No inventory url, will not wait till nodes registration")
         return
 
-    print("Wait till nodes will be registered")
+    log.info("Wait till nodes will be registered")
     waiting.wait(lambda: len(inventory_client.get_cluster_hosts(cluster.id)) >= nodes_count,
                  timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
                  sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
-    print("Registered nodes are:")
+    log.info("Registered nodes are:")
     pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
     utils.wait_till_all_hosts_are_in_status(client=inventory_client, cluster_id=cluster.id,
                                             nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
@@ -131,7 +132,7 @@ def nodes_flow(client, cluster_name, cluster):
         nodes_count = args.master_count + args.number_of_workers
         utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
                                                 nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
-        print("Printing after setting roles")
+        log.info("Printing after setting roles")
         pprint.pprint(client.get_cluster_hosts(cluster.id))
         if args.install_cluster:
             install_cluster.run_install_flow(client, cluster.id, consts.DEFAULT_CLUSTER_KUBECONFIG_PATH)

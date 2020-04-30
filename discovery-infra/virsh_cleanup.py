@@ -2,6 +2,7 @@
 
 import argparse
 import subprocess
+from logger import log
 
 DEFAULT_SKIP_LIST = ["default"]
 
@@ -18,7 +19,7 @@ def clean_domains(skip_list, resource_filter):
     domains = run_command("virsh list --all --name", resource_filter=resource_filter)
     domains = domains.splitlines()
     for domain in domains:
-        print("Deleting domain ", domain)
+        log.info("Deleting domain %s", domain)
         if domain and domain not in skip_list:
             run_command("virsh destroy %s" % domain, check=False)
             run_command("virsh undefine %s" % domain, check=False)
@@ -29,7 +30,7 @@ def clean_volumes(pool):
     for volume_with_path in volumes_with_path:
         volume, _ = volume_with_path.split()
         if volume:
-            print("Deleting volume ", volume, "in pool ", pool)
+            log.info("Deleting volume %s in pool %s", volume, pool)
             run_command("virsh vol-delete --pool %s %s" % (pool, volume), check=False)
 
 
@@ -39,7 +40,7 @@ def clean_pools(skip_list, resource_filter):
     for pool in pools:
         if pool and pool not in skip_list:
             clean_volumes(pool)
-            print("Deleting pool ", pool)
+            log.info("Deleting pool %s", pool)
             run_command("virsh pool-destroy %s" % pool, check=False)
             run_command("virsh pool-undefine %s" % pool, check=False)
 
@@ -49,7 +50,7 @@ def clean_networks(skip_list, resource_filter):
     networks = networks.splitlines()
     for net in networks:
         if net and net not in skip_list:
-            print("Deleting network ", net)
+            log.info("Deleting network %s", net)
             run_command("virsh net-destroy %s" % net, check=False)
             run_command("virsh net-undefine %s" % net, check=False)
 

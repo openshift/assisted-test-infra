@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
 import argparse
+import shutil
 import consts
 import utils
 import virsh_cleanup
 import bm_inventory_api
+from logger import log
 
 
 # Try to delete cluster if bm-inventory is up and such cluster exists
@@ -16,18 +18,20 @@ def try_to_delete_cluster(tfvars):
             client.delete_cluster(cluster_id=cluster_id)
     # TODO add different exception validations
     except Exception as exc:
-        print("Failed to delete cluster", str(exc))
+        log.error("Failed to delete cluster %s", str(exc))
 
 
 # Runs terraform destroy and then cleans it with virsh cleanup to delete everything relevant
 def delete_nodes(tfvars):
     try:
-        print("Start running terraform delete")
-        cmd = "cd build/terraform/  && terraform destroy -auto-approve " \
-              "-input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json"
+        log.info("Start running terraform delete")
+        cmd = "cd %s  && terraform destroy -auto-approve " \
+              "-input=false -state=terraform.tfstate -state-out=terraform.tfstate " \
+              "-var-file=terraform.tfvars.json" % consts.TF_FOLDER
         utils.run_command_with_output(cmd)
     except:
-        print("Failed to run terraform delete")
+        log.exception("Failed to run terraform delete, deleting %s", consts.TF_FOLDER)
+        shutil.rmtree(consts.TF_FOLDER)
     finally:
         virsh_cleanup.clean_virsh_resources(virsh_cleanup.DEFAULT_SKIP_LIST,
                                             [tfvars.get("cluster_name", consts.TEST_INFRA),
@@ -36,7 +40,7 @@ def delete_nodes(tfvars):
 
 # Deletes every single virsh resource, leaves only defaults
 def delete_all():
-    print("Deleting all virsh resources")
+    log.info("Deleting all virsh resources")
     virsh_cleanup.clean_virsh_resources(virsh_cleanup.DEFAULT_SKIP_LIST, None)
 
 
@@ -50,7 +54,7 @@ def main():
                 try_to_delete_cluster(tfvars)
             delete_nodes(tfvars)
         except:
-            print("Failed to delete nodes")
+            log.error("Failed to delete nodes")
 
 
 if __name__ == "__main__":

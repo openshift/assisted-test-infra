@@ -1,13 +1,18 @@
 import logging
-import atexit
+import sys
 
-logger = logging.getLogger("Assisted-Test-Infra")  # pylint: disable=invalid-name
-FORMATTER = logging.Formatter('%(asctime)s %(levelname)-10s [%(name)s] %(message)s')
-CONSOLE_HANDLER = logging.StreamHandler()
-CONSOLE_HANDLER.setFormatter(FORMATTER)
-logger.addHandler(CONSOLE_HANDLER)
-FILE_HANDLER = logging.FileHandler(filename="test_infra.log")
-atexit.register(FILE_HANDLER.close)
-FILE_HANDLER.setFormatter(logging.Formatter('%(asctime)s %(levelname)-10s %(message)s \t'
-                                            '(%(pathname)s:%(lineno)d)'))
-logger.addHandler(FILE_HANDLER)
+logging.getLogger("requests").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+
+log = logging.getLogger('')
+log.setLevel(logging.DEBUG)
+format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)-10s %(message)s \t'
+                                  '(%(pathname)s:%(lineno)d)'))
+log.addHandler(ch)
+
+fh = logging.FileHandler(filename="test_infra.log")
+fh.setFormatter(format)
+log.addHandler(fh)
