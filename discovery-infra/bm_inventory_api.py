@@ -52,11 +52,11 @@ class InventoryClient(object):
 
     def generate_image(self, cluster_id, ssh_key, proxy_ip=None, proxy_port=None):
         print("Generating image for cluster", cluster_id)
-        image_create_params = {"ssh_public_key": ssh_key}
+        image_create_params = {"sshPublicKey": ssh_key}
         if proxy_ip:
-            image_create_params["proxy_ip"] = proxy_ip
+            image_create_params["proxyIp"] = proxy_ip
         if proxy_port:
-            image_create_params["proxy_port"] = proxy_port
+            image_create_params["proxyPort"] = proxy_port
         return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
 
     def download_image(self, cluster_id, image_path, image_id):
