@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function destroy_all() {
-    /usr/local/bin/skipper make destroy
+    make destroy
 }
 
 function set_dns() {
@@ -38,7 +38,7 @@ function wait_for_cluster() {
 
 #TODO ADD ALL RELEVANT OS ENVS
 function run() {
-  /usr/local/bin/skipper make $1 NUM_MASTERS=$NUM_MASTERS NUM_WORKERS=$NUM_WORKERS KUBECONFIG=$PWD/minikube_kubeconfig BASE_DOMAIN=$BASE_DOMAIN CLUSTER_NAME=$CLUSTER_NAME
+  make $1 NUM_MASTERS=$NUM_MASTERS NUM_WORKERS=$NUM_WORKERS KUBECONFIG=$PWD/minikube_kubeconfig BASE_DOMAIN=$BASE_DOMAIN CLUSTER_NAME=$CLUSTER_NAME
   retVal=$?
   if ! [ $retVal -ne 0 ] && [ "$1" = "run_full_flow_with_install" ]; then
     wait_for_cluster
@@ -47,7 +47,7 @@ function run() {
 
 
 function run_skipper_make_command() {
-    /usr/local/bin/skipper make $1
+    make $1
 }
 
 

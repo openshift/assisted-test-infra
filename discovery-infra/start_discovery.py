@@ -49,7 +49,7 @@ def create_nodes(image_path, storage_path, master_count, nodes_details):
     log.info("Creating tfvars")
     fill_tfvars(image_path, storage_path, master_count, nodes_details)
     log.info("Start running terraform")
-    cmd = "make run_terraform"
+    cmd = "make run_terraform_from_skipper"
     return utils.run_command(cmd)
 
 
