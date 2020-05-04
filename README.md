@@ -21,7 +21,7 @@ make create_full_environment
 This will install required packages, configure libvirt, pull relevant docker images, and start Minikube.
 
 ## Usage
-There are different options to use test-infra, which can be found in the Makefile. Note that some make targets require `skipper`.
+There are different options to use test-infra, which can be found in the Makefile.
 
 ## Full flow cases
 The following is a list of stages that will be run:
@@ -41,7 +41,7 @@ The following is a list of stages that will be run:
 ### Run full flow with install
 To run the full flow, including installation:
 ```bash
-skipper make run_full_flow_with_install
+make run_full_flow_with_install
 ```
 Or to run it together with create_full_environment (requires sudo password):
 ````bash
@@ -50,22 +50,22 @@ make all
 ### Run full flow without install
 To run the flow without the installation stage:
 ```bash
-skipper make run_full_flow
+make run_full_flow
 ```
 
 ### Run only deploy nodes (without pre deploy of all assisted service)
 ```bash
-skipper make deploy_nodes or skipper make deploy_nodes_with_install
+make deploy_nodes or make deploy_nodes_with_install
 ```
 
 ### Redeploy nodes
 ```bash
-skipper make redeploy_nodes or skipper make redeploy_nodes_with_install
+make redeploy_nodes or make redeploy_nodes_with_install
 ```
 
 ### Redeploy with assisted services
 ```bash
-skipper make redeploy_all or skipper make redeploy_all_with_install
+make redeploy_all or make redeploy_all_with_install
 ```
 
 ## Cleaning
@@ -73,16 +73,52 @@ Cleaning test-infra environment.
 
 ### Clean all include minikube
 ```bash
-skipper make destroy
+make destroy
 ```
 
 ### Clean nodes only
 ```bash
-skipper make destroy_nodes
+make destroy_nodes
 ```
 
 ### Delete all virsh resources
 Sometimes you may need to delete all libvirt resources
 ```bash
-skipper make delete_all_virsh_resources
+make delete_all_virsh_resources
 ```
+
+### Install cluster
+Install cluster after nodes were deployed. Can take ClusterId as os env
+```bash
+make install_cluster 
+```
+
+### Wait for cluster to be installed
+```bash
+make wait_for_cluster
+```
+
+### Create cluster and download iso
+```bash
+make download_iso
+```
+
+## OS params used for configurations
+~~~~
+BMI_BRANCH         bm-inventory branch to use, default is master
+IMAGE              path to iso to spawn vm with, if set vms will be spawn with this iso without creating cluster
+NUM_MASTERS        number of vms to spawn as masters, default is 3 
+WORKER_MEMORY      memory for worker vm, default 8892mb
+MASTER_MEMORY      memory for master vm 16984
+NUM_WORKERS        number of vms to spawn as workerm default 0
+SSH_PUB_KEY        ssh public key to use for image generation, gives option to ssh to vms, default is in ssh_key/key_pub
+PULL_SECRET        pull secret to use for cluster installation command, no option to install cluster without it.
+CLUSTER_NAME       cluster name, used as prefix for virsh resources, default test-infra-cluster)
+BASE_DOMAIN        base domain, needed for dns name, default redhat
+NETWORK_CIDR       network cidr to use for virsh vm network, default "192.168.126.0/24"
+CLUSTER_ID         cluster id , used for install_cluster command, default will be the last spawned cluster
+NETWORK_NAME       virsh network name for vms creation, default test-infra-net
+NETWORK_BRIDGE     network bridge to use while creating virsh network, default tt0
+OPENSHIFT_VERSION  openshift version to install, default "4.4"
+PROXY_IP           proxy ip, used for download_iso target, proxy ip to pass on generating image
+PROXY_PORT         proxy port, used for download_iso target, proxy port to pass on generating image
