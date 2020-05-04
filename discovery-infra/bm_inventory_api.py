@@ -24,7 +24,7 @@ class InventoryClient(object):
                      expected_exceptions=Exception)
 
     def create_cluster(self, name, ssh_public_key=None, **cluster_params):
-        cluster = models.ClusterUpdateParams(name=name, ssh_public_key=ssh_public_key,  **cluster_params)
+        cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key,  **cluster_params)
         log.info("Creating cluster with params %s", cluster.__dict__)
         result = self.client.register_cluster(new_cluster_params=cluster)
         return result
