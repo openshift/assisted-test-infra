@@ -152,7 +152,8 @@ def main():
                                         **_cluster_create_params()
                                         )
 
-        client.generate_and_download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key)
+        client.generate_and_download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key,
+                                           proxy_ip=args.proxy_ip, proxy_port=args.proxy_port)
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
@@ -184,6 +185,9 @@ if __name__ == "__main__":
     parser.add_argument('-nB', '--network-bridge', help="Network bridge to use", type=str, default="tt0")
     parser.add_argument('-iO', '--iso-only', help="Create cluster and download iso, no need to spawn cluster",
                         action="store_true")
+    parser.add_argument('-pI', '--proxy-ip', help="Proxy ip to pass to inventory cluster", type=str, default="")
+    parser.add_argument('-pP', '--proxy-port', help="Proxy port to pass to inventory cluster", type=int, default=0)
+
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:
         raise Exception("Can't install cluster without pull secret, please provide one")
