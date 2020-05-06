@@ -51,13 +51,12 @@ class InventoryClient(object):
                 f.write(chunk)
         progress.close()
 
-    def generate_image(self, cluster_id, ssh_key, proxy_ip=None, proxy_port=None):
+    def generate_image(self, cluster_id, ssh_key, proxy_url=None):
         log.info("Generating image for cluster %s", cluster_id)
         image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key)
-        if proxy_ip:
-            image_create_params.proxy_ip = proxy_ip
-        if proxy_port:
-            image_create_params.proxy_port = proxy_port
+        if proxy_url:
+            image_create_params.proxy_url = proxy_url
+        log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
 
     def download_image(self, cluster_id, image_path, image_id):
@@ -66,8 +65,8 @@ class InventoryClient(object):
                                                     _preload_content=False)
         self._download(response=response, file_path=image_path)
 
-    def generate_and_download_image(self, cluster_id, ssh_key, image_path, proxy_ip=None, proxy_port=None):
-        image = self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, proxy_ip=proxy_ip, proxy_port=proxy_port)
+    def generate_and_download_image(self, cluster_id, ssh_key, image_path, proxy_url=None):
+        image = self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, proxy_url=proxy_url)
         self.download_image(cluster_id=cluster_id, image_path=image_path, image_id=image.image_id)
 
     def set_hosts_roles(self, cluster_id, hosts_with_roles):

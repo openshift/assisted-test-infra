@@ -21,8 +21,7 @@ IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
 NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
 OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), "4.4")
-PROXY_IP := $(or $(PROXY_IP), "")
-PROXY_PORT := $(or $(PROXY_PORT), 0)
+PROXY_URL := $(or $(PROXY_URL), "")
 
 .EXPORT_ALL_VARIABLES:
 
@@ -150,7 +149,7 @@ redeploy_all_with_install: destroy  run_full_flow_with_install
 redeploy_all: destroy run_full_flow
 
 _download_iso:
-	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pI $(PROXY_IP) -pP $(PROXY_PORT) -iO
+	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iO
 
 download_iso: run
 	skipper make _download_iso
