@@ -135,7 +135,7 @@ create_inventory_client: bring_bm_inventory
 delete_all_virsh_resources: destroy_nodes delete_minikube
 	skipper run 'discovery-infra/delete_nodes.py -a'
 
-build_and_push_image:
+build_and_push_image: create_inventory_client
 	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
 	$(CONTAINER_COMMAND) tag  $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_REG_NAME):$(IMAGE_TAG)
 	$(CONTAINER_COMMAND)  push $(IMAGE_REG_NAME):$(IMAGE_TAG)
