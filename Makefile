@@ -137,9 +137,9 @@ delete_all_virsh_resources: destroy_nodes delete_minikube
 	skipper run 'discovery-infra/delete_nodes.py -a'
 
 build_and_push_image:
-	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
 	$(CONTAINER_COMMAND) tag  $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_REG_NAME):$(IMAGE_TAG)
-	$(CONTAINER_COMMAND)  push $(IMAGE_REG_NAME)
+	$(CONTAINER_COMMAND)  push $(IMAGE_REG_NAME):$(IMAGE_TAG)
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
