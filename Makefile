@@ -118,6 +118,7 @@ _deploy_bm_inventory: bring_bm_inventory
 	make -C bm-inventory/ deploy-all
 
 deploy_bm_inventory:
+	mkdir -p bm-inventory/build
 	skipper make _deploy_bm_inventory
 
 bring_bm_inventory:
@@ -153,3 +154,12 @@ _download_iso:
 
 download_iso: run
 	skipper make _download_iso
+
+deploy_bm_inventory_with_external_ip:
+	scripts/external_bm_inventory.sh
+
+download_iso_for_remote_use: deploy_bm_inventory_with_external_ip
+	skipper make _download_iso
+
+deploy_ui: run
+	scripts/deploy_ui.sh
