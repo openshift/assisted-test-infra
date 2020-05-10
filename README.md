@@ -118,10 +118,15 @@ make deploy_bm_inventory_with_external_ip
 make download_iso_for_remote_use
 ```
 
-### Deploy ui and and open port forwarding on port 6008, allows to connect to it from browser
+### start_minikube and Deploy ui and and open port forwarding on port 6008, allows to connect to it from browser
 ```bash
-mae deploy_ui
+make deploy_ui
 ```
+### Kill all open port forwarding commands, will be part of destroy target
+```bash
+make kill_all_port_forwardings
+```
+
 
 ## OS params used for configurations
 ~~~~
