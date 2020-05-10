@@ -12,9 +12,9 @@ class InventoryClient(object):
     def __init__(self, inventory_url):
         self.inventory_url = inventory_url
         configs = Configuration()
-        configs.host = self.inventory_url + "/api/bm-inventory/v1"
+        configs.host = self.inventory_url + "/api/assisted-install/v1"
         self.api = ApiClient(configuration=configs)
-        self.client = api.InventoryApi(api_client=self.api)
+        self.client = api.InstallerApi(api_client=self.api)
 
     def wait_for_api_readiness(self):
         log.info("Waiting for inventory api to be ready")

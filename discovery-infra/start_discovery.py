@@ -81,7 +81,7 @@ def set_hosts_roles(client, cluster_id):
     inventory_hosts = client.get_cluster_hosts(cluster_id)
     assert len(libvirt_macs) == len(inventory_hosts)
     for host in inventory_hosts:
-        hw = json.loads(host["hardwareInfo"])
+        hw = json.loads(host["hardware_info"])
         role = [libvirt_macs[nic["mac"]]["role"] for nic in hw["nics"] if nic["mac"].lower() in libvirt_macs][0]
         hosts.append({"id": host["id"], "role": role})
     if hosts:
