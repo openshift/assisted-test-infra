@@ -11,6 +11,8 @@ export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
 export UI_DEPLOY_FILE=build/ui_deploy.yaml
 export UI_SERVICE_NAME=ocp-metal-ui
 
+mkdir -p build
+
 echo "Starting ui"
 ${CONTAINER_COMMAND} run --rm quay.io/ocpmetal/ocp-metal-ui:latest /deploy/deploy_config.sh -i quay.io/ocpmetal/ocp-metal-ui:latest > ${UI_DEPLOY_FILE}
 kubectl --kubeconfig=${KUBECONFIG} apply -f ${UI_DEPLOY_FILE}
