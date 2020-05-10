@@ -103,6 +103,26 @@ make wait_for_cluster
 make download_iso
 ```
 
+### Deploy bm-inventory with external ip and open port forwarding on port 6000
+```bash
+make deploy_bm_inventory_with_external_ip
+```
+
+### Deploy bm-inventory with external ip and open port forwarding on port 6000
+```bash
+make deploy_bm_inventory_with_external_ip
+```
+
+### deploy_bm_inventory_with_external_ip and Create cluster and download iso
+```bash
+make download_iso_for_remote_use
+```
+
+### Deploy ui and and open port forwarding on port 6008, allows to connect to it from browser
+```bash
+mae deploy_ui
+```
+
 ## OS params used for configurations
 ~~~~
 BMI_BRANCH         bm-inventory branch to use, default is master
