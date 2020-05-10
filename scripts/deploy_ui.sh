@@ -8,7 +8,7 @@ export UI_PORT=${UI_PORT:-6008}
 export UI_INTERNAL_PORT=80
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
-export UI_DEPLOY_FILE=ui_deploy.yaml
+export UI_DEPLOY_FILE=build/ui_deploy.yaml
 export UI_SERVICE_NAME=ocp-metal-ui
 
 echo "Starting ui"
@@ -25,7 +25,7 @@ wait_for_url_and_run "$(minikube service ${UI_SERVICE_NAME} --url)" "echo \"wait
 
 echo "starting port forwarding for deployment/${UI_SERVICE_NAME}"
 
-wait_for_url_and_run "http://${NODE_IP}:${UI_PORT}" "spawn_port_forwarding_command ${UI_PORT} ${UI_INTERNAL_PORT} deployment/ocp-metal-ui"
+wait_for_url_and_run "http://${NODE_IP}:${UI_PORT}" "spawn_port_forwarding_command ${UI_PORT} ${UI_INTERNAL_PORT} ${UI_SERVICE_NAME}"
 
 echo "OCP METAL UI can be reached at http://${NODE_IP}:${UI_PORT}"
 

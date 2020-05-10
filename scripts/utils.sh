@@ -21,7 +21,12 @@ function run_in_background() {
 
 function kill_portforwarding_loop() {
   kill -9 $(ps aux | grep "port_forwarding_loop.sh $1 $2 $3" | grep -v grep | awk '{print $2}') || true
-  kill -9 $(ps aux | grep "kubectl --kubeconfig=${KUBECONFIG} port-forward $3 $1:$2" | grep -v grep | awk '{print $2}') || true
+  kill -9 $(ps aux | grep "kubectl --kubeconfig=${KUBECONFIG} port-forward | grep $3" | grep -v grep | awk '{print $2}') || true
+}
+
+function kill_all_port_forwardings() {
+  kill -9 $(ps aux | grep "port_forwarding_loop" | grep -v grep | awk '{print $2}') || true
+  kill -9 $(ps aux | grep "port-forward" | grep -v grep | awk '{print $2}') || true
 }
 
 function get_main_ip() {
@@ -52,3 +57,5 @@ function wait_for_url_and_run() {
       exit 1
     fi
 }
+
+"$@"

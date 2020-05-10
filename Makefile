@@ -110,7 +110,10 @@ deploy_nodes:
 destroy_nodes:
 	skipper run discovery-infra/delete_nodes.py
 
-destroy: destroy_nodes delete_minikube
+kill_all_port_forwardings:
+	scripts/utils.sh kill_all_port_forwardings
+
+destroy: destroy_nodes delete_minikube kill_all_port_forwardings
 	rm -rf build/terraform/*
 
 _deploy_bm_inventory: bring_bm_inventory
@@ -161,5 +164,5 @@ deploy_bm_inventory_with_external_ip:
 download_iso_for_remote_use: deploy_bm_inventory_with_external_ip
 	skipper make _download_iso
 
-deploy_ui: run
+deploy_ui: start_minikube
 	scripts/deploy_ui.sh

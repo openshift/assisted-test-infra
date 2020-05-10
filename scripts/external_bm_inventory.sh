@@ -24,7 +24,7 @@ wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url)" "echo \"waiting
 
 echo "starting port forwarding for deployment/${SERVICE_NAME}"
 
-wait_for_url_and_run "http://${INVENTORY_URL}:${INVENTORY_PORT}" "spawn_port_forwarding_command ${INVENTORY_PORT} ${INVENTORY_INTERNAL_PORT} deployment/${SERVICE_NAME}"
+wait_for_url_and_run "http://${INVENTORY_URL}:${INVENTORY_PORT}" "spawn_port_forwarding_command ${INVENTORY_PORT} ${INVENTORY_INTERNAL_PORT} ${SERVICE_NAME}"
 
 echo "${SERVICE_NAME} can be reached at http://${INVENTORY_URL}:${INVENTORY_PORT} "
 
