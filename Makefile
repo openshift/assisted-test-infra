@@ -85,9 +85,9 @@ destroy_terraform:
 
 run: start_minikube deploy_bm_inventory
 
-run_full_flow: run deploy_nodes
+run_full_flow: run deploy_nodes set_dns
 
-run_full_flow_with_install: run deploy_nodes_with_install
+run_full_flow_with_install: run deploy_nodes_with_install set_dns
 
 install_cluster:
 	skipper run 'discovery-infra/install_cluster.py -id $(CLUSTER_ID)'
