@@ -152,7 +152,7 @@ redeploy_all: destroy run_full_flow
 _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iO
 
-download_iso: run
+download_iso:
 	skipper make _download_iso
 
 deploy_bm_inventory_with_external_ip:
