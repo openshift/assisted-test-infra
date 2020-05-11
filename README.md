@@ -181,3 +181,13 @@ make redeploy_all INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to t
 or 
 export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test>  SERVICE=<image to test> && make wait_for_cluster 
 ```
+# Test infra image
+
+## Create and push new image will create new bm-inventory client, build new image and push image
+```bash
+make build_and_push_image IMAGE_NAME=<your full image path> IMAGE_TAG=<default is latest>
+```
+## Use new image, will pull image from hub, check that image is public, if tag is not latest update skipper yaml
+```bash
+make image_build IMAGE_NAME=<your image> IMAGE_TAG=<default is latest>
+```
