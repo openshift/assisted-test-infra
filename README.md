@@ -145,5 +145,39 @@ CLUSTER_ID         cluster id , used for install_cluster command, default will b
 NETWORK_NAME       virsh network name for vms creation, default test-infra-net
 NETWORK_BRIDGE     network bridge to use while creating virsh network, default tt0
 OPENSHIFT_VERSION  openshift version to install, default "4.4"
-PROXY_IP           proxy ip, used for download_iso target, proxy ip to pass on generating image
-PROXY_PORT         proxy port, used for download_iso target, proxy port to pass on generating image
+PROXY_URL:         proxy url that will be pass to live cd image
+INVENTORY_URL:     update bm-inventory config map INVENTORY_URL param with given url
+INVENTORY_PORT:    update bm-inventory config map INVENTORY_PORT with given port
+AGENT_DOCKER_IMAGE: agent docker image to use, will update bm-inventory config map with given value
+INSTALLER_IMAGE:    assisted-installer image to use, will update bm-inventory config map with given value
+SERVICE:            bm-inventory image to use
+
+~~~~
+
+## Test bm-inventory image
+```bash
+make redeploy_all SERVICE=<image to test>
+or 
+export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install SERVICE=<image to test> && make wait_for_cluster
+```
+
+## Test agent image
+```bash
+make redeploy_all AGENT_DOCKER_IMAGE=<image to test> 
+or
+make redeploy_all_with_install AGENT_DOCKER_IMAGE=<image to test> && make wait_for_cluster
+```
+
+## Test installer image
+```bash
+make redeploy_all INSTALLER_IMAGE=<image to test> 
+or
+export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> && make wait_for_cluster
+```
+
+## Test installer, bm-inventory and agent images in the same flow
+```bash
+make redeploy_all INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
+or 
+export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test>  SERVICE=<image to test> && make wait_for_cluster 
+```
