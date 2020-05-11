@@ -117,11 +117,11 @@ destroy: destroy_nodes delete_minikube kill_all_port_forwardings
 	rm -rf build/terraform/*
 
 _deploy_bm_inventory: bring_bm_inventory
+	mkdir -p bm-inventory/build
 	discovery-infra/update_bm_inventory_cm.py
 	make -C bm-inventory/ deploy-all
 
 deploy_bm_inventory:
-	mkdir -p bm-inventory/build
 	skipper make _deploy_bm_inventory
 
 bring_bm_inventory:
