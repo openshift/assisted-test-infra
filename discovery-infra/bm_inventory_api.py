@@ -71,7 +71,7 @@ class InventoryClient(object):
 
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
         log.info("Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id)
-        hosts = {"hostsRoles": hosts_with_roles}
+        hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles)
         return self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=hosts)
 
     def update_cluster(self, cluster_id, update_params):

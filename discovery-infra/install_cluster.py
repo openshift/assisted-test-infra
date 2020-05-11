@@ -23,7 +23,9 @@ def _verify_kube_download_folder(kubeconfig_path):
 # 4. Downloads kubeconfig for future usage
 def run_install_flow(client, cluster_id, kubeconfig_path):
     log.info("Verifying cluster exists")
-    client.cluster_get(cluster_id)
+    cluster = client.cluster_get(cluster_id)
+    if not cluster.pull_secret:
+        raise Exception("Can't install cluster %s, no pull secret was set" % cluster_id)
     log.info("Install cluster %s", cluster_id)
     cluster = client.install_cluster(cluster_id=cluster_id)
     utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster_id,
