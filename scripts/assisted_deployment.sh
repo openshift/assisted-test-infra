@@ -40,7 +40,11 @@ function wait_for_cluster() {
 function run() {
   make $1 NUM_MASTERS=$NUM_MASTERS NUM_WORKERS=$NUM_WORKERS KUBECONFIG=$PWD/minikube_kubeconfig BASE_DOMAIN=$BASE_DOMAIN CLUSTER_NAME=$CLUSTER_NAME
   retVal=$?
-  if ! [ $retVal -ne 0 ] && [ "$1" = "run_full_flow_with_install" ]; then
+  echo retVal
+  if [ $retVal -ne 0 ]; then
+    exit $retVal
+  fi
+  if [ "$1" = "run_full_flow_with_install" ]; then
     wait_for_cluster
   fi
 }
@@ -48,6 +52,11 @@ function run() {
 
 function run_skipper_make_command() {
     make $1
+    retVal=$?
+    echo retVal
+    if [ $retVal -ne 0 ]; then
+      exit $retVal
+    fi
 }
 
 
