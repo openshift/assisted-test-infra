@@ -1,6 +1,6 @@
 
 BMI_BRANCH ?= master
-IMAGE ?= ""
+IMAGE ?= $(or $(IMAGE), "")
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
 WORKER_MEMORY ?= 8892
 MASTER_MEMORY ?= 16984
@@ -39,7 +39,7 @@ create_full_environment:
 
 create_environment:
 	$(MAKE) image_build
-	skipper make bring_bm_inventory
+	/usr/local/bin/skipper make bring_bm_inventory
 	$(MAKE) start_minikube
 
 clean:
@@ -55,7 +55,7 @@ start_minikube:
 
 delete_minikube:
 	minikube delete
-	skipper run discovery-infra/virsh_cleanup.py -m
+	/usr/local/bin/skipper run discovery-infra/virsh_cleanup.py -m
 
 copy_terraform_files:
 	mkdir -p build/terraform
@@ -65,23 +65,23 @@ copy_terraform_files:
 	fi
 
 create_network: copy_terraform_files
-	skipper run "cd build/terraform/network && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=../terraform.tfvars.json"
+	/usr/local/bin/skipper run "cd build/terraform/network && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=../terraform.tfvars.json"
 
 destroy_network:
-	skipper run "cd build/terraform/network  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=../terraform.tfvars.json" || echo "Failed cleanup network"
+	/usr/local/bin/skipper run "cd build/terraform/network  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=../terraform.tfvars.json" || echo "Failed cleanup network"
 
 run_terraform_from_skipper:
 		cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 run_terraform: copy_terraform_files
-	skipper make run_terraform_from_skippe
+	/usr/local/bin/skipper make run_terraform_from_skippe
 
 _destroy_terraform:
 	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
 	discovery-infra/virsh_cleanup.py -f test-infra
 
 destroy_terraform:
-	skipper make _destroy_terraform
+	/usr/local/bin/skipper make _destroy_terraform
 
 run: start_minikube deploy_bm_inventory
 
@@ -90,7 +90,7 @@ run_full_flow: run deploy_nodes set_dns
 run_full_flow_with_install: run deploy_nodes_with_install set_dns
 
 install_cluster:
-	skipper run 'discovery-infra/install_cluster.py -id $(CLUSTER_ID)'
+	/usr/local/bin/skipper run 'discovery-infra/install_cluster.py -id $(CLUSTER_ID)'
 
 wait_for_cluster:
 	scripts/assisted_deployment.sh wait_for_cluster
@@ -102,13 +102,13 @@ _deploy_nodes:
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) $(ADDITIONAL_PARMS)
 
 deploy_nodes_with_install:
-	skipper make _deploy_nodes ADDITIONAL_PARMS=-in
+	/usr/local/bin/skipper make _deploy_nodes ADDITIONAL_PARMS=-in
 
 deploy_nodes:
-	skipper make _deploy_nodes
+	/usr/local/bin/skipper make _deploy_nodes
 
 destroy_nodes:
-	skipper run discovery-infra/delete_nodes.py
+	/usr/local/bin/skipper run discovery-infra/delete_nodes.py
 
 kill_all_port_forwardings:
 	scripts/utils.sh kill_all_port_forwardings
@@ -122,7 +122,7 @@ _deploy_bm_inventory: bring_bm_inventory
 	make -C bm-inventory/ deploy-all
 
 deploy_bm_inventory:
-	skipper make _deploy_bm_inventory
+	/usr/local/bin/skipper make _deploy_bm_inventory
 
 bring_bm_inventory:
 	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
@@ -137,7 +137,7 @@ create_inventory_client: bring_bm_inventory
 	docker run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro -v $(PWD)/build/code-gen-config.json:/config.json:ro jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
-	skipper run 'discovery-infra/delete_nodes.py -a'
+	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a'
 
 build_and_push_image: create_inventory_client
 	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
@@ -156,13 +156,13 @@ _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iO
 
 download_iso:
-	skipper make _download_iso
+	/usr/local/bin/skipper make _download_iso
 
 deploy_bm_inventory_with_external_ip:
 	scripts/external_bm_inventory.sh
 
 download_iso_for_remote_use: deploy_bm_inventory_with_external_ip
-	skipper make _download_iso
+	/usr/local/bin/skipper make _download_iso
 
 deploy_ui: start_minikube
 	scripts/deploy_ui.sh
