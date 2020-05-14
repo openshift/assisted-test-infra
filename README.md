@@ -13,7 +13,14 @@ export PULL_SECRET='<pull secret json>'
 
 # Instructions
 
+
 ## Host preparation
+Beaker node:
+```bash
+dnf install -y git make
+cd /home/test # don't do it on /root it will breaks build image mounts and fail to run
+git clone https://github.com/tsorya/test-infra.git
+```
 When using this infra for the first time on a host, run:
 ```bash
 make create_full_environment
