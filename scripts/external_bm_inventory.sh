@@ -16,11 +16,11 @@ sudo firewall-cmd --reload
 echo "Starting make run, will start ${SERVICE_NAME}"
 make run
 
-echo "wait till b"
-kubectl rollout restart deployment/${SERVICE_NAME}
+echo "Rollout ${SERVICE_NAME}"
+kubectl rollout restart deployment/${SERVICE_NAME} -n assisted-installer
 
 echo "wait till ${SERVICE_NAME} api is ready"
-wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url)" "echo \"waiting for ${SERVICE_NAME}\""
+wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url -n assisted-installer)" "echo \"waiting for ${SERVICE_NAME}\""
 
 echo "starting port forwarding for deployment/${SERVICE_NAME}"
 
