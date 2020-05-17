@@ -1,5 +1,5 @@
 
-BMI_BRANCH ?= master
+BMI_BRANCH := $(or $(BMI_BRANCH), "master")
 IMAGE := $(or $(IMAGE), "")
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
 WORKER_MEMORY ?= 8892
