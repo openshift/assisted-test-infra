@@ -3,3 +3,4 @@ waiting
 retry
 tqdm
 pyyaml
+boto3
