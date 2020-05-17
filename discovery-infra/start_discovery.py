@@ -88,6 +88,14 @@ def set_hosts_roles(client, cluster_id):
         client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts)
 
 
+def _create_vips_ips():
+    network_subnet_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(
+        args["machine_cidr"]).network_address) + 100)
+    ips = _create_ip_address_list(3, starting_ip_addr=str(
+        ipaddress.ip_address(network_subnet_starting_ip)))
+    return {"api_vip": ips[0], "dns_vip": ips[1], "ingress_vip": ips[2]}
+
+
 # TODO add config file
 # Converts params from args to bm-inventory cluster params
 def _cluster_create_params():
@@ -96,10 +104,9 @@ def _cluster_create_params():
               "cluster_network_cidr": args.cluster_network,
               "cluster_network_host_prefix":  args.host_prefix,
               "service_network_cidr": args.service_network,
-              # "api_vip": "example.com",
-              # "dns_vip": "example.com",
-              # "ingress_vip": "example.com",
               "pull_secret": args.pull_secret}
+    if args.run_with_vips:
+        params.update(_create_vips_ips())
     return params
 
 
@@ -156,7 +163,7 @@ def main():
                                            proxy_url=args.proxy_url)
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
-    if not args.iso_only:
+    if not args.iso_only == "yes":
         nodes_flow(client, cluster_name, cluster)
 
 
@@ -186,6 +193,8 @@ if __name__ == "__main__":
     parser.add_argument('-iO', '--iso-only', help="Create cluster and download iso, no need to spawn cluster",
                         action="store_true")
     parser.add_argument('-pU', '--proxy-url', help="Proxy url to pass to inventory cluster", type=str, default="")
+    parser.add_argument('-rv', '--run-with-vips', help="Run cluster create with adding vips "
+                                                       "from the same subnet as vms", type=str, default="no")
 
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:

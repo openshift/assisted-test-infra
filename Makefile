@@ -22,6 +22,7 @@ NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
 NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
 OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.4)
 PROXY_URL := $(or $(PROXY_URL), "")
+RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "no")
 
 .EXPORT_ALL_VARIABLES:
 
@@ -99,7 +100,7 @@ set_dns:
 	scripts/assisted_deployment.sh	set_dns
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) $(ADDITIONAL_PARMS)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) $(ADDITIONAL_PARMS)
 
 deploy_nodes_with_install:
 	/usr/local/bin/skipper make _deploy_nodes ADDITIONAL_PARMS=-in
