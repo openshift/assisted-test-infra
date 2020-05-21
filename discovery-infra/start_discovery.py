@@ -105,7 +105,7 @@ def _cluster_create_params():
               "cluster_network_host_prefix":  args.host_prefix,
               "service_network_cidr": args.service_network,
               "pull_secret": args.pull_secret}
-    if args.run_with_vips:
+    if args.run_with_vips == "yes":
         params.update(_create_vips_ips())
     return params
 
