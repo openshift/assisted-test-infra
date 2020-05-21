@@ -90,7 +90,7 @@ def set_hosts_roles(client, cluster_id):
 
 def _create_vips_ips():
     network_subnet_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(
-        args["machine_cidr"]).network_address) + 100)
+        args.vm_network_cidr).network_address) + 100)
     ips = _create_ip_address_list(3, starting_ip_addr=str(
         ipaddress.ip_address(network_subnet_starting_ip)))
     return {"api_vip": ips[0], "dns_vip": ips[1], "ingress_vip": ips[2]}
