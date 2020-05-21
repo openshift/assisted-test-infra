@@ -135,7 +135,7 @@ create_inventory_client: bring_bm_inventory
 	mkdir -p build
 	echo '{"packageName" : "bm_inventory_client", "packageVersion": "1.0.0"}' > build/code-gen-config.json
 	sed -i '/pattern:/d' $(PWD)/bm-inventory/swagger.yaml
-	docker run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro -v $(PWD)/build/code-gen-config.json:/config.json:ro jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
+	$(CONTAINER_COMMAND) run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro -v $(PWD)/build/code-gen-config.json:/config.json:ro jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
 	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a'
