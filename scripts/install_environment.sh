@@ -1,3 +1,4 @@
+set -euxo pipefail
 
 function install_libvirt() {
   if ! [ -x "$(command -v virsh)" ]; then
@@ -19,14 +20,12 @@ function install_libvirt() {
 
 function install_runtime_container() {
   if ! [ -x "$(command -v docker)" ] && ! [ -x "$(command -v podman)" ]; then
-  dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
-	dnf install docker-ce --nobest -y
-	systemctl enable --now docker
-elif [ -x "$(command -v podman)" ]; then
-  dnf install podman -y
-else
-  echo "docker or podman is already installed"
-fi
+    dnf install podman-1.6.4 -y
+  elif [ -x "$(command -v podman)" ]; then
+    dnf install podman-1.6.4 -y
+  else
+    echo "docker or podman is already installed"
+  fi
 }
 
 function install_packages(){
@@ -43,5 +42,4 @@ install_runtime_container
 install_skipper
 systemctl restart libvirtd
 touch ~/.gitconfig
-#setfacl -R -m u:qemu:rwx storage_pool
 chmod ugo+rx "$(dirname "$(pwd)")"

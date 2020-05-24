@@ -35,7 +35,7 @@ fi
 function install_oc() {
   if ! [ -x "$(command -v oc)" ]; then
     echo "Installing oc..."
-    curl -Lo oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/oc/${OPENSHIFT_VERSION:-4.4}/linux/oc.tar.gz && tar -C /usr/local/bin -xf oc.tar.gz && rm -f oc.tar.gz
+    curl -Lo oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/oc/${OPENSHIFT_VERSION:-4.5}/linux/oc.tar.gz && tar -C /usr/local/bin -xf oc.tar.gz && rm -f oc.tar.gz
   else
     echo "oc is already installed"
   fi
