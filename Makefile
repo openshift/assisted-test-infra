@@ -7,7 +7,7 @@ MASTER_MEMORY ?= 16984
 NUM_WORKERS := $(or $(NUM_WORKERS),0)
 STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
-PULL_SECRET :=  $(or $(PULL_SECRET),)
+PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 SHELL=/bin/sh
 CURRENT_USER=$(shell id -u $(USER))
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
@@ -25,6 +25,7 @@ PROXY_URL := $(or $(PROXY_URL), "")
 RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "yes")
 
 .EXPORT_ALL_VARIABLES:
+
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources _download_iso _deploy_bm_inventory _deploy_nodes  _destroy_terraform
 
