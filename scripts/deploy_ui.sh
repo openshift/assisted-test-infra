@@ -23,7 +23,7 @@ sudo firewall-cmd --zone=public --permanent --add-port=${UI_PORT}/tcp
 sudo firewall-cmd --reload
 
 echo "wait till ui api is ready"
-wait_for_url_and_run "$(minikube service ${UI_SERVICE_NAME} --url)" "echo \"waiting for ${UI_SERVICE_NAME}\""
+wait_for_url_and_run "$(minikube service ${UI_SERVICE_NAME} --url -n assisted-installer)" "echo \"waiting for ${UI_SERVICE_NAME}\""
 
 echo "starting port forwarding for deployment/${UI_SERVICE_NAME}"
 
