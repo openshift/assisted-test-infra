@@ -59,15 +59,15 @@ class InventoryClient(object):
         log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
 
-    def download_image(self, cluster_id, image_path, image_id):
+    def download_image(self, cluster_id, image_path):
         log.info("Downloading image for cluster %s to %s", cluster_id, image_path)
-        response = self.client.download_cluster_iso(cluster_id=cluster_id, image_id=image_id,
+        response = self.client.download_cluster_iso(cluster_id=cluster_id,
                                                     _preload_content=False)
         self._download(response=response, file_path=image_path)
 
     def generate_and_download_image(self, cluster_id, ssh_key, image_path, proxy_url=None):
-        image = self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, proxy_url=proxy_url)
-        self.download_image(cluster_id=cluster_id, image_path=image_path, image_id=image.image_id)
+        self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, proxy_url=proxy_url)
+        self.download_image(cluster_id=cluster_id, image_path=image_path)
 
     def set_hosts_roles(self, cluster_id, hosts_with_roles):
         log.info("Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id)
