@@ -14,7 +14,7 @@ export UI_SERVICE_NAME=ocp-metal-ui
 mkdir -p build
 
 echo "Starting ui"
-${CONTAINER_COMMAND} run --pull always --rm quay.io/ocpmetal/ocp-metal-ui:latest /deploy/deploy_config.sh -i quay.io/ocpmetal/ocp-metal-ui:latest > ${UI_DEPLOY_FILE}
+${CONTAINER_COMMAND} run --pull=always --rm quay.io/ocpmetal/ocp-metal-ui:latest /deploy/deploy_config.sh -i quay.io/ocpmetal/ocp-metal-ui:latest > ${UI_DEPLOY_FILE}
 kubectl --kubeconfig=${KUBECONFIG} apply -f ${UI_DEPLOY_FILE}
 
 echo "Config firewalld"
