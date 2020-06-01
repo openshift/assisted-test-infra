@@ -34,6 +34,10 @@ resource "libvirt_network" "net" {
 
   dns {
     local_only = true
+    hosts  {
+      ip = var.api_vip
+      hostname = "api.${var.cluster_name}.${var.cluster_domain}"
+    }
   }
 
   autostart = true

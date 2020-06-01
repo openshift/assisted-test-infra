@@ -59,9 +59,7 @@ delete_minikube:
 copy_terraform_files:
 	mkdir -p build/terraform
 	FILE=build/terraform/terraform.tfvars.json
-	@if [ ! -f "build/terraform/terraform.tfvars.json" ]; then\
-		cp -r terraform_files/* build/terraform/;\
-	fi
+	cp -r terraform_files/* build/terraform/;\
 
 run_terraform_from_skipper:
 		cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json

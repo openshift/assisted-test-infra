@@ -23,6 +23,10 @@ variable "cluster_domain" {
   description = "Cluster domain"
 }
 
+variable "api_vip" {
+  type        = string
+  description = "API VIP"
+}
 variable "machine_cidr" {
   type        = string
   description = "Cluster domain"

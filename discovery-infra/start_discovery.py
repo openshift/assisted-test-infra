@@ -36,6 +36,7 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
     tfvars["master_count"] = min(master_count, consts.NUMBER_OF_MASTERS)
     tfvars["libvirt_master_ips"] = _create_ip_address_list(min(master_count, consts.NUMBER_OF_MASTERS),
                                                            starting_ip_addr=network_subnet_starting_ip)
+    tfvars["api_vip"] = _get_vips_ips()[0]
     tfvars["libvirt_worker_ips"] = _create_ip_address_list(nodes_details["worker_count"], starting_ip_addr=str(
             ipaddress.ip_address(consts.STARTING_IP_ADDRESS) + tfvars["master_count"]))
     tfvars["libvirt_storage_pool_path"] = storage_path
@@ -89,13 +90,13 @@ def set_hosts_roles(client, cluster_id):
 
 def set_cluster_vips(client,cluster_id):
     cluster_info = client.cluster_get(cluster_id)
-    api_vip, ingress_vip = _create_vips_ips()
+    api_vip, ingress_vip = _get_vips_ips()
     cluster_info.api_vip = api_vip
     cluster_info.ingress_vip = ingress_vip
     client.update_cluster(cluster_id, cluster_info)
 
 
-def _create_vips_ips():
+def _get_vips_ips():
     network_subnet_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(
         args.vm_network_cidr).network_address) + 100)
     ips = _create_ip_address_list(2, starting_ip_addr=str(

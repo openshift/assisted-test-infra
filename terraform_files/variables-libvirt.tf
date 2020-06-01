@@ -68,6 +68,11 @@ variable "libvirt_worker_ips" {
   description = "the list of desired worker ips. Must match master_count"
 }
 
+variable "api_vip" {
+  type        = string
+  description = "the API virtual IP"
+}
+
 # It's definitely recommended to bump this if you can.
 variable "libvirt_master_memory" {
   type        = string
