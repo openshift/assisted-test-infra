@@ -97,8 +97,15 @@ class InventoryClient(object):
         with open(file_path, "wb") as _file:
             _file.write(response.data)
 
+    def download_kubeconfig_no_ingress(self, cluster_id, kubeconfig_path):
+        self.download_and_save_file(cluster_id=cluster_id, file_name="kubeconfig-noingress", file_path=kubeconfig_path)
+
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
-        self.download_and_save_file(cluster_id=cluster_id, file_name="kubeconfig", file_path=kubeconfig_path)
+        file_name = "kubeconfig"
+        log.info("Downloading %s to %s", file_name, kubeconfig_path)
+        response = self.client.download_cluster_kubeconfig(cluster_id=cluster_id, _preload_content=False)
+        with open(kubeconfig_path, "wb") as _file:
+            _file.write(response.data)
 
     def install_cluster(self, cluster_id):
         log.info("Installing cluster %s", cluster_id)

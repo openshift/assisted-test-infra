@@ -1,5 +1,6 @@
 import os
 import subprocess
+from pathlib import Path
 import shlex
 import waiting
 import json
@@ -94,3 +95,15 @@ def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, status):
         log.info("All nodes:")
         pprint.pprint(client.get_cluster_hosts(cluster_id))
         raise
+
+
+def folder_exists(file_path):
+    folder = Path(file_path).parent
+    if not folder:
+        log.warn("Directory %s doesn't exist. Please create it", folder)
+        return False
+    return True
+
+
+def file_exists(file_path):
+    return Path(file_path).exists()

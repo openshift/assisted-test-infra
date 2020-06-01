@@ -10,9 +10,7 @@ from logger import log
 
 # Verify folder to download kubeconfig exists. If will be needed in other places move to utils
 def _verify_kube_download_folder(kubeconfig_path):
-    kube_dir = Path(kubeconfig_path).parent
-    if not kube_dir:
-        log.error("Directory %s doesn't exist. Please create it", kube_dir)
+    if not utils.folder_exists(kubeconfig_path):
         exit(1)
 
 
@@ -32,7 +30,7 @@ def run_install_flow(client, cluster_id, kubeconfig_path):
                                             nodes_count=len(cluster.hosts), status=consts.NodesStatus.INSTALLING)
 
     log.info("Download kubeconfig")
-    client.download_kubeconfig(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path)
+    client.download_kubeconfig_no_ingress(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path)
 
 
 def main():
