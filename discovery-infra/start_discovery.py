@@ -14,6 +14,7 @@ import consts
 import bm_inventory_api
 import install_cluster
 from logger import log
+import time
 
 
 # Creates ip list, if will be needed in any other place, please move to utils
@@ -69,8 +70,6 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
                  sleep_seconds=5, waiting_for="Nodes to be registered in inventory service")
     log.info("Registered nodes are:")
     pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
-    utils.wait_till_all_hosts_are_in_status(client=inventory_client, cluster_id=cluster.id,
-                                            nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
 
 
 # Set nodes roles by vm name
@@ -88,12 +87,20 @@ def set_hosts_roles(client, cluster_id):
         client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts)
 
 
+def set_cluster_vips(client,cluster_id):
+    cluster_info = client.cluster_get(cluster_id)
+    api_vip, ingress_vip = _create_vips_ips()
+    cluster_info.api_vip = api_vip
+    cluster_info.ingress_vip = ingress_vip
+    client.update_cluster(cluster_id, cluster_info)
+
+
 def _create_vips_ips():
     network_subnet_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(
         args.vm_network_cidr).network_address) + 100)
     ips = _create_ip_address_list(2, starting_ip_addr=str(
         ipaddress.ip_address(network_subnet_starting_ip)))
-    return {"api_vip": ips[0], "ingress_vip": ips[1]}
+    return ips[0], ips[1]
 
 
 # TODO add config file
@@ -105,8 +112,6 @@ def _cluster_create_params():
               "cluster_network_host_prefix":  args.host_prefix,
               "service_network_cidr": args.service_network,
               "pull_secret": args.pull_secret}
-    if args.run_with_vips == "yes":
-        params.update(_create_vips_ips())
     return params
 
 
@@ -135,6 +140,7 @@ def nodes_flow(client, cluster_name, cluster):
                                           master_count=args.master_count,
                                           nodes_details=nodes_details)
     if client:
+        set_cluster_vips(client, cluster.id)
         set_hosts_roles(client, cluster.id)
         nodes_count = args.master_count + args.number_of_workers
         utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
@@ -142,6 +148,7 @@ def nodes_flow(client, cluster_name, cluster):
         log.info("Printing after setting roles")
         pprint.pprint(client.get_cluster_hosts(cluster.id))
         if args.install_cluster:
+            time.sleep(10)
             install_cluster.run_install_flow(client, cluster.id, consts.DEFAULT_CLUSTER_KUBECONFIG_PATH)
 
 
