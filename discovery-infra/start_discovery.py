@@ -170,7 +170,7 @@ def main():
                                            proxy_url=args.proxy_url)
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
-    if not args.iso_only == "yes":
+    if not args.iso_only:
         nodes_flow(client, cluster_name, cluster)
 
 
