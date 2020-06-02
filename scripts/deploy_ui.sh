@@ -5,7 +5,7 @@ source scripts/utils.sh
 
 export NODE_IP=$(get_main_ip)
 export UI_PORT=${UI_PORT:-6008}
-export UI_INTERNAL_PORT=80
+export UI_INTERNAL_PORT=8080
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
 export UI_DEPLOY_FILE=build/ui_deploy.yaml
