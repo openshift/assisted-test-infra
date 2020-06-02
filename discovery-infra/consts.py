@@ -23,5 +23,6 @@ class NodeRoles:
 
 
 class NodesStatus:
+    INSUFFICIENT = "insufficient"
     KNOWN = "known"
     INSTALLING = "installing"

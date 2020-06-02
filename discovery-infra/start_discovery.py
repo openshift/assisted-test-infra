@@ -140,9 +140,11 @@ def nodes_flow(client, cluster_name, cluster):
                                           master_count=args.master_count,
                                           nodes_details=nodes_details)
     if client:
+        nodes_count = args.master_count + args.number_of_workers
+        utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
+                                                nodes_count=nodes_count, status=consts.NodesStatus.INSUFFICIENT)
         set_cluster_vips(client, cluster.id)
         set_hosts_roles(client, cluster.id)
-        nodes_count = args.master_count + args.number_of_workers
         utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
                                                 nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
         log.info("Printing after setting roles")
