@@ -88,7 +88,7 @@ def set_hosts_roles(client, cluster_id):
         client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts)
 
 
-def set_cluster_vips(client,cluster_id):
+def set_cluster_vips(client, cluster_id):
     cluster_info = client.cluster_get(cluster_id)
     api_vip, ingress_vip = _get_vips_ips()
     cluster_info.api_vip = api_vip
@@ -143,11 +143,11 @@ def nodes_flow(client, cluster_name, cluster):
     if client:
         nodes_count = args.master_count + args.number_of_workers
         utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
-                                                nodes_count=nodes_count, status=consts.NodesStatus.INSUFFICIENT)
+                                                nodes_count=nodes_count, statuses=[consts.NodesStatus.INSUFFICIENT])
         set_cluster_vips(client, cluster.id)
         set_hosts_roles(client, cluster.id)
         utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
-                                                nodes_count=nodes_count, status=consts.NodesStatus.KNOWN)
+                                                nodes_count=nodes_count, statuses=[consts.NodesStatus.KNOWN])
         log.info("Printing after setting roles")
         pprint.pprint(client.get_cluster_hosts(cluster.id))
         if args.install_cluster:

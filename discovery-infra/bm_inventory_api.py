@@ -33,9 +33,12 @@ class InventoryClient(object):
         log.info("Getting registered nodes for cluster %s", cluster_id)
         return self.client.list_hosts(cluster_id=cluster_id)
 
-    def get_hosts_in_status(self, cluster_id, status):
+    def get_hosts_in_statuses(self, cluster_id, statuses):
         hosts = self.get_cluster_hosts(cluster_id)
-        return [hosts for host in hosts if host["status"] == status]
+        return [hosts for host in hosts if host["status"] in statuses]
+
+    def get_hosts_in_error_status(self, cluster_id):
+        return self.get_hosts_in_statuses(cluster_id, [consts.NodesStatus.ERROR])
 
     def clusters_list(self):
         return self.client.list_clusters()
@@ -98,11 +101,11 @@ class InventoryClient(object):
             _file.write(response.data)
 
     def download_kubeconfig_no_ingress(self, cluster_id, kubeconfig_path):
+        log.info("Downloading kubeconfig-noingress to %s", kubeconfig_path)
         self.download_and_save_file(cluster_id=cluster_id, file_name="kubeconfig-noingress", file_path=kubeconfig_path)
 
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
-        file_name = "kubeconfig"
-        log.info("Downloading %s to %s", file_name, kubeconfig_path)
+        log.info("Downloading kubeconfig to %s", kubeconfig_path)
         response = self.client.download_cluster_kubeconfig(cluster_id=cluster_id, _preload_content=False)
         with open(kubeconfig_path, "wb") as _file:
             _file.write(response.data)

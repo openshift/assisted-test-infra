@@ -17,7 +17,7 @@ function set_dns() {
 
 function wait_for_cluster() {
   CONFIG=()
-  SLEEP=5
+  SLEEP=30
   # Timeout 60 minutes
   RETRIES=60*60/${SLEEP}
   RETRIES=$((RETRIES))
@@ -25,7 +25,7 @@ function wait_for_cluster() {
   until [ $RETRIES -eq 0 ] || [ $(kubectl --kubeconfig=build/kubeconfig get nodes | grep master | grep -v NotReady | grep Ready | wc -l) -eq 3 ]; do
       sleep ${SLEEP}s
       RETRIES=$((RETRIES-1))
-      oc --kubeconfig=build/kubeconfig get csr -ojson | jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs oc --kubeconfig=build/kubeconfig adm certificate approve
+      echo "Still waiting for 3 masters"
   done
   if [ $RETRIES -eq 0 ]; then
     echo "Timeout reached, cluster still is down"

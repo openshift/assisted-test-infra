@@ -26,3 +26,11 @@ class NodesStatus:
     INSUFFICIENT = "insufficient"
     KNOWN = "known"
     INSTALLING = "installing"
+    INSTALLED = "installed"
+    ERROR = "error"
+
+
+class ClusterStatus:
+    INSTALLED = "installed"
+    READY = "ready"
+    INSTALLING = "installing"

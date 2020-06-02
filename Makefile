@@ -80,8 +80,11 @@ run_full_flow: run deploy_nodes set_dns
 
 run_full_flow_with_install: run deploy_nodes_with_install set_dns
 
+_install_cluster:
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)'
+
 install_cluster:
-	/usr/local/bin/skipper run 'discovery-infra/install_cluster.py -id $(CLUSTER_ID)' -i
+	/usr/local/bin/skipper make _install_cluster -i
 
 wait_for_cluster:
 	scripts/assisted_deployment.sh wait_for_cluster

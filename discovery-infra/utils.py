@@ -85,15 +85,44 @@ def get_tfvars():
     return tfvars
 
 
-def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, status):
-    log.info("Wait till %s nodes are in status %s", nodes_count, status)
+def are_all_hosts_in_status(client, cluster_id, nodes_count, statuses, fall_on_error_status=True):
+    hosts = client.get_cluster_hosts(cluster_id)
+    hosts_in_status = [host for host in hosts if host["status"] in statuses]
+    if len(hosts_in_status) >= nodes_count:
+        return True
+    elif fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
+        hosts_in_error = [host for host in hosts if host["status"] == consts.NodesStatus.ERROR]
+        log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
+        raise Exception("All the nodes must be in valid status, but got some in error")
+
+    log.info("Asked all hosts to be in one of the statuses from %s and currently hosts statuses are %s", statuses,
+             [(host["id"], host["status"], host["status_info"]) for host in hosts])
+    return False
+
+
+def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, statuses,
+                                      timeout=consts.NODES_REGISTERED_TIMEOUT,
+                                      fall_on_error_status=True, interval=5):
+    log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
     try:
-        waiting.wait(lambda: len(client.get_hosts_in_status(cluster_id, status)) >= nodes_count,
-                     timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
-                     sleep_seconds=5, waiting_for="Nodes to be in status %s" % status)
+        waiting.wait(lambda: are_all_hosts_in_status(client, cluster_id, nodes_count, statuses, fall_on_error_status),
+                     timeout_seconds=timeout,
+                     sleep_seconds=interval, waiting_for="Nodes to be in of the statuses %s" % statuses)
     except:
-        log.info("All nodes:")
+        log.info("All nodes: %s", client.get_cluster_hosts(cluster_id))
         pprint.pprint(client.get_cluster_hosts(cluster_id))
+        raise
+
+
+def wait_till_cluster_is_in_status(client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30):
+    log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
+    try:
+        waiting.wait(lambda: client.cluster_get(cluster_id).status in statuses,
+                     timeout_seconds=timeout,
+                     sleep_seconds=interval, waiting_for="Cluster to be in status %s" % statuses)
+    except:
+        log.info("Cluster: %s", client.cluster_get(cluster_id))
+        pprint.pprint(client.cluster_get(cluster_id))
         raise
 
 

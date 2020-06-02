@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import argparse
-from pathlib import Path
 import utils
 import consts
 import bm_inventory_api
@@ -14,6 +13,31 @@ def _verify_kube_download_folder(kubeconfig_path):
         exit(1)
 
 
+def verify_pull_secret(cluster, client):
+    if not cluster.pull_secret and not args.pull_secret:
+        raise Exception("Can't install cluster %s, no pull secret was set" % cluster.id)
+    if not cluster.pull_secret and args.pull_secret:
+        cluster.pull_secret = args.pull_secret
+        client.update_cluster(cluster.id, cluster)
+
+
+def _install_cluster(client, cluster):
+    cluster = client.install_cluster(cluster_id=cluster.id)
+    utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
+                                            nodes_count=len(cluster.hosts), statuses=[consts.NodesStatus.INSTALLING],
+                                            interval=30)
+
+
+def wait_till_installed(client, cluster, timeout=60*60*2):
+    log.info("Waiting %s till cluster finished installation", timeout)
+    utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
+                                            nodes_count=len(cluster.hosts),
+                                            statuses=[consts.NodesStatus.INSTALLED],
+                                            timeout=timeout, interval=60)
+    utils.wait_till_cluster_is_in_status(client=client, cluster_id=cluster.id,
+                                         statuses=[consts.ClusterStatus.INSTALLED])
+
+
 # Runs installation flow :
 # 1. Verifies cluster id exists
 # 2. Running install cluster api
@@ -22,15 +46,25 @@ def _verify_kube_download_folder(kubeconfig_path):
 def run_install_flow(client, cluster_id, kubeconfig_path):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
-    if not cluster.pull_secret:
-        raise Exception("Can't install cluster %s, no pull secret was set" % cluster_id)
-    log.info("Install cluster %s", cluster_id)
-    cluster = client.install_cluster(cluster_id=cluster_id)
-    utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster_id,
-                                            nodes_count=len(cluster.hosts), status=consts.NodesStatus.INSTALLING)
+    log.info("Verifying pull secret")
+    verify_pull_secret(client=client, cluster=cluster)
+    log.info("Wait till cluster is ready")
+    utils.wait_till_cluster_is_in_status(client=client, cluster_id=cluster_id,
+                                         statuses=[consts.ClusterStatus.READY, consts.ClusterStatus.INSTALLING])
+    if cluster.status == consts.ClusterStatus.READY:
+        log.info("Install cluster %s", cluster_id)
+        _install_cluster(client=client, cluster=cluster)
+
+    else:
+        log.info("Cluster is already in installing status, skipping install command")
+
+    log.info("Download kubeconfig-noingress")
+    client.download_kubeconfig_no_ingress(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path)
+
+    wait_till_installed(client=client, cluster=cluster)
 
     log.info("Download kubeconfig")
-    client.download_kubeconfig_no_ingress(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path)
+    client.download_kubeconfig(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path)
 
 
 def main():
@@ -48,5 +82,6 @@ if __name__ == "__main__":
     parser.add_argument('-id', '--cluster-id', help='Cluster id to install', type=str, default=None)
     parser.add_argument('-k', '--kubeconfig-path', help='Path to downloaded kubeconfig', type=str,
                         default="build/kubeconfig")
+    parser.add_argument('-ps', '--pull-secret', help='Pull secret', type=str, default="")
     args = parser.parse_args()
     main()
