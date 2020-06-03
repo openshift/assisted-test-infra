@@ -23,6 +23,7 @@ NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
 OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.5)
 PROXY_URL := $(or $(PROXY_URL), "")
 RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "yes")
+SKIPPER_PARAMS ?= -i
 
 .EXPORT_ALL_VARIABLES:
 
@@ -65,14 +66,14 @@ run_terraform_from_skipper:
 		cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 run_terraform: copy_terraform_files
-	/usr/local/bin/skipper make run_terraform_from_skipper -i
+	/usr/local/bin/skipper make run_terraform_from_skipper $(SKIPPER_PARAMS)
 
 _destroy_terraform:
 	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
 	discovery-infra/virsh_cleanup.py -f test-infra
 
 destroy_terraform:
-	/usr/local/bin/skipper make _destroy_terraform -i
+	/usr/local/bin/skipper make _destroy_terraform $(SKIPPER_PARAMS)
 
 run: start_minikube deploy_bm_inventory
 
@@ -84,7 +85,7 @@ _install_cluster:
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)'
 
 install_cluster:
-	/usr/local/bin/skipper make _install_cluster -i
+	/usr/local/bin/skipper make _install_cluster $(SKIPPER_PARAMS)
 
 wait_for_cluster:
 	scripts/assisted_deployment.sh wait_for_cluster
@@ -96,13 +97,13 @@ _deploy_nodes:
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) $(ADDITIONAL_PARMS)
 
 deploy_nodes_with_install:
-	/usr/local/bin/skipper make _deploy_nodes ADDITIONAL_PARMS=-in -i
+	/usr/local/bin/skipper make _deploy_nodes ADDITIONAL_PARMS=-in $(SKIPPER_PARAMS)
 
 deploy_nodes:
-	/usr/local/bin/skipper make _deploy_nodes -i
+	/usr/local/bin/skipper make _deploy_nodes $(SKIPPER_PARAMS)
 
 destroy_nodes:
-	/usr/local/bin/skipper run discovery-infra/delete_nodes.py -i
+	/usr/local/bin/skipper run discovery-infra/delete_nodes.py $(SKIPPER_PARAMS)
 
 kill_all_port_forwardings:
 	scripts/utils.sh kill_all_port_forwardings
@@ -116,7 +117,7 @@ _deploy_bm_inventory: bring_bm_inventory
 	make -C bm-inventory/ deploy-all
 
 deploy_bm_inventory:
-	/usr/local/bin/skipper make _deploy_bm_inventory -i
+	/usr/local/bin/skipper make _deploy_bm_inventory $(SKIPPER_PARAMS)
 
 bring_bm_inventory:
 	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
@@ -131,7 +132,7 @@ create_inventory_client: bring_bm_inventory
 	$(CONTAINER_COMMAND) run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro,Z -v $(PWD)/build/code-gen-config.json:/config.json:ro,Z jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
-	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a' -i
+	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
 
 build_and_push_image: create_inventory_client
 	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
@@ -150,13 +151,13 @@ _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iO
 
 download_iso:
-	/usr/local/bin/skipper make _download_iso -i
+	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)
 
 deploy_bm_inventory_with_external_ip:
 	scripts/external_bm_inventory.sh
 
 download_iso_for_remote_use: deploy_bm_inventory_with_external_ip
-	/usr/local/bin/skipper make _download_iso -i
+	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)
 
 deploy_ui: start_minikube
 	scripts/deploy_ui.sh
