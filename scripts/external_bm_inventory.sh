@@ -11,6 +11,7 @@ export SERVICE_NAME=bm-inventory
 echo "Config firewalld"
 sudo systemctl start firewalld
 sudo firewall-cmd --zone=public --permanent --add-port=${INVENTORY_PORT}/tcp
+sudo firewall-cmd --zone=libvirt --permanent --add-port=${INVENTORY_PORT}/tcp
 sudo firewall-cmd --reload
 
 echo "Starting make run, will start ${SERVICE_NAME}"
