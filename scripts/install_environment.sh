@@ -5,17 +5,16 @@ function install_libvirt() {
     echo "Installing libvirt..."
     dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm
     systemctl enable --now libvirtd
-    else
-  echo "libvirt is already installed"
+  else
+    echo "libvirt is already installed"
   fi
+  
   sed -i -e 's/#LIBVIRTD_ARGS="--listen"/LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
   sed -i -e 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
   sed -i -e 's/#listen_tcp/listen_tcp/g' /etc/libvirt/libvirtd.conf
   sed -i -e 's/#auth_tcp = "sasl"/auth_tcp = "none"/g' /etc/libvirt/libvirtd.conf
   sed -i -e 's/#tcp_port/tcp_port/g' /etc/libvirt/libvirtd.conf
   sed -i -e 's/#security_driver = "selinux"/security_driver = "none"/g' /etc/libvirt/qemu.conf
-
-
 }
 
 function install_runtime_container() {
@@ -29,7 +28,8 @@ function install_runtime_container() {
 }
 
 function install_packages(){
-  dnf install -y make python3 git jq bash-completion
+  dnf install -y make python3 git jq bash-completion xinetd
+  systemctl enable --now xinetd
 }
 
 function install_skipper() {

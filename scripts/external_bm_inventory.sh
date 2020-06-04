@@ -4,7 +4,6 @@ set -euxo pipefail
 source scripts/utils.sh
 export INVENTORY_URL=$(get_main_ip)
 export INVENTORY_PORT=${INVENTORY_PORT:-6000}
-export INVENTORY_INTERNAL_PORT=8090
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export SERVICE_NAME=bm-inventory
 
@@ -25,7 +24,7 @@ wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url -n assisted-insta
 
 echo "starting port forwarding for deployment/${SERVICE_NAME}"
 
-wait_for_url_and_run "http://${INVENTORY_URL}:${INVENTORY_PORT}" "spawn_port_forwarding_command ${INVENTORY_PORT} ${INVENTORY_INTERNAL_PORT} ${SERVICE_NAME}"
+wait_for_url_and_run "http://${INVENTORY_URL}:${INVENTORY_PORT}" "spawn_port_forwarding_command ${SERVICE_NAME} ${INVENTORY_PORT}"
 
 echo "${SERVICE_NAME} can be reached at http://${INVENTORY_URL}:${INVENTORY_PORT} "
 

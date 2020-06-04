@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o nounset
+
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
 
@@ -8,25 +10,37 @@ function url_reachable() {
     return $?
 }
 
-
 function spawn_port_forwarding_command() {
-  kill_portforwarding_loop $1 $2 $3
-  run_in_background "scripts/port_forwarding_loop.sh $1 $2 $3"
+  service_name=$1
+  external_port=$2
+
+  cat << EOF > /etc/xinetd.d/${service_name}
+service ${service_name}
+{
+  flags		= IPv4
+  bind		= 0.0.0.0
+  type		= UNLISTED
+  socket_type	= stream
+  protocol	= tcp
+  user		= root
+  wait		= no
+  redirect	= $(minikube ip) $(kubectl --kubeconfig=${KUBECONFIG} get svc/${service_name} -n assisted-installer -o=jsonpath='{.spec.ports[0].nodePort}')
+  port		= ${external_port}
+  only_from	= 0.0.0.0/0
+  per_source	= UNLIMITED
+}
+EOF
+
+  systemctl start xinetd
+  systemctl reload xinetd
 }
 
 function run_in_background() {
   bash -c "nohup $1  >/dev/null 2>&1 &"
 }
 
-
-function kill_portforwarding_loop() {
-  kill -9 $(ps aux | grep "port_forwarding_loop.sh $1 $2 $3" | grep -v grep | awk '{print $2}') || true
-  kill -9 $(ps aux | grep "kubectl --kubeconfig=${KUBECONFIG} port-forward" | grep $3 | grep -v grep | awk '{print $2}') || true
-}
-
 function kill_all_port_forwardings() {
-  kill -9 $(ps aux | grep "port_forwarding_loop" | grep -v grep | awk '{print $2}') || true
-  kill -9 $(ps aux | grep "port-forward" | grep -v grep | awk '{print $2}') || true
+  systemctl stop xinetd
 }
 
 function get_main_ip() {
