@@ -30,21 +30,35 @@ SKIPPER_PARAMS ?= -i
 
 .PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources _download_iso _deploy_bm_inventory _deploy_nodes  _destroy_terraform
 
-
-image_build:
-	$(CONTAINER_COMMAND) pull $(IMAGE_REG_NAME):$(IMAGE_TAG) && $(CONTAINER_COMMAND) image tag $(IMAGE_REG_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) || $(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+###########
+# General #
+###########
 
 all:
 	./install_env_and_run_full_flow.sh
+
+destroy: destroy_nodes delete_minikube kill_all_port_forwardings
+	rm -rf build/terraform/*
+
+###############
+# Environment #
+###############
 
 create_full_environment:
 	./create_full_environment.sh
 
 create_environment: image_build bring_bm_inventory start_minikube
 
+image_build:
+	$(CONTAINER_COMMAND) pull $(IMAGE_REG_NAME):$(IMAGE_TAG) && $(CONTAINER_COMMAND) image tag $(IMAGE_REG_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) || $(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+
 clean:
 	rm -rf build
 	rm -rf bm-inventory
+
+############
+# Minikube #
+############
 
 install_minikube:
 	scripts/install_minikube.sh
@@ -56,6 +70,10 @@ start_minikube:
 delete_minikube:
 	minikube delete
 	/usr/local/bin/skipper run discovery-infra/virsh_cleanup.py -m
+
+#############
+# Terraform #
+#############
 
 copy_terraform_files:
 	mkdir -p build/terraform
@@ -75,11 +93,32 @@ _destroy_terraform:
 destroy_terraform:
 	/usr/local/bin/skipper make _destroy_terraform $(SKIPPER_PARAMS)
 
-run: start_minikube deploy_bm_inventory
+#######
+# Run #
+#######
+
+run: deploy_bm_inventory deploy_ui
 
 run_full_flow: run deploy_nodes set_dns
 
+redeploy_all: destroy run_full_flow
+
 run_full_flow_with_install: run deploy_nodes_with_install set_dns
+
+redeploy_all_with_install: destroy  run_full_flow_with_install
+
+set_dns:
+	scripts/assisted_deployment.sh	set_dns
+
+deploy_ui: start_minikube
+	scripts/deploy_ui.sh
+
+kill_all_port_forwardings:
+	scripts/utils.sh kill_all_port_forwardings
+
+###########
+# Cluster #
+###########
 
 _install_cluster:
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)'
@@ -90,8 +129,9 @@ install_cluster:
 wait_for_cluster:
 	scripts/assisted_deployment.sh wait_for_cluster
 
-set_dns:
-	scripts/assisted_deployment.sh	set_dns
+#########
+# Nodes #
+#########
 
 _deploy_nodes:
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) $(ADDITIONAL_PARMS)
@@ -105,19 +145,22 @@ deploy_nodes:
 destroy_nodes:
 	/usr/local/bin/skipper run discovery-infra/delete_nodes.py $(SKIPPER_PARAMS)
 
-kill_all_port_forwardings:
-	scripts/utils.sh kill_all_port_forwardings
+redeploy_nodes: destroy_nodes deploy_nodes
 
-destroy: destroy_nodes delete_minikube kill_all_port_forwardings
-	rm -rf build/terraform/*
+redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
+
+#############
+# Inventory #
+#############
 
 _deploy_bm_inventory: bring_bm_inventory
 	mkdir -p bm-inventory/build
 	discovery-infra/update_bm_inventory_cm.py
 	make -C bm-inventory/ deploy-all
 
-deploy_bm_inventory:
+deploy_bm_inventory: start_minikube
 	/usr/local/bin/skipper make _deploy_bm_inventory $(SKIPPER_PARAMS)
+	scripts/deploy_bm_inventory.sh
 
 bring_bm_inventory:
 	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
@@ -139,13 +182,9 @@ build_and_push_image: create_inventory_client
 	$(CONTAINER_COMMAND) tag  $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_REG_NAME):$(IMAGE_TAG)
 	$(CONTAINER_COMMAND)  push $(IMAGE_REG_NAME):$(IMAGE_TAG)
 
-redeploy_nodes: destroy_nodes deploy_nodes
-
-redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
-
-redeploy_all_with_install: destroy  run_full_flow_with_install
-
-redeploy_all: destroy run_full_flow
+#######
+# ISO #
+#######
 
 _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iO
@@ -153,11 +192,5 @@ _download_iso:
 download_iso:
 	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)
 
-deploy_bm_inventory_with_external_ip:
-	scripts/external_bm_inventory.sh
-
-download_iso_for_remote_use: deploy_bm_inventory_with_external_ip
+download_iso_for_remote_use: deploy_bm_inventory
 	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)
-
-deploy_ui: start_minikube
-	scripts/deploy_ui.sh

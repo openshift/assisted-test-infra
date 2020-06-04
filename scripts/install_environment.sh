@@ -1,4 +1,4 @@
-set -euxo pipefail
+set -euo pipefail
 
 function install_libvirt() {
   if ! [ -x "$(command -v virsh)" ]; then

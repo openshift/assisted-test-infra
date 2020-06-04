@@ -5,6 +5,10 @@ set -o nounset
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
 
+function print_log() {
+  echo "$(basename $0): $1"
+}
+
 function url_reachable() {
     curl -s $1 --max-time 4 > /dev/null
     return $?

@@ -110,17 +110,7 @@ make wait_for_cluster
 make download_iso
 ```
 
-### Deploy bm-inventory with external ip and open port forwarding on port 6000
-```bash
-make deploy_bm_inventory_with_external_ip
-```
-
-### Deploy bm-inventory with external ip and open port forwarding on port 6000
-```bash
-make deploy_bm_inventory_with_external_ip
-```
-
-### deploy_bm_inventory_with_external_ip and Create cluster and download iso
+### deploy_bm_inventory and Create cluster and download iso
 ```bash
 make download_iso_for_remote_use
 ```
