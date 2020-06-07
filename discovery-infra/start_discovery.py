@@ -162,12 +162,14 @@ def main():
 
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
-        client = bm_inventory_api.create_client()
-
-        cluster = client.create_cluster(cluster_name,
-                                        ssh_public_key=args.ssh_key,
-                                        **_cluster_create_params()
-                                        )
+        client = bm_inventory_api.create_client(args.inventory_url)
+        if args.cluster_id:
+            cluster = client.cluster_get(cluster_id=args.cluster_id)
+        else:
+            cluster = client.create_cluster(cluster_name,
+                                            ssh_public_key=args.ssh_key,
+                                            **_cluster_create_params()
+                                            )
 
         client.generate_and_download_image(cluster_id=cluster.id, image_path=consts.IMAGE_PATH, ssh_key=args.ssh_key,
                                            proxy_url=args.proxy_url)
@@ -205,6 +207,8 @@ if __name__ == "__main__":
     parser.add_argument('-pU', '--proxy-url', help="Proxy url to pass to inventory cluster", type=str, default="")
     parser.add_argument('-rv', '--run-with-vips', help="Run cluster create with adding vips "
                                                        "from the same subnet as vms", type=str, default="no")
+    parser.add_argument('-iU', '--inventory-url', help="Full url of remote inventory", type=str, default="")
+    parser.add_argument('-id', '--cluster-id', help='Cluster id to install', type=str, default=None)
 
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:

@@ -24,6 +24,7 @@ OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.5)
 PROXY_URL := $(or $(PROXY_URL), "")
 RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "yes")
 SKIPPER_PARAMS ?= -i
+REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
 
 .EXPORT_ALL_VARIABLES:
 
@@ -132,7 +133,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) $(ADDITIONAL_PARMS)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) $(ADDITIONAL_PARMS)
 
 deploy_nodes_with_install:
 	/usr/local/bin/skipper make _deploy_nodes ADDITIONAL_PARMS=-in $(SKIPPER_PARAMS)
@@ -173,7 +174,7 @@ create_inventory_client: bring_bm_inventory
 	$(CONTAINER_COMMAND) run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro,Z -v $(PWD)/build/code-gen-config.json:/config.json:ro,Z jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
-	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
+	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a -iU $(REMOTE_INVENTORY_URL) -id %(CLUSTER_ID)' $(SKIPPER_PARAMS)
 
 build_and_push_image: create_inventory_client
 	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
@@ -185,7 +186,7 @@ build_and_push_image: create_inventory_client
 #######
 
 _download_iso:
-	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iO
+	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID)-iO
 
 download_iso:
 	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)

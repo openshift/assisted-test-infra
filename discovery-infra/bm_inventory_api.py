@@ -115,8 +115,10 @@ class InventoryClient(object):
         return self.client.install_cluster(cluster_id=cluster_id)
 
 
-def create_client(wait_for_url=True):
-    if wait_for_url:
+def create_client(inventory_url=None, wait_for_url=True):
+    if inventory_url:
+        i_url = inventory_url
+    elif wait_for_url:
         i_url = utils.get_service_url_with_retries("bm-inventory")
     else:
         i_url = utils.get_service_url("bm-inventory")

@@ -14,7 +14,7 @@ def try_to_delete_cluster(tfvars):
     try:
         cluster_id = tfvars.get("cluster_inventory_id")
         if cluster_id:
-            client = bm_inventory_api.create_client(wait_for_url=False)
+            client = bm_inventory_api.create_client(args.inventory_url, wait_for_url=False)
             client.delete_cluster(cluster_id=cluster_id)
     # TODO add different exception validations
     except Exception as exc:
@@ -59,6 +59,8 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run delete nodes flow')
+    parser.add_argument('-iU', '--inventory-url', help="Full url of remote inventory", type=str, default="")
+    parser.add_argument('-id', '--cluster-id', help='Cluster id to install', type=str, default=None)
     parser.add_argument('-n', '--only-nodes', help='Delete only nodes, without cluster', action="store_true")
     parser.add_argument('-a', '--delete-all', help='Delete only nodes, without cluster', action="store_true")
     args = parser.parse_args()
