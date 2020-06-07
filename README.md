@@ -135,7 +135,7 @@ NUM_WORKERS        number of vms to spawn as workerm default 0
 SSH_PUB_KEY        ssh public key to use for image generation, gives option to ssh to vms, default is in ssh_key/key_pub
 PULL_SECRET        pull secret to use for cluster installation command, no option to install cluster without it.
 CLUSTER_NAME       cluster name, used as prefix for virsh resources, default test-infra-cluster)
-BASE_DOMAIN        base domain, needed for dns name, default redhat
+BASE_DOMAIN        base domain, needed for dns name, default redhat.com
 NETWORK_CIDR       network cidr to use for virsh vm network, default "192.168.126.0/24"
 CLUSTER_ID         cluster id , used for install_cluster command, default will be the last spawned cluster
 NETWORK_NAME       virsh network name for vms creation, default test-infra-net

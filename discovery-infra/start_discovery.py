@@ -194,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument('-sn', '--service-network', help='Network for services', type=str, default="172.30.0.0/16")
     parser.add_argument('-ps', '--pull-secret', help='Pull secret', type=str, default="")
     parser.add_argument('-ov', '--openshift-version', help='Openshift version', type=str, default="4.5")
-    parser.add_argument('-bd', '--base-dns-domain', help='Base dns domain', type=str, default="redhat")
+    parser.add_argument('-bd', '--base-dns-domain', help='Base dns domain', type=str, default="redhat.com")
     parser.add_argument('-cN', '--cluster-name', help='Cluster name', type=str, default="")
     parser.add_argument('-vN', '--vm-network-cidr', help="Vm network cidr", type=str, default="192.168.126.0/24")
     parser.add_argument('-nN', '--network-name', help="Network name", type=str, default="test-infra-net")
