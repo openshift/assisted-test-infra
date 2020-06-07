@@ -152,13 +152,8 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 # Inventory #
 #############
 
-_deploy_bm_inventory: bring_bm_inventory
+deploy_bm_inventory: start_minikube bring_bm_inventory
 	mkdir -p bm-inventory/build
-	discovery-infra/update_bm_inventory_cm.py
-	make -C bm-inventory/ deploy-all
-
-deploy_bm_inventory: start_minikube
-	/usr/local/bin/skipper make _deploy_bm_inventory $(SKIPPER_PARAMS)
 	scripts/deploy_bm_inventory.sh
 
 bring_bm_inventory:
