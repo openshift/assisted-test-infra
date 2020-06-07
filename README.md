@@ -41,7 +41,11 @@ The following is a list of stages that will be run:
 1. Set nodes roles in bm-inventory by matching VM names (worker/master)
 1. Verify all nodes have required hardware to start installation
 1. Install nodes
-1. Download kubeconfig
+1. Download kubeconfig-noingress to build/kubeconfig
+1. Waiting till nodes are in "installed" state, while verifying that they don't move to "error" state
+1. Verifying cluster is in state "installed"
+1. Download kubeconfig to build/kubeconfig
+
 
 **Note**: Please make sure no previous cluster is running before running a new one (it will rewrite its build files).
 
@@ -100,11 +104,6 @@ Install cluster after nodes were deployed. Can take ClusterId as os env
 make install_cluster 
 ```
 
-### Wait for cluster to be installed
-```bash
-make wait_for_cluster
-```
-
 ### Create cluster and download iso
 ```bash
 make download_iso
@@ -155,28 +154,28 @@ SERVICE:            bm-inventory image to use
 ```bash
 make redeploy_all SERVICE=<image to test>
 or 
-export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install SERVICE=<image to test> && make wait_for_cluster
+export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install SERVICE=<image to test>
 ```
 
 ## Test agent image
 ```bash
 make redeploy_all AGENT_DOCKER_IMAGE=<image to test> 
 or
-make redeploy_all_with_install AGENT_DOCKER_IMAGE=<image to test> && make wait_for_cluster
+make redeploy_all_with_install AGENT_DOCKER_IMAGE=<image to test>
 ```
 
 ## Test installer image
 ```bash
 make redeploy_all INSTALLER_IMAGE=<image to test> 
 or
-export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> && make wait_for_cluster
+export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test>
 ```
 
 ## Test installer, bm-inventory and agent images in the same flow
 ```bash
 make redeploy_all INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
 or 
-export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test>  SERVICE=<image to test> && make wait_for_cluster 
+export PULL_SECRET='<pull secret json>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test>  SERVICE=<image to test>
 ```
 # Test infra image
 

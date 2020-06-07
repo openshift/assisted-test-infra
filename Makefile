@@ -126,8 +126,6 @@ _install_cluster:
 install_cluster:
 	/usr/local/bin/skipper make _install_cluster $(SKIPPER_PARAMS)
 
-wait_for_cluster:
-	scripts/assisted_deployment.sh wait_for_cluster
 
 #########
 # Nodes #

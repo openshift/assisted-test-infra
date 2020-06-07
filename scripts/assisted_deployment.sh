@@ -15,24 +15,9 @@ function set_dns() {
   sudo systemctl reload NetworkManager
 }
 
+# Delete after pushing fix to dev-scripts
 function wait_for_cluster() {
-  CONFIG=()
-  SLEEP=30
-  # Timeout 60 minutes
-  RETRIES=60*60/${SLEEP}
-  RETRIES=$((RETRIES))
-  echo "Waiting till we have 3 masters"
-  until [ $RETRIES -eq 0 ] || [ $(kubectl --kubeconfig=build/kubeconfig get nodes | grep master | grep -v NotReady | grep Ready | wc -l) -eq 3 ]; do
-      sleep ${SLEEP}s
-      RETRIES=$((RETRIES-1))
-      echo "Still waiting for 3 masters"
-  done
-  if [ $RETRIES -eq 0 ]; then
-    echo "Timeout reached, cluster still is down"
-    exit 1
-  fi
-  echo "Got 3 ready masters"
-  echo -e "$(kubectl --kubeconfig=build/kubeconfig get nodes)"
+  echo "Nothing to do"
 }
 
 
@@ -43,9 +28,6 @@ function run() {
   echo retVal
   if [ $retVal -ne 0 ]; then
     exit $retVal
-  fi
-  if [ "$1" = "run_full_flow_with_install" ]; then
-    wait_for_cluster
   fi
 }
 
