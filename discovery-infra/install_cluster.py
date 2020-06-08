@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import waiting
 import utils
 import consts
 import bm_inventory_api
@@ -64,7 +65,11 @@ def run_install_flow(client, cluster_id, kubeconfig_path):
     wait_till_installed(client=client, cluster=cluster)
 
     log.info("Download kubeconfig")
-    client.download_kubeconfig(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path)
+    waiting.wait(lambda: client.download_kubeconfig(cluster_id=cluster_id, kubeconfig_path=kubeconfig_path) is None,
+                 timeout_seconds=240,
+                 sleep_seconds=20,
+                 expected_exceptions=Exception,
+                 waiting_for="Kubeconfig")
 
 
 def main():
