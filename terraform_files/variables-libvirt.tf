@@ -13,16 +13,6 @@ variable "worker_count" {
   description = "Number of workers."
 }
 
-//variable "bootstrap_dns" {
-//  default     = true
-//  description = "Whether to include DNS entries for the bootstrap node or not."
-//}
-
-//variable "ignition_master" {
-//  type        = string
-//  description = "Servers ignition"
-//}
-
 variable "cluster_domain" {
   type        = string
   description = "Cluster domain"
