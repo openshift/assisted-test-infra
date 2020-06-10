@@ -1,4 +1,5 @@
 import os
+import itertools
 import subprocess
 from pathlib import Path
 import shlex
@@ -44,7 +45,7 @@ def get_service_url(service_name):
 
 
 def wait_till_nodes_are_ready(nodes_count, cluster_name):
-    log.info("Wait till %s hosts will have ips", nodes_count)
+    log.info("Wait till %s nodes will be ready and have ips", nodes_count)
     cmd = "%s %s| grep %s | wc -l" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK, cluster_name)
     try:
         waiting.wait(lambda: int(run_command(cmd, shell=True).strip()) >= nodes_count,
@@ -59,7 +60,6 @@ def wait_till_nodes_are_ready(nodes_count, cluster_name):
 
 # Require wait_till_nodes_are_ready has finished and all nodes are up
 def get_libvirt_nodes_mac_role_ip_and_name():
-    log.info("Get nodes macs and roles from libvirt")
     cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
     nodes_data = {}
     try:
@@ -77,6 +77,19 @@ def get_libvirt_nodes_mac_role_ip_and_name():
         raise
 
 
+def get_libvirt_nodes_macs():
+    return get_libvirt_nodes_mac_role_ip_and_name().keys()
+
+
+def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id):
+    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
+    return all(mac.lower() in map(str.lower, itertools.chain(*hosts_macs.values())) for mac in get_libvirt_nodes_macs())
+
+
+def get_cluster_hosts_with_mac(client, cluster_id, macs):
+    return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
+
+
 def get_tfvars():
     if not os.path.exists(consts.TFVARS_JSON_FILE):
         raise Exception("%s doesn't exists" % consts.TFVARS_JSON_FILE)
@@ -85,8 +98,7 @@ def get_tfvars():
     return tfvars
 
 
-def are_all_hosts_in_status(client, cluster_id, nodes_count, statuses, fall_on_error_status=True):
-    hosts = client.get_cluster_hosts(cluster_id)
+def are_hosts_in_status(client, cluster_id, hosts, nodes_count, statuses, fall_on_error_status=True):
     hosts_in_status = [host for host in hosts if host["status"] in statuses]
     if len(hosts_in_status) >= nodes_count:
         return True
@@ -95,22 +107,43 @@ def are_all_hosts_in_status(client, cluster_id, nodes_count, statuses, fall_on_e
         log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
         raise Exception("All the nodes must be in valid status, but got some in error")
 
-    log.info("Asked all hosts to be in one of the statuses from %s and currently hosts statuses are %s", statuses,
+    log.info("Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s", statuses,
              [(host["id"], host["status"], host["status_info"]) for host in hosts])
     return False
+
+
+def wait_till_hosts_with_macs_are_in_status(client, cluster_id, macs, statuses,
+                                            timeout=consts.NODES_REGISTERED_TIMEOUT,
+                                            fall_on_error_status=True, interval=5):
+    log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
+
+    try:
+        waiting.wait(lambda: are_hosts_in_status(client, cluster_id, get_cluster_hosts_with_mac(client, cluster_id, macs),
+                                                 len(macs), statuses, fall_on_error_status),
+                     timeout_seconds=timeout,
+                     sleep_seconds=interval, waiting_for="Nodes to be in of the statuses %s" % statuses)
+    except:
+        hosts = get_cluster_hosts_with_mac(client, cluster_id, macs)
+        log.info("All nodes: %s", hosts)
+        pprint.pprint(hosts)
+        raise
 
 
 def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, statuses,
                                       timeout=consts.NODES_REGISTERED_TIMEOUT,
                                       fall_on_error_status=True, interval=5):
+    hosts = client.get_cluster_hosts(cluster_id)
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
+
     try:
-        waiting.wait(lambda: are_all_hosts_in_status(client, cluster_id, nodes_count, statuses, fall_on_error_status),
+        waiting.wait(lambda: are_hosts_in_status(client, cluster_id, client.get_cluster_hosts(cluster_id),
+                                                 nodes_count, statuses, fall_on_error_status),
                      timeout_seconds=timeout,
                      sleep_seconds=interval, waiting_for="Nodes to be in of the statuses %s" % statuses)
     except:
-        log.info("All nodes: %s", client.get_cluster_hosts(cluster_id))
-        pprint.pprint(client.get_cluster_hosts(cluster_id))
+        hosts = client.get_cluster_hosts(cluster_id)
+        log.info("All nodes: %s", hosts)
+        pprint.pprint(hosts)
         raise
 
 

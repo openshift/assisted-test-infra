@@ -31,6 +31,7 @@ def _install_cluster(client, cluster):
 
 def wait_till_installed(client, cluster, timeout=60*60*2):
     log.info("Waiting %s till cluster finished installation", timeout)
+    # TODO: Change host validation for only previous known hosts
     utils.wait_till_all_hosts_are_in_status(client=client, cluster_id=cluster.id,
                                             nodes_count=len(cluster.hosts),
                                             statuses=[consts.NodesStatus.INSTALLED],

@@ -71,7 +71,7 @@ function wait_for_url_and_run() {
       url_reachable "$1" && STATUS=$? || STATUS=$?
     done
     if [ $RETRIES -eq 0 ]; then
-      echo "Timeout reached, url not reachable"
+      echo "Timeout reached, url $1 not reachable"
       exit 1
     fi
 }
