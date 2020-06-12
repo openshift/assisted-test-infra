@@ -152,7 +152,9 @@ def nodes_flow(client, cluster_name, cluster):
         pprint.pprint(client.get_cluster_hosts(cluster.id))
         if args.install_cluster:
             time.sleep(10)
-            install_cluster.run_install_flow(client, cluster.id, consts.DEFAULT_CLUSTER_KUBECONFIG_PATH)
+            install_cluster.run_install_flow(client=client, cluster_id=cluster.id,
+                                             kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
+                                             pull_secret=args.pull_secret)
 
 
 def main():

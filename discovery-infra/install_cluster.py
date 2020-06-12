@@ -14,11 +14,11 @@ def _verify_kube_download_folder(kubeconfig_path):
         exit(1)
 
 
-def verify_pull_secret(cluster, client):
-    if not cluster.pull_secret and not args.pull_secret:
+def verify_pull_secret(cluster, client, pull_secret):
+    if not cluster.pull_secret and not pull_secret:
         raise Exception("Can't install cluster %s, no pull secret was set" % cluster.id)
-    if not cluster.pull_secret and args.pull_secret:
-        cluster.pull_secret = args.pull_secret
+    if not cluster.pull_secret and pull_secret:
+        cluster.pull_secret = pull_secret
         client.update_cluster(cluster.id, cluster)
 
 
@@ -44,11 +44,11 @@ def wait_till_installed(client, cluster, timeout=60*60*2):
 # 2. Running install cluster api
 # 3. Waiting till all nodes are in installing status
 # 4. Downloads kubeconfig for future usage
-def run_install_flow(client, cluster_id, kubeconfig_path):
+def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
     log.info("Verifying pull secret")
-    verify_pull_secret(client=client, cluster=cluster)
+    verify_pull_secret(client=client, cluster=cluster, pull_secret=pull_secret)
     log.info("Wait till cluster is ready")
     utils.wait_till_cluster_is_in_status(client=client, cluster_id=cluster_id,
                                          statuses=[consts.ClusterStatus.READY, consts.ClusterStatus.INSTALLING])
@@ -79,7 +79,9 @@ def main():
     if not args.cluster_id:
         args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
     client = bm_inventory_api.create_client(wait_for_url=False)
-    run_install_flow(client=client, cluster_id=args.cluster_id, kubeconfig_path=args.kubeconfig_path)
+    run_install_flow(client=client, cluster_id=args.cluster_id,
+                     kubeconfig_path=args.kubeconfig_path,
+                     pull_secret=args.pull_secret)
 
 
 if __name__ == "__main__":
