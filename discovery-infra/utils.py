@@ -1,4 +1,5 @@
 import os
+import shutil
 import itertools
 import subprocess
 from pathlib import Path
@@ -8,8 +9,9 @@ import json
 from retry import retry
 import consts
 from logger import log
+import libvirt
 
-VIRSH_LEASES_COMMAND = "virsh -q net-dhcp-leases"
+conn = libvirt.open('qemu:///system')
 
 
 def run_command(command, shell=False):
@@ -43,46 +45,47 @@ def get_service_url(service_name):
         raise
 
 
-def wait_till_nodes_are_ready(nodes_count, cluster_name):
+def get_network_leases(network_name):
+    net = conn.networkLookupByName(network_name)
+    return net.DHCPLeases()
+
+
+def wait_till_nodes_are_ready(nodes_count, network_name):
     log.info("Wait till %s nodes will be ready and have ips", nodes_count)
-    cmd = "%s %s| grep %s | wc -l" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK, cluster_name)
     try:
-        waiting.wait(lambda: int(run_command(cmd, shell=True).strip()) >= nodes_count,
+        waiting.wait(lambda: len(get_network_leases(network_name)) >= nodes_count,
                      timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,
                      sleep_seconds=10, waiting_for="Nodes to have ips")
         log.info("All nodes have booted and got ips")
     except:
-        cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
-        log.error("Not all nodes are ready. Current dhcp leases are %s", run_command(cmd, shell=False).strip())
+        log.error("Not all nodes are ready. Current dhcp leases are %s", get_network_leases)
         raise
 
 
 # Require wait_till_nodes_are_ready has finished and all nodes are up
-def get_libvirt_nodes_mac_role_ip_and_name():
-    cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
+def get_libvirt_nodes_mac_role_ip_and_name(network_name):
     nodes_data = {}
     try:
-        output = run_command(cmd, shell=False).splitlines()
-        for node in output:
-            nic_data = node.split()
-            nodes_data[nic_data[2].lower()] = {"ip": nic_data[4].split("/")[0],
-                                               "name": nic_data[5],
-                                               "role": consts.NodeRoles.WORKER if
-                                               consts.NodeRoles.WORKER in nic_data[5] else consts.NodeRoles.MASTER}
+        leases = get_network_leases(network_name)
+        for lease in leases:
+            nodes_data[lease["mac"]] = {"ip": lease["ipaddr"],
+                                        "name": lease["hostname"],
+                                        "role": consts.NodeRoles.WORKER if
+                                        consts.NodeRoles.WORKER in lease["hostname"] else consts.NodeRoles.MASTER}
         return nodes_data
     except:
-        cmd = "%s %s" % (VIRSH_LEASES_COMMAND, consts.TEST_NETWORK)
-        log.error("Failed to get nodes macs from libvirt. Output is %s", run_command(cmd, shell=False))
+        log.error("Failed to get nodes macs from libvirt. Output is %s", get_network_leases(network_name))
         raise
 
 
-def get_libvirt_nodes_macs():
-    return get_libvirt_nodes_mac_role_ip_and_name().keys()
+def get_libvirt_nodes_macs(network_name):
+    return get_libvirt_nodes_mac_role_ip_and_name(network_name).keys()
 
 
-def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id):
+def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
     hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    return all(mac.lower() in map(str.lower, itertools.chain(*hosts_macs.values())) for mac in get_libvirt_nodes_macs())
+    return all(mac.lower() in
+               map(str.lower, itertools.chain(*hosts_macs.values())) for mac in get_libvirt_nodes_macs(network_name))
 
 
 def get_cluster_hosts_with_mac(client, cluster_id, macs):
@@ -165,3 +168,15 @@ def folder_exists(file_path):
 
 def file_exists(file_path):
     return Path(file_path).exists()
+
+
+def create_folder_if_not_exists(folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+
+def recreate_folder(folder):
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+    create_folder_if_not_exists(folder)
+    run_command("chmod ugo+rx %s" % folder)

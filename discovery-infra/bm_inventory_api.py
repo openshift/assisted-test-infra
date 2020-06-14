@@ -132,5 +132,6 @@ def create_client(inventory_url=None, wait_for_url=True):
         i_url = utils.get_service_url("bm-inventory")
     log.info("Inventory URL %s", i_url)
     client = InventoryClient(inventory_url=i_url)
-    client.wait_for_api_readiness()
+    if not wait_for_url:
+        client.wait_for_api_readiness()
     return client

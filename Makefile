@@ -39,7 +39,7 @@ REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
 all:
 	./install_env_and_run_full_flow.sh
 
-destroy: destroy_nodes delete_minikube kill_all_port_forwardings
+destroy: destroy_nodes delete_minikube
 	rm -rf build/terraform/*
 
 ###############
@@ -71,7 +71,7 @@ start_minikube:
 
 delete_minikube:
 	minikube delete
-	/usr/local/bin/skipper run discovery-infra/virsh_cleanup.py -m
+	skipper run discovery-infra/virsh_cleanup.py -m
 
 #############
 # Terraform #
@@ -86,14 +86,14 @@ run_terraform_from_skipper:
 		cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 run_terraform: copy_terraform_files
-	/usr/local/bin/skipper make run_terraform_from_skipper $(SKIPPER_PARAMS)
+	skipper make run_terraform_from_skipper $(SKIPPER_PARAMS)
 
 _destroy_terraform:
 	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
 	discovery-infra/virsh_cleanup.py -f test-infra
 
 destroy_terraform:
-	/usr/local/bin/skipper make _destroy_terraform $(SKIPPER_PARAMS)
+	skipper make _destroy_terraform $(SKIPPER_PARAMS)
 
 #######
 # Run #
@@ -126,7 +126,7 @@ _install_cluster:
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)'
 
 install_cluster:
-	/usr/local/bin/skipper make _install_cluster $(SKIPPER_PARAMS)
+	skipper make _install_cluster $(SKIPPER_PARAMS)
 
 
 #########
@@ -137,13 +137,13 @@ _deploy_nodes:
 	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
-	/usr/local/bin/skipper make _deploy_nodes ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
+	skipper make _deploy_nodes ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
 
 deploy_nodes:
-	/usr/local/bin/skipper make _deploy_nodes $(SKIPPER_PARAMS)
+	skipper make _deploy_nodes $(SKIPPER_PARAMS)
 
 destroy_nodes:
-	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID)' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID)' $(SKIPPER_PARAMS)
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -170,7 +170,7 @@ create_inventory_client: bring_bm_inventory
 	$(CONTAINER_COMMAND) run -it --rm -u $(CURRENT_USER) -v $(PWD)/build:/swagger-api/out -v $(PWD)/bm-inventory/swagger.yaml:/swagger.yaml:ro,Z -v $(PWD)/build/code-gen-config.json:/config.json:ro,Z jimschubert/swagger-codegen-cli:2.3.1 generate --lang python --config /config.json --output ./bm-inventory-client/ --input-spec /swagger.yaml
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
-	/usr/local/bin/skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
 
 build_and_push_image: create_inventory_client
 	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
@@ -185,7 +185,7 @@ _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -iO
 
 download_iso:
-	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)
+	skipper make _download_iso $(SKIPPER_PARAMS)
 
 download_iso_for_remote_use: deploy_bm_inventory
-	/usr/local/bin/skipper make _download_iso $(SKIPPER_PARAMS)
+	skipper make _download_iso $(SKIPPER_PARAMS)

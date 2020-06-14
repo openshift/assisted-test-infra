@@ -62,13 +62,14 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
     create_nodes(image_path, storage_path=storage_path, master_count=master_count, nodes_details=nodes_details)
 
     # TODO: Check for only new nodes
-    utils.wait_till_nodes_are_ready(nodes_count=nodes_count, cluster_name=nodes_details["cluster_name"])
+    utils.wait_till_nodes_are_ready(nodes_count=nodes_count, network_name=nodes_details["libvirt_network_name"])
     if not inventory_client:
         log.info("No inventory url, will not wait till nodes registration")
         return
 
     log.info("Wait till nodes will be registered")
-    waiting.wait(lambda: utils.are_all_libvirt_nodes_in_cluster_hosts(inventory_client, cluster.id),
+    waiting.wait(lambda: utils.are_all_libvirt_nodes_in_cluster_hosts(inventory_client, cluster.id,
+                                                                      nodes_details["libvirt_network_name"]),
                  timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
                  sleep_seconds=10, waiting_for="Nodes to be registered in inventory service")
     log.info("Registered nodes are:")
@@ -77,9 +78,9 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
 
 # Set nodes roles by vm name
 # If master in name -> role will be master, same for worker
-def set_hosts_roles(client, cluster_id):
+def set_hosts_roles(client, cluster_id, network_name):
     added_hosts = []
-    libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name()
+    libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(network_name)
     inventory_hosts = client.get_cluster_hosts(cluster_id)
 
     for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
@@ -147,7 +148,7 @@ def nodes_flow(client, cluster_name, cluster):
                                           nodes_details=nodes_details)
     if client:
         cluster_info = client.cluster_get(cluster.id)
-        macs = utils.get_libvirt_nodes_macs()
+        macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
 
         if not (cluster_info.api_vip and cluster_info.ingress_vip):
             utils.wait_till_hosts_with_macs_are_in_status(client=client, cluster_id=cluster.id, macs=macs,
@@ -156,7 +157,7 @@ def nodes_flow(client, cluster_name, cluster):
         else:
             log.info("VIPs already configured")
 
-        set_hosts_roles(client, cluster.id)
+        set_hosts_roles(client, cluster.id, nodes_details["libvirt_network_name"])
         utils.wait_till_hosts_with_macs_are_in_status(client=client, cluster_id=cluster.id, macs=macs,
                                                       statuses=[consts.NodesStatus.KNOWN])
         log.info("Printing after setting roles")
@@ -173,9 +174,9 @@ def main():
     client = None
     cluster = {}
     cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
-
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
+        utils.recreate_folder(consts.IMAGE_FOLDER)
         client = bm_inventory_api.create_client(args.inventory_url)
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)

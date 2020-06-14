@@ -9,7 +9,7 @@ function configure_minikube() {
 
 function init_minikube() {
     #If the vm exists, it has already been initialized
-    if [[ "$(virsh list --all)" != *"minikube"* ]]; then
+    if [[ "$(virsh -c qemu:///system list --all)" != *"minikube"* ]]; then
       #minikube start --kvm-network=test-infra-net --vm-driver=kvm2 --memory=4096 --force
 	    minikube start --vm-driver=kvm2 --memory=4096 --force
     fi
