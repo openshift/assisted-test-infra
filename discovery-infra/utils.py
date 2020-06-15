@@ -5,7 +5,6 @@ from pathlib import Path
 import shlex
 import waiting
 import json
-import pprint
 from retry import retry
 import consts
 from logger import log
@@ -125,7 +124,6 @@ def wait_till_hosts_with_macs_are_in_status(client, cluster_id, macs, statuses,
     except:
         hosts = get_cluster_hosts_with_mac(client, cluster_id, macs)
         log.info("All nodes: %s", hosts)
-        pprint.pprint(hosts)
         raise
 
 
@@ -143,7 +141,6 @@ def wait_till_all_hosts_are_in_status(client, cluster_id, nodes_count, statuses,
     except:
         hosts = client.get_cluster_hosts(cluster_id)
         log.info("All nodes: %s", hosts)
-        pprint.pprint(hosts)
         raise
 
 
@@ -155,7 +152,6 @@ def wait_till_cluster_is_in_status(client, cluster_id, statuses, timeout=consts.
                      sleep_seconds=interval, waiting_for="Cluster to be in status %s" % statuses)
     except:
         log.info("Cluster: %s", client.cluster_get(cluster_id))
-        pprint.pprint(client.cluster_get(cluster_id))
         raise
 
 

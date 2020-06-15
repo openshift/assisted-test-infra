@@ -78,7 +78,7 @@ def create_nodes_and_wait_till_registered(inventory_client, cluster, image_path,
 # Set nodes roles by vm name
 # If master in name -> role will be master, same for worker
 def set_hosts_roles(client, cluster_id):
-    hosts = []
+    added_hosts = []
     libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name()
     inventory_hosts = client.get_cluster_hosts(cluster_id)
 
@@ -87,10 +87,10 @@ def set_hosts_roles(client, cluster_id):
             hw = json.loads(host["hardware_info"])
 
             if libvirt_mac.lower() in map(lambda nic: nic["mac"].lower(), hw["nics"]):
-                hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
+                added_hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
 
-    if hosts:
-        client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts)
+    assert len(libvirt_nodes) == len(added_hosts), "All nodes should have matching inventory hosts"
+    client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=added_hosts)
 
 
 def set_cluster_vips(client, cluster_id):
