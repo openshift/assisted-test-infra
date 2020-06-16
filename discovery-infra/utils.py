@@ -35,11 +35,11 @@ def get_service_url_with_retries(service_name):
 
 def get_service_url(service_name):
     try:
-        log.info("Getting inventory url")
+        log.info("Getting inventory URL")
         cmd = "minikube service %s --url -n assisted-installer" % service_name
         return run_command(cmd)
     except:
-        log.error("Failed to get inventory url")
+        log.error("Failed to get inventory URL")
         raise
 
 

@@ -67,11 +67,11 @@ function wait_for_url_and_run() {
       echo "Sleeping for 30 seconds"
       sleep 30s
 
-      echo "Verifying url and port are accesible"
+      echo "Verifying URL and port are accessible"
       url_reachable "$1" && STATUS=$? || STATUS=$?
     done
     if [ $RETRIES -eq 0 ]; then
-      echo "Timeout reached, url $1 not reachable"
+      echo "Timeout reached, URL $1 not reachable"
       exit 1
     fi
 }
