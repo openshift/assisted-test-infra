@@ -16,6 +16,7 @@ BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
 CLUSTER_ID := $(or $(CLUSTER_ID), "")
 IMAGE_TAG := latest
+DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
@@ -112,7 +113,7 @@ set_dns:
 	scripts/assisted_deployment.sh	set_dns
 
 deploy_ui: start_minikube
-	scripts/deploy_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_ui.sh
 
 kill_all_port_forwardings:
 	scripts/utils.sh kill_all_port_forwardings
@@ -154,7 +155,7 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 
 deploy_bm_inventory: start_minikube bring_bm_inventory
 	mkdir -p bm-inventory/build
-	scripts/deploy_bm_inventory.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_bm_inventory.sh
 
 bring_bm_inventory:
 	@if cd bm-inventory; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi

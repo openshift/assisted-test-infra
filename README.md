@@ -126,27 +126,28 @@ make kill_all_port_forwardings
 
 ## OS params used for configurations
 ~~~~
-BMI_BRANCH         bm-inventory branch to use, default is master
-IMAGE              path to iso to spawn vm with, if set vms will be spawn with this iso without creating cluster
-NUM_MASTERS        number of vms to spawn as masters, default is 3 
-WORKER_MEMORY      memory for worker vm, default 8892mb
-MASTER_MEMORY      memory for master vm 16984
-NUM_WORKERS        number of vms to spawn as workerm default 0
-SSH_PUB_KEY        ssh public key to use for image generation, gives option to ssh to vms, default is in ssh_key/key_pub
-PULL_SECRET        pull secret to use for cluster installation command, no option to install cluster without it.
-CLUSTER_NAME       cluster name, used as prefix for virsh resources, default test-infra-cluster)
-BASE_DOMAIN        base domain, needed for dns name, default redhat.com
-NETWORK_CIDR       network cidr to use for virsh vm network, default "192.168.126.0/24"
-CLUSTER_ID         cluster id , used for install_cluster command, default will be the last spawned cluster
-NETWORK_NAME       virsh network name for vms creation, default test-infra-net
-NETWORK_BRIDGE     network bridge to use while creating virsh network, default tt0
-OPENSHIFT_VERSION  openshift version to install, default "4.4"
-PROXY_URL:         proxy url that will be pass to live cd image
-INVENTORY_URL:     update bm-inventory config map INVENTORY_URL param with given url
-INVENTORY_PORT:    update bm-inventory config map INVENTORY_PORT with given port
+BMI_BRANCH          bm-inventory branch to use, default is master
+IMAGE               path to iso to spawn vm with, if set vms will be spawn with this iso without creating cluster
+NUM_MASTERS         number of vms to spawn as masters, default is 3 
+WORKER_MEMORY       memory for worker vm, default 8892mb
+MASTER_MEMORY       memory for master vm 16984
+NUM_WORKERS         number of vms to spawn as workerm default 0
+SSH_PUB_KEY         ssh public key to use for image generation, gives option to ssh to vms, default is in ssh_key/key_pub
+PULL_SECRET         pull secret to use for cluster installation command, no option to install cluster without it.
+CLUSTER_NAME        cluster name, used as prefix for virsh resources, default test-infra-cluster)
+BASE_DOMAIN         base domain, needed for dns name, default redhat.com
+NETWORK_CIDR        network cidr to use for virsh vm network, default "192.168.126.0/24"
+CLUSTER_ID          cluster id , used for install_cluster command, default will be the last spawned cluster
+NETWORK_NAME        virsh network name for vms creation, default test-infra-net
+NETWORK_BRIDGE      network bridge to use while creating virsh network, default tt0
+OPENSHIFT_VERSION   openshift version to install, default "4.4"
+PROXY_URL:          proxy url that will be pass to live cd image
+INVENTORY_URL:      update bm-inventory config map INVENTORY_URL param with given url
+INVENTORY_PORT:     update bm-inventory config map INVENTORY_PORT with given port
 AGENT_DOCKER_IMAGE: agent docker image to use, will update bm-inventory config map with given value
 INSTALLER_IMAGE:    assisted-installer image to use, will update bm-inventory config map with given value
 SERVICE:            bm-inventory image to use
+DEPLOY_TAG:         the tag to be used for all images (bm-inventory, assisted-installer, agent, etc) this will override any other os params
 
 ~~~~
 
