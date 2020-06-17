@@ -97,7 +97,7 @@ class InventoryClient(object):
         hosts = self.get_cluster_hosts(cluster_id)
 
         for host in hosts:
-            hw = json.loads(host.get("hardware_info", '{"nics":[]}')
+            hw = json.loads(host.get("hardware_info", '{"nics":[]}'))
             if mac.lower() in [nic["mac"].lower() for nic in hw["nics"]]:
                 return host
 
