@@ -58,7 +58,7 @@ def wait_till_nodes_are_ready(nodes_count, network_name):
                      sleep_seconds=10, waiting_for="Nodes to have ips")
         log.info("All nodes have booted and got ips")
     except:
-        log.error("Not all nodes are ready. Current dhcp leases are %s", get_network_leases)
+        log.error("Not all nodes are ready. Current dhcp leases are %s", get_network_leases(network_name))
         raise
 
 
@@ -170,13 +170,8 @@ def file_exists(file_path):
     return Path(file_path).exists()
 
 
-def create_folder_if_not_exists(folder):
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-
 def recreate_folder(folder):
     if os.path.exists(folder):
         shutil.rmtree(folder)
-    create_folder_if_not_exists(folder)
+    os.makedirs(folder, mode=0o555, exist_ok=True)
     run_command("chmod ugo+rx %s" % folder)

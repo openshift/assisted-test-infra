@@ -77,10 +77,8 @@ function wait_for_url_and_run() {
 }
 
 function close_external_ports() {
-    sudo firewall-cmd --zone=public --permanent --remove-port=6000/tcp
-    sudo firewall-cmd --zone=public --permanent --remove-port=6008/tcp
-    #sudo firewall-cmd --reload
-    #sudo systemctl restart libvirtd
+    sudo firewall-cmd --zone=public --remove-port=6000/tcp
+    sudo firewall-cmd --zone=public --remove-port=6008/tcp
 }
 
 "$@"

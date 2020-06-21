@@ -1,6 +1,6 @@
 set -euo pipefail
 
-export NO_EXTERNAL_PORT=${NO_EXTERNAL_PORT:-n}
+export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
 
 
@@ -40,14 +40,9 @@ function install_libvirt() {
     sudo systemctl start libvirtd-tcp.socket
     sudo systemctl start libvirtd
   fi
-  if sudo virsh net-list --all | grep default | grep  inactive; then
-      echo "default network is inactive, fixing it"
-      sudo ip link del virbr0-nic
-      sudo ip link del virbr0
-      sudo virsh net-start default
-  fi
+
   current_user=$(whoami)
-  echo "Adding user $current_user ti libvirt and qemu groups"
+  echo "Adding user ${current_user} to libvirt and qemu groups"
   sudo gpasswd -a $current_user libvirt
   sudo gpasswd -a $current_user qemu
 
@@ -77,16 +72,19 @@ function install_packages(){
 function install_skipper() {
    echo "Installing skipper and adding ~/.local/bin to PATH"
    pip3 install strato-skipper==1.22.0 --user
-   sudo cp ~/.local/bin/skipper /usr/local/bin
-   # TODO maybe better to add ,local to PATH
-   # grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
-   # export PATH="$PATH:~/.local/bin"
+
+   grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
+   export PATH="$PATH:~/.local/bin"
+
+   if ! [ -x "$(command -v skipper)" ]; then
+     sudo cp ~/.local/bin/skipper /usr/local/bin
+   fi
 }
 
 function config_firewalld() {
   echo "Config firewall"
   sudo systemctl start firewalld
-  if  [ "${NO_EXTERNAL_PORT}" = "n" ];then
+  if  [ "${EXTERNAL_PORT}" = "y" ];then
     echo "configuring external ports"
     sudo firewall-cmd --zone=public --add-port=6000/tcp
     sudo firewall-cmd --zone=public --add-port=6008/tcp
@@ -108,12 +106,17 @@ function additional_configs() {
 
   if sudo virsh net-list --all | grep default | grep  inactive; then
     echo "default network is inactive, fixing it"
-    sudo ip link del virbr0-nic
-    sudo ip link del virbr0
+    if sudo ip link del virbr0-nic; then
+      echo "Deleting virbr0-nic"
+    fi
+    if sudo ip link del virbr0; then
+       echo "Deleting virbr0"
+    fi
     sudo virsh net-start default
   fi
   touch ~/.gitconfig
   sudo chmod ugo+rx "$(dirname "$(pwd)")"
+  echo "disaling selinux by setenforce 0"
   sudo setenforce 0
 }
 

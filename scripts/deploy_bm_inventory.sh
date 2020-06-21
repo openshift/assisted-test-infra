@@ -5,7 +5,6 @@ source scripts/utils.sh
 
 
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
-export NO_EXTERNAL_PORT=${NO_EXTERNAL_PORT:-n}
 export SERVICE_NAME=bm-inventory
 export INVENTORY_URL=$(get_main_ip)
 export INVENTORY_PORT=${INVENTORY_PORT:-6000}
