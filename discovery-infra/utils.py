@@ -173,5 +173,5 @@ def file_exists(file_path):
 def recreate_folder(folder):
     if os.path.exists(folder):
         shutil.rmtree(folder)
-    os.makedirs(folder, mode=0o555, exist_ok=True)
+    os.makedirs(folder, exist_ok=True)
     run_command("chmod ugo+rx %s" % folder)
