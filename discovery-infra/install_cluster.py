@@ -53,6 +53,7 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
     log.info("Wait till cluster is ready")
     utils.wait_till_cluster_is_in_status(client=client, cluster_id=cluster_id,
                                          statuses=[consts.ClusterStatus.READY, consts.ClusterStatus.INSTALLING])
+    cluster = client.cluster_get(cluster_id)
     if cluster.status == consts.ClusterStatus.READY:
         log.info("Install cluster %s", cluster_id)
         _install_cluster(client=client, cluster=cluster)
