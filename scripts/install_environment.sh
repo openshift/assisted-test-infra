@@ -73,8 +73,8 @@ function install_skipper() {
    echo "Installing skipper and adding ~/.local/bin to PATH"
    pip3 install strato-skipper==1.22.0 --user
 
-   grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
-   export PATH="$PATH:~/.local/bin"
+   #grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
+   #export PATH="$PATH:~/.local/bin"
 
    if ! [ -x "$(command -v skipper)" ]; then
      sudo cp ~/.local/bin/skipper /usr/local/bin
