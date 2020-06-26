@@ -101,4 +101,3 @@ variable "libvirt_storage_pool_path" {
   type        = string
   description = "storage pool path"
 }
-

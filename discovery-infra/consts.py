@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 
 TF_FOLDER = "build/terraform"

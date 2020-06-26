@@ -3,7 +3,6 @@ set -euo pipefail
 
 source scripts/utils.sh
 
-
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export SERVICE_NAME=bm-inventory
 export INVENTORY_URL=$(get_main_ip)
@@ -13,7 +12,7 @@ mkdir -p build
 
 print_log "Updating bm_inventory params"
 skipper run discovery-infra/update_bm_inventory_cm.py
-skipper run	"make -C bm-inventory/ deploy-all" ${SKIPPER_PARAMS} DEPLOY_TAG=${DEPLOY_TAG}
+skipper run "make -C bm-inventory/ deploy-all" ${SKIPPER_PARAMS} DEPLOY_TAG=${DEPLOY_TAG}
 
 print_log "Wait till ${SERVICE_NAME} api is ready"
 wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url -n assisted-installer)" "echo \"waiting for ${SERVICE_NAME}\""
