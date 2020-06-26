@@ -1,0 +1,8 @@
+pull-secret.txt
+inventory/hosts
+collections/ansible_collections/community
+collections/ansible_collections/google
+collections/ansible_collections/containers
+collections/ansible_collections/ansible
+collections/ansible_collections/okd/assisted_installer/roles/*/.travis.yml
+collections/ansible_collections/okd/assisted_installer/*py

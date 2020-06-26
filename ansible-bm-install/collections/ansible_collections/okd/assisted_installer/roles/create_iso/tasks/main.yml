@@ -1,0 +1,53 @@
+---
+# tasks file for create_iso
+
+- name: Add "{{ ansible_user }}" ssh key if not present
+  user:
+    name: "{{ ansible_user }}"
+    state: present
+    generate_ssh_key: yes
+  become: yes
+
+- name: Check on the key
+  slurp:
+    src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+  register: key
+
+- name: Copy skipper to /usr/bin if running as root
+  copy:
+    src: /usr/local/bin/skipper
+    dest: /usr/bin
+    owner: root
+    group: root
+    mode: '0755'
+    remote_src: yes
+  when: ansible_user == 'root'
+
+- name: Create the build image
+  make:
+    chdir: "{{ discovery_make_iso_dir }}"
+    target: image_build
+
+- name: Create Discovery ISO
+  make:
+    chdir: "{{ discovery_make_iso_dir }}"
+    target: download_iso
+  environment:
+    BASE_DOMAIN: "{{ domain |quote}}"
+    CLUSTER_NAME: "{{ cluster_name|quote }}"
+    PULL_SECRET: "{{ pull_secret|to_json }}"
+    OPENSHIFT_VERSION: "{{ openshift_version|quote }}"
+    CLUSTER_ID: "{{ cluster_id | quote }}"
+    REMOTE_INVENTORY_URL: "http://{{ groups['assisted_installer'][0] }}:{{ remote_inventory_port }}"
+    SSH_PUB_KEY: "{{ key.content | b64decode|trim }}"
+    PROXY_URL: "{{ proxy_url | quote }}"
+    BASE_DNS_DOMAINS: "{{ domain | quote }}"
+  tags:
+  - create_iso
+
+- name: Set proper permissions to the Discovery ISO
+  file:
+    path: "{{ iso_image_location }}{{ iso_name }}"
+    mode: '0755'
+  tags:
+  - create_iso

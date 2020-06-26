@@ -1,0 +1,5 @@
+---
+# defaults file for host_iso
+
+iso_image_location: "/tmp/images/"
+webserver_port: 8080

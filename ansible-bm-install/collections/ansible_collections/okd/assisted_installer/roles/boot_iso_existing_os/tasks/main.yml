@@ -1,0 +1,71 @@
+---
+# tasks file for boot_iso_existing_os
+#
+- name: Install EPEL for p7zip-plugins package required by iso_extract module
+  package:
+    name:
+      - https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+  become: yes
+
+- name: Install p7zip-plugins package required by iso_extract module
+  package:
+    name: p7zip-plugins
+  become: yes
+
+- name: Find any old temp dirs created by Ansible
+  find:
+    paths: /tmp
+    patterns: 'ansible.*'
+    file_type: directory
+  register: temp_results
+  become: yes
+
+- name: Delete any old temp dirs created by Ansible
+  file:
+    path: "{{ item['path'] }}"
+    state: absent
+  loop: "{{ temp_results['files'] }}"
+  become: yes
+
+- name: Create a temp directory to store ISO
+  tempfile:
+    state: directory
+  register: tempdir
+
+- name: Create mnt directory within temp directory
+  file:
+    path: "{{ tempdir.path }}/mnt"
+    state: directory
+    mode: '0755'
+
+- name: Download discovery ISO to remote server
+  get_url:
+    url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+    dest: "{{ tempdir.path }}"
+
+- name: Mount and Extract vmlinuz,initramfs
+  iso_extract:
+    image: "{{ tempdir.path }}/installer-image.iso"
+    dest: "{{ tempdir.path }}/mnt"
+    files:
+    - "images/initramfs.img"
+    - "images/vmlinuz"
+
+#- name: Run kexec on system
+#  shell: |
+#    kexec --force --reset-vga --initrd=initramfs.img --append='mitigations=auto,nosmt systemd.unified_cgroup_hierarchy=0 coreos.liveiso={{ liveiso_version }} rd.neednet=1 ip=dhcp ignition.firstboot ignition.platform.id=metal' vmlinuz
+#  args:
+#    chdir: "{{ tempdir.path }}/mnt"
+
+- name: Prepare kexec statement
+  shell: |
+    kexec -l vmlinuz --initrd=initramfs.img --append='mitigations=auto,nosmt systemd.unified_cgroup_hierarchy=0 coreos.liveiso={{ liveiso_version }} rd.neednet=1 ip=dhcp ignition.firstboot ignition.platform.id=metal'
+  args:
+    chdir: "{{ tempdir.path }}/mnt"
+
+- name: execute kexec
+  shell: kexec -e
+  async: 60
+  poll: 0
+  args:
+    chdir: "{{ tempdir.path }}/mnt"

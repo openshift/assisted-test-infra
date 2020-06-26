@@ -1,0 +1,129 @@
+---
+# tasks file for boot_iso
+
+- name: Mount Live ISO, Boot into Live ISO (Dell iDRAC9+ only)
+  block:
+
+    - name: DELL Power ON
+      community.general.redfish_command:
+        category: Systems
+        command: PowerOn
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+
+    - name: Set Dell OneTimeBoot VirtualCD
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: POST
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: {"ShareParameters":{"Target":"ALL"},"ImportBuffer":"<SystemConfiguration><Component FQDD=\"iDRAC.Embedded.1\"><Attribute Name=\"ServerBoot.1#BootOnce\">Enabled</Attribute><Attribute Name=\"ServerBoot.1#FirstBootDevice\">VCD-DVD</Attribute></Component></SystemConfiguration>"}
+        body_format: json
+        validate_certs: no
+        status_code: 202
+        return_content: yes
+
+    - name: DELL Eject Virtual Media (if any)
+      community.general.redfish_command:
+        category: Manager
+        command: VirtualMediaEject
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        virtual_media:
+          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+        resource_id: iDRAC.Embedded.1
+      ignore_errors: yes
+
+    - name: DELL Insert Virtual Media
+      community.general.redfish_command:
+        category: Manager
+        command: VirtualMediaInsert
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        virtual_media:
+          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+          media_types:
+          - CD
+          - DVD
+        resource_id: iDRAC.Embedded.1
+
+    - name: DELL Restart system power gracefully
+      community.general.redfish_command:
+        category: Systems
+        command: PowerGracefulRestart
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+  when: hostvars[item]['vendor'] == 'Dell'
+
+- name: Mount Live ISO, Boot into Live ISO (HPE servers)
+  block:
+    - name: HPE poweroff system
+      hpilo_boot:
+        host: "{{ hostvars[item]['bmc_address'] }}"
+        login: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        state: "poweroff"
+
+    - name: HPE disconnect existing Virtual Media
+      hpilo_boot:
+        host: "{{ hostvars[item]['bmc_address'] }}"
+        login: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        state: "disconnect"
+
+    - name: HPE task to boot a system using an ISO
+      hpilo_boot:
+        host: "{{ hostvars[item]['bmc_address'] }}"
+        login: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        image: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+        media: cdrom
+  when: hostvars[item]['vendor'] == 'HPE'
+
+- name: Mount Live ISO, Boot into Live ISO (SuperMicro servers)
+  block:
+    - name: SuperMicro Power ON
+      community.general.redfish_command:
+        category: Systems
+        command: PowerOn
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+
+    - name: Unmount SuperMicro ISO
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/1/VM1/CfgCD/Actions/IsoConfig.UnMount"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: POST
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: {}
+        body_format: json
+        validate_certs: no
+        status_code: [200,202,204]
+        return_content: yes
+
+    - name: Mount SuperMicro ISO
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/1/VM1/CfgCD/Actions/IsoConfig.Mount"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: PATCH
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: {"Host": "{{ groups['assisted_installer'][0] }}:8080","Path": "\\ISO\\installer-image.iso"}
+        body_format: json
+        validate_certs: no
+        status_code: [200,202,204]
+        return_content: yes
+  when: hostvars[item]['vendor'] == 'SuperMicro'
