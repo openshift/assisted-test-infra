@@ -1,7 +1,0 @@
-FROM python:slim
-
-COPY .pre-commit-config.yaml /build/
-RUN apt-get update && apt-get install -y --no-install-recommends git make && \
-    pip install pre-commit==2.5.1
-
-RUN cd /build && git init . && pre-commit install-hooks

@@ -1,3 +1,13 @@
+
+FROM jimschubert/swagger-codegen-cli:2.3.1 AS swagger
+
+# Generates bm-inventory-client
+RUN wget https://raw.githubusercontent.com/filanov/bm-inventory/master/swagger.yaml -O /swagger.yaml && \
+    sed -i '/pattern:/d' /swagger.yaml && \
+	echo '{"packageName" : "bm_inventory_client", "packageVersion": "1.0.0"}' > /config.json
+
+RUN /docker-entrypoint.sh generate --lang python --config /config.json --output /bm-inventory-client --input-spec /swagger.yaml
+
 FROM centos:8
 ENV container docker
 
@@ -22,5 +32,11 @@ ADD scripts/install_minikube.sh /root/scripts/install_minikube.sh
 RUN /root/scripts/install_minikube.sh
 COPY requirements.txt /tmp/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
-ADD build/bm-inventory-client /root/bm-inventory-client
+
+# Installing bm-inventory-client
+COPY --from=swagger bm-inventory-client/ /root/bm-inventory-client
 RUN cd /root/bm-inventory-client/ && python3 setup.py sdist && pip3 install dist/bm-inventory-client-1.0.0.tar.gz && rm -rf /root/bm-inventory-client
+
+# Installing pre-commit
+COPY .pre-commit-config.yaml /build/
+RUN cd /build && git init . && pre-commit install-hooks
