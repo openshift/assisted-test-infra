@@ -11,10 +11,6 @@ rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
 rm -f /lib/systemd/system/basic.target.wants/*;\
 rm -f /lib/systemd/system/anaconda.target.wants/*
 
-
-
-VOLUME [ "/var/lib/libvirt/" ]
-
 RUN wget `wget https://www.terraform.io/downloads.html -q -O - | grep -oP "(https://releases.hashicorp.com/terraform/.*linux_amd64\.zip)(?=\")" | head -n 1` && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
 
 RUN wget https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz && tar -C /usr/local -xf go1.13.4.linux-amd64.tar.gz && rm -f go1.13.4.linux-amd64.tar.gz 
