@@ -189,3 +189,13 @@ download_iso:
 
 download_iso_for_remote_use: deploy_bm_inventory
 	skipper make _download_iso $(SKIPPER_PARAMS)
+
+########
+# Test #
+########
+
+lint:
+	docker-compose build $@ && docker-compose run --rm $@ make _$@
+
+_lint:
+	pre-commit run --all-files
