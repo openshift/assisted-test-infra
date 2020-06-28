@@ -11,22 +11,22 @@ export UI_DEPLOY_FILE=build/ui_deploy.yaml
 export UI_SERVICE_NAME=ocp-metal-ui
 export NO_UI=${NO_UI:-n}
 if [ "${CONTAINER_COMMAND}" = "podman" ]; then
-  export PODMAN_FLAGS="--pull=always"
+    export PODMAN_FLAGS="--pull=always"
 else
-  export PODMAN_FLAGS=""
+    export PODMAN_FLAGS=""
 fi
 
-if  [ "${NO_UI}" != "n" ];then
+if [ "${NO_UI}" != "n" ]; then
     exit 0
 fi
 
 mkdir -p build
 #In case deploy tag is empty use latest
-[[ -z "${DEPLOY_TAG}" ]] && export DEPLOY_TAG=latest 
+[[ -z "${DEPLOY_TAG}" ]] && export DEPLOY_TAG=latest
 
 print_log "Starting ui"
 
-${CONTAINER_COMMAND} run ${PODMAN_FLAGS} --rm quay.io/ocpmetal/ocp-metal-ui:latest /deploy/deploy_config.sh -i quay.io/ocpmetal/ocp-metal-ui:${DEPLOY_TAG} > ${UI_DEPLOY_FILE}
+${CONTAINER_COMMAND} run ${PODMAN_FLAGS} --rm quay.io/ocpmetal/ocp-metal-ui:latest /deploy/deploy_config.sh -i quay.io/ocpmetal/ocp-metal-ui:${DEPLOY_TAG} >${UI_DEPLOY_FILE}
 kubectl --kubeconfig=${KUBECONFIG} apply -f ${UI_DEPLOY_FILE}
 
 print_log "Wait till ui api is ready"

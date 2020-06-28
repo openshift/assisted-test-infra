@@ -1,7 +1,9 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 import argparse
 import subprocess
+
 from logger import log
 
 DEFAULT_SKIP_LIST = ["default"]
@@ -9,14 +11,22 @@ DEFAULT_SKIP_LIST = ["default"]
 
 def run_command(command, check=False, resource_filter=None):
     if resource_filter:
-        command += "| grep -E \"%s\"" % "|".join(resource_filter)
-    process = subprocess.run(command, shell=True, check=check, stdout=subprocess.PIPE, universal_newlines=True)
+        command += '| grep -E "%s"' % "|".join(resource_filter)
+    process = subprocess.run(
+        command,
+        shell=True,
+        check=check,
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+    )
     output = process.stdout.strip()
     return output
 
 
 def clean_domains(skip_list, resource_filter):
-    domains = run_command("virsh -c qemu:///system list --all --name", resource_filter=resource_filter)
+    domains = run_command(
+        "virsh -c qemu:///system list --all --name", resource_filter=resource_filter
+    )
     domains = domains.splitlines()
     for domain in domains:
         log.info("Deleting domain %s", domain)
@@ -26,16 +36,24 @@ def clean_domains(skip_list, resource_filter):
 
 
 def clean_volumes(pool):
-    volumes_with_path = run_command("virsh -c qemu:///system vol-list %s | tail -n +3" % pool).splitlines()
+    volumes_with_path = run_command(
+        "virsh -c qemu:///system vol-list %s | tail -n +3" % pool
+    ).splitlines()
     for volume_with_path in volumes_with_path:
         volume, _ = volume_with_path.split()
         if volume:
             log.info("Deleting volume %s in pool %s", volume, pool)
-            run_command("virsh -c qemu:///system vol-delete --pool %s %s" % (pool, volume), check=False)
+            run_command(
+                "virsh -c qemu:///system vol-delete --pool %s %s" % (pool, volume),
+                check=False,
+            )
 
 
 def clean_pools(skip_list, resource_filter):
-    pools = run_command("virsh -c qemu:///system pool-list --all --name", resource_filter=resource_filter)
+    pools = run_command(
+        "virsh -c qemu:///system pool-list --all --name",
+        resource_filter=resource_filter,
+    )
     pools = pools.splitlines()
     for pool in pools:
         if pool and pool not in skip_list:
@@ -46,7 +64,9 @@ def clean_pools(skip_list, resource_filter):
 
 
 def clean_networks(skip_list, resource_filter):
-    networks = run_command("virsh -c qemu:///system net-list --all --name", resource_filter=resource_filter)
+    networks = run_command(
+        "virsh -c qemu:///system net-list --all --name", resource_filter=resource_filter
+    )
     networks = networks.splitlines()
     for net in networks:
         if net and net not in skip_list:
@@ -75,11 +95,27 @@ def main(p_args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Description of your program')
+    parser = argparse.ArgumentParser(description="Description of your program")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-a', '--all', help='Clean all virsh resources', action="store_true")
-    group.add_argument('-m', '--minikube', help='Clean minikube resources', action="store_true")
-    group.add_argument('-sm', '--skip-minikube', help='Clean all but skip minikube resources', action="store_true")
-    group.add_argument('-f', '--filter', help='List of filter of resources to delete', nargs="*",type=str, default=None)
+    group.add_argument(
+        "-a", "--all", help="Clean all virsh resources", action="store_true"
+    )
+    group.add_argument(
+        "-m", "--minikube", help="Clean minikube resources", action="store_true"
+    )
+    group.add_argument(
+        "-sm",
+        "--skip-minikube",
+        help="Clean all but skip minikube resources",
+        action="store_true",
+    )
+    group.add_argument(
+        "-f",
+        "--filter",
+        help="List of filter of resources to delete",
+        nargs="*",
+        type=str,
+        default=None,
+    )
     args = parser.parse_args()
     main(args)

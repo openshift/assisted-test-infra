@@ -3,7 +3,7 @@
 source create_full_environment.sh
 retVal=$?
 if [ $retVal -ne 0 ]; then
-  exit $retVal
+    exit $retVal
 fi
 
 source scripts/assisted_deployment.sh
