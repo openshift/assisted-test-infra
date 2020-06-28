@@ -35,12 +35,6 @@ repos:
     rev: v2.5.0
     hooks:
       - id: flake8
-  - repo: https://github.com/pecigonzalo/pre-commit-shfmt.git
-    rev: 9ee28e3f14556aa88dd5255f2e091d1d2f607bb7
-    hooks:
-      - id: shell-fmt
-        args:
-          - --indent=4
   - repo: https://github.com/asottile/blacken-docs
     rev:  v1.6.0
     hooks:
