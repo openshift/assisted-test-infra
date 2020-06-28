@@ -19,7 +19,7 @@ On the bare metal host:
 ```bash
 dnf install -y git make
 cd /home/test # don't do it on /root it will breaks build image mounts and fail to run
-git clone https://github.com/tsorya/test-infra.git
+git clone https://github.com/openshift/assisted-test-infra.git
 ```
 When using this infra for the first time on a host, run:
 ```bash
