@@ -9,27 +9,21 @@ RUN wget https://raw.githubusercontent.com/filanov/bm-inventory/master/swagger.y
 RUN /docker-entrypoint.sh generate --lang python --config /config.json --output /bm-inventory-client --input-spec /swagger.yaml
 
 FROM centos:8
-ENV container docker
 
-RUN yum -y install systemd make python3 virt-viewer virt-install libvirt-client git libvirt-devel gcc unzip wget jq && yum clean all; \
-(cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
-rm -f /lib/systemd/system/multi-user.target.wants/*;\
-rm -f /etc/systemd/system/*.wants/*;\
-rm -f /lib/systemd/system/local-fs.target.wants/*; \
-rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-rm -f /lib/systemd/system/basic.target.wants/*;\
-rm -f /lib/systemd/system/anaconda.target.wants/*
+RUN yum -y install make python3 libvirt-client libvirt-devel gcc unzip wget curl git python3-devel && yum clean all;
 
 RUN wget `wget https://www.terraform.io/downloads.html -q -O - | grep -oP "(https://releases.hashicorp.com/terraform/.*linux_amd64\.zip)(?=\")" | head -n 1` && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
 
-RUN wget https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz && tar -C /usr/local -xf go1.13.4.linux-amd64.tar.gz && rm -f go1.13.4.linux-amd64.tar.gz
+RUN curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.10.1/minikube-linux-amd64 \
+  && chmod +x minikube && mkdir -p /usr/local/bin/ && install minikube /usr/local/bin/
+RUN curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x kubectl && mv kubectl /usr/bin/
+
 ENV PATH /usr/local/go/bin:$PATH
 RUN mkdir -p ~/.terraform.d/plugins
-RUN go get -v -u github.com/dmacvicar/terraform-provider-libvirt && cd ~/.terraform.d/plugins && go build -a -v github.com/dmacvicar/terraform-provider-libvirt && rm -rf ~/go
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install && rm -rf awscliv2.zip
-ADD scripts/install_minikube.sh /root/scripts/install_minikube.sh
-RUN /root/scripts/install_minikube.sh
+RUN wget https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.2/terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz \
+ && tar -C ~/.terraform.d/plugins  -xf terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz \
+ && rm -rf terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz
+
 COPY requirements.txt /tmp/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 

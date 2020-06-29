@@ -23,17 +23,6 @@ function install_kubectl() {
     fi
 }
 
-function install_kvm2_driver() {
-    if ! [ -x "$(command -v docker-machine-driver-kvm2)" ]; then
-        echo "Installing kvm2_driver..."
-        curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2
-        chmod +x docker-machine-driver-kvm2
-        ${SUDO} mv docker-machine-driver-kvm2 /usr/bin/
-    else
-        echo "docker-machine-driver-kvm2 is already installed"
-    fi
-}
-
 function install_oc() {
     if ! [ -x "$(command -v oc)" ]; then
         echo "Installing oc..."
@@ -45,5 +34,4 @@ function install_oc() {
 
 install_minikube
 install_kubectl
-install_kvm2_driver
 install_oc
