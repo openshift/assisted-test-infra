@@ -188,6 +188,7 @@ download_iso_for_remote_use: deploy_bm_inventory
 ########
 
 lint:
+	mkdir -p build
 	skipper make _lint
 
 _lint:
