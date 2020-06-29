@@ -34,6 +34,7 @@ mkdir -p ${SCREENSHOT_DIR}
 ${CONTAINER_COMMAND} run -it \
   -w /e2e \
   -e CYPRESS_BASE_URL="${CYPRESS_BASE_URL}" \
+  -e CYPRESS_PULL_SECRET="${PULL_SECRET}" \
   --security-opt label=disable \
   --mount type=bind,source=${VIDEO_DIR},target=/e2e/cypress/videos \
   --mount type=bind,source=${SCREENSHOT_DIR},target=/e2e/cypress/screenshots \
