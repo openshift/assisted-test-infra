@@ -9,7 +9,6 @@ STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 SHELL=/bin/sh
-CURRENT_USER=$(shell id -u $(USER))
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 CLUSTER_NAME := $(or $(CLUSTER_NAME),test-infra-cluster)
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
