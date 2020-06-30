@@ -8,6 +8,7 @@ IMAGE_PATH = "%s/installer-image.iso" % IMAGE_FOLDER
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
 SSH_KEY = "ssh_key/key.pub"
 NODES_REGISTERED_TIMEOUT = 180
+START_CLUSTER_INSTALLATION_TIMEOUT = 180
 TF_TEMPLATE = "terraform_files"
 STARTING_IP_ADDRESS = "192.168.126.10"
 NUMBER_OF_MASTERS = 3
