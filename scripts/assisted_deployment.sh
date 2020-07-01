@@ -5,6 +5,11 @@ function destroy_all() {
 }
 
 function set_dns() {
+    if ! [ -z "$BASE_DNS_DOMAINS" ]; then
+        # DNS registration should be handled by inventory
+        exit 0
+    fi
+
     API_VIP=$(ip route show dev ${NETWORK_BRIDGE:-"tt0"} | cut -d\  -f7)
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
     if ! [ -f "$FILE" ]; then
