@@ -3,10 +3,10 @@ import json
 
 import consts
 import utils
+import shutil
 import waiting
 from bm_inventory_client import ApiClient, Configuration, api, models
 from logger import log
-from tqdm import tqdm
 
 
 class InventoryClient(object):
@@ -54,11 +54,8 @@ class InventoryClient(object):
         return self.client.get_cluster(cluster_id=cluster_id)
 
     def _download(self, response, file_path):
-        progress = tqdm(iterable=response.read_chunked())
         with open(file_path, "wb") as f:
-            for chunk in progress:
-                f.write(chunk)
-        progress.close()
+            shutil.copyfileobj(response, f)
 
     def generate_image(self, cluster_id, ssh_key, proxy_url=None):
         log.info("Generating image for cluster %s", cluster_id)
