@@ -1,4 +1,5 @@
 
+BMI_ORG := $(or $(BMI_ORG), "filanov")
 BMI_BRANCH := $(or $(BMI_BRANCH), "master")
 IMAGE := $(or $(IMAGE), "")
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
@@ -38,6 +39,7 @@ REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
 all:
 	./install_env_and_run_full_flow.sh
 
+
 destroy: destroy_nodes delete_minikube
 	rm -rf build/terraform/*
 
@@ -51,7 +53,7 @@ create_full_environment:
 create_environment: image_build bring_bm_inventory start_minikube
 
 image_build:
-	$(CONTAINER_COMMAND) pull $(IMAGE_REG_NAME):$(IMAGE_TAG) && $(CONTAINER_COMMAND) image tag $(IMAGE_REG_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) || $(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+	$(CONTAINER_COMMAND) build --build-arg BMI_ORG=${BMI_ORG} --build-arg BMI_BRANCH=${BMI_BRANCH}  -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
 
 clean:
 	rm -rf build
@@ -165,8 +167,7 @@ clear_inventory:
 delete_all_virsh_resources: destroy_nodes delete_minikube
 	skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
 
-build_and_push_image:
-	$(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
+build_and_push_image: image_build
 	$(CONTAINER_COMMAND) tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_REG_NAME):$(IMAGE_TAG)
 	$(CONTAINER_COMMAND) push $(IMAGE_REG_NAME):$(IMAGE_TAG)
 

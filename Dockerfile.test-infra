@@ -1,3 +1,5 @@
+
+
 FROM centos:8
 
 RUN yum -y install make python3 libvirt-client libvirt-devel gcc unzip wget curl git python3-devel && yum clean all;
@@ -16,3 +18,7 @@ RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 # setting pre-commit env
 ENV PRE_COMMIT_HOME build
+
+ARG BMI_ORG
+ARG BMI_BRANCH
+RUN pip3 install --exists-action i -e  git+https://github.com/${BMI_ORG}/bm-inventory@${BMI_BRANCH}#egg=bm-inventory\&subdirectory=bm-inventory-client
