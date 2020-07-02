@@ -5,7 +5,7 @@ function destroy_all() {
 }
 
 function set_dns() {
-    if ! [ -z "$BASE_DNS_DOMAINS" ]; then
+    if [ $BASE_DNS_DOMAINS != ":" ]; then
         # DNS registration should be handled by inventory
         exit 0
     fi

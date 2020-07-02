@@ -221,6 +221,9 @@ def nodes_flow(client, cluster_name, cluster):
 def main():
     client = None
     cluster = {}
+    if args.managed_dns_domains != ":":
+        args.cluster_name = ""
+        args.base_dns_domain = args.managed_dns_domains.split(':')[0]
     cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
@@ -310,6 +313,12 @@ if __name__ == "__main__":
         help="Base dns domain",
         type=str,
         default="redhat.com",
+    )
+    parser.add_argument(
+        "-mD", "--managed-dns-domains",
+        help="DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.",
+        type=str,
+        default=":"
     )
     parser.add_argument(
         "-cN", "--cluster-name", help="Cluster name", type=str, default=""
