@@ -1,3 +1,8 @@
+ARG INVENTORY_URL=quay.io/ocpmetal/bm-inventory
+ARG INVENTORY_TAG=latest
+
+FROM ${INVENTORY_URL}:${INVENTORY_TAG} AS inventory
+
 FROM centos:8
 
 RUN yum -y install make python3 libvirt-client libvirt-devel gcc unzip wget curl git python3-devel && yum clean all;
@@ -12,7 +17,9 @@ RUN mkdir -p ~/.terraform.d/plugins
 RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.2/terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz | tar -xz -C ~/.terraform.d/plugins/
 
 COPY requirements.txt /tmp/
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+COPY --from=inventory /clients/bm-inventory-client-*.tar.gz /build/pip/
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
+    find /build/pip/ -name 'setup.py' -exec dirname {} \; | xargs pip3 install
 
 # setting pre-commit env
 ENV PRE_COMMIT_HOME build
