@@ -160,6 +160,8 @@ def _create_node_details(cluster_name):
     return {
         "libvirt_worker_memory": args.worker_memory,
         "libvirt_master_memory": args.master_memory,
+        "libvirt_worker_disk": args.worker_disk,
+        "libvirt_master_disk": args.master_disk,
         "worker_count": args.number_of_workers,
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
@@ -277,6 +279,20 @@ if __name__ == "__main__":
         help="Worker memory (ram) in mb",
         type=int,
         default=8192,
+    )
+    parser.add_argument(
+        "-md",
+        "--master-disk",
+        help="Master disk size in b",
+        type=int,
+        default=21474836480,
+    )
+    parser.add_argument(
+        "-wd",
+        "--worker-disk",
+        help="Worker disk size in b",
+        type=int,
+        default=21474836480,
     )
     parser.add_argument(
         "-nw", "--number-of-workers", help="Workers count to spawn", type=int, default=0
