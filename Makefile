@@ -4,6 +4,8 @@ IMAGE := $(or $(IMAGE), "")
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
 WORKER_MEMORY ?= 8892
 MASTER_MEMORY ?= 16984
+WORKER_DISK ?= 21474836480
+MASTER_DISK ?= 21474836480
 NUM_WORKERS := $(or $(NUM_WORKERS),0)
 STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
@@ -134,7 +136,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(IMAGE) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make _deploy_nodes ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
