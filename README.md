@@ -158,7 +158,7 @@ make kill_all_port_forwardings
 
 ```
 BMI_BRANCH          bm-inventory branch to use, default: master
-IMAGE               path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster
+ISO                 path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix
 NUM_MASTERS         number of VMs to spawn as masters, default: 3
 WORKER_MEMORY       memory for worker VM, default: 8892MB
 MASTER_MEMORY       memory for master VM, default: 16984MB
