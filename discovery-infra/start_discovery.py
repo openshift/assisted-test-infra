@@ -6,6 +6,7 @@ import ipaddress
 import json
 import os
 import pprint
+import socket
 import time
 import uuid
 from distutils.dir_util import copy_tree
@@ -169,6 +170,25 @@ def _create_node_details(cluster_name):
     }
 
 
+def validate_dns(client, cluster_id):
+    if args.managed_dns_domains == ":":
+        # 'set_dns' (using dnsmasq) is invoked after nodes_flow
+        return
+
+    cluster = client.cluster_get(cluster_id)
+    api_address = "api.{}.{}".format(cluster.name, cluster.base_dns_domain)
+    ingress_address = "ingress.apps.{}.{}".format(cluster.name, cluster.base_dns_domain)
+    try:
+        api_vip = socket.gethostbyname(api_address)
+        ingress_vip = socket.gethostbyname(ingress_address)
+        if api_vip != cluster.api_vip or ingress_vip != cluster.ingress_vip:
+            raise Exception("DNS domains are not resolvable")
+
+        log.info("DNS domains are resolvable")
+    except:
+        raise Exception("Failed to resolve DNS domains")
+
+
 # Create vms from downloaded iso that will connect to bm-inventory and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
 def nodes_flow(client, cluster_name, cluster):
@@ -216,6 +236,8 @@ def nodes_flow(client, cluster_name, cluster):
                 kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
                 pull_secret=args.pull_secret,
             )
+            # Validate DNS domains resolvability
+            validate_dns(client, cluster.id)
 
 
 def main():
