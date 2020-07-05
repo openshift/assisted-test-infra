@@ -1,33 +1,47 @@
+#############
+# Variables #
+#############
 
+SHELL=/bin/sh
+CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
+SKIPPER_PARAMS ?= -i
+
+# bm-inventory
 BMI_BRANCH := $(or $(BMI_BRANCH), "master")
-# ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
-ISO := $(or $(ISO), "")
+BMI_URL := $(or $(BMI_URL), "quay.io/ocpmetal/bm-inventory")
+BMI_TAG := $(or $(BMI_TAG), "latest")
+
+# nodes params
+ISO := $(or $(ISO), "") # ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
 WORKER_MEMORY ?= 8892
 MASTER_MEMORY ?= 16984
 NUM_WORKERS := $(or $(NUM_WORKERS),0)
 STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
-SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
-PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
-ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
-SHELL=/bin/sh
-CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
+CLUSTER_ID := $(or $(CLUSTER_ID), "")
 CLUSTER_NAME := $(or $(CLUSTER_NAME),test-infra-cluster)
+OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.5)
+REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
+
+# network params
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), ":")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
-CLUSTER_ID := $(or $(CLUSTER_ID), "")
+NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
+NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
+PROXY_URL := $(or $(PROXY_URL), "")
+RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "yes")
+
+# secrets
+SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
+PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
+ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
+
+# deploy
 IMAGE_TAG := latest
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
-NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
-NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
-OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.5)
-PROXY_URL := $(or $(PROXY_URL), "")
-RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "yes")
-SKIPPER_PARAMS ?= -i
-REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
 
 .EXPORT_ALL_VARIABLES:
 
@@ -54,7 +68,7 @@ create_full_environment:
 create_environment: image_build bring_bm_inventory start_minikube
 
 image_build:
-	$(CONTAINER_COMMAND) pull $(IMAGE_REG_NAME):$(IMAGE_TAG) && $(CONTAINER_COMMAND) image tag $(IMAGE_REG_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) || $(CONTAINER_COMMAND) build -t $(IMAGE_NAME) -f Dockerfile.test-infra .
+	$(CONTAINER_COMMAND) build --build-arg BMI_URL=${BMI_URL} --build-arg BMI_TAG=${BMI_TAG} -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
 
 clean:
 	rm -rf build
