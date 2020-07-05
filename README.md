@@ -218,14 +218,14 @@ export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLE
 
 # Test infra image
 
-## Create and push new image will create new bm-inventory client, build new image and push image
+Assisted-test-infra builds an image including all the prerequisites to handle this repository.
 
 ```bash
-make build_and_push_image IMAGE_NAME=<your full image path> IMAGE_TAG=<default is latest>
+make image_build
 ```
 
-## Use new image, will pull image from hub, check that image is public, if tag is not latest update skipper YAML
+# In case you would like to build the image with a different bm-inventory client
 
 ```bash
-make image_build IMAGE_NAME=<your image> IMAGE_TAG=<default is latest>
+make image_build SERVICE=<bm inventory image URL>
 ```
