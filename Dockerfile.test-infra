@@ -1,7 +1,7 @@
-ARG INVENTORY_URL=quay.io/ocpmetal/bm-inventory
-ARG INVENTORY_TAG=latest
+ARG BMI_URL=quay.io/ocpmetal/bm-inventory
+ARG BMI_TAG=latest
 
-FROM ${INVENTORY_URL}:${INVENTORY_TAG} AS inventory
+FROM $BMI_URL:$BMI_TAG AS inventory
 
 FROM centos:8
 
