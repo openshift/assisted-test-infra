@@ -165,8 +165,10 @@ MASTER_MEMORY       memory for master VM, default: 16984MB
 NUM_WORKERS         number of VMs to spawn as workers, default: 0
 SSH_PUB_KEY         SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub
 PULL_SECRET         pull secret to use for cluster installation command, no option to install cluster without it.
+ROUTE53_SECRET      Amazon Route 53 secret to use for DNS domains registration.
 CLUSTER_NAME        cluster name, used as prefix for virsh resources, default: test-infra-cluster
 BASE_DOMAIN         base domain, needed for DNS name, default: redhat.com
+BASE_DNS_DOMAINS    base DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.
 NETWORK_CIDR        network cidr to use for virsh VM network, default: "192.168.126.0/24"
 CLUSTER_ID          cluster id , used for install_cluster command, default: the last spawned cluster
 NETWORK_NAME        virsh network name for VMs creation, default: test-infra-net
