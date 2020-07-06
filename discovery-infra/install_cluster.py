@@ -26,6 +26,12 @@ def verify_pull_secret(cluster, client, pull_secret):
 
 def _install_cluster(client, cluster):
     cluster = client.install_cluster(cluster_id=cluster.id)
+    utils.wait_till_cluster_is_in_status(
+        client=client,
+        cluster_id=cluster.id,
+        timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT,
+        statuses=[consts.ClusterStatus.INSTALLING],
+    )
     utils.wait_till_all_hosts_are_in_status(
         client=client,
         cluster_id=cluster.id,
