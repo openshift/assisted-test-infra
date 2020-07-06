@@ -21,7 +21,7 @@ ENVS = [
     ("INVENTORY_PORT", ""),
     ("AGENT_DOCKER_IMAGE", ""),
     ("KUBECONFIG_GENERATE_IMAGE", ""),
-    ("BASE_DNS_DOMAINS", ""),
+    ("BASE_DNS_DOMAINS", ":"),
 ]
 
 
