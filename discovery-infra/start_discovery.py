@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import dns.resolver
 import ipaddress
 import json
 import os
@@ -169,6 +170,33 @@ def _create_node_details(cluster_name):
     }
 
 
+def validate_dns(client, cluster_id):
+    if args.managed_dns_domains == ":":
+        # 'set_dns' (using dnsmasq) is invoked after nodes_flow
+        return
+
+    cluster = client.cluster_get(cluster_id)
+    api_address = "api.{}.{}".format(cluster.name, cluster.base_dns_domain)
+    ingress_address = "ingress.apps.{}.{}".format(cluster.name, cluster.base_dns_domain)
+    log.info("Validating resolvability of the following domains: %s -> %s, %s -> %s",
+        api_address, cluster.api_vip, ingress_address, cluster.ingress_vip)
+    try:
+        api_answers = dns.resolver.query(api_address, 'A')
+        ingress_answers = dns.resolver.query(ingress_address, 'A')
+        api_vip = str(api_answers[0])
+        ingress_vip = str(ingress_answers[0])
+
+        if api_vip != cluster.api_vip or ingress_vip != cluster.ingress_vip:
+            raise Exception("DNS domains are not resolvable")
+        if not api_answers.response.authority or not ingress_answers.response.authority:
+            raise Exception("No authority for DNS domains")
+
+        log.info("DNS domains are resolvable")
+    except Exception as e:
+        log.error("Failed to resolve DNS domains")
+        raise e
+
+
 # Create vms from downloaded iso that will connect to bm-inventory and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
 def nodes_flow(client, cluster_name, cluster):
@@ -216,6 +244,8 @@ def nodes_flow(client, cluster_name, cluster):
                 kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
                 pull_secret=args.pull_secret,
             )
+            # Validate DNS domains resolvability
+            validate_dns(client, cluster.id)
 
 
 def main():
