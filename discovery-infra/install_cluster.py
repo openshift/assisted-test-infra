@@ -20,8 +20,7 @@ def verify_pull_secret(cluster, client, pull_secret):
     if not cluster.pull_secret_set and not pull_secret:
         raise Exception("Can't install cluster %s, no pull secret was set" % cluster.id)
     if not cluster.pull_secret_set and pull_secret:
-        cluster.pull_secret = pull_secret
-        client.update_cluster(cluster.id, cluster)
+        client.update_cluster(cluster.id, {"pull_secret": pull_secret})
 
 
 def _install_cluster(client, cluster):
