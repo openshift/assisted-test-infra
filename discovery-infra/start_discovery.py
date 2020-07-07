@@ -188,8 +188,6 @@ def validate_dns(client, cluster_id):
 
         if api_vip != cluster.api_vip or ingress_vip != cluster.ingress_vip:
             raise Exception("DNS domains are not resolvable")
-        if not api_answers.response.authority or not ingress_answers.response.authority:
-            raise Exception("No authority for DNS domains")
 
         log.info("DNS domains are resolvable")
     except Exception as e:
