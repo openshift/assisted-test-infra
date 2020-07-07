@@ -68,7 +68,7 @@ create_environment: image_build bring_bm_inventory start_minikube
 
 image_build:
 	sed 's/^FROM .*bm-inventory.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
-	 $(CONTAINER_COMMAND) build -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
+	 $(CONTAINER_COMMAND) build --pull -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
 	rm -rf build
