@@ -131,6 +131,9 @@ set_dns:
 deploy_ui: start_minikube
 	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_ui.sh
 
+test_ui: deploy_ui
+	DEPLOY_TAG=$(DEPLOY_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
+
 kill_all_port_forwardings:
 	scripts/utils.sh kill_all_port_forwardings
 
