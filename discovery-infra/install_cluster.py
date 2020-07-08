@@ -35,7 +35,8 @@ def _install_cluster(client, cluster):
         client=client,
         cluster_id=cluster.id,
         nodes_count=len(cluster.hosts),
-        statuses=[consts.NodesStatus.INSTALLING],
+        statuses=[consts.NodesStatus.INSTALLING,
+                  consts.NodesStatus.INSTALLING_IN_PROGRESS],
         interval=30,
     )
 

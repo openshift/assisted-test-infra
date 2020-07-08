@@ -29,6 +29,7 @@ class NodesStatus:
     INSUFFICIENT = "insufficient"
     KNOWN = "known"
     INSTALLING = "installing"
+    INSTALLING_IN_PROGRESS = "installing-in-progress"
     INSTALLED = "installed"
     ERROR = "error"
 
