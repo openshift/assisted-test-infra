@@ -34,8 +34,7 @@ service ${service_name}
 }
 EOF
     sudo mv build/xinetd-${service_name} /etc/xinetd.d/${service_name} --force
-    sudo systemctl start xinetd
-    sudo systemctl reload xinetd
+    sudo systemctl restart xinetd
 }
 
 function run_in_background() {
