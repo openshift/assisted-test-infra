@@ -43,7 +43,7 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
         ipaddress.ip_address(
             ipaddress.IPv4Network(nodes_details["machine_cidr"]).network_address
         )
-        + 10 + tfvars["master_count"]
+        + 10 + int(tfvars["master_count"])
     )
     tfvars["image_path"] = image_path
     tfvars["master_count"] = min(master_count, consts.NUMBER_OF_MASTERS)
