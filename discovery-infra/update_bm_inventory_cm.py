@@ -2,6 +2,15 @@
 # -*- coding: utf-8 -*-
 
 # Idea is to pass os environments to bm-inventory config map, to make an easy way to configure bm-inventory
+#
+# Note: defaulting an env var to "" in Makefile, will result in an empty string value in the configmap.
+# E.g.
+# Makefile:
+#   MY_VAR := $(or $(MY_VAR), "")
+# configmap:
+#   MY_VAR: ""
+#
+# Hence, in order to support unset env vars, avoid override in Makefile.
 
 import os
 
