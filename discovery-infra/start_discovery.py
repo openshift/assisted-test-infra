@@ -171,7 +171,7 @@ def _create_node_details(cluster_name):
 
 
 def validate_dns(client, cluster_id):
-    if args.managed_dns_domains == ":":
+    if not args.managed_dns_domains:
         # 'set_dns' (using dnsmasq) is invoked after nodes_flow
         return
 
@@ -249,7 +249,7 @@ def nodes_flow(client, cluster_name, cluster):
 def main():
     client = None
     cluster = {}
-    if args.managed_dns_domains != ":":
+    if args.managed_dns_domains:
         args.cluster_name = ""
         args.base_dns_domain = args.managed_dns_domains.split(':')[0]
     cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
@@ -346,7 +346,7 @@ if __name__ == "__main__":
         "-mD", "--managed-dns-domains",
         help="DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.",
         type=str,
-        default=":"
+        default=""
     )
     parser.add_argument(
         "-cN", "--cluster-name", help="Cluster name", type=str, default=""

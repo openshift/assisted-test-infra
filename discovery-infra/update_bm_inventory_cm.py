@@ -21,7 +21,7 @@ ENVS = [
     ("INVENTORY_PORT", ""),
     ("AGENT_DOCKER_IMAGE", ""),
     ("KUBECONFIG_GENERATE_IMAGE", ""),
-    ("BASE_DNS_DOMAINS", ":"),
+    ("BASE_DNS_DOMAINS", ""),
 ]
 
 
@@ -36,8 +36,11 @@ def get_relevant_envs():
     data = {}
     for env in ENVS:
         evn_data = os.getenv(env[0], env[1])
-        if evn_data:
-            data[env[0]] = os.getenv(env[0], env[1])
+        # Set value as empty if variable is an empty string (e.g. defaulted in Makefile)
+        if evn_data == '""':
+            data[env[0]] = ""
+        elif evn_data:
+            data[env[0]] = evn_data
     return data
 
 
