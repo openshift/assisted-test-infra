@@ -258,10 +258,12 @@ def nodes_flow(client, cluster_name, cluster):
 def main():
     client = None
     cluster = {}
+    random_postfix = str(uuid.uuid4())[:8]
+    cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + random_postfix
     if args.managed_dns_domains:
-        args.cluster_name = ""
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
-    cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
+        if args.cluster_name:
+            cluster_name = "%s-%s" % (args.cluster_name, random_postfix)
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
