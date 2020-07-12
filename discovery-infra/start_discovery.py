@@ -43,7 +43,8 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
         ipaddress.ip_address(
             ipaddress.IPv4Network(nodes_details["machine_cidr"]).network_address
         )
-        + 10 + int(tfvars["master_count"])
+        + 10
+        + int(tfvars["master_count"])
     )
     tfvars["image_path"] = image_path
     tfvars["master_count"] = min(master_count, consts.NUMBER_OF_MASTERS)
@@ -53,8 +54,7 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
     )
     tfvars["api_vip"] = _get_vips_ips()[0]
     tfvars["libvirt_worker_ips"] = _create_ip_address_list(
-        nodes_details["worker_count"],
-        starting_ip_addr=worker_starting_ip,
+        nodes_details["worker_count"], starting_ip_addr=worker_starting_ip,
     )
     tfvars["libvirt_storage_pool_path"] = storage_path
     tfvars.update(nodes_details)
@@ -182,11 +182,16 @@ def validate_dns(client, cluster_id):
     cluster = client.cluster_get(cluster_id)
     api_address = "api.{}.{}".format(cluster.name, cluster.base_dns_domain)
     ingress_address = "ingress.apps.{}.{}".format(cluster.name, cluster.base_dns_domain)
-    log.info("Validating resolvability of the following domains: %s -> %s, %s -> %s",
-        api_address, cluster.api_vip, ingress_address, cluster.ingress_vip)
+    log.info(
+        "Validating resolvability of the following domains: %s -> %s, %s -> %s",
+        api_address,
+        cluster.api_vip,
+        ingress_address,
+        cluster.ingress_vip,
+    )
     try:
-        api_answers = dns.resolver.query(api_address, 'A')
-        ingress_answers = dns.resolver.query(ingress_address, 'A')
+        api_answers = dns.resolver.query(api_address, "A")
+        ingress_answers = dns.resolver.query(ingress_address, "A")
         api_vip = str(api_answers[0])
         ingress_vip = str(ingress_answers[0])
 
@@ -255,7 +260,7 @@ def main():
     cluster = {}
     if args.managed_dns_domains:
         args.cluster_name = ""
-        args.base_dns_domain = args.managed_dns_domains.split(':')[0]
+        args.base_dns_domain = args.managed_dns_domains.split(":")[0]
     cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + str(uuid.uuid4())[:8]
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
@@ -347,10 +352,11 @@ if __name__ == "__main__":
         default="redhat.com",
     )
     parser.add_argument(
-        "-mD", "--managed-dns-domains",
+        "-mD",
+        "--managed-dns-domains",
         help="DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.",
         type=str,
-        default=""
+        default="",
     )
     parser.add_argument(
         "-cN", "--cluster-name", help="Cluster name", type=str, default=""

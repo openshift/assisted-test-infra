@@ -41,4 +41,3 @@ ${CONTAINER_COMMAND} run -it \
   "${TESTS_IMAGE}"
 
 echo Screenshots and videos can be found in ${BASE_DIR}
-
