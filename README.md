@@ -14,6 +14,10 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 export PULL_SECRET='<pull secret JSON>'
 ```
 
+# Installation Guide
+
+Check the [Install Guide](GUIDE.md) for installation instructions.
+
 # Instructions
 
 ## Host preparation
