@@ -52,7 +52,7 @@ function install_runtime_container() {
     if ! [ -x "$(command -v docker)" ] && ! [ -x "$(command -v podman)" ]; then
         sudo dnf install podman -y
     elif [ -x "$(command -v podman)" ]; then
-        current_version="$(podman -v | awk '{print $3}')"
+        current_version="$(podman version | head -n 1 | awk '{print $2}')"
         minimum_version="1.6.4"
         if ! version_is_greater "$current_version" "$minimum_version"; then
             sudo dnf install podman-$minimum_version -y
