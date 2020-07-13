@@ -26,6 +26,7 @@ ENVS = [
     ("HW_VALIDATOR_MIN_RAM_GIB_MASTER", "8"),
     ("HW_VALIDATOR_MIN_DISK_SIZE_GIB", "10"),
     ("INSTALLER_IMAGE", ""),
+    ("CONTROLLER_IMAGE", ""),
     ("INVENTORY_URL", ""),
     ("INVENTORY_PORT", ""),
     ("AGENT_DOCKER_IMAGE", ""),
