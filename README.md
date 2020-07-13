@@ -200,20 +200,20 @@ or
 make redeploy_all_with_install AGENT_DOCKER_IMAGE=<image to test>
 ```
 
-## Test installer image
+## Test installer image or controller image
 
 ```bash
-make redeploy_all INSTALLER_IMAGE=<image to test>
+make redeploy_all INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
 or
-export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test>
+export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
 ```
 
-## Test installer, bm-inventory and agent images in the same flow
+## Test installer, controller, bm-inventory and agent images in the same flow
 
 ```bash
 make redeploy_all INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
 or
-export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test>  SERVICE=<image to test>
+export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
 ```
 
 # Test infra image
