@@ -49,12 +49,11 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
     tfvars["image_path"] = image_path
     tfvars["master_count"] = min(master_count, consts.NUMBER_OF_MASTERS)
     tfvars["libvirt_master_ips"] = _create_ip_address_list(
-        min(master_count, consts.NUMBER_OF_MASTERS),
-        starting_ip_addr=master_starting_ip,
+        min(master_count, consts.NUMBER_OF_MASTERS), starting_ip_addr=master_starting_ip
     )
     tfvars["api_vip"] = _get_vips_ips()[0]
     tfvars["libvirt_worker_ips"] = _create_ip_address_list(
-        nodes_details["worker_count"], starting_ip_addr=worker_starting_ip,
+        nodes_details["worker_count"], starting_ip_addr=worker_starting_ip
     )
     tfvars["libvirt_storage_pool_path"] = storage_path
     tfvars.update(nodes_details)
