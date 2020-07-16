@@ -4,6 +4,8 @@
 
 SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
+PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
+
 SKIPPER_PARAMS ?= -i
 
 # bm-inventory
@@ -68,7 +70,7 @@ create_environment: image_build bring_bm_inventory start_minikube
 
 image_build:
 	sed 's/^FROM .*bm-inventory.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
-	 $(CONTAINER_COMMAND) build --pull -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
+	 $(CONTAINER_COMMAND) build ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
 	rm -rf build
