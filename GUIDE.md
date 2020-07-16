@@ -17,13 +17,13 @@
 
 Procedure
 
-As `$USER` user with `sudo` privileges ,
+As `$USER` user with `sudo` privileges,
 
 1.  Generate an SSH key if not already available (`ssh_key/key`)
 
         [$USER@assisted_installer ~]# ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
 
-1.  Install git and make on your CentOS assisted installer host if not already present
+1.  Install git and make on your assisted installer host if not already present. Note that repositories should be already configured and available on your system.
 
         [$USER@assisted_installer ~]# dnf install -y make git
 
@@ -78,7 +78,7 @@ As `$USER` user with `sudo` privileges ,
 
     > NOTE: Make sure to delete any extra white spaces when entering your pull secret and SSH key.
 
-1. Once **Validate & Save Changes** has been clicked, click on the blue button labeled **Download discovery ISO** , and enter the HTTP Proxy URL (if required) and SSH public key using the host that is serving out the assisted installer UI. Click **Download Discovery ISO**. This will prepare the ISO and start the download
+1. Once **Validate & Save Changes** has been clicked, click on the blue button labeled **Download discovery ISO**, and enter the HTTP Proxy URL (if required) and SSH public key using the host that is serving out the assisted installer UI. Click **Download Discovery ISO**. This will prepare the ISO and start the download
 
    > NOTE: If you wish not to download the ISO on your current system but on a separate system, after you've initiated the download by clicking the button, you can cancel the download and run the following `wget` command.
 
@@ -161,8 +161,6 @@ As `$USER` user with `sudo` privileges ,
 
 > NOTE: Currently there is an issue with the metal3 pod. The Assisted Installer team is aware of this.
 
-<hr>
-<b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)
 
 ## Troubleshooting
 
@@ -274,3 +272,7 @@ You get `Error: Error creating libvirt domain: virError(Code=38, Domain=18, Mess
 **Solution**
 
 Run `make create_full_environment`.
+
+
+<hr>
+<b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)
