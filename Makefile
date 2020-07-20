@@ -181,6 +181,9 @@ deploy_bm_inventory: start_minikube bring_bm_inventory
 bring_bm_inventory:
 	@if cd bm-inventory >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
 
+deploy_monitoring: bring_bm_inventory
+	make -C bm-inventory/ deploy-monitoring
+
 clear_inventory:
 	make -C bm-inventory/ clear-deployment
 
