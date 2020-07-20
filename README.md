@@ -140,6 +140,13 @@ make install_cluster
 make download_iso
 ```
 
+### Deploy BM Inventory and Monitoring stack
+
+```bash
+make run
+make deploy_monitoring
+```
+
 ### deploy_bm_inventory and Create cluster and download ISO
 
 ```bash
