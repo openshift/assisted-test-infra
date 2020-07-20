@@ -82,6 +82,7 @@ function install_skipper() {
 
 function config_firewalld() {
     echo "Config firewall"
+    sudo dnf install -y firewalld
     sudo systemctl start firewalld
     if [ "${EXTERNAL_PORT}" = "y" ]; then
         echo "configuring external ports"
@@ -116,7 +117,7 @@ function additional_configs() {
     touch ~/.gitconfig
     sudo chmod ugo+rx "$(dirname "$(pwd)")"
     echo "disaling selinux by setenforce 0"
-    sudo setenforce 0
+    sudo setenforce 0 || true
 }
 
 install_packages

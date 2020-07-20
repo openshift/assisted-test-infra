@@ -53,8 +53,7 @@ IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 # General #
 ###########
 
-all:
-	./install_env_and_run_full_flow.sh
+all: create_full_environment run_full_flow_with_install
 
 destroy: destroy_nodes delete_minikube
 	rm -rf build/terraform/*
@@ -100,18 +99,20 @@ copy_terraform_files:
 	FILE=build/terraform/terraform.tfvars.json
 	cp -r terraform_files/* build/terraform/;\
 
-run_terraform_from_skipper:
-		cd build/terraform/ && terraform init  -plugin-dir=/root/.terraform.d/plugins/ && terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
-
 run_terraform: copy_terraform_files
-	skipper make run_terraform_from_skipper $(SKIPPER_PARAMS)
+	skipper make _run_terraform $(SKIPPER_PARAMS)
+
+_run_terraform:
+		cd build/terraform/ && \
+		terraform init -plugin-dir=/root/.terraform.d/plugins/ && \
+		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
+
+destroy_terraform:
+	skipper make _destroy_terraform $(SKIPPER_PARAMS)
 
 _destroy_terraform:
 	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
 	discovery-infra/virsh_cleanup.py -f test-infra
-
-destroy_terraform:
-	skipper make _destroy_terraform $(SKIPPER_PARAMS)
 
 #######
 # Run #
