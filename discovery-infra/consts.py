@@ -31,6 +31,7 @@ class NodesStatus:
     INSTALLING_IN_PROGRESS = "installing-in-progress"
     INSTALLED = "installed"
     ERROR = "error"
+    PENDING_FOR_INPUT = "pending-for-input"
 
 
 class ClusterStatus:

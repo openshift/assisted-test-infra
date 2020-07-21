@@ -226,7 +226,10 @@ def nodes_flow(client, cluster_name, cluster):
                 client=client,
                 cluster_id=cluster.id,
                 macs=macs,
-                statuses=[consts.NodesStatus.INSUFFICIENT],
+                statuses=[
+                    consts.NodesStatus.INSUFFICIENT,
+                    consts.NodesStatus.PENDING_FOR_INPUT,
+                ],
             )
             set_cluster_vips(client, cluster.id)
         else:
