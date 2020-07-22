@@ -10,7 +10,7 @@ function configure_minikube() {
 function init_minikube() {
     #If the vm exists, it has already been initialized
     if [[ "$(virsh -c qemu:///system list --all)" != *"minikube"* ]]; then
-        minikube start --memory=4096 --force
+        minikube start --memory=8192 --force
     fi
 }
 
