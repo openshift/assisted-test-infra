@@ -1,0 +1,38 @@
+---
+# tasks file for host_iso
+
+- name: Install podman
+  package:
+    name: podman
+    state: present
+  become: yes
+  tags:
+  - host_iso
+
+- name: Enable Services (firewalld)
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Open port {{ webserver_port }}/tcp, zone public, for podman container
+  firewalld:
+    port: "{{ webserver_port }}/tcp"
+    permanent: yes
+    state: enabled
+    zone: "public"
+    immediate: yes
+  become: yes
+
+- name: Start RHCOS image cache container
+  containers.podman.podman_container:
+    name: webserver
+    image: registry.centos.org/centos/httpd-24-centos7:latest
+    state: started
+    network: host
+    volumes:
+      - "{{ iso_image_location }}:/var/www/html:z"
+  become: yes
+  tags:
+  - host_iso

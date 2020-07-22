@@ -1,0 +1,4 @@
+---
+# vars file for create_iso
+remote_inventory_port: "6000"
+discovery_make_iso_dir: "{{ ansible_env.HOME }}/assisted_installer/assisted-test-infra"

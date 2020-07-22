@@ -1,0 +1,19 @@
+---
+# tasks file for setup_repository
+- name: Create a assisted_installer directory
+  file:
+    path: "{{ ansible_env.HOME }}/assisted_installer/"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  tags:
+  - clone_repo
+
+- name: Git checkout the assisted-test-infra repository
+  git:
+    repo: "{{ repository }}"
+    dest: "{{ discovery_make_iso_dir }}"
+    #dest: "{{ ansible_env.HOME }}/assisted_installer/assisted-test-infra"
+  tags:
+  - clone_repo

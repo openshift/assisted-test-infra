@@ -1,0 +1,7 @@
+---
+# defaults file for create_iso
+proxy_url: ""
+cluster_id: ""
+iso_image_location: "/tmp/images/"
+iso_name: "installer-image.iso"
+base_dns_domains: ""

@@ -1,0 +1,13 @@
+---
+- name: Creating,Hosting the Assisted Installer Discovery ISO
+  hosts: assisted_installer
+  roles:
+  - okd.assisted_installer.validations
+  - okd.assisted_installer.setup_repository
+  - okd.assisted_installer.create_iso
+  - okd.assisted_installer.host_iso
+
+- name: Mounting, Booting the Assited Installer Discovery ISO
+  hosts: masters:workers
+  roles:
+  - okd.assisted_installer.boot_iso_existing_os

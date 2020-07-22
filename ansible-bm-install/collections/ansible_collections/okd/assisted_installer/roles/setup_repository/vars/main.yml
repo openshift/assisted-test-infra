@@ -1,0 +1,3 @@
+---
+# vars file for setup_repository
+discovery_make_iso_dir: "{{ ansible_env.HOME }}/assisted_installer/assisted-test-infra"
