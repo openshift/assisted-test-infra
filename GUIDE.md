@@ -163,3 +163,106 @@ As `$USER` user with sudo privileges ,
 
 <hr>
 <b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)
+
+## Troubleshooting
+
+__Problem__
+
+Minikube fails when deploying _bm-inventory_ using the test infra.
+
+__Solution__
+
+Run:
+
+```bash
+make destroy
+rm -f /usr/bin/docker-machine-driver-kvm2
+make run
+```
+
+---
+
+__Problem__
+
+An exception in `discovery-infra/bm_inventory_client.py` about a missing class or an invalid param.
+
+__Solution__
+
+1. Rebase _test-infra_ on top of _master_
+2. Run `make image_build` to build a new test-infra image
+
+> Do not use skipper commands in _test-infra_ :)
+
+---
+
+__Problem__
+
+VMs fail to connect to BM Inventory.
+
+__Solution__
+
+1. Run `kubectl get pods -n assisted-installer` and look for the _bm-inventory_ pod name.
+
+2. Run `kubectl logs <pod-name> -n assisted-installer` and check the log for errors.
+
+3. If you do not see any errors in the BM Inventory logs, ssh to the VM:
+
+     - Get the VM IP addresses using `virsh net-dhcp-leases test-infra-net`.
+
+     - `cd test-infra` and `chmod 600 ssh_key/key` (default SSH key)
+
+     - `ssh -i ssh_key/key core@vm-ip` or try `ssh -i ssh_key/key systemuser@vm-ip` if it did not work
+
+     - Agent logs are located under `/var/log/agent.log`
+
+---
+
+__Problem__
+
+There are issues installing BM Inventory.
+
+
+__Solution__
+
+1. Run `kubectl get pods -n assisted-installer` and look for the _bm-inventory_ pod name.
+
+2. Run `kubectl logs <pod-name> -n assisted-installer` and the log for errors.
+
+3. SSH to the VMs as described above, run `sudo su` and check podman logs of the assisted installer container for errors.
+
+---
+
+__Problem__
+
+The test infra fails with any of the following errors:
+
+- `Error: missing provider "libvirt"`
+
+- `make image build failed - DD failed: stat /var/lib/docker/tmp/docker-builder287959213/build/bm-inventory-client: no such file or directory`
+
+- `warning: unable to access '/root/.gitconfig': Is a directory
+fatal: unknown error occurred while reading the configuration files`
+
+__Solution__
+
+Do not run test-infra from `/root`. Instead, move it to `/home/test/` and then run `make create_full_environment`.
+
+---
+
+__Problem__
+
+You get an error with the message `Error: Error defining libvirt network: virError(Code=9, Domain=19, Message='operation failed: network 'test-infra-net' already exists`.
+
+__Solution__
+
+You probably already have a running cluster. Run `make destroy` do deleted the existing cluster. If it does not solve the issue, run `make delete_all_virsh_resources`.
+
+---
+
+__Problem__
+
+You get `Error: Error creating libvirt domain: virError(Code=38, Domain=18, Message='Cannot access storage file '/home/test/test-infra/storage_pool/test-infra-cluster/test-infra-cluster-master-0' (as uid:107, gid:107): Permission denied')`.
+
+__Solution__
+
+Run `make create_full_environment`.
