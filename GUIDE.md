@@ -166,6 +166,8 @@ As `$USER` user with sudo privileges ,
 
 ## Troubleshooting
 
+Also see the [troubleshooting section](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit#heading=h.ewz6a9wqulbj) in the **internal** [Assisted Deployment](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit?usp=sharing) document.
+
 __Problem__
 
 Minikube fails when deploying _bm-inventory_ using the test infra.
