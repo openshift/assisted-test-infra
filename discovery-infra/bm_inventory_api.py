@@ -103,16 +103,21 @@ class InventoryClient(object):
         hosts = self.get_cluster_hosts(cluster_id)
         hosts_data = {}
         for host in hosts:
-            hw = json.loads(host.get("hardware_info", '{"nics":[]}'))
-            hosts_data[host["id"]] = [nic["mac"] for nic in hw["nics"]]
+            inventory = json.loads(host.get("inventory", '{"interfaces":[]}'))
+            hosts_data[host["id"]] = [
+                interface["mac_address"] for interface in inventory["interfaces"]
+            ]
         return hosts_data
 
     def get_host_by_mac(self, cluster_id, mac):
         hosts = self.get_cluster_hosts(cluster_id)
 
         for host in hosts:
-            hw = json.loads(host.get("hardware_info", '{"nics":[]}'))
-            if mac.lower() in [nic["mac"].lower() for nic in hw["nics"]]:
+            inventory = json.loads(host.get("inventory", '{"interfaces":[]}'))
+            if mac.lower() in [
+                interface["mac_address"].lower()
+                for interface in inventory["interfaces"]
+            ]:
                 return host
 
     def download_and_save_file(self, cluster_id, file_name, file_path):
