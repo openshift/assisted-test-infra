@@ -63,8 +63,8 @@ def main():
             if not args.only_nodes:
                 try_to_delete_cluster(tfvars)
             delete_nodes(tfvars)
-        except:
-            log.error("Failed to delete nodes")
+        except Exception as exc:
+            log.error("Failed to delete nodes %s", str(exc))
 
 
 if __name__ == "__main__":
