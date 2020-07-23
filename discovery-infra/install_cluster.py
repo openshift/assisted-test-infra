@@ -55,7 +55,10 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
         interval=60,
     )
     utils.wait_till_cluster_is_in_status(
-        client=client, cluster_id=cluster.id, statuses=[consts.ClusterStatus.INSTALLED]
+        client=client,
+        cluster_id=cluster.id,
+        statuses=[consts.ClusterStatus.INSTALLED],
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     )
 
 
