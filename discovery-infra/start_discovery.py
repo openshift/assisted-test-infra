@@ -113,9 +113,12 @@ def set_hosts_roles(client, cluster_id, network_name):
 
     for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
         for host in inventory_hosts:
-            hw = json.loads(host["hardware_info"])
+            inventory = json.loads(host["inventory"])
 
-            if libvirt_mac.lower() in map(lambda nic: nic["mac"].lower(), hw["nics"]):
+            if libvirt_mac.lower() in map(
+                lambda interface: interface["mac_address"].lower(),
+                inventory["interfaces"],
+            ):
                 added_hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
 
     assert len(libvirt_nodes) == len(
