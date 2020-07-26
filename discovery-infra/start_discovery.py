@@ -173,6 +173,8 @@ def _create_node_details(cluster_name):
         "machine_cidr": args.vm_network_cidr,
         "libvirt_network_name": args.network_name,
         "libvirt_network_if": args.network_bridge,
+        "libvirt_worker_disk": args.worker_disk,
+        "libvirt_master_disk": args.master_disk,
     }
 
 
@@ -311,6 +313,20 @@ if __name__ == "__main__":
         "-si", "--skip-inventory", help="Node count to spawn", action="store_true"
     )
     parser.add_argument("-k", "--ssh-key", help="Path to ssh key", type=str, default="")
+    parser.add_argument(
+        "-md",
+        "--master-disk",
+        help="Master disk size in b",
+        type=int,
+        default=21474836480,
+    )
+    parser.add_argument(
+        "-wd",
+        "--worker-disk",
+        help="Worker disk size in b",
+        type=int,
+        default=21474836480,
+    )
     parser.add_argument(
         "-mm",
         "--master-memory",

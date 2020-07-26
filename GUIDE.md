@@ -168,11 +168,11 @@ As `$USER` user with sudo privileges ,
 
 Also see the [troubleshooting section](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit#heading=h.ewz6a9wqulbj) in the **internal** [Assisted Deployment](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit?usp=sharing) document.
 
-__Problem__
+**Problem**
 
 Minikube fails when deploying _bm-inventory_ using the test infra.
 
-__Solution__
+**Solution**
 
 Run:
 
@@ -184,11 +184,11 @@ make run
 
 ---
 
-__Problem__
+**Problem**
 
 An exception in `discovery-infra/bm_inventory_client.py` about a missing class or an invalid param.
 
-__Solution__
+**Solution**
 
 1. Rebase _test-infra_ on top of _master_
 2. Run `make image_build` to build a new test-infra image
@@ -197,11 +197,11 @@ __Solution__
 
 ---
 
-__Problem__
+**Problem**
 
 VMs fail to connect to BM Inventory.
 
-__Solution__
+**Solution**
 
 1. Run `kubectl get pods -n assisted-installer` and look for the _bm-inventory_ pod name.
 
@@ -209,22 +209,21 @@ __Solution__
 
 3. If you do not see any errors in the BM Inventory logs, ssh to the VM:
 
-     - Get the VM IP addresses using `virsh net-dhcp-leases test-infra-net`.
+   - Get the VM IP addresses using `virsh net-dhcp-leases test-infra-net`.
 
-     - `cd test-infra` and `chmod 600 ssh_key/key` (default SSH key)
+   - `cd test-infra` and `chmod 600 ssh_key/key` (default SSH key)
 
-     - `ssh -i ssh_key/key core@vm-ip` or try `ssh -i ssh_key/key systemuser@vm-ip` if it did not work
+   - `ssh -i ssh_key/key core@vm-ip` or try `ssh -i ssh_key/key systemuser@vm-ip` if it did not work
 
-     - Agent logs are located under `/var/log/agent.log`
+   - Agent logs are located under `/var/log/agent.log`
 
 ---
 
-__Problem__
+**Problem**
 
 There are issues installing BM Inventory.
 
-
-__Solution__
+**Solution**
 
 1. Run `kubectl get pods -n assisted-installer` and look for the _bm-inventory_ pod name.
 
@@ -234,7 +233,7 @@ __Solution__
 
 ---
 
-__Problem__
+**Problem**
 
 The test infra fails with any of the following errors:
 
@@ -242,29 +241,28 @@ The test infra fails with any of the following errors:
 
 - `make image build failed - DD failed: stat /var/lib/docker/tmp/docker-builder287959213/build/bm-inventory-client: no such file or directory`
 
-- `warning: unable to access '/root/.gitconfig': Is a directory
-fatal: unknown error occurred while reading the configuration files`
+- `warning: unable to access '/root/.gitconfig': Is a directory fatal: unknown error occurred while reading the configuration files`
 
-__Solution__
+**Solution**
 
 Do not run test-infra from `/root`. Instead, move it to `/home/test/` and then run `make create_full_environment`.
 
 ---
 
-__Problem__
+**Problem**
 
 You get an error with the message `Error: Error defining libvirt network: virError(Code=9, Domain=19, Message='operation failed: network 'test-infra-net' already exists`.
 
-__Solution__
+**Solution**
 
 You probably already have a running cluster. Run `make destroy` do deleted the existing cluster. If it does not solve the issue, run `make delete_all_virsh_resources`.
 
 ---
 
-__Problem__
+**Problem**
 
 You get `Error: Error creating libvirt domain: virError(Code=38, Domain=18, Message='Cannot access storage file '/home/test/test-infra/storage_pool/test-infra-cluster/test-infra-cluster-master-0' (as uid:107, gid:107): Permission denied')`.
 
-__Solution__
+**Solution**
 
 Run `make create_full_environment`.
