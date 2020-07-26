@@ -38,16 +38,6 @@ variable "libvirt_network_name" {
   description = "The name of the network to use"
 }
 
-//variable "os_image" {
-//  type        = string
-//  description = "The URL of the OS disk image"
-//}
-
-//variable "discovery_ip" {
-//  type        = string
-//  description = "Ip of discovery server"
-//}
-
 variable "libvirt_master_ips" {
   type        = list(string)
   description = "the list of desired master ips. Must match master_count"
@@ -100,4 +90,17 @@ variable "image_path" {
 variable "libvirt_storage_pool_path" {
   type        = string
   description = "storage pool path"
+}
+
+
+variable "libvirt_worker_disk" {
+  type        = string
+  description = "Disk size in bytes allocated to worker"
+  default     = "21474836480"
+}
+
+variable "libvirt_master_disk" {
+  type        = string
+  description = "Disk size in bytes allocated to master"
+  default     = "21474836480"
 }

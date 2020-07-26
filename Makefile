@@ -23,6 +23,8 @@ CLUSTER_ID := $(or $(CLUSTER_ID), "")
 CLUSTER_NAME := $(or $(CLUSTER_NAME),test-infra-cluster)
 OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.5)
 REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
+WORKER_DISK ?= 21474836480
+MASTER_DISK ?= 21474836480
 
 # network params
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
@@ -156,7 +158,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make _deploy_nodes ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
