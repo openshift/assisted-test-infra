@@ -21,8 +21,8 @@ def try_to_delete_cluster(tfvars):
             )
             client.delete_cluster(cluster_id=cluster_id)
     # TODO add different exception validations
-    except Exception as exc:
-        log.error("Failed to delete cluster %s", str(exc))
+    except:
+        log.exception("Failed to delete cluster")
 
 
 # Runs terraform destroy and then cleans it with virsh cleanup to delete everything relevant
@@ -63,8 +63,8 @@ def main():
             if not args.only_nodes:
                 try_to_delete_cluster(tfvars)
             delete_nodes(tfvars)
-        except Exception as exc:
-            log.error("Failed to delete nodes %s", str(exc))
+        except:
+            log.exception("Failed to delete nodes")
 
 
 if __name__ == "__main__":
