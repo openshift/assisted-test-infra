@@ -38,6 +38,11 @@ variable "libvirt_network_name" {
   description = "The name of the network to use"
 }
 
+variable "libvirt_network_mtu" {
+  type        = number
+  description = "The MTU of the network to use"
+}
+
 //variable "os_image" {
 //  type        = string
 //  description = "The URL of the OS disk image"

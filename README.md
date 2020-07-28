@@ -183,6 +183,7 @@ BASE_DNS_DOMAINS    base DNS domains that are managaed by bm-inventory, format: 
 NETWORK_CIDR        network cidr to use for virsh VM network, default: "192.168.126.0/24"
 CLUSTER_ID          cluster id , used for install_cluster command, default: the last spawned cluster
 NETWORK_NAME        virsh network name for VMs creation, default: test-infra-net
+NETWORK_MTU         virsh network MTU for VMs creation, default: 1500
 NETWORK_BRIDGE      network bridge to use while creating virsh network, default: tt0
 OPENSHIFT_VERSION   OpenShift version to install, default: "4.4"
 PROXY_URL:          proxy URL that will be pass to live cd image

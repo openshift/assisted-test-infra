@@ -169,6 +169,7 @@ def _create_node_details(cluster_name):
         "cluster_domain": args.base_dns_domain,
         "machine_cidr": args.vm_network_cidr,
         "libvirt_network_name": args.network_name,
+        "libvirt_network_mtu": args.network_mtu,
         "libvirt_network_if": args.network_bridge,
     }
 
@@ -374,6 +375,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-nN", "--network-name", help="Network name", type=str, default="test-infra-net"
+    )
+    parser.add_argument(
+        "-nM", "--network-mtu", help="Network MTU", type=int, default=1500
     )
     parser.add_argument(
         "-in",
