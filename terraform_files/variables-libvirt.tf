@@ -38,6 +38,11 @@ variable "libvirt_network_name" {
   description = "The name of the network to use"
 }
 
+variable "libvirt_network_mtu" {
+  type        = number
+  description = "The MTU of the network to use"
+}
+
 variable "libvirt_master_ips" {
   type        = list(string)
   description = "the list of desired master ips. Must match master_count"

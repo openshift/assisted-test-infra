@@ -12,6 +12,8 @@ resource "libvirt_network" "net" {
 
   addresses = [var.machine_cidr]
 
+  mtu = var.libvirt_network_mtu
+
   dns {
     hosts  {
       ip = "{var.api_vip}"
