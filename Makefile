@@ -132,7 +132,7 @@ run_full_flow_with_install: run deploy_nodes_with_install set_dns
 redeploy_all_with_install: destroy  run_full_flow_with_install
 
 set_dns:
-	scripts/assisted_deployment.sh	set_dns
+	scripts/assisted_deployment.sh set_dns
 
 deploy_ui: start_minikube
 	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_ui.sh
