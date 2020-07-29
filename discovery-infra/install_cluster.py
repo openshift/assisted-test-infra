@@ -112,7 +112,7 @@ def main():
     # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
         args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
-    client = bm_inventory_api.create_client(wait_for_url=False)
+    client = bm_inventory_api.create_client(args.namespace, wait_for_url=False)
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,
@@ -135,6 +135,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-ps", "--pull-secret", help="Pull secret", type=str, default=""
+    )
+    parser.add_argument(
+        "-ns",
+        "--namespace",
+        help="Namespace to use",
+        type=str,
+        default="assisted-installer",
     )
     args = parser.parse_args()
     main()

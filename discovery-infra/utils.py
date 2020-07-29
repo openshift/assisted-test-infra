@@ -41,14 +41,14 @@ def run_command_with_output(command):
 
 
 @retry(tries=5, delay=3, backoff=2)
-def get_service_url_with_retries(service_name):
-    return get_service_url(service_name)
+def get_service_url_with_retries(service_name, namespace):
+    return get_service_url(service_name, namespace)
 
 
-def get_service_url(service_name):
+def get_service_url(service_name, namespace):
     try:
         log.info("Getting inventory URL")
-        cmd = "minikube service %s --url -n assisted-installer" % service_name
+        cmd = f"minikube -n {namespace} service {service_name} --url"
         return run_command(cmd)
     except:
         log.error("Failed to get inventory URL")
