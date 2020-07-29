@@ -5,19 +5,21 @@ function destroy_all() {
 }
 
 function set_dns() {
-    if [ $BASE_DNS_DOMAINS != "" ]; then
-        # DNS registration should be handled by inventory
+    if [ "${BASE_DNS_DOMAINS}" != '""' ]; then
+        echo "DNS registration should be handled by inventory"
         exit 0
     fi
 
     API_VIP=$(ip route show dev ${NETWORK_BRIDGE:-"tt0"} | cut -d\  -f7)
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
-    if ! [ -f "$FILE" ]; then
+    if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
     fi
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/api.${CLUSTER_NAME}.${BASE_DOMAIN}/${API_VIP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     sudo systemctl reload NetworkManager
+
+    echo "Finished setting dns"
 }
 
 # Delete after pushing fix to dev-scripts
