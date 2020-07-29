@@ -27,6 +27,7 @@ WORKER_DISK ?= 21474836480
 MASTER_DISK ?= 21474836480
 
 # network params
+NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
@@ -147,10 +148,10 @@ kill_all_port_forwardings:
 ###########
 
 _install_cluster:
-	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)'
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' -ns $(NAMESPACE)
 
 install_cluster:
-	skipper make _install_cluster $(SKIPPER_PARAMS)
+	skipper make _install_cluster NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 
 #########
@@ -158,16 +159,16 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
-	skipper make _deploy_nodes ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
+	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
 
 deploy_nodes:
-	skipper make _deploy_nodes $(SKIPPER_PARAMS)
+	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 destroy_nodes:
-	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID)' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE)' $(SKIPPER_PARAMS)
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -185,26 +186,26 @@ bring_bm_inventory:
 	@if cd bm-inventory >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
 
 deploy_monitoring: bring_bm_inventory
-	make -C bm-inventory/ deploy-monitoring
+	make -C bm-inventory/ deploy-monitoring NAMESPACE=$(NAMESPACE)
 
 clear_inventory:
-	make -C bm-inventory/ clear-deployment
+	make -C bm-inventory/ clear-deployment NAMESPACE=$(NAMESPACE)
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
-	skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
 
 #######
 # ISO #
 #######
 
 _download_iso:
-	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -iO
+	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -iO
 
 download_iso:
-	skipper make _download_iso $(SKIPPER_PARAMS)
+	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 download_iso_for_remote_use: deploy_bm_inventory
-	skipper make _download_iso $(SKIPPER_PARAMS)
+	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 ########
 # Test #

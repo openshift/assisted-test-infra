@@ -203,9 +203,13 @@ VMs fail to connect to BM Inventory.
 
 **Solution**
 
-1. Run `kubectl get pods -n assisted-installer` and look for the _bm-inventory_ pod name.
+1. Run `kubectl get pods -n <namespace>` and look for the _bm-inventory_ pod name. For example:
 
-2. Run `kubectl logs <pod-name> -n assisted-installer` and check the log for errors.
+```bash
+[$USER@assisted_installer ~]# kubectl get pods -n assisted-installer
+```
+
+2. Run `kubectl logs <pod-name> -n <namespace>` and check the log for errors.
 
 3. If you do not see any errors in the BM Inventory logs, ssh to the VM:
 
@@ -225,9 +229,13 @@ There are issues installing BM Inventory.
 
 **Solution**
 
-1. Run `kubectl get pods -n assisted-installer` and look for the _bm-inventory_ pod name.
+1. Run `kubectl get pods -n <namespace>` and look for the _bm-inventory_ pod name. For example:
 
-2. Run `kubectl logs <pod-name> -n assisted-installer` and the log for errors.
+```bash
+[$USER@assisted_installer ~]# kubectl get pods -n assisted-installer
+```
+
+2. Run `kubectl logs <pod-name> -n <namespace>` and the log for errors.
 
 3. SSH to the VMs as described above, run `sudo su` and check podman logs of the assisted installer container for errors.
 

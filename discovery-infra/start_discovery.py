@@ -274,7 +274,7 @@ def main():
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
-        client = bm_inventory_api.create_client(args.inventory_url)
+        client = bm_inventory_api.create_client(args.namespace, args.inventory_url)
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
@@ -429,6 +429,13 @@ if __name__ == "__main__":
         help="Full url of remote inventory",
         type=str,
         default="",
+    )
+    parser.add_argument(
+        "-ns",
+        "--namespace",
+        help="Namespace to use",
+        type=str,
+        default="assisted-installer",
     )
     parser.add_argument(
         "-id", "--cluster-id", help="Cluster id to install", type=str, default=None

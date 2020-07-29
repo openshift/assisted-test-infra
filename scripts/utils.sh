@@ -3,6 +3,7 @@
 set -o nounset
 
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
+export NAMESPACE=${NAMESPACE:-assisted-installer}
 
 function print_log() {
     echo "$(basename $0): $1"
@@ -27,7 +28,7 @@ service ${service_name}
   protocol	= tcp
   user		= root
   wait		= no
-  redirect	= $(minikube ip) $(kubectl --kubeconfig=${KUBECONFIG} get svc/${service_name} -n assisted-installer -o=jsonpath='{.spec.ports[0].nodePort}')
+  redirect	= $(minikube ip) $(kubectl --kubeconfig=${KUBECONFIG} get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
   port		= ${external_port}
   only_from	= 0.0.0.0/0
   per_source	= UNLIMITED
