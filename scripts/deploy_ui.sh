@@ -27,6 +27,7 @@ mkdir -p build
 
 print_log "Starting ui"
 
+${CONTAINER_COMMAND} pull quay.io/ocpmetal/ocp-metal-ui:latest
 ${CONTAINER_COMMAND} run ${PODMAN_FLAGS} --rm quay.io/ocpmetal/ocp-metal-ui:latest /deploy/deploy_config.sh -i quay.io/ocpmetal/ocp-metal-ui:${DEPLOY_TAG} -n ${NAMESPACE} >${UI_DEPLOY_FILE}
 kubectl --kubeconfig=${KUBECONFIG} apply -f ${UI_DEPLOY_FILE}
 
