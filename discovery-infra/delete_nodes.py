@@ -43,7 +43,8 @@ def delete_nodes(tfvars):
             virsh_cleanup.DEFAULT_SKIP_LIST,
             [
                 tfvars.get("cluster_name", consts.TEST_INFRA),
-                tfvars.get("libvirt_network_name", consts.TEST_INFRA),
+                tfvars.get("libvirt_network_name", consts.TEST_INFRA_NETWORK),
+                tfvars.get("libvirt_network_name_2", consts.TEST_INFRA_NETWORK_2),
             ],
         )
 

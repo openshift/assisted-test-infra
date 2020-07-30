@@ -16,6 +16,7 @@ TEST_INFRA = "test-infra"
 CLUSTER = "%s-cluster" % TEST_INFRA
 CLUSTER_PREFIX = "%s-" % CLUSTER
 TEST_NETWORK = "%s-net" % TEST_INFRA
+TEST_NETWORK_2 = "%s-net_2" % TEST_INFRA
 DEFAULT_CLUSTER_KUBECONFIG_PATH = "build/kubeconfig"
 WAIT_FOR_BM_API = 900
 
