@@ -8,9 +8,17 @@ PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-al
 
 SKIPPER_PARAMS ?= -i
 
+# global env
+NAMESPACE := $(or $(NAMESPACE),assisted-installer)
+HOST_IP := $(or $(HOST_IP),$(shell bash scripts/utils.sh get_main_ip))
+
 # bm-inventory
 BMI_BRANCH := $(or $(BMI_BRANCH), "master")
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/bm-inventory:latest)
+INVENTORY_START_PORT := $(or $(INVENTORY_START_PORT),6000)
+
+# ocp-metal-ui
+UI_START_PORT := $(or $(UI_START_PORT),6008)
 
 # nodes params
 ISO := $(or $(ISO), "") # ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
@@ -27,7 +35,6 @@ WORKER_DISK ?= 21474836480
 MASTER_DISK ?= 21474836480
 
 # network params
-NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
 NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
@@ -135,7 +142,7 @@ set_dns:
 	scripts/assisted_deployment.sh set_dns
 
 deploy_ui: start_minikube
-	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) UI_PORT=$(shell bash scripts/utils.sh get_service_port ocp-metal-ui $(NAMESPACE) $(HOST_IP) $(UI_START_PORT)) scripts/deploy_ui.sh
 
 test_ui: deploy_ui
 	DEPLOY_TAG=$(DEPLOY_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
@@ -180,7 +187,7 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 
 deploy_bm_inventory: start_minikube bring_bm_inventory
 	mkdir -p bm-inventory/build
-	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_bm_inventory.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) INVENTORY_PORT=$(shell bash scripts/utils.sh get_service_port bm-inventory $(NAMESPACE) $(HOST_IP) $(INVENTORY_START_PORT)) scripts/deploy_bm_inventory.sh
 
 bring_bm_inventory:
 	@if cd bm-inventory >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi

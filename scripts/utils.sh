@@ -18,8 +18,8 @@ function spawn_port_forwarding_command() {
     service_name=$1
     external_port=$2
 
-    cat <<EOF >build/xinetd-${service_name}
-service ${service_name}
+    cat <<EOF >build/xinetd-$service_name-$NAMESPACE
+service $service_name-$NAMESPACE
 {
   flags		= IPv4
   bind		= 0.0.0.0
@@ -34,7 +34,7 @@ service ${service_name}
   per_source	= UNLIMITED
 }
 EOF
-    sudo mv build/xinetd-${service_name} /etc/xinetd.d/${service_name} --force
+    sudo mv build/xinetd-$service_name-$NAMESPACE /etc/xinetd.d/$service_name-$NAMESPACE --force
     sudo systemctl restart xinetd
 }
 
@@ -48,6 +48,41 @@ function kill_all_port_forwardings() {
 
 function get_main_ip() {
     echo "$(ip route get 1 | sed 's/^.*src \([^ ]*\).*$/\1/;q')"
+}
+
+
+function get_service_port() {
+    service=$1
+    ns=$2
+    deallocate_existing_service_port $service $ns
+
+    host=$3
+    start_port=$4
+    echo $(first_unreachable_port $host $start_port)
+}
+
+function deallocate_existing_service_port() {
+    service=$1
+    ns=$2
+    if sudo test -f /etc/xinetd.d/$service-$ns; then
+        sudo systemctl stop xinetd
+        sudo rm /etc/xinetd.d/$service-$ns --force
+        sudo systemctl start xinetd
+    fi
+}
+
+function first_unreachable_port() {
+    host=$1
+    port=$2
+    reachable=1
+    url_reachable "http://$host:$port" && reachable=$? || reachable=$?
+
+    while [ $reachable -eq 0 ]; do
+        port=$(( $port + 1 ))
+        url_reachable "http://$host:$port" && reachable=$? || reachable=$?
+    done
+
+    echo $port
 }
 
 function wait_for_url_and_run() {

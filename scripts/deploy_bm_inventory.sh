@@ -18,7 +18,7 @@ skipper run "make -C bm-inventory/ deploy-all" ${SKIPPER_PARAMS} DEPLOY_TAG=${DE
 print_log "Wait till ${SERVICE_NAME} api is ready"
 wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url -n ${NAMESPACE})" "echo \"waiting for ${SERVICE_NAME}\""
 
-print_log "Starting port forwarding for deployment/${SERVICE_NAME}"
+print_log "Starting port forwarding for deployment/${SERVICE_NAME} port: $INVENTORY_PORT"
 wait_for_url_and_run "http://${INVENTORY_URL}:${INVENTORY_PORT}" "spawn_port_forwarding_command ${SERVICE_NAME} ${INVENTORY_PORT}"
 print_log "${SERVICE_NAME} can be reached at http://${INVENTORY_URL}:${INVENTORY_PORT} "
 print_log "Done"
