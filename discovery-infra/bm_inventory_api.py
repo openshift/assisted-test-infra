@@ -149,13 +149,13 @@ class InventoryClient(object):
         return self.client.install_cluster(cluster_id=cluster_id)
 
 
-def create_client(namespace, inventory_url=None, wait_for_url=True):
+def create_client(namespace, profile, inventory_url=None, wait_for_url=True):
     if inventory_url:
         i_url = inventory_url
     elif wait_for_url:
-        i_url = utils.get_service_url_with_retries("bm-inventory", namespace)
+        i_url = utils.get_service_url_with_retries("bm-inventory", namespace, profile)
     else:
-        i_url = utils.get_service_url("bm-inventory", namespace)
+        i_url = utils.get_service_url("bm-inventory", namespace, profile)
     log.info("Inventory URL %s", i_url)
     client = InventoryClient(inventory_url=i_url)
     if wait_for_url:

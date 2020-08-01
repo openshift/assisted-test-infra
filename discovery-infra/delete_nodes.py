@@ -17,7 +17,7 @@ def try_to_delete_cluster(tfvars):
         cluster_id = tfvars.get("cluster_inventory_id")
         if cluster_id:
             client = bm_inventory_api.create_client(
-                args.namespace, args.inventory_url, wait_for_url=False
+                args.namespace, args.profile, args.inventory_url, wait_for_url=False
             )
             client.delete_cluster(cluster_id=cluster_id)
     # TODO add different exception validations
@@ -97,6 +97,13 @@ if __name__ == "__main__":
         help="Delete under this namespace",
         type=str,
         default="assisted-installer",
+    )
+    parser.add_argument(
+        '-p',
+        '--profile',
+        help='Profile to use (minikube mode)',
+        type=str,
+        default='assisted-installer',
     )
     args = parser.parse_args()
     main()

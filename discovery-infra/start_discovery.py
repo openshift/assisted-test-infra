@@ -274,7 +274,7 @@ def main():
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
-        client = bm_inventory_api.create_client(args.namespace, args.inventory_url)
+        client = bm_inventory_api.create_client(args.namespace, args.profile, args.inventory_url)
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
@@ -439,6 +439,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-id", "--cluster-id", help="Cluster id to install", type=str, default=None
+    )
+    parser.add_argument(
+        '--profile',
+        help='Profile to use (minikube mode)',
+        type=str,
+        default='assisted-installer',
     )
 
     args = parser.parse_args()

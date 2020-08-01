@@ -112,7 +112,7 @@ def main():
     # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
         args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
-    client = bm_inventory_api.create_client(args.namespace, wait_for_url=False)
+    client = bm_inventory_api.create_client(args.namespace, args.profile, wait_for_url=False)
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,
@@ -142,6 +142,13 @@ if __name__ == "__main__":
         help="Namespace to use",
         type=str,
         default="assisted-installer",
+    )
+    parser.add_argument(
+        '-p',
+        '--profile',
+        help='Profile to use (minikube mode)',
+        type=str,
+        default='assisted-installer',
     )
     args = parser.parse_args()
     main()

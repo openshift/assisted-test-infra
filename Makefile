@@ -42,6 +42,7 @@ PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];t
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 
 # deploy
+PROFILE := $(or $(NAMESPACE),assisted-installer)
 IMAGE_TAG := latest
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 IMAGE_NAME=test-infra
@@ -87,11 +88,15 @@ install_minikube:
 
 start_minikube:
 	scripts/run_minikube.sh
-	eval $(minikube docker-env)
+	eval $(minikube -p $(PROFILE) docker-env)
 
 delete_minikube:
-	minikube delete
+	minikube delete --all
 	skipper run discovery-infra/virsh_cleanup.py -m
+
+delete_namespace:
+	minikube delete -p $(PROFILE)
+
 
 #############
 # Terraform #
@@ -148,7 +153,7 @@ kill_all_port_forwardings:
 ###########
 
 _install_cluster:
-	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' -ns $(NAMESPACE)
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' -ns $(NAMESPACE) --profile $(PROFILE)
 
 install_cluster:
 	skipper make _install_cluster NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
@@ -159,7 +164,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --profile $(PROFILE) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
@@ -168,7 +173,7 @@ deploy_nodes:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 destroy_nodes:
-	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE)' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --profile $(PROFILE)' $(SKIPPER_PARAMS)
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -192,14 +197,14 @@ clear_inventory:
 	make -C bm-inventory/ clear-deployment NAMESPACE=$(NAMESPACE)
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
-	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) --profile $(PROFILE) -a' $(SKIPPER_PARAMS)
 
 #######
 # ISO #
 #######
 
 _download_iso:
-	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -iO
+	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --profile $(PROFILE) -iO
 
 download_iso:
 	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
