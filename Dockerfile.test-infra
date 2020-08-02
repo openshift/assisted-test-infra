@@ -1,4 +1,4 @@
-FROM quay.io/ocpmetal/bm-inventory:latest AS inventory
+FROM quay.io/ocpmetal/assisted-service:latest AS service
 
 FROM centos:8
 
@@ -15,7 +15,7 @@ RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/do
   tar -xz -C /root/.terraform.d/plugins
 
 COPY requirements.txt /tmp/
-COPY --from=inventory /clients/bm-inventory-client-*.tar.gz /build/pip/
+COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
     find /build/pip/ -name 'setup.py' -exec dirname {} \; | xargs pip3 install
 

@@ -5,7 +5,7 @@ import consts
 import utils
 import shutil
 import waiting
-from bm_inventory_client import ApiClient, Configuration, api, models
+from assisted_service_client import ApiClient, Configuration, api, models
 from logger import log
 
 
@@ -153,9 +153,9 @@ def create_client(namespace, inventory_url=None, wait_for_url=True):
     if inventory_url:
         i_url = inventory_url
     elif wait_for_url:
-        i_url = utils.get_service_url_with_retries("bm-inventory", namespace)
+        i_url = utils.get_service_url_with_retries("assisted-service", namespace)
     else:
-        i_url = utils.get_service_url("bm-inventory", namespace)
+        i_url = utils.get_service_url("assisted-service", namespace)
     log.info("Inventory URL %s", i_url)
     client = InventoryClient(inventory_url=i_url)
     if wait_for_url:

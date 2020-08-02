@@ -3,7 +3,7 @@
 
 import argparse
 
-import bm_inventory_api
+import assisted_service_api
 import consts
 import utils
 import waiting
@@ -108,11 +108,11 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
 
 def main():
     _verify_kube_download_folder(args.kubeconfig_path)
-    log.info("Creating bm inventory client")
+    log.info("Creating assisted service client")
     # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
         args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
-    client = bm_inventory_api.create_client(args.namespace, wait_for_url=False)
+    client = assisted_service_api.create_client(args.namespace, wait_for_url=False)
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,

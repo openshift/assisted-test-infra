@@ -38,7 +38,7 @@
     PULL_SECRET: "{{ pull_secret|to_json }}"
     OPENSHIFT_VERSION: "{{ openshift_version|quote }}"
     CLUSTER_ID: "{{ cluster_id | quote }}"
-    REMOTE_INVENTORY_URL: "http://{{ groups['assisted_installer'][0] }}:{{ remote_inventory_port }}"
+    REMOTE_SERVICE_URL: "http://{{ groups['assisted_installer'][0] }}:{{ remote_inventory_port }}"
     SSH_PUB_KEY: "{{ key.content | b64decode|trim }}"
     PROXY_URL: "{{ proxy_url | quote }}"
     BASE_DNS_DOMAINS: "{{ domain | quote }}"

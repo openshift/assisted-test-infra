@@ -47,11 +47,11 @@ def get_service_url_with_retries(service_name, namespace):
 
 def get_service_url(service_name, namespace):
     try:
-        log.info("Getting inventory URL")
+        log.info(f"Getting {service_name} URL in {namespace} namespace")
         cmd = f"minikube -n {namespace} service {service_name} --url"
         return run_command(cmd)
     except:
-        log.error("Failed to get inventory URL")
+        log.error(f"Failed to get {service_name} URL in {namespace} namespace")
         raise
 
 

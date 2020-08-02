@@ -12,7 +12,7 @@ import uuid
 from distutils.dir_util import copy_tree
 from pathlib import Path
 
-import bm_inventory_api
+import assisted_service_api
 import consts
 import install_cluster
 import utils
@@ -149,7 +149,7 @@ def _get_vips_ips():
 
 
 # TODO add config file
-# Converts params from args to bm-inventory cluster params
+# Converts params from args to assisted-service cluster params
 def _cluster_create_params():
     params = {
         "openshift_version": args.openshift_version,
@@ -209,7 +209,7 @@ def validate_dns(client, cluster_id):
         raise e
 
 
-# Create vms from downloaded iso that will connect to bm-inventory and register
+# Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
 def nodes_flow(client, cluster_name, cluster):
     nodes_details = _create_node_details(cluster_name)
@@ -275,7 +275,7 @@ def main():
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
-        client = bm_inventory_api.create_client(args.namespace, args.inventory_url)
+        client = assisted_service_api.create_client(args.namespace, args.inventory_url)
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
@@ -378,7 +378,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-mD",
         "--managed-dns-domains",
-        help="DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.",
+        help="DNS domains that are managaed by assisted-service, format: domain_name:domain_id/provider_type.",
         type=str,
         default="",
     )

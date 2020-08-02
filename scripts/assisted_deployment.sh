@@ -6,7 +6,7 @@ function destroy_all() {
 
 function set_dns() {
     if [ "${BASE_DNS_DOMAINS}" != '""' ]; then
-        echo "DNS registration should be handled by inventory"
+        echo "DNS registration should be handled by assisted-service"
         exit 0
     fi
 
