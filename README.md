@@ -91,6 +91,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | SERVICE_NAME             | assisted-service target service name, default: assisted-service                                                                 |
 | KUBECONFIG               | kubeconfig file path, default: <home>/.kube/config                                                                              |
 | ENABLE_AUTH              | configure assisted-service to authenticate API requests, default: false                                                         |
+| OFFLINE_TOKEN            | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)              |
 
 ## Instructions
 

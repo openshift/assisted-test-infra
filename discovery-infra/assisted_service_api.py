@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
+import os
+import base64
+import requests
+import time
 
 import consts
 import utils
@@ -15,8 +19,46 @@ class InventoryClient(object):
         configs = Configuration()
         configs.host = self.inventory_url + "/api/assisted-install/v1"
         configs.verify_ssl = False
+        self.set_config_auth(configs)
+
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
+
+    def set_config_auth(self, c):
+        offline_token = os.environ.get('OFFLINE_TOKEN')
+        if offline_token == None: return
+
+        def refresh_api_key(config):
+            # Get the properly padded key segment
+            auth = config.api_key.get('Authorization', None)
+            if auth != None:
+                segment = auth.split('.')[1]
+                padding = len(segment) % 4
+                segment = segment + padding * '='
+
+                expires_on = json.loads(base64.b64decode(segment))['exp']
+
+                # if this key doesn't expire or if it has more than 30 seconds left, don't refresh
+                remaining = expires_on - time.time()
+                if expires_on == 0 or remaining > 30:
+                    return
+
+            # fetch new key if expired or not set yet
+            token_url = "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token"
+            params = {
+                "client_id":     "cloud-services",
+                "grant_type":    "refresh_token",
+                "refresh_token": offline_token,
+            }
+
+            log.info("Refreshing API key")
+            response = requests.post(token_url, data = params)
+            response.raise_for_status()
+
+            config.api_key['Authorization'] = response.json()['access_token']
+
+        c.api_key_prefix['Authorization'] = 'Bearer'
+        c.refresh_api_key_hook = refresh_api_key
 
     def wait_for_api_readiness(self):
         log.info("Waiting for inventory api to be ready")
