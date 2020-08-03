@@ -72,8 +72,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.4"                                                                                    |
 | PROXY_URL                | proxy URL that will be pass to live cd image                                                                                    |
-| INVENTORY_URL            | update assisted-service config map INVENTORY_URL param with given URL                                                               |
-| INVENTORY_PORT           | update assisted-service config map INVENTORY_PORT with given port                                                                   |
+| SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL param with given URL, including port and protocol
 | AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                                 |
 | INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                           |
 | SERVICE                  | assisted-service image to use                                                                                                       |
