@@ -48,7 +48,7 @@ function install_libvirt() {
 }
 
 function install_runtime_container() {
-    echo "Installing container runitme package"
+    echo "Installing container runtime package"
     if ! [ -x "$(command -v docker)" ] && ! [ -x "$(command -v podman)" ]; then
         sudo dnf install podman -y
     elif [ -x "$(command -v podman)" ]; then
