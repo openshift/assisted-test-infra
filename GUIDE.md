@@ -10,20 +10,20 @@
    - API VIP
    - Ingress VIP
      > NOTE: dnsmasq can be used to setup [DHCP](https://openshift-kni.github.io/baremetal-deploy/4.4/Deployment.html#creating-dhcp-reservations-using-dnsmasq-option2_ipi-install-prerequisites) and [DNS](https://openshift-kni.github.io/baremetal-deploy/4.4/Deployment.html#creating-dns-records-using-dnsmasq-option2_ipi-install-prerequisites). Out of scope for this document but I've included links on how to do it.
-1. Ensure these values are properly set via nslookup and dig commands from your assisted installer host
+1. Ensure these values are properly set via `nslookup` and dig commands from your assisted installer host
 1. Download your Pull Secret from https://cloud.redhat.com/openshift/install/metal/user-provisioned
 
 ## Deployment
 
 Procedure
 
-As `$USER` user with sudo privileges ,
+As `$USER` user with `sudo` privileges,
 
 1.  Generate an SSH key if not already available (`ssh_key/key`)
 
         [$USER@assisted_installer ~]# ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
 
-1.  Install git and make on your CentOS assisted installer host if not already present
+1.  Install git and make on your assisted installer host if not already present. Note that repositories should be already configured and available on your system.
 
         [$USER@assisted_installer ~]# dnf install -y make git
 
@@ -46,7 +46,7 @@ As `$USER` user with sudo privileges ,
 
         [$USER@assisted_installer assisted-test-infra]# export OPENSHIFT_VERSION=4.6
 
-1.  Once complete, run the "run" using make that creates the bm-inventory and deploys the UI
+1.  Once complete, run the "run" using make that creates the `bm-inventory` and deploys the UI
 
         [$USER@assisted_installer assisted-test-infra]# make run
         .
@@ -72,15 +72,15 @@ As `$USER` user with sudo privileges ,
     - The **pull secret** would be the file contents you captured as a prerequisite.
     - The **SSH public key** would be the file contents of `~/.ssh/id_rsa.pub`
 
-    > NOTE: This screen also shows Available subnets, API Virtual IP and Ingress VIP VIP but these do not need to be set at this time of the install.
+    > NOTE: This screen also shows Available subnets, API Virtual IP and Ingress VIP but these do not need to be set at this time of the install.
 
     > NOTE: If you get `Value must be valid JSON` for your pull secret, make sure you are not surrounding your pull secret in tick marks `' '`
 
-    > NOTE: Make sure to delete any extra whitespaces when entering your pull secret and SSH key.
+    > NOTE: Make sure to delete any extra white spaces when entering your pull secret and SSH key.
 
-1. Once **Validate & Save Changes** has been clicked, click on the blue button labeled **Download discovery ISO** , and enter the HTTP Proxy URL (if required) and SSH public key using the host that is serving out the assisted installer UI. Click **Download Discovery ISO**. This will prepare the ISO and start the download
+1. Once **Validate & Save Changes** has been clicked, click on the blue button labeled **Download discovery ISO**, and enter the HTTP Proxy URL (if required) and SSH public key using the host that is serving out the assisted installer UI. Click **Download Discovery ISO**. This will prepare the ISO and start the download
 
-   > NOTE: If you wish not to download the ISO on your current system but on a separate system, after you've initiated the download by clicking the button, you can cancel the download and run the following wget command.
+   > NOTE: If you wish not to download the ISO on your current system but on a separate system, after you've initiated the download by clicking the button, you can cancel the download and run the following `wget` command.
 
 
     > NOTE: This example installs ISO on the assisted installer host that will serve out the ISO via HTTP for the OpenShift cluster nodes.
@@ -96,7 +96,7 @@ As `$USER` user with sudo privileges ,
 
    > NOTE: Steps 14-18 only work on DELL hardware. A different method would need to be used if using a different vendor to mount your live ISO.
 
-1)  Create a webserver container labeled mywebserver that is to serve the `live.iso` from the `~/assisted-installer/images` directory serving out of port 8080 as follows
+1)  Create a web server container labeled `mywebserver` that is to serve the `live.iso` from the `~/assisted-installer/images` directory serving out of port 8080 as follows
 
         [$USER@assisted_installer ~]# firewall-cmd --add-port=8080/tcp --zone=public --permanent
         [$USER@assisted_installer ~]# firewall-cmd --reload
@@ -161,8 +161,6 @@ As `$USER` user with sudo privileges ,
 
 > NOTE: Currently there is an issue with the metal3 pod. The Assisted Installer team is aware of this.
 
-<hr>
-<b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)
 
 ## Troubleshooting
 
@@ -274,3 +272,7 @@ You get `Error: Error creating libvirt domain: virError(Code=38, Domain=18, Mess
 **Solution**
 
 Run `make create_full_environment`.
+
+
+<hr>
+<b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)

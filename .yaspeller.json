@@ -77,6 +77,15 @@
     "ipi",
     "versioned",
     "unversioned",
-    "devprev"
+    "devprev",
+    "CentOS",
+    "Dockerfile",
+    "UI",
+    "kubeconfig",
+    "libvirt",
+    "minikube",
+    "Parrilla",
+    "Parrilla's",
+    "ClusterId"
   ]
 }
