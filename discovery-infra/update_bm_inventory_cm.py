@@ -32,6 +32,10 @@ ENVS = [
     ("AGENT_DOCKER_IMAGE", ""),
     ("KUBECONFIG_GENERATE_IMAGE", ""),
     ("BASE_DNS_DOMAINS", ""),
+    ("IMAGE_BUILDER", ""),
+    ("CONNECTIVITY_CHECK_IMAGE", ""),
+    ("HARDWARE_INFO_IMAGE", ""),
+    ("INVENTORY_IMAGE", ""),
 ]
 
 
