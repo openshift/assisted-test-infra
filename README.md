@@ -168,32 +168,35 @@ make kill_all_port_forwardings
 ## OS parameters used for configurations
 
 ```
-BMI_BRANCH          bm-inventory branch to use, default: master
-ISO                 path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix
-NUM_MASTERS         number of VMs to spawn as masters, default: 3
-WORKER_MEMORY       memory for worker VM, default: 8892MB
-MASTER_MEMORY       memory for master VM, default: 16984MB
-NUM_WORKERS         number of VMs to spawn as workers, default: 0
-SSH_PUB_KEY         SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub
-PULL_SECRET         pull secret to use for cluster installation command, no option to install cluster without it.
-ROUTE53_SECRET      Amazon Route 53 secret to use for DNS domains registration.
-CLUSTER_NAME        cluster name, used as prefix for virsh resources, default: test-infra-cluster
-BASE_DOMAIN         base domain, needed for DNS name, default: redhat.com
-BASE_DNS_DOMAINS    base DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.
-NETWORK_CIDR        network cidr to use for virsh VM network, default: "192.168.126.0/24"
-CLUSTER_ID          cluster id , used for install_cluster command, default: the last spawned cluster
-NETWORK_NAME        virsh network name for VMs creation, default: test-infra-net
-NETWORK_MTU         virsh network MTU for VMs creation, default: 1500
-NETWORK_BRIDGE      network bridge to use while creating virsh network, default: tt0
-OPENSHIFT_VERSION   OpenShift version to install, default: "4.4"
-PROXY_URL:          proxy URL that will be pass to live cd image
-INVENTORY_URL:      update bm-inventory config map INVENTORY_URL param with given URL
-INVENTORY_PORT:     update bm-inventory config map INVENTORY_PORT with given port
-AGENT_DOCKER_IMAGE: agent docker image to use, will update bm-inventory config map with given value
-INSTALLER_IMAGE:    assisted-installer image to use, will update bm-inventory config map with given value
-SERVICE:            bm-inventory image to use
-DEPLOY_TAG:         the tag to be used for all images (bm-inventory, assisted-installer, agent, etc) this will override any other os params
-
+BMI_BRANCH                bm-inventory branch to use, default: master
+ISO                       path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix
+NUM_MASTERS               number of VMs to spawn as masters, default: 3
+WORKER_MEMORY             memory for worker VM, default: 8892MB
+MASTER_MEMORY             memory for master VM, default: 16984MB
+NUM_WORKERS               number of VMs to spawn as workers, default: 0
+SSH_PUB_KEY               SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub
+PULL_SECRET               pull secret to use for cluster installation command, no option to install cluster without it.
+ROUTE53_SECRET            Amazon Route 53 secret to use for DNS domains registration.
+CLUSTER_NAME              cluster name, used as prefix for virsh resources, default: test-infra-cluster
+BASE_DOMAIN               base domain, needed for DNS name, default: redhat.com
+BASE_DNS_DOMAINS          base DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.
+NETWORK_CIDR              network cidr to use for virsh VM network, default: "192.168.126.0/24"
+CLUSTER_ID                cluster id , used for install_cluster command, default: the last spawned cluster
+NETWORK_NAME              virsh network name for VMs creation, default: test-infra-net
+NETWORK_MTU               virsh network MTU for VMs creation, default: 1500
+NETWORK_BRIDGE            network bridge to use while creating virsh network, default: tt0
+OPENSHIFT_VERSION         OpenShift version to install, default: "4.4"
+PROXY_URL:                proxy URL that will be pass to live cd image
+INVENTORY_URL:            update bm-inventory config map INVENTORY_URL param with given URL
+INVENTORY_PORT:           update bm-inventory config map INVENTORY_PORT with given port
+AGENT_DOCKER_IMAGE:       agent docker image to use, will update bm-inventory config map with given value
+INSTALLER_IMAGE:          assisted-installer image to use, will update bm-inventory config map with given value
+SERVICE:                  bm-inventory image to use
+DEPLOY_TAG:               the tag to be used for all images (bm-inventory, assisted-installer, agent, etc) this will override any other os params
+IMAGE_BUILDER:            image-builder image to use, will update bm-inventory config map with given value
+CONNECTIVITY_CHECK_IMAGE  connectivity-check image to use, will update bm-inventory config map with given value
+HARDWARE_INFO_IMAGE       hardware-info image to use, will update bm-inventory config map with given value
+INVENTORY_IMAGE           bm-inventory image to be updated in bm-inventory config map with given value
 ```
 
 ## Test bm-inventory image
