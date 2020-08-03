@@ -6,3 +6,4 @@ bm-inventory
 minikube
 *.log
 **/RCS/**
+*~

@@ -2,7 +2,39 @@
 
 This project deploys the OpenShift Assisted Installer in Minikube and spawns libvirt VMs that represent bare metal hosts.
 
-# Prerequisites
+**Table of contents**
+
+- [Test-Infra](#test-infra)
+  - [Prerequisites](#prerequisites)
+  - [Installation Guide](#installation-guide)
+  - [OS parameters used for configuration](#os-parameters-used-for-configuration)
+  - [Instructions](#instructions)
+    - [Host preparation](#host-preparation)
+  - [Usage](#usage)
+  - [Full flow cases](#full-flow-cases)
+    - [Run full flow with install](#run-full-flow-with-install)
+    - [Run full flow without install](#run-full-flow-without-install)
+    - [Run only deploy nodes (without pre deploy of all assisted service)](#run-only-deploy-nodes-without-pre-deploy-of-all-assisted-service)
+    - [Redeploy nodes](#redeploy-nodes)
+    - [Redeploy with assisted services](#redeploy-with-assisted-services)
+    - [Cleaning](#cleaning)
+      - [Clean all include minikube](#clean-all-include-minikube)
+      - [Clean nodes only](#clean-nodes-only)
+      - [Delete all virsh resources](#delete-all-virsh-resources)
+    - [Install cluster](#install-cluster)
+    - [Create cluster and download ISO](#create-cluster-and-download-iso)
+    - [Deploy BM Inventory and Monitoring stack](#deploy-bm-inventory-and-monitoring-stack)
+    - [`deploy_bm_inventory` and Create cluster and download ISO](#deploy_bm_inventory-and-create-cluster-and-download-iso)
+    - [start_minikube and Deploy UI and open port forwarding on port 6008, allows to connect to it from browser](#start_minikube-and-deploy-ui-and-open-port-forwarding-on-port-6008-allows-to-connect-to-it-from-browser)
+    - [Kill all open port forwarding commands, will be part of destroy target](#kill-all-open-port-forwarding-commands-will-be-part-of-destroy-target)
+  - [Test `bm-inventory` image](#test-bm-inventory-image)
+    - [Test agent image](#test-agent-image)
+    - [Test installer image or controller image](#test-installer-image-or-controller-image)
+  - [Test installer, controller, `bm-inventory` and agent images in the same flow](#test-installer-controller-bm-inventory-and-agent-images-in-the-same-flow)
+    - [Test infra image](#test-infra-image)
+- [In case you would like to build the image with a different `bm-inventory` client](#in-case-you-would-like-to-build-the-image-with-a-different-bm-inventory-client)
+
+## Prerequisites
 
 - CentOS 8 or RHEL 8 host
 - File system that supports d_type
@@ -14,13 +46,46 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 export PULL_SECRET='<pull secret JSON>'
 ```
 
-# Installation Guide
+## Installation Guide
 
 Check the [Install Guide](GUIDE.md) for installation instructions.
 
-# Instructions
+## OS parameters used for configuration
 
-## Host preparation
+| Variable                 | Description                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| BMI_BRANCH               | bm-inventory branch to use, default: master                                                                                     |
+| ISO                      | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
+| NUM_MASTERS              | number of VMs to spawn as masters, default: 3                                                                                   |
+| WORKER_MEMORY            | memory for worker VM, default: 8892MB                                                                                           |
+| MASTER_MEMORY            | memory for master VM, default: 16984MB                                                                                          |
+| NUM_WORKERS              | number of VMs to spawn as workers, default: 0                                                                                   |
+| SSH_PUB_KEY              | SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub                                |
+| PULL_SECRET              | pull secret to use for cluster installation command, no option to install cluster without it.                                   |
+| ROUTE53_SECRET           | Amazon Route 53 secret to use for DNS domains registration.                                                                     |
+| CLUSTER_NAME             | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                   |
+| BASE_DOMAIN              | base domain, needed for DNS name, default: redhat.com                                                                           |
+| BASE_DNS_DOMAINS         | base DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.                                |
+| NETWORK_CIDR             | network cidr to use for virsh VM network, default: "192.168.126.0/24"                                                           |
+| CLUSTER_ID               | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
+| NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
+| NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
+| OPENSHIFT_VERSION        | OpenShift version to install, default: "4.4"                                                                                    |
+| PROXY_URL                | proxy URL that will be pass to live cd image                                                                                    |
+| INVENTORY_URL            | update bm-inventory config map INVENTORY_URL param with given URL                                                               |
+| INVENTORY_PORT           | update bm-inventory config map INVENTORY_PORT with given port                                                                   |
+| AGENT_DOCKER_IMAGE       | agent docker image to use, will update bm-inventory config map with given value                                                 |
+| INSTALLER_IMAGE          | assisted-installer image to use, will update bm-inventory config map with given value                                           |
+| SERVICE                  | bm-inventory image to use                                                                                                       |
+| DEPLOY_TAG               | the tag to be used for all images (bm-inventory, assisted-installer, agent, etc) this will override any other os params         |
+| IMAGE_BUILDER            | image-builder image to use, will update bm-inventory config map with given value                                                |
+| CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update bm-inventory config map with given value                                           |
+| HARDWARE_INFO_IMAGE      | hardware-info image to use, will update bm-inventory config map with given value                                                |
+| INVENTORY_IMAGE          | bm-inventory image to be updated in bm-inventory config map with given value                                                    |
+
+## Instructions
+
+### Host preparation
 
 On the bare metal host:
 
@@ -102,23 +167,23 @@ make redeploy_nodes or make redeploy_nodes_with_install
 make redeploy_all or make redeploy_all_with_install
 ```
 
-## Cleaning
+### Cleaning
 
 Following sections show how to perform cleaning of test-infra environment.
 
-### Clean all include minikube
+#### Clean all include minikube
 
 ```bash
 make destroy
 ```
 
-### Clean nodes only
+#### Clean nodes only
 
 ```bash
 make destroy_nodes
 ```
 
-### Delete all `virsh` resources
+#### Delete all virsh resources
 
 Sometimes you may need to delete all libvirt resources
 
@@ -165,39 +230,6 @@ make deploy_ui
 make kill_all_port_forwardings
 ```
 
-## OS parameters used for configurations
-
-```
-BMI_BRANCH          `bm-inventory` branch to use, default: master
-ISO                 path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix
-NUM_MASTERS         number of VMs to spawn as masters, default: 3
-WORKER_MEMORY       memory for worker VM, default: 8892MB
-MASTER_MEMORY       memory for master VM, default: 16984MB
-NUM_WORKERS         number of VMs to spawn as workers, default: 0
-SSH_PUB_KEY         SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub
-PULL_SECRET         pull secret to use for cluster installation command, no option to install cluster without it.
-ROUTE53_SECRET      Amazon Route 53 secret to use for DNS domains registration.
-CLUSTER_NAME        cluster name, used as prefix for `virsh` resources, default: test-infra-cluster
-BASE_DOMAIN         base domain, needed for DNS name, default: `redhat.com`
-BASE_DNS_DOMAINS    base DNS domains that are managed by `bm-inventory`, format: domain_name:domain_id/provider_type.
-NETWORK_CIDR        network cidr to use for `virsh` VM network, default: "192.168.126.0/24"
-CLUSTER_ID          cluster id, used for install_cluster command, default: the last spawned cluster
-NETWORK_NAME        `virsh` network name for VMs creation, default: test-infra-net
-NETWORK_BRIDGE      network bridge to use while creating `virsh` network, default: tt0
-OPENSHIFT_VERSION   OpenShift version to install, default: "4.4"
-PROXY_URL:          proxy URL that will be pass to live cd image
-INVENTORY_URL:      update `bm-inventory` config map INVENTORY_URL param with given URL
-INVENTORY_PORT:     update `bm-inventory` config map INVENTORY_PORT with given port
-AGENT_DOCKER_IMAGE: agent docker image to use, will update `bm-inventory` config map with given value
-INSTALLER_IMAGE:    assisted-installer image to use, will update `bm-inventory` config map with given value
-SERVICE:            `bm-inventory` image to use
-DEPLOY_TAG:         the tag to be used for all images (`bm-inventory`, assisted-installer, agent, etc) this will override any other OS params
-IMAGE_BUILDER:            image-builder image to use, will update bm-inventory config map with given value
-CONNECTIVITY_CHECK_IMAGE  connectivity-check image to use, will update bm-inventory config map with given value
-HARDWARE_INFO_IMAGE       hardware-info image to use, will update bm-inventory config map with given value
-INVENTORY_IMAGE           bm-inventory image to be updated in bm-inventory config map with given value
-```
-
 ## Test `bm-inventory` image
 
 ```bash
@@ -206,7 +238,7 @@ or
 export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install SERVICE=<image to test>
 ```
 
-## Test agent image
+### Test agent image
 
 ```bash
 make redeploy_all AGENT_DOCKER_IMAGE=<image to test>
@@ -214,7 +246,7 @@ or
 make redeploy_all_with_install AGENT_DOCKER_IMAGE=<image to test>
 ```
 
-## Test installer image or controller image
+### Test installer image or controller image
 
 ```bash
 make redeploy_all INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
@@ -230,7 +262,7 @@ or
 export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
 ```
 
-# Test infra image
+### Test infra image
 
 Assisted-test-infra builds an image including all the prerequisites to handle this repository.
 
