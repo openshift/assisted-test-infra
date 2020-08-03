@@ -10,6 +10,7 @@ SKIPPER_PARAMS ?= -i
 
 # bm-inventory
 BMI_BRANCH := $(or $(BMI_BRANCH), "master")
+BMI_REPO := $(or $(BMI_REPO), "https://github.com/filanov/bm-inventory")
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/bm-inventory:latest)
 
 # nodes params
@@ -183,7 +184,7 @@ deploy_bm_inventory: start_minikube bring_bm_inventory
 	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_bm_inventory.sh
 
 bring_bm_inventory:
-	@if cd bm-inventory >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) https://github.com/filanov/bm-inventory;fi
+	@if cd bm-inventory >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) $(BMI_REPO);fi
 
 deploy_monitoring: bring_bm_inventory
 	make -C bm-inventory/ deploy-monitoring NAMESPACE=$(NAMESPACE)
