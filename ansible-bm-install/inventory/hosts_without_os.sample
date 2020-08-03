@@ -23,9 +23,6 @@ openshift_version="4.5"
 # (Optional) Assign specific Cluster ID
 #cluster_id=""
 
-# (Optional) Assign Proxy URL
-#proxy_url=""
-
 [assisted_installer]
 assisted-installer.example.com
 

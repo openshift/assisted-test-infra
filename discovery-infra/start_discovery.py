@@ -159,6 +159,9 @@ def _cluster_create_params():
         "cluster_network_host_prefix": args.host_prefix,
         "service_network_cidr": args.service_network,
         "pull_secret": args.pull_secret,
+        "http_proxy": args.http_proxy,
+        "https_proxy": args.https_proxy,
+        "no_proxy": args.no_proxy,
     }
     return params
 
@@ -290,7 +293,6 @@ def main():
             cluster_id=cluster.id,
             image_path=consts.IMAGE_PATH,
             ssh_key=args.ssh_key,
-            proxy_url=args.proxy_url,
         )
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
@@ -417,9 +419,23 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "-pU",
-        "--proxy-url",
-        help="Proxy url to pass to inventory cluster",
+        "-pX",
+        "--http-proxy",
+        help="A proxy URL to use for creating HTTP connections outside the cluster",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
+        "-sX",
+        "--https-proxy",
+        help="A proxy URL to use for creating HTTPS connections outside the cluster",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
+        "-nX",
+        "--no-proxy",
+        help="A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxyin",
         type=str,
         default="",
     )

@@ -40,7 +40,6 @@
     CLUSTER_ID: "{{ cluster_id | quote }}"
     REMOTE_SERVICE_URL: "{{ remote_service_url }}"
     SSH_PUB_KEY: "{{ key.content | b64decode|trim }}"
-    PROXY_URL: "{{ proxy_url | quote }}"
     BASE_DNS_DOMAINS: "{{ domain | quote }}"
   tags:
   - create_iso
