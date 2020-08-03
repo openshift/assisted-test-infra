@@ -27,7 +27,7 @@ resource "libvirt_network" "net" {
 
   mode   = "nat"
   bridge = var.libvirt_network_if
-
+  mtu = var.libvirt_network_mtu
   domain = var.cluster_domain
 
   addresses = [var.machine_cidr]
