@@ -8,10 +8,10 @@ PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-al
 
 SKIPPER_PARAMS ?= -i
 
-# bm-inventory
-BMI_BRANCH := $(or $(BMI_BRANCH), "master")
-BMI_REPO := $(or $(BMI_REPO), "https://github.com/filanov/bm-inventory")
-SERVICE := $(or $(SERVICE), quay.io/ocpmetal/bm-inventory:latest)
+# assisted-service
+SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
+SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
+SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 
 # nodes params
 ISO := $(or $(ISO), "") # ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
@@ -23,7 +23,7 @@ STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
 CLUSTER_ID := $(or $(CLUSTER_ID), "")
 CLUSTER_NAME := $(or $(CLUSTER_NAME),test-infra-cluster)
 OPENSHIFT_VERSION := $(or $(OPENSHIFT_VERSION), 4.5)
-REMOTE_INVENTORY_URL := $(or $(REMOTE_INVENTORY_URL), "")
+REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
 WORKER_DISK ?= 21474836480
 MASTER_DISK ?= 21474836480
 
@@ -52,7 +52,7 @@ IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_bm_inventory create_environment delete_all_virsh_resources _download_iso _deploy_bm_inventory _deploy_nodes  _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube run destroy install_minikube deploy_assisted_service create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
 
 ###########
 # General #
@@ -70,15 +70,16 @@ destroy: destroy_nodes delete_minikube
 create_full_environment:
 	./create_full_environment.sh
 
-create_environment: image_build bring_bm_inventory start_minikube
+create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
-	sed 's/^FROM .*bm-inventory.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
+	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
 	 $(CONTAINER_COMMAND) build ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
-	rm -rf build
-	rm -rf bm-inventory
+	-rm -rf build assisted-service test_infra.log
+	-find -name '*.pyc' -delete
+	-find -name '*pycache*' -delete
 
 ############
 # Minikube #
@@ -123,7 +124,7 @@ _destroy_terraform:
 # Run #
 #######
 
-run: deploy_bm_inventory deploy_ui
+run: deploy_assisted_service deploy_ui
 
 run_full_flow: run deploy_nodes set_dns
 
@@ -161,7 +162,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
@@ -170,7 +171,7 @@ deploy_nodes:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 destroy_nodes:
-	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE)' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE)' $(SKIPPER_PARAMS)
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -180,18 +181,15 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 # Inventory #
 #############
 
-deploy_bm_inventory: start_minikube bring_bm_inventory
-	mkdir -p bm-inventory/build
-	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_bm_inventory.sh
+deploy_assisted_service: start_minikube bring_assisted_service
+	mkdir -p assisted-service/build
+	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_assisted_service.sh
 
-bring_bm_inventory:
-	@if cd bm-inventory >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(BMI_BRANCH); else git clone --branch $(BMI_BRANCH) $(BMI_REPO);fi
+bring_assisted_service:
+	@if cd assisted-service >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(SERVICE_BRANCH); else git clone --branch $(SERVICE_BRANCH) $(SERVICE_REPO);fi
 
-deploy_monitoring: bring_bm_inventory
-	make -C bm-inventory/ deploy-monitoring NAMESPACE=$(NAMESPACE)
-
-clear_inventory:
-	make -C bm-inventory/ clear-deployment NAMESPACE=$(NAMESPACE)
+deploy_monitoring: bring_assisted_service
+	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE)
 
 delete_all_virsh_resources: destroy_nodes delete_minikube
 	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
@@ -201,12 +199,12 @@ delete_all_virsh_resources: destroy_nodes delete_minikube
 #######
 
 _download_iso:
-	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_INVENTORY_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -iO
+	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pU $(PROXY_URL) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -iO
 
 download_iso:
 	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
-download_iso_for_remote_use: deploy_bm_inventory
+download_iso_for_remote_use: deploy_assisted_service
 	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 ########

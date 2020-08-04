@@ -46,7 +46,7 @@ As `$USER` user with `sudo` privileges,
 
         [$USER@assisted_installer assisted-test-infra]# export OPENSHIFT_VERSION=4.6
 
-1.  Once complete, run the "run" using make that creates the `bm-inventory` and deploys the UI
+1.  Once complete, run the "run" using make that creates the `assisted-service` and deploys the UI
 
         [$USER@assisted_installer assisted-test-infra]# make run
         .
@@ -161,14 +161,13 @@ As `$USER` user with `sudo` privileges,
 
 > NOTE: Currently there is an issue with the metal3 pod. The Assisted Installer team is aware of this.
 
-
 ## Troubleshooting
 
 Also see the [troubleshooting section](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit#heading=h.ewz6a9wqulbj) in the **internal** [Assisted Deployment](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit?usp=sharing) document.
 
 **Problem**
 
-Minikube fails when deploying _bm-inventory_ using the test infra.
+Minikube fails when deploying _assisted-service_ using the test infra.
 
 **Solution**
 
@@ -184,7 +183,7 @@ make run
 
 **Problem**
 
-An exception in `discovery-infra/bm_inventory_client.py` about a missing class or an invalid param.
+An exception in `discovery-infra/assisted_service_client.py` about a missing class or an invalid parameter.
 
 **Solution**
 
@@ -197,11 +196,11 @@ An exception in `discovery-infra/bm_inventory_client.py` about a missing class o
 
 **Problem**
 
-VMs fail to connect to BM Inventory.
+VMs fail to connect to Assisted Service.
 
 **Solution**
 
-1. Run `kubectl get pods -n <namespace>` and look for the _bm-inventory_ pod name. For example:
+1. Run `kubectl get pods -n <namespace>` and look for the _assisted-service_ pod name. For example:
 
 ```bash
 [$USER@assisted_installer ~]# kubectl get pods -n assisted-installer
@@ -209,7 +208,7 @@ VMs fail to connect to BM Inventory.
 
 2. Run `kubectl logs <pod-name> -n <namespace>` and check the log for errors.
 
-3. If you do not see any errors in the BM Inventory logs, ssh to the VM:
+3. If you do not see any errors in the Assisted Service logs, ssh to the VM:
 
    - Get the VM IP addresses using `virsh net-dhcp-leases test-infra-net`.
 
@@ -223,11 +222,11 @@ VMs fail to connect to BM Inventory.
 
 **Problem**
 
-There are issues installing BM Inventory.
+There are issues installing Assisted Service.
 
 **Solution**
 
-1. Run `kubectl get pods -n <namespace>` and look for the _bm-inventory_ pod name. For example:
+1. Run `kubectl get pods -n <namespace>` and look for the _assisted-service_ pod name. For example:
 
 ```bash
 [$USER@assisted_installer ~]# kubectl get pods -n assisted-installer
@@ -245,7 +244,7 @@ The test infra fails with any of the following errors:
 
 - `Error: missing provider "libvirt"`
 
-- `make image build failed - DD failed: stat /var/lib/docker/tmp/docker-builder287959213/build/bm-inventory-client: no such file or directory`
+- `make image build failed - DD failed: stat /var/lib/docker/tmp/docker-builder287959213/build/assisted-service-client: no such file or directory`
 
 - `warning: unable to access '/root/.gitconfig': Is a directory fatal: unknown error occurred while reading the configuration files`
 
@@ -272,7 +271,6 @@ You get `Error: Error creating libvirt domain: virError(Code=38, Domain=18, Mess
 **Solution**
 
 Run `make create_full_environment`.
-
 
 <hr>
 <b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)

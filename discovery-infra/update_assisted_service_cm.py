@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Idea is to pass os environments to bm-inventory config map, to make an easy way to configure bm-inventory
+# Idea is to pass os environments to assisted-service config map, to make an easy way to configure assisted-service
 #
 # Note: defaulting an env var to "" in Makefile, will result in an empty string value in the configmap.
 # E.g.
@@ -16,7 +16,7 @@ import os
 
 import yaml
 
-CM_PATH = "bm-inventory/deploy/bm-inventory-configmap.yaml"
+CM_PATH = "assisted-service/deploy/assisted-service-configmap.yaml"
 ENVS = [
     ("HW_VALIDATOR_MIN_CPU_CORES", "2"),
     ("HW_VALIDATOR_MIN_CPU_CORES_WORKER", "2"),
@@ -27,8 +27,8 @@ ENVS = [
     ("HW_VALIDATOR_MIN_DISK_SIZE_GIB", "10"),
     ("INSTALLER_IMAGE", ""),
     ("CONTROLLER_IMAGE", ""),
-    ("INVENTORY_URL", ""),
-    ("INVENTORY_PORT", ""),
+    ("SERVICE_URL", ""),
+    ("SERVICE_PORT", ""),
     ("AGENT_DOCKER_IMAGE", ""),
     ("KUBECONFIG_GENERATE_IMAGE", ""),
     ("BASE_DNS_DOMAINS", ""),
@@ -39,14 +39,14 @@ ENVS = [
 ]
 
 
-def read_yaml():
+def _read_yaml():
     if not os.path.exists(CM_PATH):
         return
     with open(CM_PATH, "r+") as cm_file:
         return yaml.load(cm_file)
 
 
-def get_relevant_envs():
+def _get_relevant_envs():
     data = {}
     for env in ENVS:
         evn_data = os.getenv(env[0], env[1])
@@ -58,14 +58,14 @@ def get_relevant_envs():
     return data
 
 
-def set_envs_to_inventory_cm():
-    cm_data = read_yaml()
+def set_envs_to_service_cm():
+    cm_data = _read_yaml()
     if not cm_data:
         raise Exception("%s must exists before setting envs to it" % CM_PATH)
-    cm_data["data"].update(get_relevant_envs())
+    cm_data["data"].update(_get_relevant_envs())
     with open(CM_PATH, "w") as cm_file:
         yaml.dump(cm_data, cm_file)
 
 
 if __name__ == "__main__":
-    set_envs_to_inventory_cm()
+    set_envs_to_service_cm()

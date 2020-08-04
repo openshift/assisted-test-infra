@@ -1,5 +1,5 @@
 build
-bm-inventory
+assisted-service
 .idea
 .terraform
 *__pycache__*

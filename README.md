@@ -23,16 +23,16 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
       - [Delete all virsh resources](#delete-all-virsh-resources)
     - [Install cluster](#install-cluster)
     - [Create cluster and download ISO](#create-cluster-and-download-iso)
-    - [Deploy BM Inventory and Monitoring stack](#deploy-bm-inventory-and-monitoring-stack)
-    - [`deploy_bm_inventory` and Create cluster and download ISO](#deploy_bm_inventory-and-create-cluster-and-download-iso)
+    - [Deploy Assisted Service and Monitoring stack](#deploy-assisted-service-and-monitoring-stack)
+    - [`deploy_assisted_service` and Create cluster and download ISO](#deploy_assisted_service-and-create-cluster-and-download-iso)
     - [start_minikube and Deploy UI and open port forwarding on port 6008, allows to connect to it from browser](#start_minikube-and-deploy-ui-and-open-port-forwarding-on-port-6008-allows-to-connect-to-it-from-browser)
     - [Kill all open port forwarding commands, will be part of destroy target](#kill-all-open-port-forwarding-commands-will-be-part-of-destroy-target)
-  - [Test `bm-inventory` image](#test-bm-inventory-image)
+  - [Test `assisted-service` image](#test-assisted-service-image)
     - [Test agent image](#test-agent-image)
     - [Test installer image or controller image](#test-installer-image-or-controller-image)
-  - [Test installer, controller, `bm-inventory` and agent images in the same flow](#test-installer-controller-bm-inventory-and-agent-images-in-the-same-flow)
+  - [Test installer, controller, `assisted-service` and agent images in the same flow](#test-installer-controller-assisted-service-and-agent-images-in-the-same-flow)
     - [Test infra image](#test-infra-image)
-- [In case you would like to build the image with a different `bm-inventory` client](#in-case-you-would-like-to-build-the-image-with-a-different-bm-inventory-client)
+- [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 
 | Variable                 | Description                                                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| BMI_BRANCH               | bm-inventory branch to use, default: master                                                                                     |
+| BMI_BRANCH               | assisted-service branch to use, default: master                                                                                     |
 | ISO                      | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
 | NUM_MASTERS              | number of VMs to spawn as masters, default: 3                                                                                   |
 | WORKER_MEMORY            | memory for worker VM, default: 8892MB                                                                                           |
@@ -65,23 +65,23 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | ROUTE53_SECRET           | Amazon Route 53 secret to use for DNS domains registration.                                                                     |
 | CLUSTER_NAME             | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                   |
 | BASE_DOMAIN              | base domain, needed for DNS name, default: redhat.com                                                                           |
-| BASE_DNS_DOMAINS         | base DNS domains that are managaed by bm-inventory, format: domain_name:domain_id/provider_type.                                |
+| BASE_DNS_DOMAINS         | base DNS domains that are managaed by assisted-service, format: domain_name:domain_id/provider_type.                                |
 | NETWORK_CIDR             | network cidr to use for virsh VM network, default: "192.168.126.0/24"                                                           |
 | CLUSTER_ID               | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
 | NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
 | NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.4"                                                                                    |
 | PROXY_URL                | proxy URL that will be pass to live cd image                                                                                    |
-| INVENTORY_URL            | update bm-inventory config map INVENTORY_URL param with given URL                                                               |
-| INVENTORY_PORT           | update bm-inventory config map INVENTORY_PORT with given port                                                                   |
-| AGENT_DOCKER_IMAGE       | agent docker image to use, will update bm-inventory config map with given value                                                 |
-| INSTALLER_IMAGE          | assisted-installer image to use, will update bm-inventory config map with given value                                           |
-| SERVICE                  | bm-inventory image to use                                                                                                       |
-| DEPLOY_TAG               | the tag to be used for all images (bm-inventory, assisted-installer, agent, etc) this will override any other os params         |
-| IMAGE_BUILDER            | image-builder image to use, will update bm-inventory config map with given value                                                |
-| CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update bm-inventory config map with given value                                           |
-| HARDWARE_INFO_IMAGE      | hardware-info image to use, will update bm-inventory config map with given value                                                |
-| INVENTORY_IMAGE          | bm-inventory image to be updated in bm-inventory config map with given value                                                    |
+| INVENTORY_URL            | update assisted-service config map INVENTORY_URL param with given URL                                                               |
+| INVENTORY_PORT           | update assisted-service config map INVENTORY_PORT with given port                                                                   |
+| AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                                 |
+| INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                           |
+| SERVICE                  | assisted-service image to use                                                                                                       |
+| DEPLOY_TAG               | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os params         |
+| IMAGE_BUILDER            | image-builder image to use, will update assisted-service config map with given value                                                |
+| CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                           |
+| HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                                |
+| INVENTORY_IMAGE          | assisted-service image to be updated in assisted-service config map with given value                                                    |
 
 ## Instructions
 
@@ -113,11 +113,11 @@ The following is a list of stages that will be run:
 
 1. Start Minikube if not started yet
 1. Deploy services for assisted deployment on Minikube
-1. Create cluster in `bm-inventory` service
+1. Create cluster in `assisted-service` service
 1. Download ISO image
 1. Spawn required number of VMs from downloaded ISO with parameters that can be configured by OS environment (check makefile)
-1. Wait until nodes are up and registered in `bm-inventory`
-1. Set nodes roles in `bm-inventory` by matching VM names (worker/master)
+1. Wait until nodes are up and registered in `assisted-service`
+1. Set nodes roles in `assisted-service` by matching VM names (worker/master)
 1. Verify all nodes have required hardware to start installation
 1. Install nodes
 1. Download `kubeconfig-noingress` to build/kubeconfig
@@ -205,14 +205,14 @@ make install_cluster
 make download_iso
 ```
 
-### Deploy BM Inventory and Monitoring stack
+### Deploy Assisted Service and Monitoring stack
 
 ```bash
 make run
 make deploy_monitoring
 ```
 
-### `deploy_bm_inventory` and Create cluster and download ISO
+### `deploy_assisted_service` and Create cluster and download ISO
 
 ```bash
 make download_iso_for_remote_use
@@ -230,7 +230,7 @@ make deploy_ui
 make kill_all_port_forwardings
 ```
 
-## Test `bm-inventory` image
+## Test `assisted-service` image
 
 ```bash
 make redeploy_all SERVICE=<image to test>
@@ -254,7 +254,7 @@ or
 export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
 ```
 
-## Test installer, controller, `bm-inventory` and agent images in the same flow
+## Test installer, controller, `assisted-service` and agent images in the same flow
 
 ```bash
 make redeploy_all INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
@@ -270,8 +270,8 @@ Assisted-test-infra builds an image including all the prerequisites to handle th
 make image_build
 ```
 
-# In case you would like to build the image with a different `bm-inventory` client
+# In case you would like to build the image with a different `assisted-service` client
 
 ```bash
-make image_build SERVICE=<bm inventory image URL>
+make image_build SERVICE=<assisted service image URL>
 ```

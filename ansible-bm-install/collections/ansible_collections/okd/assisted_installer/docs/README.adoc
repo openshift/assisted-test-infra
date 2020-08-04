@@ -4,7 +4,7 @@ The purpose of this playbook is to provided an automated fashion to create, moun
 
 == Prerequisites
 
-* Assisted Installer UI exists and is reachable via http://REMOTE_INVENTORY_URL:6008
+* Assisted Installer UI exists and is reachable via http://REMOTE_SERVICE_URL:6008
 * The assisted_installer node used by the playbook must be able to `ping` the OpenShift cluster nodes
 
 === Supports

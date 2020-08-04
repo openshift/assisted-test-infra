@@ -4,19 +4,19 @@
 import argparse
 import shutil
 
-import bm_inventory_api
+import assisted_service_api
 import consts
 import utils
 import virsh_cleanup
 from logger import log
 
 
-# Try to delete cluster if bm-inventory is up and such cluster exists
+# Try to delete cluster if assisted-service is up and such cluster exists
 def try_to_delete_cluster(tfvars):
     try:
         cluster_id = tfvars.get("cluster_inventory_id")
         if cluster_id:
-            client = bm_inventory_api.create_client(
+            client = assisted_service_api.create_client(
                 args.namespace, args.inventory_url, wait_for_url=False
             )
             client.delete_cluster(cluster_id=cluster_id)
