@@ -66,22 +66,22 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | ROUTE53_SECRET           | Amazon Route 53 secret to use for DNS domains registration.                                                                     |
 | CLUSTER_NAME             | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                   |
 | BASE_DOMAIN              | base domain, needed for DNS name, default: redhat.com                                                                           |
-| BASE_DNS_DOMAINS         | base DNS domains that are managaed by assisted-service, format: domain_name:domain_id/provider_type.                                |
-| NETWORK_CIDR             | network cidr to use for virsh VM network, default: "192.168.126.0/24"                                                           |
+| BASE_DNS_DOMAINS         | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type.                             |
+| NETWORK_CIDR             | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                           |
 | CLUSTER_ID               | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
 | NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
 | NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.4"                                                                                    |
 | PROXY_URL                | proxy URL that will be pass to live cd image                                                                                    |
-| SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL param with given URL, including port and protocol
-| AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                                 |
-| INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                           |
-| SERVICE                  | assisted-service image to use                                                                                                       |
-| DEPLOY_TAG               | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os params         |
-| IMAGE_BUILDER            | image-builder image to use, will update assisted-service config map with given value                                                |
-| CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                           |
-| HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                                |
-| INVENTORY_IMAGE          | assisted-service image to be updated in assisted-service config map with given value                                                    |
+| SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                       |
+| AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                             |
+| INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                       |
+| SERVICE                  | assisted-service image to use                                                                                                   |
+| DEPLOY_TAG               | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
+| IMAGE_BUILDER            | image-builder image to use, will update assisted-service config map with given value                                            |
+| CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                       |
+| HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                            |
+| INVENTORY_IMAGE          | assisted-service image to be updated in assisted-service config map with given value                                            |
 
 ## Instructions
 
