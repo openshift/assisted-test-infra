@@ -45,7 +45,9 @@ class InventoryClient(object):
 
             # fetch new key if expired or not set yet
             token_url = "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token"
-            token_url = os.environ.get("SSO_URL", token_url)
+            env_url = os.environ.get("SSO_URL", "")
+            if env_url != "": token_url = env_url
+
             params = {
                 "client_id":     "cloud-services",
                 "grant_type":    "refresh_token",
