@@ -54,7 +54,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 
 | Variable                 | Description                                                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| BMI_BRANCH               | assisted-service branch to use, default: master                                                                                     |
+| SERVICE_BRANCH               | assisted-service branch to use, default: master                                                                                     |
+| SERVICE_REPO               | assisted-service repository to use, default: https://github.com/openshift/assisted-service                                                                                     |
 | ISO                      | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
 | NUM_MASTERS              | number of VMs to spawn as masters, default: 3                                                                                   |
 | WORKER_MEMORY            | memory for worker VM, default: 8892MB                                                                                           |
