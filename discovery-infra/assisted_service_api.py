@@ -25,8 +25,10 @@ class InventoryClient(object):
         self.client = api.InstallerApi(api_client=self.api)
 
     def set_config_auth(self, c):
-        offline_token = os.environ.get('OFFLINE_TOKEN')
-        if offline_token == None: return
+        offline_token = os.environ.get('OFFLINE_TOKEN', "")
+        if offline_token == "":
+            log.info("OFFLINE_TOKEN not set, skipping authentication headers")
+            return
 
         def refresh_api_key(config):
             # Get the properly padded key segment
