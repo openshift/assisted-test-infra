@@ -242,6 +242,10 @@ cluster_name="openshift"
 # Contents of the pull-secret.txt file
 pull_secret="{{ lookup('file', './pull_secret.txt') }}"
 
+# Provide Remote Service URL and port
+#e.g. remote_service_url="http://example.com:6000
+remote_service_url=""
+
 # Version of the openshift-installer, undefined or empty results in the playbook failing.
 openshift_version="4.5"
 
@@ -295,6 +299,10 @@ cluster_name="openshift"
 
 # Contents of the pull-secret.txt file
 pull_secret="{{ lookup('file', './pull_secret.txt') }}"
+
+# Provide Remote Service URL and port
+#e.g. remote_service_url="http://example.com:6000
+remote_service_url=""
 
 # Version of the openshift-installer, undefined or empty results in the playbook failing.
 openshift_version="4.5"
