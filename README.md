@@ -82,6 +82,12 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                           |
 | HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                                |
 | INVENTORY_IMAGE          | assisted-service image to be updated in assisted-service config map with given value                                                    |
+| SERVICE_NAME             | assisted-service remote service name for nodes deployment, default: assisted-service
+| TARGET                   | assisted-service target kubernetes deployment: minikube/oc/oc-ingress, default: minikube
+| OC_TOKEN                 | oc login token to be used for nodes deployment with remote assisted-service
+| OC_SERVER                | oc server url to be used for nodes deployment with remote assisted-service, default: https://api.ocp.prod.psi.redhat.com:6443
+
+
 
 ## Instructions
 
