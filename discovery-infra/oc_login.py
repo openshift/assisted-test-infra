@@ -5,6 +5,10 @@ from logger import log
 from utils import run_command
 
 
+def is_oc_login_required(target):
+    return target in ('oc', 'oc-ingress')
+
+
 def oc_login(token=None, server=None):
     log.info('Performing oc-login')
     cmd = _get_cmd(token, server)

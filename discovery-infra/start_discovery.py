@@ -18,7 +18,7 @@ import install_cluster
 import utils
 import waiting
 from logger import log
-
+from oc_login import oc_login, is_oc_login_required
 
 # Creates ip list, if will be needed in any other place, please move to utils
 def _create_ip_address_list(node_count, starting_ip_addr):
@@ -272,6 +272,10 @@ def main():
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
         if args.cluster_name:
             cluster_name = "%s-%s" % (args.cluster_name, random_postfix)
+
+    if is_oc_login_required(args.target):
+        oc_login(args.oc_token, args.oc_server)
+
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
@@ -443,6 +447,26 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-id", "--cluster-id", help="Cluster id to install", type=str, default=None
+    )
+    parser.add_argument(
+        '-t',
+        '--target',
+        help='Target inventory deployment (minikube/oc/oc-ingress)',
+        type=utils.validate_target,
+        default='minikube',
+    )
+    parser.add_argument(
+        '--oc-token',
+        help='Token for oc target that will be used for login',
+        type=str,
+        required=False
+    )
+    parser.add_argument(
+        '--oc-server',
+        help='Server for oc target that will be used for login',
+        type=str,
+        required=False,
+        default='https://api.ocp.prod.psi.redhat.com:6443'
     )
 
     args = parser.parse_args()

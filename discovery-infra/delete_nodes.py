@@ -9,6 +9,7 @@ import consts
 import utils
 import virsh_cleanup
 from logger import log
+from oc_login import oc_login, is_oc_login_required
 
 
 # Try to delete cluster if assisted-service is up and such cluster exists
@@ -58,6 +59,9 @@ def main():
     if args.delete_all:
         delete_all()
     else:
+        if is_oc_login_required(args.target):
+            oc_login(args.oc_token, args.oc_server)
+
         try:
             tfvars = utils.get_tfvars()
             if not args.only_nodes:
@@ -97,6 +101,26 @@ if __name__ == "__main__":
         help="Delete under this namespace",
         type=str,
         default="assisted-installer",
+    )
+    parser.add_argument(
+        '-t',
+        '--target',
+        help='Target inventory deployment (minikube/oc/oc-ingress)',
+        type=utils.validate_target,
+        default='minikube',
+    )
+    parser.add_argument(
+        '--oc-token',
+        help='Token for oc target that will be used for login',
+        type=str,
+        required=False
+    )
+    parser.add_argument(
+        '--oc-server',
+        help='Server for oc target that will be used for login',
+        type=str,
+        required=False,
+        default='https://api.ocp.prod.psi.redhat.com:6443'
     )
     args = parser.parse_args()
     main()

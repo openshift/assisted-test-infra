@@ -248,3 +248,10 @@ def recreate_folder(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
     run_command("chmod ugo+rx %s" % folder)
+
+
+def validate_target(target):
+    target = target.lower()
+    if target in consts.TARGET_OPTIONS:
+        return target
+    raise ValueError(f'invalid target {target} options: {options}')

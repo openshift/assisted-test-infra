@@ -18,7 +18,7 @@ CLUSTER_PREFIX = "%s-" % CLUSTER
 TEST_NETWORK = "%s-net" % TEST_INFRA
 DEFAULT_CLUSTER_KUBECONFIG_PATH = "build/kubeconfig"
 WAIT_FOR_BM_API = 900
-
+TARGET_OPTIONS = ('minikube', 'oc', 'oc-ingress')
 
 class NodeRoles:
     WORKER = "worker"
