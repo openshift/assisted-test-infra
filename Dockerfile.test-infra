@@ -4,7 +4,7 @@ FROM docker.io/centos:8
 
 RUN yum -y install make python3 libvirt-client libvirt-devel gcc unzip wget curl git python3-devel && yum clean all;
 
-RUN wget `wget https://www.terraform.io/downloads.html -q -O - | grep -oP "(https://releases.hashicorp.com/terraform/.*linux_amd64\.zip)(?=\")" | head -n 1` && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
+RUN wget https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
 
 RUN curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.10.1/minikube-linux-amd64 \
   && chmod +x minikube && mkdir -p /usr/local/bin/ && install minikube /usr/local/bin/
@@ -17,7 +17,7 @@ RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/do
 COPY requirements.txt /tmp/
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
-    find /build/pip/ -name 'setup.py' -exec dirname {} \; | xargs pip3 install
+    pip3 install /build/pip/*
 
 # TODO: Remove once OpenShift CI will be upgraded to 4.2 (see https://access.redhat.com/articles/4859371)
 RUN chmod uga+w /etc/passwd
