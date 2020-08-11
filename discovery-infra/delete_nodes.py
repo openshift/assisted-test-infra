@@ -18,7 +18,11 @@ def try_to_delete_cluster(tfvars):
         cluster_id = tfvars.get("cluster_inventory_id")
         if cluster_id:
             client = assisted_service_api.create_client(
-                args.namespace, args.inventory_url, wait_for_url=False
+                service_name=args.service_name,
+                target=args.target,
+                namespace=args.namespace,
+                inventory_url=args.inventory_url,
+                wait_for_url=False,
             )
             client.delete_cluster(cluster_id=cluster_id)
     # TODO add different exception validations
@@ -122,5 +126,13 @@ if __name__ == "__main__":
         required=False,
         default='https://api.ocp.prod.psi.redhat.com:6443'
     )
+    parser.add_argument(
+        '--service-name',
+        help='Assisted Service name',
+        type=str,
+        required=False,
+        default='assisted-service'
+    )
+
     args = parser.parse_args()
     main()

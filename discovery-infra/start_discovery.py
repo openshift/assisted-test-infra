@@ -279,7 +279,13 @@ def main():
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
-        client = assisted_service_api.create_client(args.namespace, args.inventory_url)
+        client = assisted_service_api.create_client(
+            service_name=args.service_name,
+            target=args.target,
+            namespace=args.namespace,
+            inventory_url=args.inventory_url,
+        )
+
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
@@ -467,6 +473,13 @@ if __name__ == "__main__":
         type=str,
         required=False,
         default='https://api.ocp.prod.psi.redhat.com:6443'
+    )
+    parser.add_argument(
+        '--service-name',
+        help='Assisted Service name',
+        type=str,
+        required=False,
+        default='assisted-service'
     )
 
     args = parser.parse_args()

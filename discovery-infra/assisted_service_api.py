@@ -149,13 +149,28 @@ class InventoryClient(object):
         return self.client.install_cluster(cluster_id=cluster_id)
 
 
-def create_client(namespace, inventory_url=None, wait_for_url=True):
+def create_client(
+        service_name,
+        target,
+        namespace,
+        inventory_url=None,
+        wait_for_url=True
+        ):
     if inventory_url:
         i_url = inventory_url
     elif wait_for_url:
-        i_url = utils.get_service_url_with_retries("assisted-service", namespace)
+        i_url = utils.get_service_url_with_retries(
+            service_name=service_name,
+            namespace=namespace,
+            target=target
+        )
     else:
-        i_url = utils.get_service_url("assisted-service", namespace)
+        i_url = utils.get_service_url(
+            service_name=service_name,
+            namespace=namespace,
+            target=target
+        )
+
     log.info("Inventory URL %s", i_url)
     client = InventoryClient(inventory_url=i_url)
     if wait_for_url:

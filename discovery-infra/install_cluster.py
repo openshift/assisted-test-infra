@@ -117,7 +117,12 @@ def main():
     if is_oc_login_required(args.target):
         oc_login(args.oc_token, args.oc_server)
 
-    client = assisted_service_api.create_client(args.namespace, wait_for_url=False)
+    client = assisted_service_api.create_client(
+        service_name=args.service_name,
+        target=args.target,
+        namespace=args.namespace,
+        wait_for_url=False,
+    )
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,
@@ -167,6 +172,13 @@ if __name__ == "__main__":
         type=str,
         required=False,
         default='https://api.ocp.prod.psi.redhat.com:6443'
+    )
+    parser.add_argument(
+        '--service-name',
+        help='Assisted Service name',
+        type=str,
+        required=False,
+        default='assisted-service'
     )
     args = parser.parse_args()
     main()

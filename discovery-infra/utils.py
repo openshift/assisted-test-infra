@@ -5,6 +5,7 @@ import os
 import shlex
 import shutil
 import subprocess
+from functools import wraps
 from pathlib import Path
 
 import consts
@@ -14,6 +15,24 @@ from logger import log
 from retry import retry
 
 conn = libvirt.open("qemu:///system")
+
+
+def on_exception(*, message=None, callback=None, silent=False):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapped(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except Exception as e:
+                if message:
+                    log.exception(message)
+                if callback:
+                    callback(e)
+                if silent:
+                    return
+                raise
+        return wrapped
+    return decorator
 
 
 def run_command(command, shell=False):
@@ -41,18 +60,41 @@ def run_command_with_output(command):
 
 
 @retry(tries=5, delay=3, backoff=2)
-def get_service_url_with_retries(service_name, namespace):
-    return get_service_url(service_name, namespace)
+def get_service_url_with_retries(service_name, namespace, target):
+    return get_service_url(service_name, namespace, target)
 
 
-def get_service_url(service_name, namespace):
-    try:
-        log.info(f"Getting {service_name} URL in {namespace} namespace")
-        cmd = f"minikube -n {namespace} service {service_name} --url"
-        return run_command(cmd)
-    except:
-        log.error(f"Failed to get {service_name} URL in {namespace} namespace")
-        raise
+def get_service_url(service_name, namespace, target):
+    get_url = get_local_service_url if target == 'minikube' else get_remote_service_url
+    return get_url(service_name, namespace)
+
+
+@on_exception(message='Failed to get local service url')
+def get_local_service_url(service_name, namespace):
+    log.info(f'Getting {service_name} URL in {namespace} namespace')
+    return run_command(f'minikube -n {namespace} service {service_name} --url')
+
+
+@on_exception(message='Failed to get remote service url')
+def get_remote_service_url(service, namespace):
+    routes = get_service_routes(service, namespace)
+    if len(routes) != 1:
+        raise RuntimeError(
+            f'unable to get remote route for service: {service} '
+            f'(found {len(routes)} routes, needs 1)'
+        )
+    host = routes[0]['spec']['host']
+    return f'http://{host}'
+
+
+def get_service_routes(service, namespace):
+    cmd_output = run_command(
+        'kubectl get route '
+        f'--namespace {namespace} '
+        f'--field-selector spec.to.name={service} '
+        '--output=json'
+    )
+    return json.loads(cmd_output).get('items', [])
 
 
 def get_network_leases(network_name):
