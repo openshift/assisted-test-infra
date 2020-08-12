@@ -7,6 +7,7 @@ import shutil
 import assisted_service_api
 import consts
 import utils
+import oc_utils
 import virsh_cleanup
 from logger import log
 
@@ -98,5 +99,6 @@ if __name__ == "__main__":
         type=str,
         default="assisted-installer",
     )
+    oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     main()

@@ -16,6 +16,7 @@ import assisted_service_api
 import consts
 import install_cluster
 import utils
+import oc_utils
 import waiting
 from logger import log
 
@@ -444,7 +445,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-id", "--cluster-id", help="Cluster id to install", type=str, default=None
     )
-
+    oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:
         raise Exception("Can't install cluster without pull secret, please provide one")
