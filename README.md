@@ -72,7 +72,9 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
 | NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.5"                                                                                    |
-| PROXY_URL                | proxy URL that will be pass to live cd image                                                                                    |
+| HTTP_PROXY_URL           | A proxy URL to use for creating HTTP connections outside the cluster |
+| HTTPS_PROXY_URL          | A proxy URL to use for creating HTTPS connections outside the cluster |
+| NO_PROXY                 | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
 | SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                       |
 | AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                             |
 | INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                       |
