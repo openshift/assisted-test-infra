@@ -7,9 +7,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import consts
 import libvirt
 import waiting
+import requests
+import consts
+import oc_utils
 from logger import log
 from retry import retry
 
@@ -38,21 +40,6 @@ def run_command_with_output(command):
 
     if p.returncode != 0:
         raise subprocess.CalledProcessError(p.returncode, p.args)
-
-
-@retry(tries=5, delay=3, backoff=2)
-def get_service_url_with_retries(service_name, namespace):
-    return get_service_url(service_name, namespace)
-
-
-def get_service_url(service_name, namespace):
-    try:
-        log.info(f"Getting {service_name} URL in {namespace} namespace")
-        cmd = f"minikube -n {namespace} service {service_name} --url"
-        return run_command(cmd)
-    except:
-        log.error(f"Failed to get {service_name} URL in {namespace} namespace")
-        raise
 
 
 def get_network_leases(network_name):
@@ -248,3 +235,65 @@ def recreate_folder(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
     run_command("chmod ugo+rx %s" % folder)
+
+
+def get_assisted_service_url_by_args(args, wait=True):
+    if hasattr(args, 'inventory_url') and args.inventory_url:
+        return args.inventory_url
+
+    kwargs = {
+        'service': args.service_name,
+        'namespace': args.namespace
+    }
+    if args.oc_mode:
+        get_url = get_remote_assisted_service_url
+        kwargs['oc'] = oc_utils.OC(token=args.oc_token, server=args.oc_server)
+        kwargs['scheme'] = args.oc_scheme
+    else:
+        get_url = get_local_assisted_service_url
+
+    return retry(
+        tries=5 if wait else 1,
+        delay=3,
+        backoff=2,
+        exceptions=(
+            requests.ConnectionError,
+            requests.ConnectTimeout,
+            requests.RequestException
+        )
+    )(get_url)(**kwargs)
+
+
+def get_remote_assisted_service_url(oc, namespace, service, scheme):
+    log.info('Getting oc %s URL in %s namespace', service, namespace)
+    service_urls = oc_utils.get_namespaced_service_urls_list(
+        oc=oc,
+        namespace=namespace,
+        service=service,
+        scheme=scheme
+    )
+    for url in service_urls:
+        if is_assisted_service_reachable(url):
+            return url
+
+    raise RuntimeError(
+        f'could not find any reachable url to {service} service '
+        f'in {namespace} namespace'
+    )
+
+
+def get_local_assisted_service_url(namespace, service):
+    log.info('Getting minikube %s URL in %s namespace', service, namespace)
+    url = run_command(f'minikube -n {namespace} service {service} --url')
+    if is_assisted_service_reachable(url):
+        return url
+
+    raise RuntimeError(
+        f'could not find any reachable url to {service} service '
+        f'in {namespace} namespace'
+    )
+
+
+def is_assisted_service_reachable(url):
+    r = requests.get(url + '/health', timeout=10)
+    return r.status_code == 200

@@ -113,7 +113,12 @@ def main():
     # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
         args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
-    client = assisted_service_api.create_client(args.namespace, wait_for_url=False)
+    client = assisted_service_api.create_client(
+        url=utils.get_assisted_service_url_by_args(
+            args=args,
+            wait=False
+        )
+    )
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,
@@ -143,6 +148,12 @@ if __name__ == "__main__":
         help="Namespace to use",
         type=str,
         default="assisted-installer",
+    )
+    parser.add_argument(
+        '--service-name',
+        help='Override assisted-service target service name',
+        type=str,
+        default='assisted-service'
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

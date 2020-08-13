@@ -276,7 +276,9 @@ def main():
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER)
-        client = assisted_service_api.create_client(args.namespace, args.inventory_url)
+        client = assisted_service_api.create_client(
+            url=utils.get_assisted_service_url_by_args(args=args)
+        )
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
@@ -444,6 +446,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-id", "--cluster-id", help="Cluster id to install", type=str, default=None
+    )
+    parser.add_argument(
+        '--service-name',
+        help='Override assisted-service target service name',
+        type=str,
+        default='assisted-service'
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

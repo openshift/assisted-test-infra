@@ -1,5 +1,6 @@
 import os
 import urllib3
+import json
 
 from kubernetes.config import kube_config
 from kubernetes.client import ApiClient
@@ -61,6 +62,32 @@ class OC(object):
     def validate_conn_params(self):
         if self.OC_DOMAIN not in self.config.host:
             raise ValueError('oc host is not part of the domain')
-
         elif not self.config.auth_settings()['BearerToken']['value']:
             raise ValueError('oc missing authentication token')
+
+    def get_namespaced_service_routes_list(self, namespace, service):
+        return self.client.call_api(
+            f'/apis/route.openshift.io/v1/namespaces/{namespace}/routes',
+            method='GET',
+            query_params=[('fieldSelector', f'spec.to.name={service}')],
+            response_type='V1ResourceQuotaList',
+            auth_settings=self.config.auth_settings(),
+            _return_http_data_only=True
+        )
+
+
+def get_namespaced_service_urls_list(oc, namespace, service=None, scheme='http'):
+    urls = []
+    routes = oc.get_namespaced_service_routes_list(namespace, service)
+    for route in routes.items:
+        for rule in _load_resource_config_dict(route)['spec']['rules']:
+            if 'host' in rule:
+                urls.append(scheme + '://' + rule['host'])
+    return urls
+
+
+def _load_resource_config_dict(resource):
+    raw = resource.metadata.annotations[
+        'kubectl.kubernetes.io/last-applied-configuration'
+    ]
+    return json.loads(raw)
