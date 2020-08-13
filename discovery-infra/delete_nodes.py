@@ -7,6 +7,7 @@ import shutil
 import assisted_service_api
 import consts
 import utils
+import oc_utils
 import virsh_cleanup
 from logger import log
 
@@ -17,7 +18,10 @@ def try_to_delete_cluster(tfvars):
         cluster_id = tfvars.get("cluster_inventory_id")
         if cluster_id:
             client = assisted_service_api.create_client(
-                args.namespace, args.inventory_url, wait_for_url=False
+                url=utils.get_assisted_service_url_by_args(
+                    args=args,
+                    wait=False
+                )
             )
             client.delete_cluster(cluster_id=cluster_id)
     # TODO add different exception validations
@@ -98,5 +102,12 @@ if __name__ == "__main__":
         type=str,
         default="assisted-installer",
     )
+    parser.add_argument(
+        '--service-name',
+        help='Override assisted-service target service name',
+        type=str,
+        default='assisted-service'
+    )
+    oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     main()

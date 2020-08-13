@@ -71,7 +71,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | CLUSTER_ID               | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
 | NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
 | NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
-| OPENSHIFT_VERSION        | OpenShift version to install, default: "4.4"                                                                                    |
+| OPENSHIFT_VERSION        | OpenShift version to install, default: "4.5"                                                                                    |
 | PROXY_URL                | proxy URL that will be pass to live cd image                                                                                    |
 | SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                       |
 | AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                             |
@@ -82,6 +82,12 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                       |
 | HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                            |
 | INVENTORY_IMAGE          | assisted-service image to be updated in assisted-service config map with given value                                            |
+| OC_MODE                  | if set, use oc instead of minikube                                                                                              |
+| OC_TOKEN                 | token for oc login (an alternative for oc-user & oc-pass)                                                                       |
+| OC_SERVER                | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443                        |
+| OC_SCHEME                | Scheme for assisted-service url on oc, default: http                                                                            |
+| SERVICE_NAME             | assisted-service target service name, default: assisted-service                                                                 |
+| KUBECONFIG               | kubeconfig file path, default: <home>/.kube/config                                                                              |
 
 ## Instructions
 
