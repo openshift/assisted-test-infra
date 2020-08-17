@@ -162,10 +162,10 @@ kill_all_port_forwardings:
 ###########
 
 _install_cluster:
-	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE)
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE)
 
 install_cluster:
-	skipper make _install_cluster NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
+	skipper make _install_cluster $(SKIPPER_PARAMS)
 
 
 #########
