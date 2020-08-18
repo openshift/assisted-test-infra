@@ -40,9 +40,9 @@ class InventoryClient(object):
 
                 expires_on = json.loads(base64.b64decode(segment))['exp']
 
-                # if this key doesn't expire or if it has more than 30 seconds left, don't refresh
+                # if this key doesn't expire or if it has more than 10 minutes left, don't refresh
                 remaining = expires_on - time.time()
-                if expires_on == 0 or remaining > 30:
+                if expires_on == 0 or remaining > 600:
                     return
 
             # fetch new key if expired or not set yet
