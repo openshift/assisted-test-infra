@@ -135,7 +135,10 @@ _destroy_terraform:
 # Run #
 #######
 
-run: deploy_assisted_service deploy_ui
+validate_namespace:
+	scripts/utils.sh validate_namespace $(NAMESPACE)
+
+run: validate_namespace deploy_assisted_service deploy_ui
 
 run_full_flow: run deploy_nodes set_dns
 

@@ -80,4 +80,14 @@ function close_external_ports() {
     sudo firewall-cmd --zone=public --remove-port=6008/tcp
 }
 
+function validate_namespace() {
+    namespace=$1
+    if [[ $namespace =~ ^[0-9a-zA-Z\-]+$ ]]; then
+        return
+    fi
+    echo "Invalid namespace '$namespace'"
+    echo "It can contain only letters, numbers and '-'"
+    exit 1
+}
+
 "$@"
