@@ -14,6 +14,7 @@ class InventoryClient(object):
         self.inventory_url = inventory_url
         configs = Configuration()
         configs.host = self.inventory_url + "/api/assisted-install/v1"
+        configs.verify_ssl = False
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
 
