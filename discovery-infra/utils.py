@@ -247,7 +247,10 @@ def get_assisted_service_url_by_args(args, wait=True):
     }
     if args.oc_mode:
         get_url = get_remote_assisted_service_url
-        kwargs['oc'] = oc_utils.OC(token=args.oc_token, server=args.oc_server)
+        kwargs['oc'] = oc_utils.get_oc_api_client(
+            token=args.oc_token,
+            server=args.oc_server
+        )
         kwargs['scheme'] = args.oc_scheme
     else:
         get_url = get_local_assisted_service_url
@@ -267,7 +270,7 @@ def get_assisted_service_url_by_args(args, wait=True):
 def get_remote_assisted_service_url(oc, namespace, service, scheme):
     log.info('Getting oc %s URL in %s namespace', service, namespace)
     service_urls = oc_utils.get_namespaced_service_urls_list(
-        oc=oc,
+        client=oc,
         namespace=namespace,
         service=service,
         scheme=scheme
