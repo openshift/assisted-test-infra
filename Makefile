@@ -182,7 +182,10 @@ deploy_nodes:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
 
 destroy_nodes:
-	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS)' $(SKIPPER_PARAMS)
+	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS)' $(SKIPPER_PARAMS)
+
+destroy_all_nodes:
+	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all' $(SKIPPER_PARAMS)
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -202,8 +205,8 @@ bring_assisted_service:
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE)
 
-delete_all_virsh_resources: destroy_nodes delete_minikube
-	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
+delete_all_virsh_resources: destroy_all_nodes delete_minikube
+	skipper run 'discovery-infra/delete_nodes.py -a' $(SKIPPER_PARAMS)
 
 #######
 # ISO #
