@@ -122,4 +122,19 @@ function close_external_ports() {
     sudo firewall-cmd --zone=public --remove-port=6008/tcp
 }
 
+function list_forwarded_ports() {
+    ns=$1
+    for file in $(sudo find /etc/xinetd.d/ -printf "%f\n"); do
+        if [[ $ns != "all" ]] && [[ $file != *:$ns:* ]]; then
+            continue
+        fi
+        readarray -td : arr <<< $file:; unset 'arr[-1]';
+        length=${#arr[@]}
+        if [[ $length != 3 ]]; then
+            continue
+        fi
+        echo "service: ${arr[0]} namespace: ${arr[1]} port: ${arr[2]}"
+    done
+}
+
 "$@"
