@@ -14,11 +14,47 @@ function url_reachable() {
     return $?
 }
 
+function search_for_next_free_port() {
+    service=$1
+    namespace=$2
+    port=$3
+    ip=$(get_main_ip)
+    until [[ $(is_free_port $port $ip) == "free" ]]; do
+          port=$(( $port + 1 ))
+    done
+    echo $port
+}
+
+function is_free_port() {
+    port=$1
+    ip=$2
+    status=1
+    url_reachable http://$ip:$port && status=$? || status=$?
+    if [[ $status -eq 0 ]]; then
+          return
+    fi
+    delete_xinetd_files_by_substr :$port
+    echo "free"
+}
+
+
+function delete_xinetd_files_by_substr() {
+    substr=$1
+    sudo systemctl stop xinetd
+    for name in $(sudo ls /etc/xinetd.d/ | grep $substr); do
+        sudo rm /etc/xinetd.d/$name -f
+    done
+    sudo systemctl start xinetd
+}
+
 function spawn_port_forwarding_command() {
     service_name=$1
     external_port=$2
+    namespace=$3
 
-    cat <<EOF >build/xinetd-${service_name}
+    filename=$service_name:$namespace:$external_port
+
+    cat <<EOF >build/xinetd-$filename
 service ${service_name}
 {
   flags		= IPv4
@@ -34,7 +70,7 @@ service ${service_name}
   per_source	= UNLIMITED
 }
 EOF
-    sudo mv build/xinetd-${service_name} /etc/xinetd.d/${service_name} --force
+    sudo mv build/xinetd-$filename /etc/xinetd.d/$filename --force
     sudo systemctl restart xinetd
 }
 
@@ -43,7 +79,13 @@ function run_in_background() {
 }
 
 function kill_all_port_forwardings() {
+    services=$1
     sudo systemctl stop xinetd
+    for s in $services; do
+        for f in $(sudo ls /etc/xinetd.d/ | grep $s); do
+            sudo rm -f /etc/xinetd.d/$f
+        done
+    done
 }
 
 function get_main_ip() {

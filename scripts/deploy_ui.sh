@@ -4,7 +4,6 @@ set -euo pipefail
 source scripts/utils.sh
 
 export NODE_IP=$(get_main_ip)
-export UI_PORT=${UI_PORT:-6008}
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
 export UI_DEPLOY_FILE=build/ui_deploy.yaml
@@ -34,7 +33,11 @@ kubectl --kubeconfig=${KUBECONFIG} apply -f ${UI_DEPLOY_FILE}
 print_log "Wait till ui api is ready"
 wait_for_url_and_run "$(minikube service ${UI_SERVICE_NAME} -n ${NAMESPACE} --url)" "echo \"waiting for ${UI_SERVICE_NAME}\""
 
-print_log "Starting port forwarding for deployment/${UI_SERVICE_NAME}"
-wait_for_url_and_run "http://${NODE_IP}:${UI_PORT}" "spawn_port_forwarding_command ${UI_SERVICE_NAME} ${UI_PORT}"
+delete_xinetd_files_by_substr $UI_SERVICE_NAME:$NAMESPACE:
+
+export UI_PORT=$(search_for_next_free_port $UI_SERVICE_NAME $NAMESPACE 6008)
+
+print_log "Starting port forwarding for deployment/${UI_SERVICE_NAME} on port $UI_PORT"
+wait_for_url_and_run "http://${NODE_IP}:${UI_PORT}" "spawn_port_forwarding_command ${UI_SERVICE_NAME} ${UI_PORT} ${NAMESPACE}"
 print_log "OCP METAL UI can be reached at http://${NODE_IP}:${UI_PORT}"
 print_log "Done"
