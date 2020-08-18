@@ -32,9 +32,8 @@ MASTER_DISK ?= 21474836480
 NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
-NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
-NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
-NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
+NETWORK_CIDR := $(or $(NETWORK_CIDR), "")
+NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), "")
 NETWORK_MTU := $(or $(NETWORK_MTU), 1500)
 RUN_WITH_VIPS := $(or $(RUN_WITH_VIPS), "yes")
 HTTP_PROXY_URL := $(or $(HTTP_PROXY_URL), "")
@@ -121,7 +120,7 @@ run_terraform: copy_terraform_files
 	skipper make _run_terraform $(SKIPPER_PARAMS)
 
 _run_terraform:
-		cd build/terraform/ && \
+		cd build/terraform/$(CLUSTER_NAME)__$(NAMESPACE) && \
 		terraform init -plugin-dir=/root/.terraform.d/plugins/ && \
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
@@ -174,7 +173,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY) --service-name $(SERVICE_NAME) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -rv $(RUN_WITH_VIPS) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY) --service-name $(SERVICE_NAME) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)

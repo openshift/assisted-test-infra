@@ -18,17 +18,31 @@ from retry import retry
 conn = libvirt.open("qemu:///system")
 
 
-def run_command(command, shell=False):
+def run_command(command, shell=False, raise_errors=True):
     command = command if shell else shlex.split(command)
     process = subprocess.run(
         command,
         shell=shell,
-        check=True,
         stdout=subprocess.PIPE,
-        universal_newlines=True,
+        stderr=subprocess.PIPE,
+        universal_newlines=True
     )
-    output = process.stdout.strip()
-    return output
+
+    def _io_buffer_to_str(buf):
+        if hasattr(buf, 'read'):
+            buf = buf.read().decode()
+        return buf
+
+    out = _io_buffer_to_str(process.stdout).strip()
+    err = _io_buffer_to_str(process.stderr).strip()
+
+    if raise_errors and err:
+        raise RuntimeError(
+            f'command: {command} exited with an error: {err} '
+            f'code: {process.returncode}'
+        )
+
+    return out, err, process.returncode
 
 
 def run_command_with_output(command):
@@ -103,10 +117,11 @@ def get_cluster_hosts_with_mac(client, cluster_id, macs):
     return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
 
 
-def get_tfvars():
-    if not os.path.exists(consts.TFVARS_JSON_FILE):
-        raise Exception("%s doesn't exists" % consts.TFVARS_JSON_FILE)
-    with open(consts.TFVARS_JSON_FILE) as _file:
+def get_tfvars(tf_folder):
+    tf_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    if not os.path.exists(tf_json_file):
+        raise Exception(f'{tf_json_file} does not exists')
+    with open(tf_json_file) as _file:
         tfvars = json.load(_file)
     return tfvars
 
@@ -234,7 +249,7 @@ def recreate_folder(folder):
     if os.path.exists(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
-    run_command("chmod ugo+rx %s" % folder)
+    run_command('chmod -R ugo+rx %s' % folder)
 
 
 def get_assisted_service_url_by_args(args, wait=True):
@@ -287,7 +302,7 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
 
 def get_local_assisted_service_url(namespace, service):
     log.info('Getting minikube %s URL in %s namespace', service, namespace)
-    url = run_command(f'minikube -n {namespace} service {service} --url')
+    url, _, _ = run_command(f'minikube -n {namespace} service {service} --url')
     if is_assisted_service_reachable(url):
         return url
 
@@ -300,3 +315,7 @@ def get_local_assisted_service_url(namespace, service):
 def is_assisted_service_reachable(url):
     r = requests.get(url + '/health', timeout=10)
     return r.status_code == 200
+
+
+def get_tf_folder(cluster_name, namespace):
+    return os.path.join(consts.TF_FOLDER, f'{cluster_name}__{namespace}')
