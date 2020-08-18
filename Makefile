@@ -61,6 +61,8 @@ ifneq ($(or $(OC_MODE),),)
         OC_PARAMS = --oc-mode -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
 endif
 
+SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
+
 .EXPORT_ALL_VARIABLES:
 
 
