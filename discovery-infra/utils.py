@@ -14,6 +14,7 @@ import consts
 import oc_utils
 from logger import log
 from retry import retry
+from pprint import pformat
 
 conn = libvirt.open("qemu:///system")
 
@@ -112,7 +113,7 @@ def get_tfvars():
 
 
 def are_hosts_in_status(
-    client, cluster_id, hosts, nodes_count, statuses, fall_on_error_status=True
+        hosts, nodes_count, statuses, fall_on_error_status=True
 ):
     hosts_in_status = [host for host in hosts if host["status"] in statuses]
     if len(hosts_in_status) >= nodes_count:
@@ -127,7 +128,7 @@ def are_hosts_in_status(
         ]
         log.error(
             "Some of the hosts are in insufficient or error status. Hosts in error %s",
-            hosts_in_error,
+            pformat(hosts_in_error),
         )
         raise Exception("All the nodes must be in valid status, but got some in error")
 
@@ -153,8 +154,6 @@ def wait_till_hosts_with_macs_are_in_status(
     try:
         waiting.wait(
             lambda: are_hosts_in_status(
-                client,
-                cluster_id,
                 get_cluster_hosts_with_mac(client, cluster_id, macs),
                 len(macs),
                 statuses,
@@ -185,8 +184,6 @@ def wait_till_all_hosts_are_in_status(
     try:
         waiting.wait(
             lambda: are_hosts_in_status(
-                client,
-                cluster_id,
                 client.get_cluster_hosts(cluster_id),
                 nodes_count,
                 statuses,
