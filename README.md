@@ -93,6 +93,9 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | ENABLE_AUTH              | configure assisted-service to authenticate API requests, default: false                                                         |
 | OFFLINE_TOKEN            | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)              |
 | SSO_URL                  | URL used to fetch JWT tokens for assisted-service authentication                                                                |
+| OCM_CLIENT_ID            | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz
+| OCM_CLIENT_SECRET        | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz
+| OCM_BASE_URL             | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com
 
 ## Instructions
 
