@@ -98,6 +98,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OCM_CLIENT_SECRET        | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
 | OCM_BASE_URL             | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com |
 | REMOTE_SERVICE_URL | URL to remote assisted-service - run infra on existing deployment |
+| RT_CMD        | Container command to execute in `image_build` and other Make targets, for now `RT_CMD=podman` and `RT_CMD=docker` are supported |
 
 ## Instructions
 
@@ -280,10 +281,12 @@ export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLE
 
 ### Test infra image
 
-Assisted-test-infra builds an image including all the prerequisites to handle this repository.
+Assisted-test-infra builds an image including all the prerequisites to handle this repository. You could select the container engine as podman instead use the default one (docker)
 
 ```bash
 make image_build
+or
+make image_build RT_CMD=podman
 ```
 
 # In case you would like to build the image with a different `assisted-service` client

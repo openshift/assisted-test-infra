@@ -2,9 +2,10 @@
 # Variables #
 #############
 
-SHELL=/bin/sh
-CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
-PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
+SHELL=/bin/sh 
+RT_CMD ?= docker 
+CONTAINER_COMMAND = $(shell if [ ! -z "${RT_CMD}" ] && [ -x "$(shell command -v ${RT_CMD})" ] ;then echo "${RT_CMD}"; elif [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman"; fi)
+PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; elif [ "${CONTAINER_COMMAND}" = "docker" ];then echo "--pull"; fi)
 
 SKIPPER_PARAMS ?= -i
 
