@@ -35,6 +35,7 @@ ENVS = [
     ("CONNECTIVITY_CHECK_IMAGE", ""),
     ("HARDWARE_INFO_IMAGE", ""),
     ("INVENTORY_IMAGE", ""),
+    ("OCM_BASE_URL", ""),
 ]
 
 

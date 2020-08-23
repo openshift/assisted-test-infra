@@ -62,6 +62,7 @@ ifneq ($(or $(OC_MODE),),)
 endif
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
+OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integration.openshiftapps.com)
 
 .EXPORT_ALL_VARIABLES:
 
