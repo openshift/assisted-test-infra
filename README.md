@@ -74,7 +74,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.5"                                                                                    |
 | HTTP_PROXY_URL           | A proxy URL to use for creating HTTP connections outside the cluster |
 | HTTPS_PROXY_URL          | A proxy URL to use for creating HTTPS connections outside the cluster |
-| NO_PROXY                 | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
+| NO_PROXY_VALUES          | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
 | SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                       |
 | AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                             |
 | INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                       |
