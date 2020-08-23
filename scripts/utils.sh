@@ -17,6 +17,7 @@ function url_reachable() {
 function spawn_port_forwarding_command() {
     service_name=$1
     external_port=$2
+    profile=$3
 
     cat <<EOF >build/xinetd-${service_name}
 service ${service_name}
@@ -28,7 +29,7 @@ service ${service_name}
   protocol	= tcp
   user		= root
   wait		= no
-  redirect	= $(minikube ip) $(kubectl --kubeconfig=${KUBECONFIG} get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+  redirect	= $(minikube -p $profile ip) $(kubectl --kubeconfig=${KUBECONFIG} get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
   port		= ${external_port}
   only_from	= 0.0.0.0/0
   per_source	= UNLIMITED

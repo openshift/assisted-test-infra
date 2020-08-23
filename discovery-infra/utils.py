@@ -251,6 +251,7 @@ def get_assisted_service_url_by_args(args, wait=True):
         kwargs['scheme'] = args.oc_scheme
     else:
         get_url = get_local_assisted_service_url
+        kwargs['profile'] = args.profile
 
     return retry(
         tries=5 if wait else 1,
@@ -282,9 +283,9 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
     )
 
 
-def get_local_assisted_service_url(namespace, service):
+def get_local_assisted_service_url(profile, namespace, service):
     log.info('Getting minikube %s URL in %s namespace', service, namespace)
-    url = run_command(f'minikube -n {namespace} service {service} --url')
+    url = run_command(f'minikube -p {profile} -n {namespace} service {service} --url')
     if is_assisted_service_reachable(url):
         return url
 

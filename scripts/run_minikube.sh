@@ -1,4 +1,7 @@
 #!/bin/bash
+
+export PROFILE=${PROFILE:-assisted-installer}
+
 function configure_minikube() {
     echo "Configuring minikube..."
     minikube config set ShowBootstrapperDeprecationNotification false
@@ -9,9 +12,13 @@ function configure_minikube() {
 
 function init_minikube() {
     #If the vm exists, it has already been initialized
-    if [[ "$(virsh -c qemu:///system list --all)" != *"minikube"* ]]; then
-        minikube start --driver=kvm2 --memory=8192 --force
-    fi
+    for p in $(virsh -c qemu:///system list --name ); do
+        if [[ $p == $PROFILE ]]; then
+            return
+        fi
+    done
+
+    minikube start --driver=kvm2 --memory=8192 --profile=$PROFILE --force
 }
 
 configure_minikube
