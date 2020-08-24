@@ -48,7 +48,11 @@ ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 
 # deploy
 IMAGE_TAG := latest
+
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
+DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
+DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
+
 IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 
@@ -153,10 +157,10 @@ set_dns:
 	scripts/assisted_deployment.sh set_dns
 
 deploy_ui: start_minikube
-	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
 
 test_ui: deploy_ui
-	DEPLOY_TAG=$(DEPLOY_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
 
 kill_all_port_forwardings:
 	scripts/utils.sh kill_all_port_forwardings
@@ -198,7 +202,7 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 
 deploy_assisted_service: start_minikube bring_assisted_service
 	mkdir -p assisted-service/build
-	DEPLOY_TAG=$(DEPLOY_TAG) scripts/deploy_assisted_service.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
 	@if cd assisted-service >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(SERVICE_BRANCH); else git clone --branch $(SERVICE_BRANCH) $(SERVICE_REPO);fi

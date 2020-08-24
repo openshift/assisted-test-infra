@@ -80,6 +80,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                       |
 | SERVICE                  | assisted-service image to use                                                                                                   |
 | DEPLOY_TAG               | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
+| DEPLOY_MANIFEST_PATH     | the location of a manifest file that defines image tags images to be used
+| DEPLOY_MANIFEST_TAG      | the Git tag of a manifest file that defines image tags to be used
 | IMAGE_BUILDER            | image-builder image to use, will update assisted-service config map with given value                                            |
 | CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                       |
 | HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                            |
