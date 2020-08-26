@@ -178,7 +178,6 @@ def wait_till_all_hosts_are_in_status(
     fall_on_error_status=True,
     interval=5,
 ):
-    hosts = client.get_cluster_hosts(cluster_id)
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
     try:
@@ -227,11 +226,12 @@ def file_exists(file_path):
     return Path(file_path).exists()
 
 
-def recreate_folder(folder):
+def recreate_folder(folder, with_chmod=True):
     if os.path.exists(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
-    run_command("chmod ugo+rx %s" % folder)
+    if with_chmod:
+        run_command("chmod ugo+rx %s" % folder)
 
 
 def get_assisted_service_url_by_args(args, wait=True):

@@ -188,6 +188,14 @@ class InventoryClient(object):
         log.info("Installing cluster %s", cluster_id)
         return self.client.install_cluster(cluster_id=cluster_id)
 
+    def download_host_logs(self, cluster_id, host_id, output_file):
+        log.info("Downloading logs to %s", output_file)
+        response = self.client.download_host_logs(
+            cluster_id=cluster_id, host_id=host_id, _preload_content=False
+        )
+        with open(output_file, "wb") as _file:
+            _file.write(response.data)
+
 
 def create_client(url, wait_for_api=True):
     log.info('Creating assisted-service client for url: %s', url)

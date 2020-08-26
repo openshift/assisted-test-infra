@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import os
 import argparse
 
 import assisted_service_api
@@ -47,20 +48,23 @@ def _install_cluster(client, cluster):
 def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
     log.info("Waiting %s till cluster finished installation", timeout)
     # TODO: Change host validation for only previous known hosts
-    utils.wait_till_all_hosts_are_in_status(
-        client=client,
-        cluster_id=cluster.id,
-        nodes_count=len(cluster.hosts),
-        statuses=[consts.NodesStatus.INSTALLED],
-        timeout=timeout,
-        interval=60,
-    )
-    utils.wait_till_cluster_is_in_status(
-        client=client,
-        cluster_id=cluster.id,
-        statuses=[consts.ClusterStatus.INSTALLED],
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    )
+    try:
+        utils.wait_till_all_hosts_are_in_status(
+            client=client,
+            cluster_id=cluster.id,
+            nodes_count=len(cluster.hosts),
+            statuses=[consts.NodesStatus.INSTALLED],
+            timeout=timeout,
+            interval=60,
+        )
+        utils.wait_till_cluster_is_in_status(
+            client=client,
+            cluster_id=cluster.id,
+            statuses=[consts.ClusterStatus.INSTALLED],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        )
+    finally:
+        download_logs_from_all_hosts(client=client, cluster_id=cluster.id)
 
 
 # Runs installation flow :
@@ -105,6 +109,23 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
         expected_exceptions=Exception,
         waiting_for="Kubeconfig",
     )
+
+
+def download_logs_from_all_hosts(client, cluster_id):
+    output_folder = f'build/{cluster_id}'
+    utils.recreate_folder(output_folder)
+    hosts = client.get_cluster_hosts(cluster_id=cluster_id)
+    for host in hosts:
+        output_file = os.path.join(output_folder, f'{host["id"]}_logs.tar.gz')
+        waiting.wait(
+            lambda: client.download_host_logs(cluster_id=cluster_id,
+                                              host_id=host["id"],
+                                              output_file=output_file) is None,
+            timeout_seconds=240,
+            sleep_seconds=20,
+            expected_exceptions=Exception,
+            waiting_for="Logs",
+        )
 
 
 def main():
