@@ -21,6 +21,8 @@ pipeline {
         PULL_SECRET = credentials('7f094807-fac7-4e47-9ed1-407dd9bf72cd')
         OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
         SLACK_TOKEN = credentials('slack-token')
+        BASE_DNS_DOMAINS = credentials('route53_dns_domain')
+        ROUTE53_SECRET = credentials('route53_secret')
     }
     options {
       timeout(time: 1, unit: 'HOURS')
@@ -52,7 +54,7 @@ pipeline {
 	            echo ${BUILD_URL} >> data.txt
                 echo '"}' >> data.txt
 
-                curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/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
+                curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}
             '''
         }
 
