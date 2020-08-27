@@ -435,7 +435,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-nX",
         "--no-proxy",
-        help="A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxyin",
+        help="A comma-separated list of destination domain names, domains, IP addresses, "
+             "or other network CIDRs to exclude proxyin",
         type=str,
         default="",
     )
