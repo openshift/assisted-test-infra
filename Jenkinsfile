@@ -49,13 +49,16 @@ pipeline {
 
     post {
         failure {
-            sh '''
-                echo '{"text":"Seems like one or more tests fail in the assisted-test-infra tests, Check' > data.txt
-	            echo ${BUILD_URL} >> data.txt
-                echo '"}' >> data.txt
+            script {
+                if (env.BRANCH_NAME == 'master')
+                    sh '''
+                        echo '{"text":"Seems like one or more tests fail in the assisted-test-infra tests, Check' > data.txt
+	                    echo ${BUILD_URL} >> data.txt
+                        echo '"}' >> data.txt
 
-                curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}
-            '''
+                        curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/$SLACK_TOKEN
+                    '''
+                }
         }
 
         always {
