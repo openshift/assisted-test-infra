@@ -149,7 +149,7 @@ run_full_flow: run deploy_nodes set_dns
 
 redeploy_all: destroy run_full_flow
 
-run_full_flow_with_install: run deploy_nodes_with_install set_dns
+run_full_flow_with_install: validate_pull_secret_variable run deploy_nodes_with_install set_dns
 
 redeploy_all_with_install: destroy  run_full_flow_with_install
 
@@ -159,7 +159,7 @@ set_dns:
 deploy_ui: start_minikube
 	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
 
-test_ui: deploy_ui
+test_ui: validate_pull_secret_variable deploy_ui
 	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
 
 kill_all_port_forwardings:
@@ -169,7 +169,7 @@ kill_all_port_forwardings:
 # Cluster #
 ###########
 
-_install_cluster:
+_install_cluster: validate_pull_secret_variable
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE)
 
 install_cluster:
@@ -180,7 +180,7 @@ install_cluster:
 # Nodes #
 #########
 
-_deploy_nodes:
+_deploy_nodes: validate_pull_secret_variable
 	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
@@ -217,7 +217,7 @@ delete_all_virsh_resources: destroy_nodes delete_minikube
 # ISO #
 #######
 
-_download_iso:
+_download_iso: validate_pull_secret_variable
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS) -iO
 
 download_iso:
@@ -236,3 +236,6 @@ lint:
 
 _lint:
 	pre-commit run --all-files
+
+validate_pull_secret_variable:
+	@[ "${PULL_SECRET}" ] || ( echo "var PULL_SECRET not set"; exit 1 )
