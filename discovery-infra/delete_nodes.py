@@ -61,14 +61,17 @@ def delete_all():
 def main():
     if args.delete_all:
         delete_all()
-    else:
-        try:
-            tfvars = utils.get_tfvars()
-            if not args.only_nodes:
-                try_to_delete_cluster(tfvars)
-            delete_nodes(tfvars)
-        except:
-            log.exception("Failed to delete nodes")
+        return
+
+    try:
+        tfvars = utils.get_tfvars()
+        if not args.only_nodes:
+            try_to_delete_cluster(tfvars)
+        delete_nodes(tfvars)
+    except FileNotFoundError as ex:
+        log.warn(ex)
+    except:
+        log.exception("Failed to delete nodes")
 
 
 if __name__ == "__main__":

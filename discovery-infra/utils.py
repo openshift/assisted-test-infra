@@ -105,11 +105,8 @@ def get_cluster_hosts_with_mac(client, cluster_id, macs):
 
 
 def get_tfvars():
-    if not os.path.exists(consts.TFVARS_JSON_FILE):
-        raise Exception("%s doesn't exists" % consts.TFVARS_JSON_FILE)
     with open(consts.TFVARS_JSON_FILE) as _file:
-        tfvars = json.load(_file)
-    return tfvars
+        return json.load(_file)
 
 
 def are_hosts_in_status(
