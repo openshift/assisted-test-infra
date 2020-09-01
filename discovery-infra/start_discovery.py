@@ -10,6 +10,7 @@ import pprint
 import time
 import uuid
 from distutils.dir_util import copy_tree
+import distutils.util
 from pathlib import Path
 
 import assisted_service_api
@@ -131,8 +132,16 @@ def set_hosts_roles(client, cluster_id, network_name):
 def set_cluster_vips(client, cluster_id):
     cluster_info = client.cluster_get(cluster_id)
     api_vip, ingress_vip = _get_vips_ips()
+    cluster_info.vip_dhcp_allocation = False
     cluster_info.api_vip = api_vip
     cluster_info.ingress_vip = ingress_vip
+    client.update_cluster(cluster_id, cluster_info)
+
+
+def set_cluster_machine_cidr(client, cluster_id, machine_cidr):
+    cluster_info = client.cluster_get(cluster_id)
+    cluster_info.vip_dhcp_allocation = True
+    cluster_info.machine_network_cidr = machine_cidr
     client.update_cluster(cluster_id, cluster_info)
 
 
@@ -162,6 +171,7 @@ def _cluster_create_params():
         "http_proxy": args.http_proxy,
         "https_proxy": args.https_proxy,
         "no_proxy": args.no_proxy,
+        "vip_dhcp_allocation": bool(args.vip_dhcp_allocation),
     }
     return params
 
@@ -241,7 +251,11 @@ def nodes_flow(client, cluster_name, cluster):
                     consts.NodesStatus.PENDING_FOR_INPUT,
                 ],
             )
-            set_cluster_vips(client, cluster.id)
+
+            if args.vip_dhcp_allocation:
+                set_cluster_machine_cidr(client, cluster.id, args.vm_network_cidr)
+            else:
+                set_cluster_vips(client, cluster.id)
         else:
             log.info("VIPs already configured")
 
@@ -441,13 +455,6 @@ if __name__ == "__main__":
         default="",
     )
     parser.add_argument(
-        "-rv",
-        "--run-with-vips",
-        help="Run cluster create with adding vips " "from the same subnet as vms",
-        type=str,
-        default="no",
-    )
-    parser.add_argument(
         "-iU",
         "--inventory-url",
         help="Full url of remote inventory",
@@ -470,6 +477,15 @@ if __name__ == "__main__":
         type=str,
         default='assisted-service'
     )
+    parser.add_argument(
+        "--vip-dhcp-allocation",
+        type=distutils.util.strtobool,
+        nargs='?',
+        const=True,
+        default=True,
+        help="VIP DHCP allocation mode"
+    )
+
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:
