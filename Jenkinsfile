@@ -31,7 +31,8 @@ pipeline {
     stages {
         stage('Init') {
             steps {
-                sh "make delete_all_virsh_resources || true"
+                sh "make image_build"
+                sh "make clean delete_all_virsh_resources || true"
                 sh "make create_full_environment"
 
                 // Login
@@ -44,21 +45,19 @@ pipeline {
                 sh "make run_full_flow_with_install"
             }
         }
-        
     }
 
     post {
         failure {
             script {
-                if (env.BRANCH_NAME == 'master')
-                    sh '''
-                        echo '{"text":"Seems like one or more tests fail in the assisted-test-infra tests, Check' > data.txt
-	                    echo ${BUILD_URL} >> data.txt
-                        echo '"}' >> data.txt
-
-                        curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/$SLACK_TOKEN
-                    '''
+                if (env.BRANCH_NAME == 'master') {
+                    script {
+                        def data = [text: "Attention! ssisted-installer-agent branch  test failed, see: ${BUILD_URL}"]
+                        writeJSON(file: 'data.txt', json: data, pretty: 4)
+                    }
+                    sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
                 }
+            }
         }
 
         always {
