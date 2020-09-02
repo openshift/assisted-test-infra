@@ -17,8 +17,12 @@ function url_reachable() {
 function spawn_port_forwarding_command() {
     service_name=$1
     external_port=$2
+    namespace=$3
+    namespace_index=$4
 
-    cat <<EOF >build/xinetd-${service_name}
+    filename=${service_name}__${namespace}__${namespace_index}__assisted_installer
+
+    cat <<EOF >build/xinetd-$filename
 service ${service_name}
 {
   flags		= IPv4
@@ -34,7 +38,7 @@ service ${service_name}
   per_source	= UNLIMITED
 }
 EOF
-    sudo mv build/xinetd-${service_name} /etc/xinetd.d/${service_name} --force
+    sudo mv build/xinetd-$filename /etc/xinetd.d/$filename --force
     sudo systemctl restart xinetd
 }
 
@@ -78,6 +82,19 @@ function wait_for_url_and_run() {
 function close_external_ports() {
     sudo firewall-cmd --zone=public --remove-port=6000/tcp
     sudo firewall-cmd --zone=public --remove-port=6008/tcp
+}
+
+function add_firewalld_port() {
+    port=$1
+    if [ "${EXTERNAL_PORT}" = "y" ]; then
+        echo "configuring external ports"
+        sudo firewall-cmd --zone=public --add-port=$port/tcp
+    fi
+    echo "configuring libvirt zone ports ports"
+    sudo firewall-cmd --zone=libvirt --add-port=$port/tcp
+    # sudo firewall-cmd --reload
+    echo "Restarting libvirt after firewalld changes"
+    sudo systemctl restart libvirtd
 }
 
 "$@"
