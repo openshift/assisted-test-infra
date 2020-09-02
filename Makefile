@@ -59,10 +59,11 @@ IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 # oc deploy
 KUBECONFIG := $(or $(KUBECONFIG),${HOME}/.kube/config)
 ifneq ($(or $(OC_MODE),),)
+        OC_FLAG := --oc-mode
         OC_TOKEN := $(or $(OC_TOKEN),"")
         OC_SERVER := $(or $(OC_SERVER),https://api.ocp.prod.psi.redhat.com:6443)
         OC_SCHEME := $(or $(OC_SCHEME),http)
-        OC_PARAMS = --oc-mode -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
+        OC_PARAMS = $(OC_FLAG) -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
 endif
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
@@ -88,6 +89,7 @@ destroy: destroy_nodes delete_minikube
 
 create_full_environment:
 	./create_full_environment.sh
+	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 
 create_environment: image_build bring_assisted_service start_minikube
 
@@ -112,6 +114,7 @@ start_minikube:
 	eval $(minikube docker-env)
 
 delete_minikube:
+	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 	minikube delete
 	skipper run discovery-infra/virsh_cleanup.py -m
 
