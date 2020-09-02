@@ -14,6 +14,9 @@ SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-ser
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 
+# ui service
+UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),ocp-metal-ui)
+
 # nodes params
 ISO := $(or $(ISO), "") # ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
@@ -59,10 +62,11 @@ IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 # oc deploy
 KUBECONFIG := $(or $(KUBECONFIG),${HOME}/.kube/config)
 ifneq ($(or $(OC_MODE),),)
+        OC_FLAG := --oc-mode
         OC_TOKEN := $(or $(OC_TOKEN),"")
         OC_SERVER := $(or $(OC_SERVER),https://api.ocp.prod.psi.redhat.com:6443)
         OC_SCHEME := $(or $(OC_SCHEME),http)
-        OC_PARAMS = --oc-mode -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
+        OC_PARAMS = $(OC_FLAG) -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
 endif
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
@@ -79,15 +83,15 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integrat
 
 all: create_full_environment run_full_flow_with_install
 
-destroy: destroy_nodes delete_minikube
+destroy: destroy_nodes delete_minikube kill_port_forwardings
 	rm -rf build/terraform/*
 
 ###############
 # Environment #
 ###############
-
-create_full_environment:
+create_full_environment: kill_all_port_forwardings
 	./create_full_environment.sh
+	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 
 create_environment: image_build bring_assisted_service start_minikube
 
@@ -112,6 +116,7 @@ start_minikube:
 	eval $(minikube docker-env)
 
 delete_minikube:
+	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 	minikube delete
 	skipper run discovery-infra/virsh_cleanup.py -m
 
@@ -157,13 +162,16 @@ set_dns:
 	scripts/assisted_deployment.sh set_dns
 
 deploy_ui: start_minikube
-	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
 
 test_ui: deploy_ui
 	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
 
+kill_port_forwardings:
+	scripts/utils.sh kill_port_forwardings '$(NAMESPACE)'
+
 kill_all_port_forwardings:
-	scripts/utils.sh kill_all_port_forwardings
+	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(UI_SERVICE_NAME)'
 
 ###########
 # Cluster #
@@ -202,7 +210,7 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 
 deploy_assisted_service: start_minikube bring_assisted_service
 	mkdir -p assisted-service/build
-	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_assisted_service.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
 	@if cd assisted-service >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(SERVICE_BRANCH); else git clone --branch $(SERVICE_BRANCH) $(SERVICE_REPO);fi
@@ -210,7 +218,7 @@ bring_assisted_service:
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE)
 
-delete_all_virsh_resources: destroy_nodes delete_minikube
+delete_all_virsh_resources: destroy_nodes delete_minikube kill_all_port_forwardings
 	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
 
 #######

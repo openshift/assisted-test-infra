@@ -5,6 +5,22 @@ set -o nounset
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 
+function get_namespace_index() {
+    namespace=$1
+    oc_flag=${2:-}
+
+    index=$(python3 scripts/indexer.py --action set --namespace $namespace $oc_flag)
+    if [[ -z $index ]]; then
+        all_namespaces=$(python3 scripts/indexer.py --action list)
+        echo "Maximum number of namespaces allowed are currently running: $all_namespaces"
+        echo "Please remove an old namespace in order to create a new one, run:"
+        echo "make delete_minikube_profile NAMESPACE=<namespace>"
+        exit 1
+    fi
+
+    echo $index
+}
+
 function print_log() {
     echo "$(basename $0): $1"
 }
@@ -17,8 +33,12 @@ function url_reachable() {
 function spawn_port_forwarding_command() {
     service_name=$1
     external_port=$2
+    namespace=$3
+    namespace_index=$4
 
-    cat <<EOF >build/xinetd-${service_name}
+    filename=${service_name}__${namespace}__${namespace_index}__assisted_installer
+
+    cat <<EOF >build/xinetd-$filename
 service ${service_name}
 {
   flags		= IPv4
@@ -34,7 +54,7 @@ service ${service_name}
   per_source	= UNLIMITED
 }
 EOF
-    sudo mv build/xinetd-${service_name} /etc/xinetd.d/${service_name} --force
+    sudo mv build/xinetd-$filename /etc/xinetd.d/$filename --force
     sudo systemctl restart xinetd
 }
 
@@ -42,8 +62,14 @@ function run_in_background() {
     bash -c "nohup $1  >/dev/null 2>&1 &"
 }
 
-function kill_all_port_forwardings() {
+function kill_port_forwardings() {
+    services=$1
     sudo systemctl stop xinetd
+    for s in $services; do
+        for f in $(sudo ls /etc/xinetd.d/ | grep $s); do
+            sudo rm -f /etc/xinetd.d/$f
+        done
+    done
 }
 
 function get_main_ip() {
@@ -76,8 +102,23 @@ function wait_for_url_and_run() {
 }
 
 function close_external_ports() {
-    sudo firewall-cmd --zone=public --remove-port=6000/tcp
-    sudo firewall-cmd --zone=public --remove-port=6008/tcp
+    ports=$1
+    for p in $ports; do
+        sudo firewall-cmd --zone=public --remove-port=$p/tcp
+    done
+}
+
+function add_firewalld_port() {
+    port=$1
+    if [ "${EXTERNAL_PORT}" = "y" ]; then
+        echo "configuring external ports"
+        sudo firewall-cmd --zone=public --add-port=$port/tcp
+    fi
+    echo "configuring libvirt zone ports ports"
+    sudo firewall-cmd --zone=libvirt --add-port=$port/tcp
+    # sudo firewall-cmd --reload
+    echo "Restarting libvirt after firewalld changes"
+    sudo systemctl restart libvirtd
 }
 
 "$@"
