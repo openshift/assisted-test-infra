@@ -52,7 +52,7 @@ pipeline {
             script {
                 if (env.BRANCH_NAME == 'master') {
                     script {
-                        def data = [text: "Attention! ssisted-installer-agent branch  test failed, see: ${BUILD_URL}"]
+                        def data = [text: "Attention! assisted-test-infra branch  test failed, see: ${BUILD_URL}"]
                         writeJSON(file: 'data.txt', json: data, pretty: 4)
                     }
                     sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
