@@ -1,5 +1,3 @@
-FROM quay.io/ocpmetal/assisted-service:latest AS service
-
 FROM docker.io/centos:8
 
 RUN yum -y install make python3 libvirt-client libvirt-devel gcc unzip wget curl git python3-devel && yum clean all;
@@ -15,9 +13,7 @@ RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/do
   tar -xz -C /root/.terraform.d/plugins
 
 COPY requirements.txt /tmp/
-COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
-    pip3 install /build/pip/*
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 # TODO: Remove once OpenShift CI will be upgraded to 4.2 (see https://access.redhat.com/articles/4859371)
 RUN chmod uga+w /etc/passwd

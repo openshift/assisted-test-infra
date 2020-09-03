@@ -3,6 +3,7 @@
 #############
 
 SHELL=/bin/sh
+UID = $(shell id -u)
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
 
@@ -97,8 +98,7 @@ create_full_environment: kill_all_port_forwardings
 create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
-	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
-	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
+	$(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
 
 clean:
 	-rm -rf build assisted-service test_infra.log
@@ -218,6 +218,10 @@ deploy_assisted_service: start_minikube bring_assisted_service
 	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
+	mkdir -p build
+	$(CONTAINER_COMMAND) run --rm -it -v $(PWD)/build:/artifact -u $(UID):$(UID) --entrypoint /bin/sh \
+		$(SERVICE) -c 'cp /clients/assisted-service-client-*.tar.gz /artifact'
+	pip3 install --user -U $(PWD)/build/*.tar.gz
 	@if cd assisted-service >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(SERVICE_BRANCH); else git clone --branch $(SERVICE_BRANCH) $(SERVICE_REPO);fi
 
 deploy_monitoring: bring_assisted_service
