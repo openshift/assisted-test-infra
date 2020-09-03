@@ -11,6 +11,7 @@ pipeline {
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
+        string(name: 'PROFILE', defaultValue: "minikube", description: 'Minikube profile for required instance')
     }
 
     triggers { cron(cron_string) }
@@ -36,7 +37,7 @@ pipeline {
                 sh "make create_full_environment"
 
                 // Login
-                sh "minikube --profile ${PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
+                sh "minikube --profile ${params.PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
             }
         }
 
