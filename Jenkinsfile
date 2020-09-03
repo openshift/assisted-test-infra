@@ -18,6 +18,7 @@ pipeline {
 
     environment {
         SKIPPER_PARAMS = " "
+        PROFILE="minikube"
         PULL_SECRET = credentials('7f094807-fac7-4e47-9ed1-407dd9bf72cd')
         OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
         SLACK_TOKEN = credentials('slack-token')
