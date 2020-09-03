@@ -35,7 +35,6 @@ function spawn_port_forwarding_command() {
     external_port=$2
     namespace=$3
     namespace_index=$4
-    profile=$5
 
     filename=${service_name}__${namespace}__${namespace_index}__assisted_installer
 
@@ -49,7 +48,7 @@ service ${service_name}
   protocol	= tcp
   user		= root
   wait		= no
-  redirect	= $(minikube -p $profile ip) $(kubectl --server $(get_profile_url $profile) --kubeconfig=${KUBECONFIG} get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+  redirect	= $(minikube ip) $(kubectl --kubeconfig=${KUBECONFIG} get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
   port		= ${external_port}
   only_from	= 0.0.0.0/0
   per_source	= UNLIMITED
@@ -120,29 +119,6 @@ function add_firewalld_port() {
     # sudo firewall-cmd --reload
     echo "Restarting libvirt after firewalld changes"
     sudo systemctl restart libvirtd
-}
-
-function as_singleton() {
-    func=$1
-    interval=${2:-15s}
-
-    lockfile=/tmp/$func.lock
-
-    while [ -e "$lockfile" ]; do
-        echo "Can run only one instance of $func at a time..."
-        echo "Waiting for other instances of $func to be completed..."
-        sleep $interval
-    done
-
-    trap 'rm "$lockfile"; exit' EXIT INT TERM HUP
-    touch $lockfile
-
-    $func
-}
-
-function get_profile_url() {
-    profile=$1
-    echo https://$(minikube ip --profile $profile):8443
 }
 
 "$@"

@@ -71,7 +71,6 @@ endif
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integration.openshiftapps.com)
-PROFILE := $(or $(PROFILE),minikube)
 
 .EXPORT_ALL_VARIABLES:
 
@@ -84,7 +83,7 @@ PROFILE := $(or $(PROFILE),minikube)
 
 all: create_full_environment run_full_flow_with_install
 
-destroy: destroy_nodes delete_minikube_profile kill_port_forwardings
+destroy: destroy_nodes delete_minikube kill_port_forwardings
 	rm -rf build/terraform/*
 
 ###############
@@ -118,12 +117,8 @@ start_minikube:
 
 delete_minikube:
 	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
-	minikube delete --all
+	minikube delete
 	skipper run discovery-infra/virsh_cleanup.py -m
-
-delete_minikube_profile:
-	python3 scripts/indexer.py --action del --namespace $(NAMESPACE) $(OC_FLAG)
-	minikube delete -p $(PROFILE)
 
 #############
 # Terraform #
@@ -221,7 +216,7 @@ bring_assisted_service:
 	@if cd assisted-service >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(SERVICE_BRANCH); else git clone --branch $(SERVICE_BRANCH) $(SERVICE_REPO);fi
 
 deploy_monitoring: bring_assisted_service
-	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)
+	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE)
 
 delete_all_virsh_resources: destroy_nodes delete_minikube kill_all_port_forwardings
 	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
