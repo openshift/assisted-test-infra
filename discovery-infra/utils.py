@@ -289,5 +289,5 @@ def get_local_assisted_service_url(namespace, service):
 
 
 def is_assisted_service_reachable(url):
-    r = requests.get(url + '/health', timeout=10)
+    r = requests.get(url + '/health', timeout=10, verify=False)
     return r.status_code == 200
