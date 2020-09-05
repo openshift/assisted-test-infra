@@ -9,9 +9,11 @@ import os
 import pprint
 import time
 import uuid
+from functools import partial
 from distutils.dir_util import copy_tree
 import distutils.util
 from pathlib import Path
+from netaddr import IPNetwork
 
 import assisted_service_api
 import consts
@@ -28,13 +30,17 @@ def _create_ip_address_list(node_count, starting_ip_addr):
 
 
 # Filling tfvars json files with terraform needed variables to spawn vms
-def fill_tfvars(image_path, storage_path, master_count, nodes_details):
-    if not os.path.exists(consts.TFVARS_JSON_FILE):
-        Path(consts.TF_FOLDER).mkdir(parents=True, exist_ok=True)
-        copy_tree(consts.TF_TEMPLATE, consts.TF_FOLDER)
-
-    with open(consts.TFVARS_JSON_FILE) as _file:
+def fill_tfvars(
+        image_path,
+        storage_path,
+        master_count,
+        nodes_details,
+        tf_folder
+        ):
+    tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    with open(tfvars_json_file) as _file:
         tfvars = json.load(_file)
+
     master_starting_ip = str(
         ipaddress.ip_address(
             ipaddress.IPv4Network(nodes_details["machine_cidr"]).network_address
@@ -48,41 +54,63 @@ def fill_tfvars(image_path, storage_path, master_count, nodes_details):
         + 10
         + int(tfvars["master_count"])
     )
-    tfvars["image_path"] = image_path
-    tfvars["master_count"] = min(master_count, consts.NUMBER_OF_MASTERS)
-    tfvars["libvirt_master_ips"] = _create_ip_address_list(
-        min(master_count, consts.NUMBER_OF_MASTERS), starting_ip_addr=master_starting_ip
+    master_count = min(master_count, consts.NUMBER_OF_MASTERS)
+    tfvars['image_path'] = image_path
+    tfvars['master_count'] = master_count
+    tfvars['libvirt_master_ips'] = _create_ip_address_list(
+        master_count, starting_ip_addr=master_starting_ip
     )
-    tfvars["api_vip"] = _get_vips_ips()[0]
-    tfvars["libvirt_worker_ips"] = _create_ip_address_list(
-        nodes_details["worker_count"], starting_ip_addr=worker_starting_ip
+    tfvars['libvirt_worker_ips'] = _create_ip_address_list(
+        nodes_details['worker_count'], starting_ip_addr=worker_starting_ip
     )
-    tfvars["libvirt_storage_pool_path"] = storage_path
+    tfvars['api_vip'] = _get_vips_ips()[0]
+    tfvars['libvirt_storage_pool_path'] = storage_path
     tfvars.update(nodes_details)
 
-    with open(consts.TFVARS_JSON_FILE, "w") as _file:
+    with open(tfvars_json_file, "w") as _file:
         json.dump(tfvars, _file)
 
 
 # Run make run terraform -> creates vms
-def create_nodes(image_path, storage_path, master_count, nodes_details):
+def create_nodes(
+        cluster_name,
+        image_path,
+        storage_path,
+        master_count,
+        nodes_details,
+        tf_folder
+        ):
     log.info("Creating tfvars")
-    fill_tfvars(image_path, storage_path, master_count, nodes_details)
-    log.info("Start running terraform")
-    cmd = "make _run_terraform"
-    return utils.run_command(cmd)
+    fill_tfvars(
+        image_path=image_path,
+        storage_path=storage_path,
+        master_count=master_count,
+        nodes_details=nodes_details,
+        tf_folder=tf_folder
+    )
+    log.info('Start running terraform')
+    return utils.run_command(f'make _run_terraform CLUSTER_NAME={cluster_name}')
 
 
 # Starts terraform nodes creation, waits till all nodes will get ip and will move to known status
 def create_nodes_and_wait_till_registered(
-    inventory_client, cluster, image_path, storage_path, master_count, nodes_details
-):
+        cluster_name,
+        inventory_client,
+        cluster,
+        image_path,
+        storage_path,
+        master_count,
+        nodes_details,
+        tf_folder
+        ):
     nodes_count = master_count + nodes_details["worker_count"]
     create_nodes(
-        image_path,
+        cluster_name=cluster_name,
+        image_path=image_path,
         storage_path=storage_path,
         master_count=master_count,
         nodes_details=nodes_details,
+        tf_folder=tf_folder
     )
 
     # TODO: Check for only new nodes
@@ -185,7 +213,7 @@ def _create_node_details(cluster_name):
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
         "machine_cidr": args.vm_network_cidr,
-        "libvirt_network_name": args.network_name,
+        "libvirt_network_name": consts.TEST_NETWORK + args.namespace,
         "libvirt_network_mtu": args.network_mtu,
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": args.worker_disk,
@@ -225,17 +253,24 @@ def validate_dns(client, cluster_id):
 
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
-def nodes_flow(client, cluster_name, cluster):
+def nodes_flow(client, cluster_name, cluster, image_path):
     nodes_details = _create_node_details(cluster_name)
     if cluster:
         nodes_details["cluster_inventory_id"] = cluster.id
+
+    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+    utils.recreate_folder(tf_folder)
+    copy_tree(consts.TF_TEMPLATE, tf_folder)
+
     create_nodes_and_wait_till_registered(
+        cluster_name=cluster_name,
         inventory_client=client,
         cluster=cluster,
-        image_path=args.image or consts.IMAGE_PATH,
+        image_path=image_path,
         storage_path=args.storage_path,
         master_count=args.master_count,
         nodes_details=nodes_details,
+        tf_folder=tf_folder
     )
     if client:
         cluster_info = client.cluster_get(cluster.id)
@@ -284,15 +319,28 @@ def nodes_flow(client, cluster_name, cluster):
 def main():
     client = None
     cluster = {}
-    random_postfix = str(uuid.uuid4())[:8]
-    cluster_name = args.cluster_name or consts.CLUSTER_PREFIX + random_postfix
+
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    log.info('Cluster name: %s', cluster_name)
+
+    image_folder = os.path.join(consts.BASE_IMAGE_FOLDER, cluster_name)
+    image_path = os.path.join(image_folder, consts.IMAGE_NAME)
+    log.info('Image folder: %s', image_folder)
+
     if args.managed_dns_domains:
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
-        if args.cluster_name:
-            cluster_name = "%s-%s" % (args.cluster_name, random_postfix)
+
+    if not args.vm_network_cidr:
+        net_cidr = IPNetwork('192.168.126.0/24')
+        net_cidr += args.ns_index
+        args.vm_network_cidr = str(net_cidr)
+
+    if not args.network_bridge:
+        args.network_bridge = f'tt{args.ns_index}'
+
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
-        utils.recreate_folder(consts.IMAGE_FOLDER)
+        utils.recreate_folder(image_folder)
         client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
         )
@@ -305,13 +353,13 @@ def main():
 
         client.generate_and_download_image(
             cluster_id=cluster.id,
-            image_path=consts.IMAGE_PATH,
+            image_path=image_path,
             ssh_key=args.ssh_key,
         )
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
-        nodes_flow(client, cluster_name, cluster)
+        nodes_flow(client, cluster_name, cluster, args.image or image_path)
 
 
 if __name__ == "__main__":
@@ -409,10 +457,6 @@ if __name__ == "__main__":
         "--vm-network-cidr",
         help="Vm network cidr",
         type=str,
-        default="192.168.126.0/24",
-    )
-    parser.add_argument(
-        "-nN", "--network-name", help="Network name", type=str, default="test-infra-net"
     )
     parser.add_argument(
         "-nM", "--network-mtu", help="Network MTU", type=int, default=1500
@@ -424,7 +468,11 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "-nB", "--network-bridge", help="Network bridge to use", type=str, default="tt0"
+        '-nB',
+        '--network-bridge',
+        help='Network bridge to use',
+        type=str,
+        required=False
     )
     parser.add_argument(
         "-iO",
@@ -485,7 +533,18 @@ if __name__ == "__main__":
         default=True,
         help="VIP DHCP allocation mode"
     )
-
+    parser.add_argument(
+        '--ns-index',
+        help='Namespace index',
+        type=int,
+        required=True
+    )
+    parser.add_argument(
+        '--profile',
+        help='Minikube profile for assisted-installer deployment',
+        type=str,
+        default='assisted-installer'
+    )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:
