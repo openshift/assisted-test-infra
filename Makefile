@@ -194,7 +194,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN test-raz -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
