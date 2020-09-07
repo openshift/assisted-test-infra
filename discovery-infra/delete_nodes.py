@@ -79,7 +79,12 @@ def _delete_virsh_resources(*filters):
 def delete_clusters_from_all_namespaces():
     for name, namespace in utils.get_all_namespaced_clusters():
         args.profile = namespace
-        delete_cluster(name, namespace)
+        try:
+            args.profile = 'minikube'
+            delete_cluster(name, namespace)
+        except:
+            args.profile = namespace
+            delete_cluster(name, namespace)
 
 
 @utils.on_exception(message='Failed to delete cluster', silent=True)
