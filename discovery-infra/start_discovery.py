@@ -320,10 +320,10 @@ def main():
     client = None
     cluster = {}
 
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-    log.info('Cluster name: %s', cluster_name)
+    internal_cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    log.info('Cluster name: %s', internal_cluster_name)
 
-    image_folder = os.path.join(consts.BASE_IMAGE_FOLDER, cluster_name)
+    image_folder = os.path.join(consts.BASE_IMAGE_FOLDER, internal_cluster_name)
     image_path = os.path.join(image_folder, consts.IMAGE_NAME)
     log.info('Image folder: %s', image_folder)
 
@@ -347,8 +347,12 @@ def main():
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
+            random_postfix = str(uuid.uuid4())[:8]
+            ui_cluster_name = internal_cluster_name + f'-{random_postfix}'
+            log.info('Cluster name on UI: %s', ui_cluster_name)
+
             cluster = client.create_cluster(
-                cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params()
+                ui_cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
 
         client.generate_and_download_image(
@@ -359,7 +363,7 @@ def main():
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
-        nodes_flow(client, cluster_name, cluster, args.image or image_path)
+        nodes_flow(client, internal_cluster_name, cluster, args.image or image_path)
 
 
 if __name__ == "__main__":
