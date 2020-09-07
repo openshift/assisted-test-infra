@@ -135,7 +135,7 @@ copy_terraform_files:
 	cp -r terraform_files/* build/terraform/;\
 
 run_terraform: copy_terraform_files
-	skipper make _run_terraform $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _run_terraform
 
 _run_terraform:
 		cd build/terraform/ && \
@@ -143,7 +143,7 @@ _run_terraform:
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 destroy_terraform:
-	skipper make _destroy_terraform $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _destroy_terraform
 
 _destroy_terraform:
 	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
@@ -161,7 +161,7 @@ redeploy_all: destroy run_full_flow
 
 run_full_flow_with_install: run deploy_nodes_with_install set_dns
 
-redeploy_all_with_install: destroy  run_full_flow_with_install
+redeploy_all_with_install: destroy run_full_flow_with_install
 
 set_dns:
 	scripts/assisted_deployment.sh set_dns
@@ -186,7 +186,7 @@ _install_cluster:
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE)
 
 install_cluster:
-	skipper make _install_cluster NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _install_cluster NAMESPACE=$(NAMESPACE)
 
 
 #########
@@ -197,13 +197,13 @@ _deploy_nodes:
 	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
-	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in
 
 deploy_nodes:
-	skipper make _deploy_nodes NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE=$(NAMESPACE)
 
 destroy_nodes:
-	skipper run 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS)' $(SKIPPER_PARAMS)
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS)'
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -224,7 +224,7 @@ deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)
 
 delete_all_virsh_resources: destroy_nodes delete_minikube kill_all_port_forwardings
-	skipper run 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a' $(SKIPPER_PARAMS)
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
 
 #######
 # ISO #
@@ -234,10 +234,10 @@ _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS) -iO
 
 download_iso:
-	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE=$(NAMESPACE)
 
 download_iso_for_remote_use: deploy_assisted_service
-	skipper make _download_iso NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE=$(NAMESPACE)
 
 ########
 # Test #
