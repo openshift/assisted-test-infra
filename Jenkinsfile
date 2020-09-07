@@ -11,7 +11,6 @@ pipeline {
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
-        string(name: 'PROFILE', defaultValue: 'minikube', description: 'Minikube profile for required instance')
         string(name: 'NAMESPACE', defaultValue: 'assisted-installer', description: 'Target namespace')
     }
 
@@ -25,7 +24,7 @@ pipeline {
         SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
-        PROFILE = "${params.PROFILE}"
+        PROFILE = "${params.NAMESPACE}"
         NAMESPACE = "${params.NAMESPACE}"
     }
     options {
