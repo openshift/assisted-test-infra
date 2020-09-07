@@ -35,9 +35,8 @@ MASTER_DISK ?= 21474836480
 NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
-NETWORK_CIDR := $(or $(NETWORK_CIDR),"192.168.126.0/24")
-NETWORK_NAME := $(or $(NETWORK_NAME), test-infra-net)
-NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), tt0)
+NETWORK_CIDR := $(or $(NETWORK_CIDR), "")
+NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), "")
 NETWORK_MTU := $(or $(NETWORK_MTU), 1500)
 HTTP_PROXY_URL := $(or $(HTTP_PROXY_URL), "")
 HTTPS_PROXY_URL := $(or $(HTTPS_PROXY_URL), "")
@@ -138,7 +137,7 @@ run_terraform: copy_terraform_files
 	skipper make $(SKIPPER_PARAMS) _run_terraform
 
 _run_terraform:
-		cd build/terraform/ && \
+		cd build/terraform/$(CLUSTER_NAME)__$(NAMESPACE) && \
 		terraform init -plugin-dir=/root/.terraform.d/plugins/ && \
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
@@ -153,7 +152,10 @@ _destroy_terraform:
 # Run #
 #######
 
-run: deploy_assisted_service deploy_ui
+validate_namespace:
+	scripts/utils.sh validate_namespace $(NAMESPACE)
+
+run: validate_namespace deploy_assisted_service deploy_ui
 
 run_full_flow: run deploy_nodes set_dns
 
@@ -183,7 +185,7 @@ kill_all_port_forwardings:
 ###########
 
 _install_cluster:
-	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE)
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME) --profile $(PROFILE)
 
 install_cluster:
 	skipper make $(SKIPPER_PARAMS) _install_cluster NAMESPACE=$(NAMESPACE)
@@ -194,16 +196,19 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nN $(NETWORK_NAME) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
 
 deploy_nodes:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE=$(NAMESPACE)
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
 
 destroy_nodes:
-	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS)'
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) -cn $(CLUSTER_NAME) $(OC_PARAMS)'
+
+destroy_all_nodes:
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all'
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -223,21 +228,22 @@ bring_assisted_service:
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)
 
-delete_all_virsh_resources: destroy_nodes delete_minikube kill_all_port_forwardings
+delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forwardings
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
+
 
 #######
 # ISO #
 #######
 
 _download_iso:
-	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(OC_PARAMS) -iO
+	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) -iO
 
 download_iso:
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE=$(NAMESPACE)
+	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
 
 download_iso_for_remote_use: deploy_assisted_service
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE=$(NAMESPACE)
+	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
 
 ########
 # Test #

@@ -11,7 +11,8 @@ pipeline {
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
-        string(name: 'PROFILE', defaultValue: "minikube", description: 'Minikube profile for required instance')
+        string(name: 'PROFILE', defaultValue: 'minikube', description: 'Minikube profile for required instance')
+        string(name: 'NAMESPACE', defaultValue: 'assisted-installer', description: 'Target namespace')
     }
 
     triggers { cron(cron_string) }
@@ -24,6 +25,8 @@ pipeline {
         SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
+        PROFILE = "${params.PROFILE}"
+        NAMESPACE = "${params.NAMESPACE}"
     }
     options {
       timeout(time: 1, unit: 'HOURS')
@@ -63,26 +66,29 @@ pipeline {
 
         always {
             sh '''
-                kubectl get pods -A
+                ip=$(minikube ip --profile ${PROFILE})
+                minikube_url=https://${ip}:8443
+
+                kubectl --server=${minikube_url} get pods -A
 
                 # Get assisted-service log
-                kubectl  get pods -o=custom-columns=NAME:.metadata.name -A | grep assisted-service | xargs -I {} sh -c "kubectl logs {} -n  assisted-installer > test_dd.log"
+                kubectl --server=${minikube_url}  get pods -o=custom-columns=NAME:.metadata.name -A | grep assisted-service | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-assisted-service.log || true
 
                 # Get mariadb log
-                kubectl  get pods -o=custom-columns=NAME:.metadata.name -A | grep mariadb | xargs -I {} sh -c "kubectl logs {} -n  assisted-installer > test_dd.log"
+                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep mariadb | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-mariadb.log || true
 
                 # Get createimage log
-                kubectl  get pods -o=custom-columns=NAME:.metadata.name -A | grep createimage | xargs -I {} sh -c "kubectl logs {} -n  assisted-installer > test_dd.log"
+                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep createimage | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {}  -n ${NAMESPACE}  > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-createimage.log || true
 
                 # Get controller log
-                kubectl  get pods -o=custom-columns=NAME:.metadata.name -A | grep controller | xargs -I {} sh -c "kubectl logs {} -n  kube-system > test_dd.log"
+                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep controller | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n  kube-system > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-assisted-installer-controller.log || true
 
                 # Get generate-kubeconfig logs
-                kubectl  get pods -o=custom-columns=NAME:.metadata.name -A | grep ignition-generator| xargs -I {} sh -c "kubectl logs {} -n  assisted-installer > test_dd.log"
+                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ignition-generator| xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-ignition-generator.log || true
             '''
         }

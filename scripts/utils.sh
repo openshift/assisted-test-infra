@@ -145,4 +145,20 @@ function get_profile_url() {
     echo https://$(minikube ip --profile $profile):8443
 }
 
+
+function validate_namespace() {
+    namespace=$1
+    if [[ $namespace =~ ^[0-9a-zA-Z\-]+$ ]]; then
+        return
+    fi
+    echo "Invalid namespace '$namespace'"
+    echo "It can contain only letters, numbers and '-'"
+    exit 1
+}
+
+function get_profile_url() {
+    profile=$1
+    echo https://$(minikube ip --profile $profile):8443
+}
+
 "$@"
