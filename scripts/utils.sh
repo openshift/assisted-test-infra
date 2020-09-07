@@ -53,6 +53,7 @@ service ${service_name}
   port		= ${external_port}
   only_from	= 0.0.0.0/0
   per_source	= UNLIMITED
+  instances	= UNLIMITED
 }
 EOF
     sudo mv build/xinetd-$filename /etc/xinetd.d/$filename --force
