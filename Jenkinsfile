@@ -11,11 +11,9 @@ pipeline {
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
-        string(name: 'NAMESPACE', defaultValue: 'assisted-installer', description: 'Target namespace')
     }
 
     triggers { cron(cron_string) }
-
 
     environment {
         SKIPPER_PARAMS = " "
@@ -24,8 +22,8 @@ pipeline {
         SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
-        PROFILE = "${params.NAMESPACE}"
-        NAMESPACE = "${params.NAMESPACE}"
+        PROFILE = "${BUILD_TAG.toLowerCase()}"
+        NAMESPACE = "${BUILD_TAG.toLowerCase()}"
     }
     options {
       timeout(time: 1, unit: 'HOURS')
@@ -55,7 +53,7 @@ pipeline {
             script {
                 if (env.BRANCH_NAME == 'master') {
                     script {
-                        def data = [text: "Attention! assisted-test-infra branch  test failed, see: ${BUILD_URL}"]
+                        def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
                         writeJSON(file: 'data.txt', json: data, pretty: 4)
                     }
                     sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
