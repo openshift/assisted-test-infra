@@ -5,12 +5,12 @@ function destroy_all() {
 }
 
 function set_dns() {
+    NAMESPACE_INDEX=${1:-0}
     if [ "${BASE_DNS_DOMAINS}" != '""' ]; then
         echo "DNS registration should be handled by assisted-service"
         exit 0
     fi
-
-    API_VIP=$(ip route show dev ${NETWORK_BRIDGE:-"tt0"} | cut -d\  -f7)
+    API_VIP=$(ip route show dev tt$NAMESPACE_INDEX | cut -d\  -f7)
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
     if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE

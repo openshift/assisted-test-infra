@@ -166,7 +166,7 @@ run_full_flow_with_install: run deploy_nodes_with_install set_dns
 redeploy_all_with_install: destroy run_full_flow_with_install
 
 set_dns:
-	scripts/assisted_deployment.sh set_dns
+	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
 deploy_ui: start_minikube
 	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
