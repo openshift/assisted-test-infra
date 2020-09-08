@@ -89,9 +89,8 @@ destroy: destroy_nodes delete_minikube_profile kill_port_forwardings
 ###############
 # Environment #
 ###############
-create_full_environment: kill_all_port_forwardings
+create_full_environment:
 	./create_full_environment.sh
-	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 
 create_environment: image_build bring_assisted_service start_minikube
 
