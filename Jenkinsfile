@@ -35,7 +35,6 @@ pipeline {
         stage('Init') {
             steps {
                 sh "make image_build"
-                sh "make clean delete_all_virsh_resources || true"
                 sh "make create_full_environment"
 
                 // Login
@@ -89,6 +88,8 @@ pipeline {
                 # Get generate-kubeconfig logs
                 kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ignition-generator| xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-ignition-generator.log || true
+
+                make destroy || true
             '''
         }
     }
