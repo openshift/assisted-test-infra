@@ -133,7 +133,10 @@ def main():
     log.info("Creating assisted service client")
     # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
-        args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
+        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+        tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+        args.cluster_id = utils.get_tfvars(tf_folder)['cluster_inventory_id']
+
     client = assisted_service_api.create_client(
         url=utils.get_assisted_service_url_by_args(
             args=args,
@@ -175,6 +178,18 @@ if __name__ == "__main__":
         help='Override assisted-service target service name',
         type=str,
         default='assisted-service'
+    )
+    parser.add_argument(
+        '-cn',
+        '--cluster-name',
+        help='Cluster name',
+        required=False
+    )
+    parser.add_argument(
+        '--profile',
+        help='Minikube profile for assisted-installer deployment',
+        type=str,
+        default='assisted-installer'
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

@@ -2,7 +2,8 @@ import os
 import urllib3
 import json
 
-from kubernetes.config import kube_config
+from kubernetes.config.kube_config import load_kube_config
+from kubernetes.config.kube_config import Configuration
 from kubernetes.client import ApiClient
 
 
@@ -35,55 +36,131 @@ def extend_parser_with_oc_arguments(parser):
     )
 
 
-class OC(object):
+class OCConfiguration(Configuration):
+    """ A kubernetes config.kube_config.Configuration object that supports both
+        local and oc modes. Can be used also by kubernetes.client.APIClient. """
 
-    KUBE_CONFIG_PATH = os.environ.get('KUBECONFIG')
-    OC_DOMAIN = 'redhat.com'
+    def __init__(self):
+        Configuration.__init__(self)
+        self.__verify_ssl = False
 
-    def __init__(self, **kwargs):
-        self.config = None
-        self.load_kube_config(**kwargs)
-        self.client = ApiClient(self.config)
+    @property
+    def token(self):
+        return self.api_key['authorization']
 
-    def load_kube_config(self, token=None, server=None, verify_ssl=False):
-        kube_config.load_kube_config(self.KUBE_CONFIG_PATH)
-        self.config = kube_config.Configuration()
-        if token:
-            self.config.api_key['authorization'] = f'Bearer {token}'
-        if server:
-            self.config.host = server
+    @token.setter
+    def token(self, token):
+        if not token.startswith('Bearer '):
+            token = f'Bearer {token}'
 
-        self.config.verify_ssl = verify_ssl
-        if not self.config.verify_ssl:
+        self.api_key['authorization'] = token
+
+    @property
+    def server(self):
+        return self.host
+
+    @server.setter
+    def server(self, server):
+        self.host = server
+
+    @property
+    def verify_ssl(self):
+        return self.__verify_ssl
+
+    @verify_ssl.setter
+    def verify_ssl(self, verify_ssl):
+        if not verify_ssl:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        self.validate_conn_params()
+        self.__verify_ssl = verify_ssl
 
-    def validate_conn_params(self):
-        if self.OC_DOMAIN not in self.config.host:
-            raise ValueError('oc host is not part of the domain')
-        elif not self.config.auth_settings()['BearerToken']['value']:
-            raise ValueError('oc missing authentication token')
 
-    def get_namespaced_service_routes_list(self, namespace, service):
-        return self.client.call_api(
-            f'/apis/route.openshift.io/v1/namespaces/{namespace}/routes',
-            method='GET',
-            query_params=[('fieldSelector', f'spec.to.name={service}')],
-            response_type='V1ResourceQuotaList',
-            auth_settings=self.config.auth_settings(),
-            _return_http_data_only=True
+class OCApiClient(ApiClient):
+    """ A class meant to replace kubernetes.client.APIClient for oc mode. """
+
+    def call_api(
+            self,
+            resource_path,
+            method,
+            path_params=None,
+            query_params=None,
+            header_params=None,
+            body=None,
+            post_params=None,
+            files=None,
+            response_type=None,
+            auth_settings=None,
+            async_req=None,
+            _return_http_data_only=None,
+            collection_formats=None,
+            _preload_content=True,
+            _request_timeout=None
+    ):
+        if auth_settings == ['BearerToken']:
+            auth_settings = self.configuration.auth_settings()
+
+        return ApiClient.call_api(
+            self,
+            resource_path,
+            method,
+            path_params,
+            query_params,
+            header_params,
+            body,
+            post_params,
+            files,
+            response_type,
+            auth_settings,
+            async_req,
+            _return_http_data_only,
+            collection_formats,
+            _preload_content,
+            _request_timeout
         )
 
 
-def get_namespaced_service_urls_list(oc, namespace, service=None, scheme='http'):
+def get_oc_api_client(token=None, server=None, verify_ssl=False):
+    config = OCConfiguration()
+    load_kube_config(
+        config_file=os.environ.get('KUBECONFIG'),
+        client_configuration=config
+    )
+
+    if token:
+        config.token = token
+
+    if server:
+        config.server = server
+
+    config.verify_ssl = verify_ssl
+
+    return OCApiClient(config)
+
+
+def get_namespaced_service_urls_list(
+        client,
+        namespace,
+        service=None,
+        scheme='http'
+        ):
     urls = []
-    routes = oc.get_namespaced_service_routes_list(namespace, service)
+    routes = get_namespaced_service_routes_list(client, namespace, service)
     for route in routes.items:
         for rule in _load_resource_config_dict(route)['spec']['rules']:
             if 'host' in rule:
                 urls.append(scheme + '://' + rule['host'])
     return urls
+
+
+def get_namespaced_service_routes_list(client, namespace, service):
+    return client.call_api(
+        f'/apis/route.openshift.io/v1/namespaces/{namespace}/routes',
+        method='GET',
+        query_params=[('fieldSelector', f'spec.to.name={service}')],
+        response_type='V1ResourceQuotaList',
+        auth_settings=['BearerToken'],
+        _return_http_data_only=True
+    )
 
 
 def _load_resource_config_dict(resource):

@@ -119,11 +119,7 @@ def del_idx(ns):
         if ns == 'all':
             _indexer.clear_all()
             return
-        ret = _indexer.del_index(ns)
-
-    if not ret:
-        sys.stderr.write(f'namespace {ns} does not exist\n')
-        sys.exit(1)
+        _indexer.del_index(ns)
 
 
 def list_namespaces(*_):
