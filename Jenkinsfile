@@ -39,7 +39,7 @@ pipeline {
                 sh "make create_full_environment"
 
                 // Login
-                sh "minikube --profile ${params.PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
+                sh "minikube --profile ${PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
             }
         }
 
