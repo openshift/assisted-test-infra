@@ -1,5 +1,6 @@
 String cron_string = BRANCH_NAME == "master" ? "@hourly" : ""
 
+
 pipeline {
     agent { label 'test-infra' }
 
@@ -11,11 +12,9 @@ pipeline {
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
-        string(name: 'NAMESPACE', defaultValue: 'assisted-installer', description: 'Target namespace')
     }
 
     triggers { cron(cron_string) }
-
 
     environment {
         SKIPPER_PARAMS = " "
@@ -24,8 +23,9 @@ pipeline {
         SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
-        PROFILE = "${params.NAMESPACE}"
-        NAMESPACE = "${params.NAMESPACE}"
+        RUN_ID = UUID.randomUUID().toString().take(8)
+        PROFILE = "${RUN_ID}"
+        NAMESPACE = "${RUN_ID}"
     }
     options {
       timeout(time: 1, unit: 'HOURS')
@@ -35,7 +35,6 @@ pipeline {
         stage('Init') {
             steps {
                 sh "make image_build"
-                sh "make clean delete_all_virsh_resources || true"
                 sh "make create_full_environment"
 
                 // Login
@@ -89,6 +88,8 @@ pipeline {
                 # Get generate-kubeconfig logs
                 kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ignition-generator| xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
                 mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-ignition-generator.log || true
+
+                make destroy
             '''
         }
     }
