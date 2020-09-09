@@ -36,7 +36,6 @@ NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
 NETWORK_CIDR := $(or $(NETWORK_CIDR), "")
-NETWORK_BRIDGE := $(or $(NETWORK_BRIDGE), "")
 NETWORK_MTU := $(or $(NETWORK_MTU), 1500)
 HTTP_PROXY_URL := $(or $(HTTP_PROXY_URL), "")
 HTTPS_PROXY_URL := $(or $(HTTPS_PROXY_URL), "")
@@ -195,7 +194,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nB $(NETWORK_BRIDGE) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
