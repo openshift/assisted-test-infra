@@ -20,7 +20,7 @@ function init_minikube() {
         fi
     done
 
-    minikube start --driver=kvm2 --memory=8192 --profile=$PROFILE --force
+    minikube start --driver=kvm2 --memory=8192 --cpus=4 --profile=${PROFILE} --force
 }
 
 configure_minikube
