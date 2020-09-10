@@ -19,7 +19,7 @@ pipeline {
 
     environment {
         SKIPPER_PARAMS = " "
-        PULL_SECRET = credentials('7f094807-fac7-4e47-9ed1-407dd9bf72cd')
+        PULL_SECRET = credentials('assisted-test-infra-pull-secret')
         OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
         SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
