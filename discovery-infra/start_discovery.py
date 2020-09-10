@@ -327,7 +327,6 @@ def main():
     log.info('Cluster name: %s', internal_cluster_name)
 
     image_folder = os.path.join(consts.BASE_IMAGE_FOLDER, internal_cluster_name)
-    image_path = os.path.join(image_folder, consts.IMAGE_NAME)
     log.info('Image folder: %s', image_folder)
 
     if args.managed_dns_domains:
@@ -340,6 +339,8 @@ def main():
 
     if not args.network_bridge:
         args.network_bridge = f'tt{args.ns_index}'
+
+    image_path = None
 
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
@@ -358,6 +359,7 @@ def main():
                 ui_cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
 
+        image_path = os.path.join(image_folder, consts.IMAGE_NAME)
         client.generate_and_download_image(
             cluster_id=cluster.id,
             image_path=image_path,
@@ -366,7 +368,13 @@ def main():
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
-        nodes_flow(client, internal_cluster_name, cluster, args.image or image_path)
+        try:
+            nodes_flow(client, internal_cluster_name, cluster, args.image or image_path)
+        finally:
+            if not image_path or args.keep_iso:
+                return
+            log.info('deleting iso: %s', image_path)
+            os.unlink(image_path)
 
 
 if __name__ == "__main__":
@@ -551,6 +559,12 @@ if __name__ == "__main__":
         help='Minikube profile for assisted-installer deployment',
         type=str,
         default='assisted-installer'
+    )
+    parser.add_argument(
+        '--keep-iso',
+        help='If set, do not delete generated iso at the end of discovery',
+        action='store_true',
+        default=False
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

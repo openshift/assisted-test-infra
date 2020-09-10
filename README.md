@@ -70,7 +70,6 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | NETWORK_CIDR             | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                           |
 | CLUSTER_ID               | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
 | NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
-| NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.5"                                                                                    |
 | HTTP_PROXY_URL           | A proxy URL to use for creating HTTP connections outside the cluster |
 | HTTPS_PROXY_URL          | A proxy URL to use for creating HTTPS connections outside the cluster |
