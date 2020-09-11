@@ -69,7 +69,7 @@ function install_packages() {
     sudo systemctl enable --now xinetd
 
     echo "Installing pip packages"
-    pip3 install filelock
+    pip3 install --user filelock
 }
 
 function install_skipper() {
