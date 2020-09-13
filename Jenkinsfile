@@ -63,34 +63,20 @@ pipeline {
         }
 
         always {
-            sh '''
-                ip=$(minikube ip --profile ${PROFILE})
-                minikube_url=https://${ip}:8443
+            script {
+                ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
+                minikube_url = "https://${ip}:8443"
 
-                kubectl --server=${minikube_url} get pods -A
+                sh "kubectl --server=${minikube_url} get pods -A"
 
-                # Get assisted-service log
-                kubectl --server=${minikube_url}  get pods -o=custom-columns=NAME:.metadata.name -A | grep assisted-service | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
-                mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-assisted-service.log || true
 
-                # Get mariadb log
-                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep mariadb | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
-                mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-mariadb.log || true
+                for (service in ["assisted-service","postgres","scality","createimage"]) {
+                    sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
+                }
 
-                # Get createimage log
-                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep createimage | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {}  -n ${NAMESPACE}  > test_dd.log"
-                mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-createimage.log || true
+                sh "make destroy"
+            }
 
-                # Get controller log
-                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep controller | xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n  kube-system > test_dd.log"
-                mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-assisted-installer-controller.log || true
-
-                # Get generate-kubeconfig logs
-                kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ignition-generator| xargs -I {} sh -c "kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > test_dd.log"
-                mv test_dd.log ${WORKSPACE}/${BUILD_NUMBER}-ignition-generator.log || true
-
-                make destroy
-            '''
             archiveArtifacts artifacts: '*.log', fingerprint: true
         }
     }
