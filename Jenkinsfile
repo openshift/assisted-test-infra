@@ -91,6 +91,7 @@ pipeline {
 
                 make destroy
             '''
+            archiveArtifacts artifacts: '*.log', fingerprint: true
         }
     }
 }
