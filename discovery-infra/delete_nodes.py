@@ -49,6 +49,7 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     shutil.rmtree(tf_folder)
 
 
+
 @utils.on_exception(
     message='Failed to run terraform delete',
     silent=True
