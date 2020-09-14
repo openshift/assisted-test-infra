@@ -312,48 +312,48 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             tf_folder=tf_folder
         )
 
-    if client:
-        cluster_info = client.cluster_get(cluster.id)
-        macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
+        if client:
+            cluster_info = client.cluster_get(cluster.id)
+            macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
 
-        if not (cluster_info.api_vip and cluster_info.ingress_vip):
+            if not (cluster_info.api_vip and cluster_info.ingress_vip):
+                utils.wait_till_hosts_with_macs_are_in_status(
+                    client=client,
+                    cluster_id=cluster.id,
+                    macs=macs,
+                    statuses=[
+                        consts.NodesStatus.INSUFFICIENT,
+                        consts.NodesStatus.PENDING_FOR_INPUT,
+                    ],
+                )
+
+                if args.vip_dhcp_allocation:
+                    set_cluster_machine_cidr(client, cluster.id, args.vm_network_cidr)
+                else:
+                    set_cluster_vips(client, cluster.id)
+            else:
+                log.info("VIPs already configured")
+
+            set_hosts_roles(client, cluster.id, nodes_details["libvirt_network_name"])
             utils.wait_till_hosts_with_macs_are_in_status(
                 client=client,
                 cluster_id=cluster.id,
                 macs=macs,
-                statuses=[
-                    consts.NodesStatus.INSUFFICIENT,
-                    consts.NodesStatus.PENDING_FOR_INPUT,
-                ],
+                statuses=[consts.NodesStatus.KNOWN],
             )
+            log.info("Printing after setting roles")
+            pprint.pprint(client.get_cluster_hosts(cluster.id))
 
-            if args.vip_dhcp_allocation:
-                set_cluster_machine_cidr(client, cluster.id, args.vm_network_cidr)
-            else:
-                set_cluster_vips(client, cluster.id)
-        else:
-            log.info("VIPs already configured")
-
-        set_hosts_roles(client, cluster.id, nodes_details["libvirt_network_name"])
-        utils.wait_till_hosts_with_macs_are_in_status(
-            client=client,
-            cluster_id=cluster.id,
-            macs=macs,
-            statuses=[consts.NodesStatus.KNOWN],
-        )
-        log.info("Printing after setting roles")
-        pprint.pprint(client.get_cluster_hosts(cluster.id))
-
-        if args.install_cluster:
-            time.sleep(10)
-            install_cluster.run_install_flow(
-                client=client,
-                cluster_id=cluster.id,
-                kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
-                pull_secret=args.pull_secret,
-            )
-            # Validate DNS domains resolvability
-            validate_dns(client, cluster.id)
+            if args.install_cluster:
+                time.sleep(10)
+                install_cluster.run_install_flow(
+                    client=client,
+                    cluster_id=cluster.id,
+                    kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
+                    pull_secret=args.pull_secret,
+                )
+                # Validate DNS domains resolvability
+                validate_dns(client, cluster.id)
 
 
 def main():
