@@ -196,6 +196,10 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
+    def update_cluster_install_config(self, cluster_id, update_params):
+        log.info("Updating cluster install config with %s", update_params)
+        return self.client.update_cluster_install_config(cluster_id, json.dumps(update_params))
+
 
 def create_client(url, wait_for_api=True):
     log.info('Creating assisted-service client for url: %s', url)
