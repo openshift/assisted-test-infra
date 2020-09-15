@@ -1,9 +1,35 @@
 ---
+- name: Discover iDRAC version and use appropriate image mounting method
+  block:
+    - name: Discovery iDRAC versions for Dell hardware
+      containers.podman.podman_container:
+        name: "{{ hostvars[item]['bmc_address'] }}-rac-version"
+        network: host
+        image: quay.io/dphillip/racadm-image
+        state: started
+        detach: false
+        rm: true
+        command: ["-v", "-r", "{{ hostvars[item]['bmc_address'] }}", "-u", "{{ hostvars[item]['bmc_user'] }}", "-p", "{{ hostvars[item]['bmc_password'] }}", "-i", "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"]
+      register: drac_version
+  when: hostvars[item]['vendor'] == 'Dell'
+
 # tasks file for boot_iso
+- name: Mount Live ISO, Boot into Live ISO (Dell 13G iDRAC8 and below)
+  block:
+    - name: Racadm container to mount and boot to discovery ISO
+      containers.podman.podman_container:
+        name: "{{ hostvars[item]['bmc_address'] }}-rac-image"
+        network: host
+        image: quay.io/dphillip/racadm-image
+        state: started
+        rm: true
+        command: ["-r", "{{ hostvars[item]['bmc_address'] }}", "-u", "{{ hostvars[item]['bmc_user'] }}", "-p", "{{ hostvars[item]['bmc_password'] }}", "-i", "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"]
+  when:
+  - hostvars[item]['vendor'] == 'Dell'
+  - drac_version.stdout_lines | int <= 13
 
 - name: Mount Live ISO, Boot into Live ISO (Dell iDRAC9+ only)
   block:
-
     - name: DELL Power ON
       community.general.redfish_command:
         category: Systems
@@ -60,7 +86,9 @@
         baseuri: "{{ hostvars[item]['bmc_address'] }}"
         username: "{{ hostvars[item]['bmc_user'] }}"
         password: "{{ hostvars[item]['bmc_password'] }}"
-  when: hostvars[item]['vendor'] == 'Dell'
+  when:
+  - hostvars[item]['vendor'] == 'Dell'
+  - drac_version.stdout_lines | int > 13
 
 - name: Mount Live ISO, Boot into Live ISO (HPE servers)
   block:
