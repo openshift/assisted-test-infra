@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import os
 import argparse
 
 import assisted_service_api
@@ -47,20 +48,23 @@ def _install_cluster(client, cluster):
 def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
     log.info("Waiting %s till cluster finished installation", timeout)
     # TODO: Change host validation for only previous known hosts
-    utils.wait_till_all_hosts_are_in_status(
-        client=client,
-        cluster_id=cluster.id,
-        nodes_count=len(cluster.hosts),
-        statuses=[consts.NodesStatus.INSTALLED],
-        timeout=timeout,
-        interval=60,
-    )
-    utils.wait_till_cluster_is_in_status(
-        client=client,
-        cluster_id=cluster.id,
-        statuses=[consts.ClusterStatus.INSTALLED],
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    )
+    try:
+        utils.wait_till_all_hosts_are_in_status(
+            client=client,
+            cluster_id=cluster.id,
+            nodes_count=len(cluster.hosts),
+            statuses=[consts.NodesStatus.INSTALLED],
+            timeout=timeout,
+            interval=60,
+        )
+        utils.wait_till_cluster_is_in_status(
+            client=client,
+            cluster_id=cluster.id,
+            statuses=[consts.ClusterStatus.INSTALLED],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        )
+    finally:
+        download_logs_from_all_hosts(client=client, cluster_id=cluster.id)
 
 
 # Runs installation flow :
@@ -71,6 +75,7 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
 def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
+    client.update_cluster_install_config(cluster_id, {"networking": {"networkType": "OpenShiftSDN"}})
     log.info("Verifying pull secret")
     verify_pull_secret(client=client, cluster=cluster, pull_secret=pull_secret)
     log.info("Wait till cluster is ready")
@@ -107,12 +112,32 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
     )
 
 
+def download_logs_from_all_hosts(client, cluster_id):
+    output_folder = f'build/{cluster_id}'
+    utils.recreate_folder(output_folder)
+    hosts = client.get_cluster_hosts(cluster_id=cluster_id)
+    for host in hosts:
+        output_file = os.path.join(output_folder, f'{host["id"]}_logs.tar.gz')
+        waiting.wait(
+            lambda: client.download_host_logs(cluster_id=cluster_id,
+                                              host_id=host["id"],
+                                              output_file=output_file) is None,
+            timeout_seconds=240,
+            sleep_seconds=20,
+            expected_exceptions=Exception,
+            waiting_for="Logs",
+        )
+
+
 def main():
     _verify_kube_download_folder(args.kubeconfig_path)
     log.info("Creating assisted service client")
     # if not cluster id is given, reads it from latest run
     if not args.cluster_id:
-        args.cluster_id = utils.get_tfvars()["cluster_inventory_id"]
+        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+        tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+        args.cluster_id = utils.get_tfvars(tf_folder)['cluster_inventory_id']
+
     client = assisted_service_api.create_client(
         url=utils.get_assisted_service_url_by_args(
             args=args,
@@ -154,6 +179,18 @@ if __name__ == "__main__":
         help='Override assisted-service target service name',
         type=str,
         default='assisted-service'
+    )
+    parser.add_argument(
+        '-cn',
+        '--cluster-name',
+        help='Cluster name',
+        required=False
+    )
+    parser.add_argument(
+        '--profile',
+        help='Minikube profile for assisted-installer deployment',
+        type=str,
+        default='assisted-installer'
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

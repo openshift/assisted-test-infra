@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import itertools
 import json
 import os
@@ -6,29 +7,47 @@ import shlex
 import shutil
 import subprocess
 from pathlib import Path
+from functools import wraps
+from contextlib import contextmanager
 
 import libvirt
 import waiting
 import requests
+import filelock
 import consts
 import oc_utils
 from logger import log
 from retry import retry
+from pprint import pformat
 
 conn = libvirt.open("qemu:///system")
 
 
-def run_command(command, shell=False):
+def run_command(command, shell=False, raise_errors=True):
     command = command if shell else shlex.split(command)
     process = subprocess.run(
         command,
         shell=shell,
-        check=True,
         stdout=subprocess.PIPE,
-        universal_newlines=True,
+        stderr=subprocess.PIPE,
+        universal_newlines=True
     )
-    output = process.stdout.strip()
-    return output
+
+    def _io_buffer_to_str(buf):
+        if hasattr(buf, 'read'):
+            buf = buf.read().decode()
+        return buf
+
+    out = _io_buffer_to_str(process.stdout).strip()
+    err = _io_buffer_to_str(process.stderr).strip()
+
+    if raise_errors and err:
+        raise RuntimeError(
+            f'command: {command} exited with an error: {err} '
+            f'code: {process.returncode}'
+        )
+
+    return out, err, process.returncode
 
 
 def run_command_with_output(command):
@@ -40,11 +59,6 @@ def run_command_with_output(command):
 
     if p.returncode != 0:
         raise subprocess.CalledProcessError(p.returncode, p.args)
-
-
-def get_network_leases(network_name):
-    net = conn.networkLookupByName(network_name)
-    return net.DHCPLeases()
 
 
 def wait_till_nodes_are_ready(nodes_count, network_name):
@@ -103,16 +117,17 @@ def get_cluster_hosts_with_mac(client, cluster_id, macs):
     return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
 
 
-def get_tfvars():
-    if not os.path.exists(consts.TFVARS_JSON_FILE):
-        raise Exception("%s doesn't exists" % consts.TFVARS_JSON_FILE)
-    with open(consts.TFVARS_JSON_FILE) as _file:
+def get_tfvars(tf_folder):
+    tf_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    if not os.path.exists(tf_json_file):
+        raise Exception(f'{tf_json_file} does not exists')
+    with open(tf_json_file) as _file:
         tfvars = json.load(_file)
     return tfvars
 
 
 def are_hosts_in_status(
-    client, cluster_id, hosts, nodes_count, statuses, fall_on_error_status=True
+        hosts, nodes_count, statuses, fall_on_error_status=True
 ):
     hosts_in_status = [host for host in hosts if host["status"] in statuses]
     if len(hosts_in_status) >= nodes_count:
@@ -127,7 +142,7 @@ def are_hosts_in_status(
         ]
         log.error(
             "Some of the hosts are in insufficient or error status. Hosts in error %s",
-            hosts_in_error,
+            pformat(hosts_in_error),
         )
         raise Exception("All the nodes must be in valid status, but got some in error")
 
@@ -153,8 +168,6 @@ def wait_till_hosts_with_macs_are_in_status(
     try:
         waiting.wait(
             lambda: are_hosts_in_status(
-                client,
-                cluster_id,
                 get_cluster_hosts_with_mac(client, cluster_id, macs),
                 len(macs),
                 statuses,
@@ -179,14 +192,11 @@ def wait_till_all_hosts_are_in_status(
     fall_on_error_status=True,
     interval=5,
 ):
-    hosts = client.get_cluster_hosts(cluster_id)
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
     try:
         waiting.wait(
             lambda: are_hosts_in_status(
-                client,
-                cluster_id,
                 client.get_cluster_hosts(cluster_id),
                 nodes_count,
                 statuses,
@@ -230,11 +240,12 @@ def file_exists(file_path):
     return Path(file_path).exists()
 
 
-def recreate_folder(folder):
+def recreate_folder(folder, with_chmod=True):
     if os.path.exists(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
-    run_command("chmod ugo+rx %s" % folder)
+    if with_chmod:
+        run_command("chmod -R ugo+rx %s" % folder)
 
 
 def get_assisted_service_url_by_args(args, wait=True):
@@ -247,10 +258,14 @@ def get_assisted_service_url_by_args(args, wait=True):
     }
     if args.oc_mode:
         get_url = get_remote_assisted_service_url
-        kwargs['oc'] = oc_utils.OC(token=args.oc_token, server=args.oc_server)
+        kwargs['oc'] = oc_utils.get_oc_api_client(
+            token=args.oc_token,
+            server=args.oc_server
+        )
         kwargs['scheme'] = args.oc_scheme
     else:
         get_url = get_local_assisted_service_url
+        kwargs['profile'] = args.profile
 
     return retry(
         tries=5 if wait else 1,
@@ -267,7 +282,7 @@ def get_assisted_service_url_by_args(args, wait=True):
 def get_remote_assisted_service_url(oc, namespace, service, scheme):
     log.info('Getting oc %s URL in %s namespace', service, namespace)
     service_urls = oc_utils.get_namespaced_service_urls_list(
-        oc=oc,
+        client=oc,
         namespace=namespace,
         service=service,
         scheme=scheme
@@ -282,9 +297,11 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
     )
 
 
-def get_local_assisted_service_url(namespace, service):
+def get_local_assisted_service_url(profile, namespace, service):
     log.info('Getting minikube %s URL in %s namespace', service, namespace)
-    url = run_command(f'minikube -n {namespace} service {service} --url')
+    url, _, _ = run_command(
+        f'minikube  -p {profile} -n {namespace} service {service} --url'
+    )
     if is_assisted_service_reachable(url):
         return url
 
@@ -295,5 +312,85 @@ def get_local_assisted_service_url(namespace, service):
 
 
 def is_assisted_service_reachable(url):
-    r = requests.get(url + '/health', timeout=10)
-    return r.status_code == 200
+    try:
+        r = requests.get(url + '/health', timeout=10, verify=False)
+        return r.status_code == 200
+    except (
+            requests.ConnectionError,
+            requests.ConnectTimeout,
+            requests.RequestException
+    ):
+        return False
+
+
+def get_tf_folder(cluster_name, namespace):
+    return os.path.join(consts.TF_FOLDER, f'{cluster_name}__{namespace}')
+
+
+def get_all_namespaced_clusters():
+    if not os.path.isdir(consts.TF_FOLDER):
+        return
+
+    for dirname in os.listdir(consts.TF_FOLDER):
+        res = get_name_and_namespace_from_dirname(dirname)
+        if not res:
+            continue
+        name, namespace = res
+        yield name, namespace
+
+
+def get_name_and_namespace_from_dirname(dirname):
+    if '__' in dirname:
+        return dirname.rsplit('__', 1)
+
+    log.warning(
+        'Unable to extract cluster name and namespace from directory name %s. '
+        'Directory name convention must be <cluster_name>:<namespace>',
+        dirname
+    )
+
+
+def on_exception(*, message=None, callback=None, silent=False, errors=(Exception,)):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapped(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except errors as e:
+                if message:
+                    log.exception(message)
+                if callback:
+                    callback(e)
+                if silent:
+                    return
+                raise
+        return wrapped
+    return decorator
+
+
+@contextmanager
+def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
+    logging.getLogger('filelock').setLevel(logging.INFO)
+
+    lock = filelock.FileLock(filepath, timeout)
+    try:
+        lock.acquire()
+    except filelock.Timeout:
+        log.info(
+            'Deleting lock file: %s '
+            'since it exceeded timeout of: %d seconds',
+            filepath, timeout
+        )
+        os.unlink(filepath)
+        lock.acquire()
+
+    try:
+        yield
+    finally:
+        lock.release()
+
+
+def get_network_leases(network_name):
+    with file_lock_context():
+        net = conn.networkLookupByName(network_name)
+        return net.DHCPLeases()

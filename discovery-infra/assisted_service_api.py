@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
+import os
+import base64
+import requests
+import time
 
 import consts
 import utils
@@ -15,8 +19,47 @@ class InventoryClient(object):
         configs = Configuration()
         configs.host = self.inventory_url + "/api/assisted-install/v1"
         configs.verify_ssl = False
+        self.set_config_auth(configs)
+
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
+
+    def set_config_auth(self, c):
+        offline_token = os.environ.get('OFFLINE_TOKEN', "")
+        if offline_token == "":
+            log.info("OFFLINE_TOKEN not set, skipping authentication headers")
+            return
+
+        def refresh_api_key(config):
+            # Get the properly padded key segment
+            auth = config.api_key.get('Authorization', None)
+            if auth != None:
+                segment = auth.split('.')[1]
+                padding = len(segment) % 4
+                segment = segment + padding * '='
+
+                expires_on = json.loads(base64.b64decode(segment))['exp']
+
+                # if this key doesn't expire or if it has more than 10 minutes left, don't refresh
+                remaining = expires_on - time.time()
+                if expires_on == 0 or remaining > 600:
+                    return
+
+            # fetch new key if expired or not set yet
+            params = {
+                "client_id":     "cloud-services",
+                "grant_type":    "refresh_token",
+                "refresh_token": offline_token,
+            }
+
+            log.info("Refreshing API key")
+            response = requests.post(os.environ.get("SSO_URL"), data = params)
+            response.raise_for_status()
+
+            config.api_key['Authorization'] = response.json()['access_token']
+
+        c.api_key_prefix['Authorization'] = 'Bearer'
+        c.refresh_api_key_hook = refresh_api_key
 
     def wait_for_api_readiness(self):
         log.info("Waiting for inventory api to be ready")
@@ -144,6 +187,18 @@ class InventoryClient(object):
     def install_cluster(self, cluster_id):
         log.info("Installing cluster %s", cluster_id)
         return self.client.install_cluster(cluster_id=cluster_id)
+
+    def download_host_logs(self, cluster_id, host_id, output_file):
+        log.info("Downloading logs to %s", output_file)
+        response = self.client.download_host_logs(
+            cluster_id=cluster_id, host_id=host_id, _preload_content=False
+        )
+        with open(output_file, "wb") as _file:
+            _file.write(response.data)
+
+    def update_cluster_install_config(self, cluster_id, update_params):
+        log.info("Updating cluster install config with %s", update_params)
+        return self.client.update_cluster_install_config(cluster_id, json.dumps(update_params))
 
 
 def create_client(url, wait_for_api=True):

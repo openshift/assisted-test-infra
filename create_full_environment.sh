@@ -39,5 +39,5 @@ make install_minikube
 
 if [ -z "${NO_MINIKUBE}" ]; then
     echo "Install and start minikube"
-    make start_minikube
+    make start_minikube PROFILE=${PROFILE:-minikube}
 fi

@@ -4,7 +4,7 @@ FROM docker.io/centos:8
 
 RUN yum -y install make python3 libvirt-client libvirt-devel gcc unzip wget curl git python3-devel && yum clean all;
 
-RUN wget https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
+RUN wget -q https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
 
 RUN curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.10.1/minikube-linux-amd64 \
   && chmod +x minikube && mkdir -p /usr/local/bin/ && install minikube /usr/local/bin/

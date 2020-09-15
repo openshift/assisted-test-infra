@@ -70,16 +70,17 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | NETWORK_CIDR             | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                           |
 | CLUSTER_ID               | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
 | NETWORK_NAME             | virsh network name for VMs creation, default: test-infra-net                                                                    |
-| NETWORK_BRIDGE           | network bridge to use while creating virsh network, default: tt0                                                                |
 | OPENSHIFT_VERSION        | OpenShift version to install, default: "4.5"                                                                                    |
 | HTTP_PROXY_URL           | A proxy URL to use for creating HTTP connections outside the cluster |
 | HTTPS_PROXY_URL          | A proxy URL to use for creating HTTPS connections outside the cluster |
-| NO_PROXY                 | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
+| NO_PROXY_VALUES          | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
 | SERVICE_BASE_URL         | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                       |
 | AGENT_DOCKER_IMAGE       | agent docker image to use, will update assisted-service config map with given value                                             |
 | INSTALLER_IMAGE          | assisted-installer image to use, will update assisted-service config map with given value                                       |
 | SERVICE                  | assisted-service image to use                                                                                                   |
 | DEPLOY_TAG               | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
+| DEPLOY_MANIFEST_PATH     | the location of a manifest file that defines image tags images to be used
+| DEPLOY_MANIFEST_TAG      | the Git tag of a manifest file that defines image tags to be used
 | IMAGE_BUILDER            | image-builder image to use, will update assisted-service config map with given value                                            |
 | CONNECTIVITY_CHECK_IMAGE | connectivity-check image to use, will update assisted-service config map with given value                                       |
 | HARDWARE_INFO_IMAGE      | hardware-info image to use, will update assisted-service config map with given value                                            |
@@ -90,6 +91,13 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OC_SCHEME                | Scheme for assisted-service url on oc, default: http                                                                            |
 | SERVICE_NAME             | assisted-service target service name, default: assisted-service                                                                 |
 | KUBECONFIG               | kubeconfig file path, default: <home>/.kube/config                                                                              |
+| ENABLE_AUTH              | configure assisted-service to authenticate API requests, default: false                                                         |
+| OFFLINE_TOKEN            | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)              |
+| SSO_URL                  | URL used to fetch JWT tokens for assisted-service authentication                                                                |
+| OCM_CLIENT_ID            | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz
+| OCM_CLIENT_SECRET        | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
+| OCM_BASE_URL             | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com |
+| REMOTE_SERVICE_URL | URL to remote assisted-service - run infra on existing deployment |
 
 ## Instructions
 
