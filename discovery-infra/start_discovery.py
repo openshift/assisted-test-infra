@@ -67,36 +67,8 @@ def fill_tfvars(
     tfvars['libvirt_storage_pool_path'] = storage_path
     tfvars.update(nodes_details)
 
-    tfvars.update(_secondary_tfvars(master_count, nodes_details))
-
     with open(tfvars_json_file, "w") as _file:
         json.dump(tfvars, _file)
-
-
-def _secondary_tfvars(master_count, nodes_details):
-    secondary_master_starting_ip = str(
-        ipaddress.ip_address(
-            ipaddress.IPv4Network(nodes_details['provisioning_cidr']).network_address
-        )
-        + 10
-    )
-    secondary_worker_starting_ip = str(
-        ipaddress.ip_address(
-            ipaddress.IPv4Network(nodes_details['provisioning_cidr']).network_address
-        )
-        + 10
-        + int(master_count)
-    )
-    return {
-        'libvirt_secondary_worker_ips': _create_ip_address_list(
-            nodes_details['worker_count'],
-            starting_ip_addr=secondary_worker_starting_ip
-        ),
-        'libvirt_secondary_master_ips': _create_ip_address_list(
-            master_count,
-            starting_ip_addr=secondary_master_starting_ip
-        )
-    }
 
 
 # Run make run terraform -> creates vms
@@ -249,16 +221,7 @@ def _create_node_details(cluster_name):
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": args.worker_disk,
         "libvirt_master_disk": args.master_disk,
-        'libvirt_secondary_network_name': consts.TEST_SECONDARY_NETWORK + args.namespace,
-        'libvirt_secondary_network_if': f's{args.network_bridge}',
-        'provisioning_cidr': _get_provisioning_cidr(),
     }
-
-
-def _get_provisioning_cidr():
-    provisioning_cidr = IPNetwork(args.vm_network_cidr)
-    provisioning_cidr += args.ns_index + consts.NAMESPACE_POOL_SIZE
-    return str(provisioning_cidr)
 
 
 def validate_dns(client, cluster_id):

@@ -42,14 +42,6 @@ resource "libvirt_network" "net" {
   autostart = true
 }
 
-resource "libvirt_network" "secondary-net" {
-  name = var.libvirt_secondary_network_name
-  mode   = "nat"
-  bridge = var.libvirt_secondary_network_if
-  addresses = [var.provisioning_cidr]
-  autostart = true
-}
-
 resource "libvirt_domain" "master" {
   count = var.master_count
 
@@ -80,11 +72,6 @@ resource "libvirt_domain" "master" {
     network_name = var.libvirt_network_name
     hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
     addresses  = [var.libvirt_master_ips[count.index]]
-  }
-
-  network_interface {
-    network_name = var.libvirt_secondary_network_name
-    addresses  = [var.libvirt_secondary_master_ips[count.index]]
   }
 
   boot_device{
@@ -122,11 +109,6 @@ resource "libvirt_domain" "worker" {
     network_name = var.libvirt_network_name
     hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
     addresses  = [var.libvirt_worker_ips[count.index]]
-  }
-
-  network_interface {
-    network_name = var.libvirt_secondary_network_name
-    addresses  = [var.libvirt_secondary_master_ips[count.index]]
   }
 
   boot_device{
