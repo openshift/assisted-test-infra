@@ -15,7 +15,7 @@ import virsh_cleanup
 from logger import log
 
 
-@utils.on_exception(message='Failed to delete cluster')
+@utils.on_exception(message='Failed to delete cluster', silent=True)
 def try_to_delete_cluster(namespace, tfvars):
     """ Try to delete cluster if assisted-service is up and such cluster
         exists.
@@ -55,15 +55,16 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
 )
 def _try_to_delete_nodes(tf_folder):
     log.info('Start running terraform delete')
-    utils.run_command_with_output(
-        f'cd {tf_folder} && '
-        'terraform destroy '
-        '-auto-approve '
-        '-input=false '
-        '-state=terraform.tfstate ' 
-        '-state-out=terraform.tfstate ' 
-        '-var-file=terraform.tfvars.json'
-    )
+    with utils.file_lock_context():
+        utils.run_command_with_output(
+            f'cd {tf_folder} && '
+            'terraform destroy '
+            '-auto-approve '
+            '-input=false '
+            '-state=terraform.tfstate ' 
+            '-state-out=terraform.tfstate ' 
+            '-var-file=terraform.tfvars.json'
+        )
 
 
 def _delete_virsh_resources(*filters):

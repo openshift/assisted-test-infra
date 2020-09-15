@@ -14,7 +14,6 @@ from distutils.dir_util import copy_tree
 import distutils.util
 from pathlib import Path
 from netaddr import IPNetwork
-from filelock import FileLock
 
 import assisted_service_api
 import consts
@@ -118,7 +117,10 @@ def create_nodes(
         tf_folder=tf_folder
     )
     log.info('Start running terraform')
-    return utils.run_command(f'make _run_terraform CLUSTER_NAME={cluster_name}')
+    with utils.file_lock_context():
+        return utils.run_command(
+            f'make _run_terraform CLUSTER_NAME={cluster_name}'
+        )
 
 
 # Starts terraform nodes creation, waits till all nodes will get ip and will move to known status
@@ -300,17 +302,16 @@ def nodes_flow(client, cluster_name, cluster, image_path):
     utils.recreate_folder(tf_folder)
     copy_tree(consts.TF_TEMPLATE, tf_folder)
 
-    with FileLock('/tmp/create_nodes.lock'):
-        create_nodes_and_wait_till_registered(
-            cluster_name=cluster_name,
-            inventory_client=client,
-            cluster=cluster,
-            image_path=image_path,
-            storage_path=args.storage_path,
-            master_count=args.master_count,
-            nodes_details=nodes_details,
-            tf_folder=tf_folder
-        )
+    create_nodes_and_wait_till_registered(
+        cluster_name=cluster_name,
+        inventory_client=client,
+        cluster=cluster,
+        image_path=image_path,
+        storage_path=args.storage_path,
+        master_count=args.master_count,
+        nodes_details=nodes_details,
+        tf_folder=tf_folder
+    )
 
     if client:
         cluster_info = client.cluster_get(cluster.id)

@@ -87,7 +87,7 @@ class IndexProvider(object):
 _indexer = IndexProvider(
     filepath='/tmp/indexes.json',
     max_indexes=15,
-    lock=FileLock('/tmp/indexes.lock')
+    lock=FileLock('/tmp/indexes.lock', timeout=30)
 )
 
 
