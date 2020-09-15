@@ -69,6 +69,8 @@ def fill_tfvars(
 
     tfvars.update(_secondary_tfvars(master_count, nodes_details))
 
+    log.info('tfvars: %s', tfvars)
+
     with open(tfvars_json_file, "w") as _file:
         json.dump(tfvars, _file)
 
@@ -297,6 +299,8 @@ def nodes_flow(client, cluster_name, cluster, image_path):
     nodes_details = _create_node_details(cluster_name)
     if cluster:
         nodes_details["cluster_inventory_id"] = cluster.id
+
+    log.info('nodes details: %s', nodes_details)
 
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     utils.recreate_folder(tf_folder)
