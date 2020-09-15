@@ -364,9 +364,6 @@ def main():
     internal_cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
     log.info('Cluster name: %s', internal_cluster_name)
 
-    image_folder = os.path.join(consts.BASE_IMAGE_FOLDER, internal_cluster_name)
-    log.info('Image folder: %s', image_folder)
-
     if args.managed_dns_domains:
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
 
@@ -382,7 +379,7 @@ def main():
 
     # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
-        utils.recreate_folder(image_folder)
+        utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
         client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
         )
@@ -397,7 +394,10 @@ def main():
                 ui_cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
 
-        image_path = os.path.join(image_folder, consts.IMAGE_NAME)
+        image_path = os.path.join(
+            consts.IMAGE_FOLDER,
+            f'{args.namespace}-installer-image.iso'
+        )
         client.generate_and_download_image(
             cluster_id=cluster.id,
             image_path=image_path,

@@ -240,10 +240,14 @@ def file_exists(file_path):
     return Path(file_path).exists()
 
 
-def recreate_folder(folder, with_chmod=True):
-    if os.path.exists(folder):
+def recreate_folder(folder, with_chmod=True, force_recreate=True):
+    is_exists = os.path.isdir(folder)
+    if is_exists and force_recreate:
         shutil.rmtree(folder)
-    os.makedirs(folder, exist_ok=True)
+        os.makedirs(folder, exist_ok=True)
+    elif not is_exists:
+        os.makedirs(folder, exist_ok=True)
+
     if with_chmod:
         run_command("chmod -R ugo+rx %s" % folder)
 
@@ -370,7 +374,7 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
 
 @contextmanager
 def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
-    logging.getLogger('filelock').setLevel(logging.INFO)
+    logging.getLogger('filelock').setLevel(logging.ERROR)
 
     lock = filelock.FileLock(filepath, timeout)
     try:

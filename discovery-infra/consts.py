@@ -3,8 +3,7 @@ import os
 
 TF_FOLDER = "build/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
-BASE_IMAGE_FOLDER = "/tmp/images"
-IMAGE_NAME = "installer-image.iso"
+IMAGE_FOLDER = "/tmp/images"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
 SSH_KEY = "ssh_key/key.pub"
 NODES_REGISTERED_TIMEOUT = 600
