@@ -55,15 +55,16 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
 )
 def _try_to_delete_nodes(tf_folder):
     log.info('Start running terraform delete')
-    utils.run_command_with_output(
-        f'cd {tf_folder} && '
-        'terraform destroy '
-        '-auto-approve '
-        '-input=false '
-        '-state=terraform.tfstate ' 
-        '-state-out=terraform.tfstate ' 
-        '-var-file=terraform.tfvars.json'
-    )
+    with utils.file_lock_context():
+        utils.run_command_with_output(
+            f'cd {tf_folder} && '
+            'terraform destroy '
+            '-auto-approve '
+            '-input=false '
+            '-state=terraform.tfstate ' 
+            '-state-out=terraform.tfstate ' 
+            '-var-file=terraform.tfvars.json'
+        )
 
 
 def _delete_virsh_resources(*filters):
