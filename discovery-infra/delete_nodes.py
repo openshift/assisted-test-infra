@@ -15,7 +15,7 @@ import virsh_cleanup
 from logger import log
 
 
-@utils.on_exception(message='Failed to delete cluster')
+@utils.on_exception(message='Failed to delete cluster', silent=True)
 def try_to_delete_cluster(namespace, tfvars):
     """ Try to delete cluster if assisted-service is up and such cluster
         exists.
