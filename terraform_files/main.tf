@@ -126,7 +126,7 @@ resource "libvirt_domain" "worker" {
 
   network_interface {
     network_name = var.libvirt_secondary_network_name
-    addresses  = [var.libvirt_secondary_master_ips[count.index]]
+    addresses  = [var.libvirt_secondary_worker_ips[count.index]]
   }
 
   boot_device{
