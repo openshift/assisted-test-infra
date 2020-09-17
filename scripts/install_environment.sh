@@ -67,14 +67,11 @@ function install_packages() {
     echo "Installing dnf packages"
     sudo dnf install -y make python3 python3-pip git jq bash-completion xinetd
     sudo systemctl enable --now xinetd
-
-    echo "Installing pip packages"
-    pip3 install filelock
 }
 
 function install_skipper() {
     echo "Installing skipper and adding ~/.local/bin to PATH"
-    pip3 install strato-skipper==1.22.0 --user
+    pip3 install strato-skipper==1.26.0 --user
 
     #grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
     #export PATH="$PATH:~/.local/bin"

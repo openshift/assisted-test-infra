@@ -118,12 +118,12 @@ start_minikube:
 	eval $(minikube docker-env)
 
 delete_minikube:
-	python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
+	skipper run python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 	minikube delete --all
 	skipper run discovery-infra/virsh_cleanup.py -m
 
 delete_minikube_profile:
-	python3 scripts/indexer.py --action del --namespace $(NAMESPACE) $(OC_FLAG)
+	skipper run python3 scripts/indexer.py --action del --namespace $(NAMESPACE) $(OC_FLAG)
 	minikube delete -p $(PROFILE)
 
 #############
