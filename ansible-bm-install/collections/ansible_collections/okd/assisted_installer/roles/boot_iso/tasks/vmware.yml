@@ -1,0 +1,30 @@
+---
+- name: Create a virtual machine to boot from the discovery ISO
+  community.vmware.vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    folder: "/{{ vcenter_datacenter }}/vm"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
+    validate_certs: no
+    guest_id: rhel8_64Guest
+    name: "{{ hostvars[item]['inventory_hostname'] }}"
+    state: poweredon
+    disk:
+    - size_gb: '{{ vcenter_vm_disk }}'
+      type: thin
+      datastore: '{{ vcenter_datastore }}'
+    hardware:
+      memory_mb: '{{ vcenter_vm_mem_mb }}'
+      num_cpus: '{{ vcenter_vm_cpu }}'
+      version: latest
+    cdrom:
+        - controller_number: 0
+          unit_number: 0
+          state: present
+          type: iso
+          iso_path: "[{{ vcenter_datastore }}] installer-image.iso"
+    networks:
+    - name: "{{ vcenter_network }}"
+  delegate_to: localhost

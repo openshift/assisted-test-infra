@@ -1,0 +1,44 @@
+---
+# tasks file for host_vmware_iso
+  - name: Remove the VMs if present to clear locks on mounted ISO
+    community.vmware.vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      folder: "/{{ vcenter_datacenter }}/vm"
+      datacenter: "{{ vcenter_datacenter }}"
+      validate_certs: no
+      cluster: "{{ vcenter_cluster }}"
+      state: absent
+      force: true
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+    ignore_errors: true
+    with_items:
+    - "{{ groups['masters'] }}"
+    - "{{ groups['workers'] | default([]) }}"
+    delegate_to: localhost
+    when: hostvars[item]['vendor'] == 'VMware'
+
+  - name: Check for Discovery ISO in {{ vcenter_datastore }}
+    community.vmware.vsphere_file:
+      host: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      datacenter: '{{ vcenter_datacenter }}'
+      datastore: '{{ vcenter_datastore }}'
+      path: "installer-image.iso"
+      validate_certs: no
+      state: absent
+    delegate_to: localhost
+
+  - name: Upload Discovery ISO to {{ vcenter_datastore }}
+    community.vmware.vsphere_copy:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      src: "{{ iso_image_location }}/installer-image.iso"
+      datacenter: '{{ vcenter_datacenter }}'
+      datastore: '{{ vcenter_datastore }}'
+      path: "installer-image.iso"
+      validate_certs: no
+    delegate_to: localhost

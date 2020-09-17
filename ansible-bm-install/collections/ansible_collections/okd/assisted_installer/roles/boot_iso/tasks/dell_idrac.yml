@@ -1,0 +1,11 @@
+---
+- name: Mount Live ISO, Boot into Live ISO (Dell 13G iDRAC8 and below)
+  block:
+    - name: Racadm container to mount and boot to discovery ISO
+      containers.podman.podman_container:
+        name: "{{ hostvars[item]['bmc_address'] }}-rac-image"
+        network: host
+        image: quay.io/dphillip/racadm-image
+        state: started
+        rm: true
+        command: ["-r", "{{ hostvars[item]['bmc_address'] }}", "-u", "{{ hostvars[item]['bmc_user'] }}", "-p", "{{ hostvars[item]['bmc_password'] }}", "-i", "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"]

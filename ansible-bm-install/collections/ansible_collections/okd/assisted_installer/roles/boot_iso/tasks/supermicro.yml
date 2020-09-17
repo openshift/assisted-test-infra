@@ -1,0 +1,85 @@
+---
+- name: Mount Live ISO, Boot into Live ISO (SuperMicro servers)
+  block:
+    - name: SuperMicro Power ON
+      community.general.redfish_command:
+        category: Systems
+        command: PowerOn
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+
+    - name: Unmount SuperMicro ISO
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/1/VM1/CfgCD/Actions/IsoConfig.UnMount"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: POST
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: {}
+        body_format: json
+        validate_certs: no
+        force_basic_auth: yes
+        return_content: yes
+
+    - name: Patching Host and Path for Mounting ISO
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/1/VM1/CfgCD"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: PATCH
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: "{\"Host\": \"{{ groups['assisted_installer'][0] }}\", \"Path\": \"\\\\share\\\\installer-image.iso\"}"
+        body_format: json
+        force_basic_auth: yes
+        validate_certs: no
+        return_content: yes
+
+    - name: Mount SuperMicro ISO
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/1/VM1/CfgCD/Actions/IsoConfig.Mount"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: POST
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: {}
+        body_format: json
+        validate_certs: no
+        force_basic_auth: yes
+        return_content: yes
+
+    - name: Set Boot for the SuperMicro
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Systems/1"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: PATCH
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: '{"Boot":{"BootSourceOverrideEnabled":"Once","BootSourceOverrideTarget":"UsbCd"}}'
+        body_format: json
+        force_basic_auth: yes
+        validate_certs: no
+        return_content: yes
+
+    - name: Restart the SuperMicro
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: POST
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: '{"ResetType": "ForceRestart"}'
+        body_format: json
+        force_basic_auth: yes
+        validate_certs: no
+        return_content: yes

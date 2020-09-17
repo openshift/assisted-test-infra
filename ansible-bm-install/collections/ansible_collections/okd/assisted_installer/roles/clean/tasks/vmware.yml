@@ -1,0 +1,32 @@
+---
+# tasks file for host_vmware_iso
+- name: Remove virtual machines from vSphere 
+  community.vmware.vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    folder: "/{{ vcenter_datacenter }}/vm"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
+    validate_certs: no
+    name: "{{ hostvars[item]['inventory_hostname'] }}"
+    state: absent
+    force: true
+  with_items:
+  - "{{ groups['masters'] }}"
+  - "{{ groups['workers'] | default([]) }}"
+  delegate_to: localhost
+  when: hostvars[item]['vendor'] == 'VMware'
+
+- name: Remove discovery ISO in {{ vcenter_datastore }} 
+  community.vmware.vsphere_file:
+    host: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ vcenter_datacenter }}'
+    datastore: '{{ vcenter_datastore }}'
+    path: "installer-image.iso"
+    validate_certs: no
+    state: absent
+    timeout: 30
+  delegate_to: localhost
