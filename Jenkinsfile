@@ -50,9 +50,9 @@ pipeline {
     }
 
     post {
-        failure {
+        always {
             script {
-                if (env.BRANCH_NAME == 'master') {
+                if ((env.BRANCH_NAME == 'master') && (currentBuild.currentResult == "ABORTED" || currentBuild.currentResult == "FAILURE")){
                     script {
                         def data = [text: "Attention! assisted-test-infra branch  test failed, see: ${BUILD_URL}"]
                         writeJSON(file: 'data.txt', json: data, pretty: 4)
@@ -60,9 +60,7 @@ pipeline {
                     sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
                 }
             }
-        }
 
-        always {
             sh '''
                 ip=$(minikube ip --profile ${PROFILE})
                 minikube_url=https://${ip}:8443
