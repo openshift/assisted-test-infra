@@ -9,9 +9,9 @@ function get_namespace_index() {
     namespace=$1
     oc_flag=${2:-}
 
-    index=$(python3 scripts/indexer.py --action set --namespace $namespace $oc_flag)
+    index=$(skipper run python3 scripts/indexer.py --action set --namespace $namespace $oc_flag)
     if [[ -z $index ]]; then
-        all_namespaces=$(python3 scripts/indexer.py --action list)
+        all_namespaces=$(skipper run python3 scripts/indexer.py --action list)
         echo "Maximum number of namespaces allowed are currently running: $all_namespaces"
         echo "Please remove an old namespace in order to create a new one, run:"
         echo "make delete_minikube_profile NAMESPACE=<namespace>"
