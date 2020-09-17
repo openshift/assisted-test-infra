@@ -6,8 +6,6 @@
     name: podman
     state: present
   become: yes
-  tags:
-  - host_iso
 
 - name: Enable Services (firewalld)
   service:
@@ -15,8 +13,6 @@
     state: started
     enabled: yes
   become: yes
-  tags:
-  - host_iso
 
 - name: Open port {{ webserver_port }}/tcp, zone public, for podman container
   firewalld:
@@ -26,8 +22,6 @@
     zone: "public"
     immediate: yes
   become: yes
-  tags:
-  - host_iso
 
 - name: Enable samba and samba-client for podman container
   firewalld:
@@ -40,8 +34,6 @@
     - "samba"
     - "samba-client"
   become: yes
-  tags:
-  - host_iso
 
 - name: Start RHCOS image cache container
   containers.podman.podman_container:
@@ -52,8 +44,6 @@
     volumes:
       - "{{ iso_image_location }}:/var/www/html:z"
   become: yes
-  tags:
-  - host_iso
 
 - name: Start samba container
   containers.podman.podman_container:
@@ -71,5 +61,7 @@
       - "445:445"
       - "139:139"
     command: ['-n', '-s', 'share;/share;yes;yes;yes;all;none;none;Shared_files', '-p', '-g', 'usershare allow guests = yes', '-g', 'map to guest = bad user', '-g', 'load printers = no', '-g', 'printcap cache time = 0', '-g', 'printing = bsd', '-g', 'printcap name = /dev/null', '-g','disable spoolss = yes', '-g', 'server min protocol = NT1']
-  tags:
-  - host_iso
+
+- name: Uploading Discovery ISO to VMware datastore
+  include_tasks: vmware.yml
+  when: vcenter_datastore is defined
