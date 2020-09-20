@@ -28,23 +28,47 @@ function install_libvirt() {
     sudo sed -i -e 's/#security_driver = "selinux"/security_driver = "none"/g' /etc/libvirt/qemu.conf
 
     if ! version_is_greater "$current_version" "$minimum_version"; then
-        echo "Adding --listen flag to libvirt"
-        sudo sed -i -e 's/#LIBVIRTD_ARGS="--listen"/LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
-        sudo systemctl restart libvirtd
+        add_libvirt_listen_flag
     else
-        echo "libvirtd version is greater then 5.5.x, starting libvirtd-tcp.socket"
-        sudo systemctl stop libvirtd
-        sudo systemctl restart libvirtd.socket
-        sudo systemctl enable --now libvirtd-tcp.socket
-        sudo systemctl start libvirtd-tcp.socket
-        sudo systemctl start libvirtd
+        start_and_enable_libvirtd_tcp_socket
     fi
 
     current_user=$(whoami)
     echo "Adding user ${current_user} to libvirt and qemu groups"
     sudo gpasswd -a $current_user libvirt
     sudo gpasswd -a $current_user qemu
+}
 
+function add_libvirt_listen_flag() {
+    if [[ -z $(sudo grep '#LIBVIRTD_ARGS="--listen"' /etc/sysconfig/libvirtd) ]]; then
+        return
+    fi
+    echo "Adding --listen flag to libvirt"
+    sudo sed -i -e 's/#LIBVIRTD_ARGS="--listen"/LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
+    sudo systemctl restart libvirtd
+}
+
+function start_and_enable_libvirtd_tcp_socket() {
+    if [[ $(is_libvirtd_tcp_socket_enabled_and_running) == "true" ]]; then
+        return
+    fi
+    echo "libvirtd version is greater then 5.5.x, starting libvirtd-tcp.socket"
+    sudo systemctl stop libvirtd
+    sudo systemctl restart libvirtd.socket
+    sudo systemctl enable --now libvirtd-tcp.socket
+    sudo systemctl start libvirtd-tcp.socket
+    sudo systemctl start libvirtd
+}
+
+function is_libvirtd_tcp_socket_enabled_and_running() {
+    libvirtd_tcp_status=$(sudo systemctl status libvirtd-tcp.socket)
+    if [[ -z $(echo $libvirtd_tcp_status | grep running) ]]; then
+        echo "false"
+    elseif [[ -z $(echo $libvirtd_tcp_status | grep enabled) ]]
+        echo "false"
+    else
+        echo "true"
+    fi
 }
 
 function install_runtime_container() {
