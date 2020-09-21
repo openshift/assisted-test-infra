@@ -78,10 +78,9 @@ def clean_networks(skip_list, resource_filter):
 
 
 def clean_virsh_resources(skip_list, resource_filter):
-    with utils.file_lock_context():
-        clean_domains(skip_list, resource_filter)
-        clean_pools(skip_list, resource_filter)
-        clean_networks(skip_list, resource_filter)
+    clean_domains(skip_list, resource_filter)
+    clean_pools(skip_list, resource_filter)
+    clean_networks(skip_list, resource_filter)
 
 
 def main(p_args):

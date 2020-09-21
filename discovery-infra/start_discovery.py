@@ -117,10 +117,9 @@ def create_nodes(
         tf_folder=tf_folder
     )
     log.info('Start running terraform')
-    with utils.file_lock_context():
-        return utils.run_command(
-            f'make _run_terraform CLUSTER_NAME={cluster_name}'
-        )
+    return utils.run_command(
+        f'make _run_terraform CLUSTER_NAME={cluster_name}'
+    )
 
 
 # Starts terraform nodes creation, waits till all nodes will get ip and will move to known status

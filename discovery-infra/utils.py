@@ -8,12 +8,10 @@ import shutil
 import subprocess
 from pathlib import Path
 from functools import wraps
-from contextlib import contextmanager
 
 import libvirt
 import waiting
 import requests
-import filelock
 import consts
 import oc_utils
 from logger import log
@@ -372,29 +370,6 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
     return decorator
 
 
-@contextmanager
-def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
-    logging.getLogger('filelock').setLevel(logging.ERROR)
-
-    lock = filelock.FileLock(filepath, timeout)
-    try:
-        lock.acquire()
-    except filelock.Timeout:
-        log.info(
-            'Deleting lock file: %s '
-            'since it exceeded timeout of: %d seconds',
-            filepath, timeout
-        )
-        os.unlink(filepath)
-        lock.acquire()
-
-    try:
-        yield
-    finally:
-        lock.release()
-
-
 def get_network_leases(network_name):
-    with file_lock_context():
-        net = conn.networkLookupByName(network_name)
-        return net.DHCPLeases()
+    net = conn.networkLookupByName(network_name)
+    return net.DHCPLeases()
