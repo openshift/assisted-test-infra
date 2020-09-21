@@ -87,7 +87,7 @@ PROFILE := $(or $(PROFILE),minikube)
 all: create_full_environment run_full_flow_with_install
 
 destroy: destroy_nodes delete_minikube_profile kill_port_forwardings
-	rm -rf build/terraform/*
+	rm -rf build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
 
 ###############
 # Environment #
@@ -131,9 +131,9 @@ delete_minikube_profile:
 #############
 
 copy_terraform_files:
-	mkdir -p build/terraform
-	FILE=build/terraform/terraform.tfvars.json
-	cp -r terraform_files/* build/terraform/;\
+	mkdir -p build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
+	FILE=build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)/terraform.tfvars.json
+	cp -r terraform_files/* build/terraform/$(CLUSTER_NAME)__$(NAMESPACE);\
 
 run_terraform: copy_terraform_files
 	skipper make $(SKIPPER_PARAMS) _run_terraform
