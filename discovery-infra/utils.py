@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import itertools
+import ipaddress
 import json
 import os
 import shlex
@@ -113,17 +114,44 @@ def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
     )
 
 
+def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
+    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
+    num_macs = len([mac for mac in hosts_macs if mac != ''])
+    return num_macs >= num_nodes
+
+
+def get_cluster_hosts_macs(client, cluster_id):
+    return client.get_hosts_id_with_macs(cluster_id)
+
+
 def get_cluster_hosts_with_mac(client, cluster_id, macs):
     return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
 
 
 def get_tfvars(tf_folder):
     tf_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
-    if not os.path.exists(tf_json_file):
-        raise Exception(f'{tf_json_file} does not exists')
     with open(tf_json_file) as _file:
         tfvars = json.load(_file)
     return tfvars
+
+
+def set_tfvars(tf_folder, tfvars_json):
+    tf_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    with open(tf_json_file, "w") as _file:
+        json.dump(tfvars_json, _file)
+
+
+def get_tf_main(tf_folder):
+    tf_file = os.path.join(tf_folder, consts.TF_MAIN_JSON_NAME)
+    with open(tf_file) as _file:
+        main_str = _file.read()
+    return main_str
+
+
+def set_tf_main(tf_folder, main_str):
+    tf_file = os.path.join(tf_folder, consts.TF_MAIN_JSON_NAME)
+    with open(tf_file, "w") as _file:
+        main_str = _file.write(main_str)
 
 
 def are_hosts_in_status(
@@ -398,3 +426,7 @@ def get_network_leases(network_name):
     with file_lock_context():
         net = conn.networkLookupByName(network_name)
         return net.DHCPLeases()
+
+
+def create_ip_address_list(node_count, starting_ip_addr):
+    return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]

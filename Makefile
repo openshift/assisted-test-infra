@@ -42,6 +42,10 @@ HTTPS_PROXY_URL := $(or $(HTTPS_PROXY_URL), "")
 NO_PROXY_VALUES := $(or $(NO_PROXY_VALUES), "")
 VIP_DHCP_ALLOCATION := $(or $(VIP_DHCP_ALLOCATION),yes)
 
+#day2 params
+API_VIP_IP := $(or $(API_VIP_IP),"")
+API_VIP_DNSNAME := $(or $(API_VIP_DNSNAME),"")
+
 # secrets
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
@@ -142,6 +146,10 @@ _run_terraform:
 		terraform init -plugin-dir=/root/.terraform.d/plugins/ && \
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
+_apply_terraform:
+		cd build/terraform/$(CLUSTER_NAME)__$(NAMESPACE) && \
+		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
+
 destroy_terraform:
 	skipper make $(SKIPPER_PARAMS) _destroy_terraform
 
@@ -204,6 +212,15 @@ deploy_nodes_with_install:
 
 deploy_nodes:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
+
+_deploy_day2_nodes:
+	discovery-infra/start_discovery.py -i $(ISO) -k '$(SSH_PUB_KEY)' -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -id $(CLUSTER_ID) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) --day2-cluster yes -avi $(API_VIP_IP) -avd $(API_VIP_DNSNAME) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS)
+
+deploy_day2_nodes:
+	skipper make $(SKIPPER_PARAMS) _deploy_day2_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
+
+deploy_day2_nodes_install:
+	skipper make $(SKIPPER_PARAMS) _deploy_day2_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in
 
 destroy_nodes:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) -cn $(CLUSTER_NAME) $(OC_PARAMS)'
