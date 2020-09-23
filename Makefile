@@ -87,7 +87,6 @@ PROFILE := $(or $(PROFILE),minikube)
 all: create_full_environment run_full_flow_with_install
 
 destroy: destroy_nodes delete_minikube_profile kill_port_forwardings
-	rm -rf build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
 
 ###############
 # Environment #
@@ -208,6 +207,7 @@ deploy_nodes:
 
 destroy_nodes:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) -cn $(CLUSTER_NAME) $(OC_PARAMS)'
+	rm -rf build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
 
 destroy_all_nodes:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all'
