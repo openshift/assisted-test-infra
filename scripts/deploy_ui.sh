@@ -11,7 +11,7 @@ export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export UI_PORT=$(( 6008 + $NAMESPACE_INDEX ))
 export PROFILE=${PROFILE:-assisted-installer}
 
-if [ "${NO_UI}" != "n" ]; then
+if [[ "${NO_UI}" != "n" || "${DEPLOY_TARGET}" != "minikube" ]]; then
     exit 0
 fi
 

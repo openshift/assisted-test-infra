@@ -298,6 +298,7 @@ def get_assisted_service_url_by_args(args, wait=True):
     else:
         get_url = get_local_assisted_service_url
         kwargs['profile'] = args.profile
+        kwargs['deploy_target'] = args.deploy_target
 
     return retry(
         tries=5 if wait else 1,
@@ -329,18 +330,23 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
     )
 
 
-def get_local_assisted_service_url(profile, namespace, service):
-    log.info('Getting minikube %s URL in %s namespace', service, namespace)
-    url, _, _ = run_command(
-        f'minikube  -p {profile} -n {namespace} service {service} --url'
-    )
-    if is_assisted_service_reachable(url):
-        return url
+def get_local_assisted_service_url(profile, namespace, service, deploy_target):
+    if deploy_target == "podman-localhost":
+        assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
+        return f'http://{assisted_hostname_or_ip}:8090'
+    else:
+        # default deploy target is minikube
+        log.info('Getting minikube %s URL in %s namespace', service, namespace)
+        url, _, _ = run_command(
+            f'minikube  -p {profile} -n {namespace} service {service} --url'
+        )
+        if is_assisted_service_reachable(url):
+            return url
 
-    raise RuntimeError(
-        f'could not find any reachable url to {service} service '
-        f'in {namespace} namespace'
-    )
+        raise RuntimeError(
+            f'could not find any reachable url to {service} service '
+            f'in {namespace} namespace'
+        )
 
 
 def is_assisted_service_reachable(url):

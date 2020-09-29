@@ -32,6 +32,10 @@ function install_oc() {
     fi
 }
 
+if [ "${DEPLOY_TARGET}" != "minikube" ]; then
+    exit 0
+fi
+
 install_minikube
 install_kubectl
 install_oc

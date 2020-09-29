@@ -77,8 +77,10 @@ endif
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integration.openshiftapps.com)
+# minikube profile is used to manage multiple minikube instances
 PROFILE := $(or $(PROFILE),minikube)
 OPENSHIFT_INSTALL_RELEASE_IMAGE := $(or $(OPENSHIFT_INSTALL_RELEASE_IMAGE), "quay.io/ocpmetal/ocp-release:4.6.0-0.nightly-2020-08-31-220837")
+DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 
 .EXPORT_ALL_VARIABLES:
 
@@ -91,7 +93,7 @@ OPENSHIFT_INSTALL_RELEASE_IMAGE := $(or $(OPENSHIFT_INSTALL_RELEASE_IMAGE), "qua
 
 all: create_full_environment run_full_flow_with_install
 
-destroy: destroy_nodes delete_minikube_profile kill_port_forwardings
+destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost
 
 ###############
 # Environment #
@@ -129,6 +131,13 @@ delete_minikube:
 delete_minikube_profile:
 	skipper run python3 scripts/indexer.py --action del --namespace $(NAMESPACE) $(OC_FLAG)
 	minikube delete -p $(PROFILE)
+
+####################
+# Podman localhost #
+####################
+
+delete_podman_localhost:
+	make -C assisted-service/ clean-onprem
 
 #############
 # Terraform #
@@ -206,7 +215,7 @@ install_cluster:
 #########
 
 _deploy_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS)
+	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nM $(NETWORK_MTU) -ov $(OPENSHIFT_VERSION) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) --deploy-target $(DEPLOY_TARGET) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS)
 
 deploy_nodes_with_install:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=-in $(SKIPPER_PARAMS)
