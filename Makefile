@@ -74,6 +74,7 @@ endif
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integration.openshiftapps.com)
 PROFILE := $(or $(PROFILE),minikube)
+OPENSHIFT_INSTALL_RELEASE_IMAGE := $(or $(OPENSHIFT_INSTALL_RELEASE_IMAGE), "quay.io/ocpmetal/ocp-release:4.6.0-0.nightly-2020-08-31-220837")
 
 .EXPORT_ALL_VARIABLES:
 
