@@ -5,10 +5,10 @@ export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
 
 function version_is_greater() {
-    if [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]; then
+    if [ "$(head -n1 <(printf '%s\n' "$2" "$1" | sort -V))" = "$2" ]; then
         return
     fi
-    echo $(printf '%s\n' "$2" "$1" | sort -V | head -n1)
+    echo "$(head -n1 <(printf '%s\n' "$2" "$1" | sort -V))"
     false
 }
 
@@ -76,7 +76,7 @@ function install_runtime_container() {
     if ! [ -x "$(command -v docker)" ] && ! [ -x "$(command -v podman)" ]; then
         sudo dnf install podman -y
     elif [ -x "$(command -v podman)" ]; then
-        current_version="$(podman version | head -n 1 | awk '{print $2}')"
+        current_version="$(head -n1 <(podman version) | awk '{print $2}')"
         minimum_version="1.6.4"
         if ! version_is_greater "$current_version" "$minimum_version"; then
             sudo dnf install podman-$minimum_version -y

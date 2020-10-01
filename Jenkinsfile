@@ -64,17 +64,19 @@ pipeline {
 
         always {
             script {
-                ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
-                minikube_url = "https://${ip}:8443"
+                try {
+                    ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
+                    minikube_url = "https://${ip}:8443"
 
-                sh "kubectl --server=${minikube_url} get pods -A"
+                    sh "kubectl --server=${minikube_url} get pods -A"
 
 
-                for (service in ["assisted-service","postgres","scality","createimage"]) {
-                    sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
+                    for (service in ["assisted-service","postgres","scality","createimage"]) {
+                        sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
+                    }
+                } finally {
+                    sh "make destroy"
                 }
-
-                sh "make destroy"
             }
 
             archiveArtifacts artifacts: '*.log', fingerprint: true
