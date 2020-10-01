@@ -79,6 +79,14 @@ class InventoryClient(object):
         result = self.client.register_cluster(new_cluster_params=cluster)
         return result
 
+    def create_day2_cluster(self, name, cluster_uuid, **cluster_params):
+        cluster = models.AddHostsClusterCreateParams(
+            name=name, id=cluster_uuid, **cluster_params
+            )
+        log.info("Creating day 2 cluster with params %s", cluster.__dict__)
+        result = self.client.register_add_hosts_cluster(new_add_hosts_cluster_params=cluster)
+        return result
+
     def get_cluster_hosts(self, cluster_id):
         log.info("Getting registered nodes for cluster %s", cluster_id)
         return self.client.list_hosts(cluster_id=cluster_id)
@@ -128,6 +136,14 @@ class InventoryClient(object):
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=hosts
         )
+
+    def set_pull_secret(self, cluster_id, pull_secret):
+        log.info(
+            "Setting pull secret for cluster %s", cluster_id
+        )
+        update_params = models.ClusterUpdateParams(pull_secret=pull_secret)
+        return self.client.update_cluster(
+            cluster_id=cluster_id, cluster_update_params=update_params)
 
     def update_cluster(self, cluster_id, update_params):
         log.info("Updating cluster %s with params %s", cluster_id, update_params)
@@ -187,6 +203,10 @@ class InventoryClient(object):
     def install_cluster(self, cluster_id):
         log.info("Installing cluster %s", cluster_id)
         return self.client.install_cluster(cluster_id=cluster_id)
+
+    def install_day2_cluster(self, cluster_id):
+        log.info("Installing day2 cluster %s", cluster_id)
+        return self.client.install_hosts(cluster_id=cluster_id)
 
     def download_host_logs(self, cluster_id, host_id, output_file):
         log.info("Downloading logs to %s", output_file)

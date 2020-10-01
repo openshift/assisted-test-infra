@@ -4,6 +4,9 @@ import os
 TF_FOLDER = "build/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
 IMAGE_FOLDER = "/tmp/images"
+TF_MAIN_JSON_NAME = "main.tf"
+BASE_IMAGE_FOLDER = "/tmp/images"
+IMAGE_NAME = "installer-image.iso"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
 SSH_KEY = "ssh_key/key.pub"
 NODES_REGISTERED_TIMEOUT = 600
@@ -33,6 +36,7 @@ class NodesStatus:
     INSTALLED = "installed"
     ERROR = "error"
     PENDING_FOR_INPUT = "pending-for-input"
+    DAY2_INSTALLED = "day2-installed"
 
 
 class ClusterStatus:

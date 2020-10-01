@@ -20,13 +20,9 @@ import consts
 import install_cluster
 import utils
 import oc_utils
+import day2
 import waiting
 from logger import log
-
-
-# Creates ip list, if will be needed in any other place, please move to utils
-def _create_ip_address_list(node_count, starting_ip_addr):
-    return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 
 
 # Filling tfvars json files with terraform needed variables to spawn vms
@@ -57,10 +53,10 @@ def fill_tfvars(
     master_count = min(master_count, consts.NUMBER_OF_MASTERS)
     tfvars['image_path'] = image_path
     tfvars['master_count'] = master_count
-    tfvars['libvirt_master_ips'] = _create_ip_address_list(
+    tfvars['libvirt_master_ips'] = utils.create_ip_address_list(
         master_count, starting_ip_addr=master_starting_ip
     )
-    tfvars['libvirt_worker_ips'] = _create_ip_address_list(
+    tfvars['libvirt_worker_ips'] = utils.create_ip_address_list(
         nodes_details['worker_count'], starting_ip_addr=worker_starting_ip
     )
     tfvars['api_vip'] = _get_vips_ips()[0]
@@ -88,11 +84,11 @@ def _secondary_tfvars(master_count, nodes_details):
         + int(master_count)
     )
     return {
-        'libvirt_secondary_worker_ips': _create_ip_address_list(
+        'libvirt_secondary_worker_ips': utils.create_ip_address_list(
             nodes_details['worker_count'],
             starting_ip_addr=secondary_worker_starting_ip
         ),
-        'libvirt_secondary_master_ips': _create_ip_address_list(
+        'libvirt_secondary_master_ips': utils.create_ip_address_list(
             master_count,
             starting_ip_addr=secondary_master_starting_ip
         )
@@ -211,7 +207,7 @@ def _get_vips_ips():
         )
         + 100
     )
-    ips = _create_ip_address_list(
+    ips = utils.create_ip_address_list(
         2, starting_ip_addr=str(ipaddress.ip_address(network_subnet_starting_ip))
     )
     return ips[0], ips[1]
@@ -357,13 +353,9 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             validate_dns(client, cluster.id)
 
 
-def main():
+def execute_day1_flow(internal_cluster_name):
     client = None
     cluster = {}
-
-    internal_cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-    log.info('Cluster name: %s', internal_cluster_name)
-
     if args.managed_dns_domains:
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
 
@@ -377,7 +369,6 @@ def main():
 
     image_path = None
 
-    # If image is passed, there is no need to create cluster and download image, need only to spawn vms with is image
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
         client = assisted_service_api.create_client(
@@ -413,6 +404,16 @@ def main():
                 return
             log.info('deleting iso: %s', image_path)
             os.unlink(image_path)
+
+
+def main():
+    internal_cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    log.info('Cluster name: %s', internal_cluster_name)
+
+    if args.day2_cluster:
+        day2.execute_day2_flow(internal_cluster_name, args)
+    else:
+        execute_day1_flow(internal_cluster_name)
 
 
 if __name__ == "__main__":
@@ -603,6 +604,24 @@ if __name__ == "__main__":
         help='If set, do not delete generated iso at the end of discovery',
         action='store_true',
         default=False
+    )
+    parser.add_argument(
+        "--day2-cluster",
+        type=distutils.util.strtobool,
+        nargs='?',
+        const=False,
+        default=False,
+        help="day 2 cluster creation"
+    )
+    parser.add_argument(
+        "-avd", "--api-vip-dnsname",
+        help="api vip dns name",
+        type=str
+    )
+    parser.add_argument(
+        "-avi", "--api-vip-ip",
+        help="api vip ip",
+        type=str
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
