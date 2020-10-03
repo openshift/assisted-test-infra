@@ -12,17 +12,15 @@ def set_cluster_pull_secret(client, cluster_id, pull_secret):
     client.set_pull_secret(cluster_id, pull_secret)
 
 
-def execute_day2_flow(internal_cluster_name, args):
+def execute_day2_flow(cluster_name, args):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
     client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
             )
     cluster_id = str(uuid.uuid4())
-    random_postfix = cluster_id[:8]
-    ui_cluster_name = internal_cluster_name + f'-{random_postfix}'
     cluster = client.create_day2_cluster(
-            ui_cluster_name, cluster_id, **_day2_cluster_create_params(args)
-            )
+        cluster_name, cluster_id, **_day2_cluster_create_params(args)
+    )
 
     set_cluster_pull_secret(client, cluster_id, args.pull_secret)
 
@@ -36,7 +34,17 @@ def execute_day2_flow(internal_cluster_name, args):
             ssh_key=args.ssh_key,
             )
 
-    day2_nodes_flow(client, internal_cluster_name, cluster, image_path, args.number_of_workers, args.api_vip_ip, args.api_vip_dnsname, args.namespace, args.install_cluster)
+    day2_nodes_flow(
+        client,
+        cluster_name,
+        cluster,
+        image_path,
+        args.number_of_workers,
+        args.api_vip_ip,
+        args.api_vip_dnsname,
+        args.namespace,
+        args.install_cluster
+    )
 
 
 def day2_nodes_flow(client, cluster_name, cluster, image_path, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace, install_cluster_flag):
