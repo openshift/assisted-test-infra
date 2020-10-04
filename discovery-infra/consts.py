@@ -36,7 +36,7 @@ class NodesStatus:
     INSTALLED = "installed"
     ERROR = "error"
     PENDING_FOR_INPUT = "pending-for-input"
-    DAY2_INSTALLED = "day2-installed"
+    DAY2_INSTALLED = "added-to-existing-cluster"
 
 
 class ClusterStatus:
