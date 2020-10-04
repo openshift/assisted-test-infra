@@ -16,7 +16,7 @@ function set_dns() {
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
     fi
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
-    echo "server=/api.${CLUSTER_NAME}.${BASE_DOMAIN}/${API_VIP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
+    echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${API_VIP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     sudo systemctl reload NetworkManager
 
     echo "Finished setting dns"

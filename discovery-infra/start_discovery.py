@@ -353,7 +353,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             validate_dns(client, cluster.id)
 
 
-def execute_day1_flow(internal_cluster_name):
+def execute_day1_flow(cluster_name):
     client = None
     cluster = {}
     if args.managed_dns_domains:
@@ -377,12 +377,9 @@ def execute_day1_flow(internal_cluster_name):
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
-            random_postfix = str(uuid.uuid4())[:8]
-            ui_cluster_name = internal_cluster_name + f'-{random_postfix}'
-            log.info('Cluster name on UI: %s', ui_cluster_name)
-
             cluster = client.create_cluster(
-                ui_cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params()
+                cluster_name,
+                ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
 
         image_path = os.path.join(
@@ -398,7 +395,7 @@ def execute_day1_flow(internal_cluster_name):
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
         try:
-            nodes_flow(client, internal_cluster_name, cluster, args.image or image_path)
+            nodes_flow(client, cluster_name, cluster, args.image or image_path)
         finally:
             if not image_path or args.keep_iso:
                 return
@@ -407,13 +404,13 @@ def execute_day1_flow(internal_cluster_name):
 
 
 def main():
-    internal_cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-    log.info('Cluster name: %s', internal_cluster_name)
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    log.info('Cluster name: %s', cluster_name)
 
     if args.day2_cluster:
-        day2.execute_day2_flow(internal_cluster_name, args)
+        day2.execute_day2_flow(cluster_name, args)
     else:
-        execute_day1_flow(internal_cluster_name)
+        execute_day1_flow(cluster_name)
 
 
 if __name__ == "__main__":
