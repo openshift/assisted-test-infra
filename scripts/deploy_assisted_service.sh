@@ -8,7 +8,7 @@ export SERVICE_URL=$(get_main_ip)
 export ENABLE_AUTH=${ENABLE_AUTH:-false}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
-export SERVICE_BASE_URL="http://${SERVICE_URL}:${SERVICE_PORT}"
+export SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${SERVICE_PORT}"}
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export PROFILE=${PROFILE:-assisted-installer}
 
