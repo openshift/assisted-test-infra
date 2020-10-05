@@ -22,6 +22,20 @@ resource "libvirt_volume" "worker" {
   size           =  var.libvirt_worker_disk
 }
 
+resource "libvirt_volume" "secondary_master" {
+  count          = var.master_count
+  name           = "${var.cluster_name}-secondary-master-${count.index}"
+  pool           = libvirt_pool.storage_pool.name
+  size           =  var.libvirt_master_secondary_disk
+}
+
+resource "libvirt_volume" "secondary_worker" {
+  count          = var.worker_count
+  name           = "${var.cluster_name}-secondary-worker-${count.index}"
+  pool           = libvirt_pool.storage_pool.name
+  size           =  var.libvirt_worker_secondary_disk
+}
+
 resource "libvirt_network" "net" {
   name = var.libvirt_network_name
   mode   = "nat"
@@ -61,6 +75,10 @@ resource "libvirt_domain" "master" {
     volume_id = element(libvirt_volume.master.*.id, count.index)
 
   }
+  disk {
+    volume_id = element(libvirt_volume.secondary_master.*.id, count.index)
+  }
+
   disk {
     file = var.image_path
   }
@@ -102,6 +120,10 @@ resource "libvirt_domain" "worker" {
 
   disk {
     volume_id = element(libvirt_volume.worker.*.id, count.index)
+  }
+
+  disk {
+    volume_id = element(libvirt_volume.secondary_worker.*.id, count.index)
   }
 
   disk {

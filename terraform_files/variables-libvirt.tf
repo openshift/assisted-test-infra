@@ -144,3 +144,14 @@ variable "running" {
 variable "cluster_inventory_id" {
   type      = string
 }
+variable "libvirt_master_secondary_disk" {
+  type        = string
+  description = "Secondary disk size in bytes allocated to master"
+  default     = "128849018880"
+}
+
+variable "libvirt_worker_secondary_disk" {
+  type        = string
+  description = "Secondary disk size in bytes allocated to worker"
+  default     = "128849018880"
+}
