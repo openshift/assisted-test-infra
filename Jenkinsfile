@@ -10,7 +10,7 @@ pipeline {
         string(name: 'SERVICE_REPO', defaultValue: 'https://github.com/openshift/assisted-service', description: 'assisted service repository')
         string(name: 'IGNITION_GENERATE_IMAGE', defaultValue: '', description: 'assisted-ignition-generator image')
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
-        string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE', defaultValue: 'quay.io/ocpmetal/ocp-release:4.6.0-0.nightly-2020-08-31-220837', description: 'OCP Release Image from ocpmetal repository in Quay.io')
+        string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE', defaultValue: '', description: 'OCP Release Image from ocpmetal repository in Quay.io')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
     }
