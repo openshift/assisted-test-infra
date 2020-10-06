@@ -620,6 +620,12 @@ if __name__ == "__main__":
         help="api vip ip",
         type=str
     )
+    parser.add_argument(
+        '--deploy-target',
+        help='Where assisted-service is deployed',
+        type=str,
+        default='minikube'
+    )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     if not args.pull_secret and args.install_cluster:

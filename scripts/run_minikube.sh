@@ -23,5 +23,9 @@ function init_minikube() {
     minikube start --driver=kvm2 --memory=8192 --cpus=4 --profile=${PROFILE} --force
 }
 
+if [ "${DEPLOY_TARGET}" != "minikube" ]; then
+    exit 0
+fi
+
 configure_minikube
 as_singleton init_minikube

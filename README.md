@@ -98,6 +98,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OCM_CLIENT_SECRET        | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
 | OCM_BASE_URL             | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com |
 | REMOTE_SERVICE_URL | URL to remote assisted-service - run infra on existing deployment |
+| DEPLOY_TARGET            | Specifies where assisted-service will be deployed. Defaults to "minikube". "podman-localhost" will deploy assisted-service in a pod on the localhost. |
+| ASSISTED_SERVICE_HOST    | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="podman-localhost". |
 
 ## Instructions
 
@@ -286,8 +288,37 @@ Assisted-test-infra builds an image including all the prerequisites to handle th
 make image_build
 ```
 
-# In case you would like to build the image with a different `assisted-service` client
+## In case you would like to build the image with a different `assisted-service` client
 
 ```bash
 make image_build SERVICE=<assisted service image URL>
 ```
+
+## On-prem
+
+To test on-prem in the e2e flow, two additonal environment variables need to be set:
+
+```
+export DEPLOY_TARGET=podman-localhost
+export ASSISTED_SERVICE_HOST=<fqdn-or-ip>
+```
+
+Setting DEPLOY_TARGET to "podman-localhost" configures assisted-test-infra to deploy
+the assisted-service using a pod on your local host.
+
+ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "podman-localhost" deployments, set it to the FQDN or IP address of the host.
+
+Then run the same commands described in the instructions above to execute the test.
+
+To run the full flow:
+
+```
+make all 
+```
+
+To cleanup after the full flow:
+
+```
+make destroy
+```
+
