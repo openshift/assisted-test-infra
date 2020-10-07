@@ -8,7 +8,8 @@ The purpose of this playbook is to provided an automated fashion to create, moun
 * The assisted_installer node used by the playbook must be able to `ping` the OpenShift cluster nodes
 
 === Supports
-* DELL servers with iDRAC9 or higher
+* DELL servers with iDRAC9 using redfish
+* DELL servers with iDRAC8 and below using racadm
 * HPE servers
 * VMs
 * Systems with an existing OS with `ssh` access

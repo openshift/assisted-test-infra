@@ -1,0 +1,21 @@
+---
+- name: Discover iDRAC version and use appropriate image mounting method
+  block:
+    - name: Discovery iDRAC versions for Dell hardware
+      containers.podman.podman_container:
+        name: "{{ hostvars[item]['bmc_address'] }}-rac-version"
+        network: host
+        image: quay.io/dphillip/racadm-image
+        state: started
+        detach: false
+        rm: true
+        command: ["-v", "-r", "{{ hostvars[item]['bmc_address'] }}", "-u", "{{ hostvars[item]['bmc_user'] }}", "-p", "{{ hostvars[item]['bmc_password'] }}", "-i", "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"]
+      register: drac_version
+
+- name: Using iDRAC ISO method for 13G and below 
+  include_tasks: dell_idrac.yml
+  when: drac_version.stdout_lines | int <= 13 
+
+- name: Using iDRAC ISO method for 13G and below 
+  include_tasks: dell_redfish.yml
+  when: drac_version.stdout_lines | int > 13 

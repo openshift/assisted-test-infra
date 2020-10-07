@@ -1,0 +1,24 @@
+---
+- name: Mount Live ISO, Boot into Live ISO (HPE servers)
+  block:
+    - name: HPE poweroff system
+      hpilo_boot:
+        host: "{{ hostvars[item]['bmc_address'] }}"
+        login: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        state: "poweroff"
+
+    - name: HPE disconnect existing Virtual Media
+      hpilo_boot:
+        host: "{{ hostvars[item]['bmc_address'] }}"
+        login: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        state: "disconnect"
+
+    - name: HPE task to boot a system using an ISO
+      hpilo_boot:
+        host: "{{ hostvars[item]['bmc_address'] }}"
+        login: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        image: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+        media: cdrom

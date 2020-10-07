@@ -1,0 +1,59 @@
+---
+- name: Mount Live ISO, Boot into Live ISO (Dell iDRAC9+ only)
+  block:
+    - name: DELL Power ON
+      community.general.redfish_command:
+        category: Systems
+        command: PowerOn
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+
+    - name: Set Dell OneTimeBoot VirtualCD
+      uri:
+        url: "https://{{ hostvars[item]['bmc_address'] }}/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration"
+        user: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        method: POST
+        headers:
+          content-type: application/json
+          Accept: application/json
+        body: {"ShareParameters":{"Target":"ALL"},"ImportBuffer":"<SystemConfiguration><Component FQDD=\"iDRAC.Embedded.1\"><Attribute Name=\"ServerBoot.1#BootOnce\">Enabled</Attribute><Attribute Name=\"ServerBoot.1#FirstBootDevice\">VCD-DVD</Attribute></Component></SystemConfiguration>"}
+        body_format: json
+        validate_certs: no
+        status_code: 202
+        return_content: yes
+
+    - name: DELL Eject Virtual Media (if any)
+      community.general.redfish_command:
+        category: Manager
+        command: VirtualMediaEject
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        virtual_media:
+          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+        resource_id: iDRAC.Embedded.1
+      ignore_errors: yes
+
+    - name: DELL Insert Virtual Media
+      community.general.redfish_command:
+        category: Manager
+        command: VirtualMediaInsert
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"
+        virtual_media:
+          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+          media_types:
+          - CD
+          - DVD
+        resource_id: iDRAC.Embedded.1
+
+    - name: DELL Restart system power gracefully
+      community.general.redfish_command:
+        category: Systems
+        command: PowerGracefulRestart
+        baseuri: "{{ hostvars[item]['bmc_address'] }}"
+        username: "{{ hostvars[item]['bmc_user'] }}"
+        password: "{{ hostvars[item]['bmc_password'] }}"

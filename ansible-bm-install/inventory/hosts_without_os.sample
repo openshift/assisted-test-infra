@@ -23,6 +23,17 @@ openshift_version="4.5"
 # (Optional) Assign specific Cluster ID
 #cluster_id=""
 
+# (Optional) Assign Proxy URL
+#proxy_url=""
+
+# Inventory to create VMware VMs
+#vcenter_hostname="vcsa67.example.com"
+#vcenter_username="administrator@vsphere.local"
+#vcenter_password="password"
+#vcenter_datacenter="datacenter-name"
+#vcenter_datastore="datastore-name"
+#vcenter_cluster="cluster-name"
+
 [assisted_installer]
 assisted-installer.example.com
 
@@ -32,6 +43,9 @@ assisted-installer.example.com
 master-0 role=master bmc_user=admin bmc_password=password bmc_address=192.168.1.1 vendor=Dell
 master-1 role=master bmc_user=admin bmc_password=password bmc_address=192.168.1.2 vendor=Dell
 master-2 role=master bmc_user=admin bmc_password=password bmc_address=192.168.1.3 vendor=Dell
+# master-0 role=master vendor=VMware
+# master-1 role=master vendor=VMware
+# master-2 role=master vendor=VMware
 
 # Worker nodes
 [workers]
