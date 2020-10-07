@@ -64,7 +64,9 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
         )
     finally:
-        download_logs_from_all_hosts(client=client, cluster_id=cluster.id)
+        output_folder = f'build/{cluster.id}'
+        utils.recreate_folder(output_folder)
+        download_logs_from_all_hosts(client=client, cluster_id=cluster.id, output_folder=output_folder)
 
 
 # Runs installation flow :
@@ -112,12 +114,10 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
     )
 
 
-def download_logs_from_all_hosts(client, cluster_id):
-    output_folder = f'build/{cluster_id}'
-    utils.recreate_folder(output_folder)
+def download_logs_from_all_hosts(client, cluster_id, output_folder):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
     for host in hosts:
-        output_file = os.path.join(output_folder, f'{host["id"]}_logs.tar.gz')
+        output_file = os.path.join(output_folder, f'host_{host["id"]}.tar.gz')
         waiting.wait(
             lambda: client.download_host_logs(cluster_id=cluster_id,
                                               host_id=host["id"],

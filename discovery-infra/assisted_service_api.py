@@ -23,6 +23,7 @@ class InventoryClient(object):
 
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
+        self.events = api.EventsApi(api_client=self.api)
 
     def set_config_auth(self, c):
         offline_token = os.environ.get('OFFLINE_TOKEN', "")
@@ -208,8 +209,25 @@ class InventoryClient(object):
         log.info("Installing day2 cluster %s", cluster_id)
         return self.client.install_hosts(cluster_id=cluster_id)
 
+    def download_cluster_logs(self, cluster_id, output_file):
+        log.info("Downloading cluster logs to %s", output_file)
+        response = self.client.download_cluster_logs(
+            cluster_id=cluster_id, _preload_content=False
+        )
+        with open(output_file, "wb") as _file:
+            _file.write(response.data)
+
+    def download_cluster_events(self, cluster_id, output_file):
+        log.info("Downloading cluster events to %s", output_file)
+        response = self.events.list_events(
+            cluster_id=cluster_id, _preload_content=False
+        )
+
+        with open(output_file, "wb") as _file:
+            _file.write(json.dumps(json.loads(response.data), indent=4).encode())
+
     def download_host_logs(self, cluster_id, host_id, output_file):
-        log.info("Downloading logs to %s", output_file)
+        log.info("Downloading host logs to %s", output_file)
         response = self.client.download_host_logs(
             cluster_id=cluster_id, host_id=host_id, _preload_content=False
         )

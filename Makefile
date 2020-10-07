@@ -260,6 +260,12 @@ deploy_monitoring: bring_assisted_service
 delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forwardings
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
 
+_download_logs:
+	discovery-infra/download_logs.py $(REMOTE_SERVICE_URL) $(LOGS_DEST) --cluster-id $(CLUSTER_ID)
+
+download_logs:
+	skipper make $(SKIPPER_PARAMS) _download_logs
+
 
 #######
 # ISO #
