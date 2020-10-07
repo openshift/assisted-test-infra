@@ -239,6 +239,33 @@ def wait_till_all_hosts_are_in_status(
         log.info("All nodes: %s", hosts)
         raise
 
+def wait_till_at_least_one_host_is_in_status(
+    client,
+    cluster_id,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
+):
+    log.info("Wait till 1 node is in one of the statuses %s", statuses)
+
+    try:
+        waiting.wait(
+            lambda: are_hosts_in_status(
+                client.get_cluster_hosts(cluster_id),
+                1,
+                statuses,
+                fall_on_error_status,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Node to be in of the statuses %s" % statuses,
+        )
+    except:
+        hosts = client.get_cluster_hosts(cluster_id)
+        log.info("All nodes: %s", hosts)
+        raise
+
 
 def wait_till_cluster_is_in_status(
     client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
@@ -246,7 +273,11 @@ def wait_till_cluster_is_in_status(
     log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
     try:
         waiting.wait(
-            lambda: client.cluster_get(cluster_id).status in statuses,
+            lambda: is_cluster_in_status(
+                client=client, 
+                cluster_id=cluster_id, 
+                statuses=statuses
+            ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
             waiting_for="Cluster to be in status %s" % statuses,
@@ -254,6 +285,13 @@ def wait_till_cluster_is_in_status(
     except:
         log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
+
+def is_cluster_in_status(client, cluster_id, statuses):
+    log.info("Is cluster %s in status %s", cluster_id, statuses)
+    try:
+        return client.cluster_get(cluster_id).status in statuses
+    except:
+        log.exception("Failed to get cluster %s info", cluster_id)
 
 
 def folder_exists(file_path):
@@ -436,3 +474,15 @@ def get_network_leases(network_name):
 
 def create_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
+
+def set_hosts_roles_based_on_requested_name(client, cluster_id):
+    hosts = client.get_cluster_hosts(cluster_id=cluster_id)
+    hosts_with_roles = []
+
+    for host in hosts:
+        role = consts.NodeRoles.MASTER if "master" in host["requested_hostname"] else consts.NodeRoles.WORKER
+        hosts_with_roles.append({"id": host["id"], "role": role})
+    
+    client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
+
+

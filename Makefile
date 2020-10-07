@@ -294,3 +294,9 @@ lint:
 
 _lint:
 	pre-commit run --all-files
+
+test:
+	skipper make _test
+
+_test:
+	python3 -m pytest discovery-infra/tests --verbose -s
