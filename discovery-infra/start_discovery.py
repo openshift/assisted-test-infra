@@ -402,17 +402,20 @@ def execute_day1_flow(cluster_name):
             log.info('deleting iso: %s', image_path)
             os.unlink(image_path)
 
+    return cluster.id
+
 
 def main():
     cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
     log.info('Cluster name: %s', cluster_name)
 
+    cluster_id = args.cluster_id
+    if args.day1_cluster:
+        cluster_id = execute_day1_flow(cluster_name)
     if args.day2_cluster:
-        day2.execute_day2_flow(cluster_name, args)
-    else:
-        execute_day1_flow(cluster_name)
+        day2.execute_day2_flow(cluster_id, args)
 
-
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run discovery flow")
     parser.add_argument(
@@ -462,6 +465,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-nw", "--number-of-workers", help="Workers count to spawn", type=int, default=0
+    )
+    parser.add_argument(
+        "-ndw", "--number-of-day2-workers", help="Workers count to spawn", type=int, default=0
     )
     parser.add_argument(
         "-cn",
@@ -604,11 +610,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--day2-cluster",
-        type=distutils.util.strtobool,
-        nargs='?',
-        const=False,
-        default=False,
-        help="day 2 cluster creation"
+        help="day2 cluster",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--day1-cluster",
+        help="day1 cluster",
+        action="store_true",
     )
     parser.add_argument(
         "-avd", "--api-vip-dnsname",
