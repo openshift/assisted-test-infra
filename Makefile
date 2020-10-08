@@ -79,7 +79,6 @@ SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/p
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integration.openshiftapps.com)
 # minikube profile is used to manage multiple minikube instances
 PROFILE := $(or $(PROFILE),minikube)
-OPENSHIFT_INSTALL_RELEASE_IMAGE := $(or $(OPENSHIFT_INSTALL_RELEASE_IMAGE), "quay.io/ocpmetal/ocp-release:4.6.0-0.nightly-2020-08-31-220837")
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 
 .EXPORT_ALL_VARIABLES:
