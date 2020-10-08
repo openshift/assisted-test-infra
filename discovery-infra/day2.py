@@ -12,14 +12,19 @@ def set_cluster_pull_secret(client, cluster_id, pull_secret):
     client.set_pull_secret(cluster_id, pull_secret)
 
 
-def execute_day2_flow(cluster_name, args):
+def execute_day2_flow(ocp_cluster_id, args):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
     client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
-            )
+    )
+    ocp_cluster = client.cluster_get(cluster_id=ocp_cluster_id)
+    ocp_cluster_name = ocp_cluster.name
+    ocp_openshift_version = ocp_cluster.openshift_version
+    ocp_api_vip_dnsname = "api." + ocp_cluster_name + "." + ocp_cluster.base_dns_domain
+    ocp_api_vip_ip = ocp_cluster.api_vip
     cluster_id = str(uuid.uuid4())
     cluster = client.create_day2_cluster(
-        cluster_name, cluster_id, **_day2_cluster_create_params(args)
+        ocp_cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(ocp_openshift_version, ocp_api_vip_dnsname)
     )
 
     set_cluster_pull_secret(client, cluster_id, args.pull_secret)
@@ -36,12 +41,12 @@ def execute_day2_flow(cluster_name, args):
 
     day2_nodes_flow(
         client,
-        cluster_name,
+        ocp_cluster_name,
         cluster,
         image_path,
-        args.number_of_workers,
-        args.api_vip_ip,
-        args.api_vip_dnsname,
+        args.number_of_day2_workers,
+        ocp_api_vip_ip,
+        ocp_api_vip_dnsname,
         args.namespace,
         args.install_cluster
     )
@@ -132,9 +137,9 @@ def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_
     tfvars[worker_ip_type] = worker_ips_list
 
 
-def _day2_cluster_create_params(args):
+def _day2_cluster_create_params(openshift_version, api_vip_dnsname):
     params = {
-        "openshift_version": args.openshift_version,
-        "api_vip_dnsname": args.api_vip_dnsname,
+        "openshift_version": openshift_version,
+        "api_vip_dnsname": api_vip_dnsname,
     }
     return params
