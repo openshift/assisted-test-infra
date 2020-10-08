@@ -277,7 +277,7 @@ def recreate_folder(folder, with_chmod=True, force_recreate=True):
         os.makedirs(folder, exist_ok=True)
 
     if with_chmod:
-        run_command("chmod -R ugo+rx %s" % folder)
+        run_command("chmod -R ugo+rx '%s'" % folder)
 
 
 def get_assisted_service_url_by_args(args, wait=True):

@@ -1,0 +1,26 @@
+pipeline {
+    agent { label 'download_logs' }
+
+    parameters {
+        string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
+    }
+
+    triggers { cron('H/10 * * * *') }
+
+    environment {
+        SKIPPER_PARAMS = " "
+        OFFLINE_TOKEN = credentials('admin_offline_token')
+        LOGS_DEST = "build"
+    }
+    options {
+      timeout(time: 10, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Run') {
+            steps {
+                sh "make download_logs"
+            }
+        }
+    }
+}

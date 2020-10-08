@@ -11,4 +11,3 @@ retry==0.9.2
 tqdm==4.46.0
 waiting==1.4.1
 netaddr==0.8.0
-kubernetes==11.0.0
