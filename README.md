@@ -294,6 +294,21 @@ make image_build
 make image_build SERVICE=<assisted service image URL>
 ```
 
+## Test with Authentication
+
+To test with Authentication, the following additional environment variables are required:
+
+```
+export ENABLE_AUTH=true
+export OCM_CLIENT_ID=<SSO Service Account Name>
+export OCM_CLIENT_SECRET=<SSO Service Account Password>
+export OCM_URL=https://api.openshift.com
+export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
+```
+
+- UI is not available when Authentication is enabled.
+- The PULL_SECRET variable should be taken from the same Red Hat cloud environment as defined in OCM_URL (integration, stage or production).
+
 ## On-prem
 
 To test on-prem in the e2e flow, two additonal environment variables need to be set:
