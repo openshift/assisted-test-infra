@@ -192,6 +192,12 @@ if __name__ == "__main__":
         type=str,
         default='assisted-installer'
     )
+    parser.add_argument(
+        '--deploy-target',
+        help='Where assisted-service is deployed',
+        type=str,
+        default='minikube'
+    )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     main()
