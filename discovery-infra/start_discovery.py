@@ -6,7 +6,6 @@ import dns.resolver
 import ipaddress
 import json
 import os
-import pprint
 import time
 import uuid
 from functools import partial
@@ -157,8 +156,6 @@ def create_nodes_and_wait_till_registered(
         sleep_seconds=10,
         waiting_for="Nodes to be registered in inventory service",
     )
-    log.info("Registered nodes are:")
-    pprint.pprint(inventory_client.get_cluster_hosts(cluster.id))
 
 
 # Set nodes roles by vm name
@@ -338,8 +335,6 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             macs=macs,
             statuses=[consts.NodesStatus.KNOWN],
         )
-        log.info("Printing after setting roles")
-        pprint.pprint(client.get_cluster_hosts(cluster.id))
 
         if args.install_cluster:
             time.sleep(10)

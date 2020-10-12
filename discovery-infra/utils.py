@@ -252,7 +252,7 @@ def wait_till_cluster_is_in_status(
             waiting_for="Cluster to be in status %s" % statuses,
         )
     except:
-        log.info("Cluster: %s", client.cluster_get(cluster_id))
+        log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
 
 
