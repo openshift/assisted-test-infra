@@ -8,12 +8,12 @@ from argparse import ArgumentParser
 from contextlib import suppress
 
 from logger import log
-from utils import recreate_folder
+from utils import recreate_folder, run_command
 import assisted_service_client
 from assisted_service_api import create_client, InventoryClient
 
 FAILED_STATUSES = ["error"]
-TIME_FORMAT = '%Y-%m-%d:%H-%M-%S'
+TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 
 
 def main():
@@ -55,6 +55,8 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str):
 
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_logs(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar"))
+
+    run_command("chmod -R ugo+rx '%s'" % output_folder)
 
 
 def get_logs_output_folder(dest: str, cluster: dict):
