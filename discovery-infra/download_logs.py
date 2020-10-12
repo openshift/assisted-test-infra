@@ -6,6 +6,7 @@ from datetime import datetime
 from dateutil.parser import isoparse
 from argparse import ArgumentParser
 from contextlib import suppress
+from collections import Counter
 
 from logger import log
 from utils import recreate_folder, run_command
@@ -33,6 +34,8 @@ def main():
         for cluster in clusters:
             if should_download_logs(cluster):
                 download_logs(client, cluster, args.dest)
+
+        print(Counter(map(lambda cluster: cluster['status'], clusters)))
 
 
 def should_download_logs(cluster: dict):
