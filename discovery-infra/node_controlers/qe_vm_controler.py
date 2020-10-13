@@ -1,10 +1,9 @@
-import os
-import re
 import libvirt
 import utils
 
 import consts
-from  node_controlers.node_controler import NodeControler
+from node_controlers.node_controler import NodeControler
+
 
 class QeVmController(NodeControler):
 
@@ -41,7 +40,7 @@ class QeVmController(NodeControler):
     def start_node(self, node_name):
         node = self.libvirt_connection.lookupByName(node_name)
 
-        if node.isActive() == False:
+        if not node.isActive():
             node.create()
 
     def start_all_nodes(self):
