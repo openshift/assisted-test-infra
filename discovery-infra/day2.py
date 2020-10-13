@@ -1,11 +1,14 @@
 import os
+import json
 import ipaddress
 import time
+import subprocess
 import utils
 import waiting
 import uuid
 import assisted_service_api
 import consts
+from logger import log
 
 
 def set_cluster_pull_secret(client, cluster_id, pull_secret):
@@ -84,8 +87,12 @@ def day2_nodes_flow(client, cluster_name, cluster, image_path, num_worker_nodes,
     )
 
     if install_cluster_flag:
+        log.info("Start installing all known nodes in the cluster %s", cluster.id)
+        config_etc_hosts(api_vip_ip, api_vip_dnsname)
+        ocp_orig_ready_nodes = get_ocp_cluster_ready_nodes_num()
         client.install_day2_cluster(cluster.id)
 
+        log.info("Start waiting until all nodes of cluster %s have been installed( reached added-to-existing-clustertate)",  cluster.id)
         utils.wait_till_all_hosts_are_in_status(
             client=client,
             cluster_id=cluster.id,
@@ -95,6 +102,15 @@ def day2_nodes_flow(client, cluster_name, cluster, image_path, num_worker_nodes,
             ],
             interval=30,
         )
+
+        log.info("Start waiting until installed nodes has actually been added to the OCP cluster")
+        waiting.wait(
+            lambda: wait_nodes_join_ocp_cluster(ocp_orig_ready_nodes, num_worker_nodes),
+            timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
+            sleep_seconds=30,
+            waiting_for="Day2 nodes to be added to OCP cluster",
+        )
+        log.info("%d worker nodes were successfully added to OCP cluster", num_worker_nodes)
 
 
 def apply_day2_tf_configuration(cluster_name, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace):
@@ -135,6 +151,62 @@ def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_
         worker_starting_ip = ipaddress.ip_address(tfvars[worker_ip_type][-1])
     worker_ips_list = workers_ip_list + utils.create_ip_address_list(num_worker_nodes, worker_starting_ip + 1)
     tfvars[worker_ip_type] = worker_ips_list
+
+
+def wait_nodes_join_ocp_cluster(num_orig_nodes, num_new_nodes):
+    approve_workers_on_ocp_cluster()
+    return get_ocp_cluster_ready_nodes_num() == num_orig_nodes + num_new_nodes
+
+
+def approve_workers_on_ocp_cluster():
+    csrs = get_ocp_cluster_csrs()
+    for csr in csrs:
+        if not csr['status']:
+            csr_name = csr['metadata']['name']
+            ocp_cluster_csr_approve(csr_name)
+            log.info("CSR %s for node %s has been approved", csr_name, csr['spec']['username'])
+
+
+
+def config_etc_hosts(api_vip_ip, api_vip_dnsname):
+    with open("/etc/hosts", "r") as f:
+        hosts_lines = f.readlines()
+    for i, line in enumerate(hosts_lines):
+        if api_vip_dnsname in line:
+            hosts_lines[i] = api_vip_ip + " " + api_vip_dnsname +"\n"
+            break
+    else:
+        hosts_lines.append(api_vip_ip + " " + api_vip_dnsname +"\n")
+    with open("/etc/hosts", "w") as f:
+        f.writelines(hosts_lines)
+
+
+def get_ocp_cluster_nodes():
+    res = subprocess.check_output("oc --kubeconfig=build/kubeconfig get nodes --output=json", shell=True)
+    return json.loads(res)['items']
+
+
+def is_ocp_node_ready(node_status):
+    if not node_status:
+        return False
+    for condition in node_status['conditions']:
+        if condition['status'] == 'True' and condition['type'] == 'Ready':
+            return True
+    return False
+
+
+def get_ocp_cluster_ready_nodes_num():
+    nodes = get_ocp_cluster_nodes()
+    return len([node for node in nodes if is_ocp_node_ready(node['status'])])
+
+
+def get_ocp_cluster_csrs():
+    res = subprocess.check_output("oc --kubeconfig=build/kubeconfig get csr --output=json", shell=True)
+    return json.loads(res)['items']
+
+
+def ocp_cluster_csr_approve(csr_name):
+    subprocess.check_output("oc --kubeconfig=build/kubeconfig adm certificate approve %s" % csr_name, shell=True)
 
 
 def _day2_cluster_create_params(openshift_version, api_vip_dnsname):
