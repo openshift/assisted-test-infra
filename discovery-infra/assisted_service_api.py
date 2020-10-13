@@ -94,7 +94,7 @@ class InventoryClient(object):
 
     def get_hosts_in_statuses(self, cluster_id, statuses):
         hosts = self.get_cluster_hosts(cluster_id)
-        return [hosts for host in hosts if host["status"] in statuses]
+        return [host for host in hosts if host["status"] in statuses]
 
     def get_hosts_in_error_status(self, cluster_id):
         return self.get_hosts_in_statuses(cluster_id, [consts.NodesStatus.ERROR])
@@ -237,6 +237,14 @@ class InventoryClient(object):
     def update_cluster_install_config(self, cluster_id, update_params):
         log.info("Updating cluster install config with %s", update_params)
         return self.client.update_cluster_install_config(cluster_id, json.dumps(update_params))
+
+    def cancel_cluster_install(self, cluster_id):
+        log.info("Canceling installation of cluster %s", cluster_id)
+        return self.client.cancel_installation(cluster_id=cluster_id)
+    
+    def reset_cluster_install(self, cluster_id):
+        log.info("Reset installation of cluster %s", cluster_id)
+        return self.client.reset_cluster(cluster_id=cluster_id)
 
 
 def create_client(url, wait_for_api=True):

@@ -37,9 +37,14 @@ class NodesStatus:
     ERROR = "error"
     PENDING_FOR_INPUT = "pending-for-input"
     DAY2_INSTALLED = "added-to-existing-cluster"
+    RESETING_PENDING_USER_ACTION = "resetting-pending-user-action"
 
 
 class ClusterStatus:
+    INSUFFICIENT = "insufficient"
     INSTALLED = "installed"
     READY = "ready"
     INSTALLING = "installing"
+    ERROR = "error"
+    PENDING_FOR_INPUT = "pending-for-input"
+    CANCELLED = "cancelled"
