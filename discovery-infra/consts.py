@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-import os
 
 TF_FOLDER = "build/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"

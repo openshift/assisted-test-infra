@@ -287,24 +287,22 @@ def wait_till_at_least_one_host_is_in_stage(
         )
     except:
         hosts = client.get_cluster_hosts(cluster_id)
-        log.info("All nodes: %s", hosts)
+        log.error(f"All nodes stages: "
+                  f"{[host['progress']['current_stage'] for host in hosts]} "
+                  f"when waited for {stages}")
         raise
 
 
 def are_host_progress_in_stage(hosts, stages, nodes_count=1):
     log.info("Checking hosts installation stage")
-    hosts_in_stage = [host for host in hosts
-                      if (host["progress"]["current_stage"]) in stages]
+    hosts_in_stage = [host for host in hosts if
+                      (host["progress"]["current_stage"]) in stages]
     if len(hosts_in_stage) >= nodes_count:
         return True
     host_info = [(host["id"], (host["progress"]["current_stage"])) for host in hosts]
     log.info(
-        "Asked %s hosts to be in one of the statuses from %s and currently"
-        " hosts statuses are %s",
-        nodes_count,
-        stages,
-        host_info,
-    )
+        f"Asked {nodes_count} hosts to be in one of the statuses from {stages} and currently "
+        f"hosts statuses are {host_info}")
     return False
 
 
