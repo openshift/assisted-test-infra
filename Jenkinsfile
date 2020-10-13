@@ -71,6 +71,7 @@ pipeline {
 
                     sh "kubectl --server=${minikube_url} get pods -A"
 
+                    sh '''make download_all_logs LOGS_DEST=$WORKSPACE/cluster_logs REMOTE_SERVICE_URL="$(minikube service assisted-service --url -p ${PROFILE} -n ${NAMESPACE})"'''
 
                     for (service in ["assisted-service","postgres","scality","createimage"]) {
                         sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
@@ -81,6 +82,7 @@ pipeline {
             }
 
             archiveArtifacts artifacts: '*.log', fingerprint: true
+            archiveArtifacts artifacts: 'cluster_logs/**/**', fingerprint: true
         }
     }
 }
