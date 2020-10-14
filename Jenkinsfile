@@ -9,12 +9,14 @@ pipeline {
         string(name: 'SERVICE_BRANCH', defaultValue: 'master', description: 'assisted-service branch')
         string(name: 'SERVICE_REPO', defaultValue: 'https://github.com/openshift/assisted-service', description: 'assisted service repository')
         string(name: 'IGNITION_GENERATE_IMAGE', defaultValue: '', description: 'assisted-ignition-generator image')
-        string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'installer image to use')
+        string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'Installer image to use')
+        string(name: 'CONTROLLER_IMAGE', defaultValue: '', description: 'Controller image to use')
         string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE', defaultValue: '', description: 'OCP Release Image from ocpmetal repository in Quay.io')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
         string(name: 'JOB_NAME', defaultValue: "#${BUILD_NUMBER}", description: 'Job name')
         booleanParam(name: 'NOTIFY', defaultValue: true, description: 'Notify on fail (on master branch)')
+        booleanParam(name: 'POST_DELETE', defaultValue: true, description: 'Whether to delete the cluster on post actions')
     }
 
     triggers { cron(cron_string) }
@@ -78,7 +80,9 @@ pipeline {
                         sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
                     }
                 } finally {
-                    sh "make destroy"
+                    if (params.POST_DELETE) {
+                        sh "make destroy"
+                    }
                 }
             }
 
