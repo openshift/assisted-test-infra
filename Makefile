@@ -270,6 +270,11 @@ _download_logs:
 download_logs:
 	skipper make $(SKIPPER_PARAMS) _download_logs
 
+_download_all_logs:
+	discovery-infra/download_logs.py $(REMOTE_SERVICE_URL) $(LOGS_DEST)  --download-all
+
+download_all_logs:
+	skipper make $(SKIPPER_PARAMS) _download_all_logs
 
 #######
 # ISO #

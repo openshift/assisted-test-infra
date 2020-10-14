@@ -32,7 +32,7 @@ def main():
             return
 
         for cluster in clusters:
-            if should_download_logs(cluster):
+            if args.download_all or should_download_logs(cluster):
                 download_logs(client, cluster, args.dest)
 
         print(Counter(map(lambda cluster: cluster['status'], clusters)))
@@ -104,8 +104,8 @@ def handle_arguments():
 
     parser.add_argument("inventory_url", help="URL of remote inventory", type=str)
     parser.add_argument("dest", help="Destination to download logs", type=str)
-
     parser.add_argument("--cluster-id", help="Cluster id to download its logs", type=str, default=None, nargs='?')
+    parser.add_argument("--download-all", help="Download logs from all clusters", action='store_true')
 
     return parser.parse_args()
 
