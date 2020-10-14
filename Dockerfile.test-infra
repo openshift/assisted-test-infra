@@ -1,6 +1,6 @@
 FROM quay.io/ocpmetal/assisted-service:latest AS service
 
-FROM docker.io/centos:8
+FROM quay.io/app-sre/centos:8
 
 ARG client_download_repo=https://openshift-release-artifacts.svc.ci.openshift.org/4.6.0-fc.9
 ARG client_package=openshift-client-linux-4.6.0-fc.9.tar.gz
