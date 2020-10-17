@@ -146,6 +146,18 @@ class InventoryClient(object):
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=update_params)
 
+    def set_cluster_proxy(self, cluster_id, http_proxy, https_proxy='', no_proxy=''):
+        log.info(
+            "Setting proxy for cluster %s", cluster_id
+        )
+        update_params = models.ClusterUpdateParams(http_proxy=http_proxy, 
+            https_proxy=https_proxy, 
+            no_proxy=no_proxy
+        )
+        return self.client.update_cluster(
+            cluster_id=cluster_id, cluster_update_params=update_params
+        )
+
     def update_cluster(self, cluster_id, update_params):
         log.info("Updating cluster %s with params %s", cluster_id, update_params)
         return self.client.update_cluster(
@@ -245,6 +257,10 @@ class InventoryClient(object):
     def reset_cluster_install(self, cluster_id):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.reset_cluster(cluster_id=cluster_id)
+
+    def get_cluster_install_config(self, cluster_id):
+        log.info("Getting install-config for cluster %s", cluster_id)
+        return self.client.get_cluster_install_config(cluster_id=cluster_id)
 
 
 def create_client(url, wait_for_api=True):

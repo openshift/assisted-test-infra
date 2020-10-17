@@ -1,4 +1,5 @@
 import os
+import yaml
 import pytest
 
 import assisted_service_api
@@ -134,6 +135,15 @@ class BaseTest:
             cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.READY]
         )
+    
+    def wait_untill_all_hosts_install(self, cluster_id, api_client, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
+        utils.wait_till_all_hosts_are_in_status(
+            cluster_id=cluster_id,
+            client=api_client,
+            nodes_count=env_variables['NUM_NODES'],
+            statuses=[consts.NodesStatus.INSTALLED],
+            timeout=timeout
+        )
 
     def wait_for_cluster_to_install(self, cluster_id, api_client, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
         utils.wait_till_cluster_is_in_status(
@@ -142,6 +152,10 @@ class BaseTest:
             statuses=[consts.ClusterStatus.INSTALLED],
             timeout=timeout,
         )
+    
+    def get_cluster_install_config(self, cluster_id, api_client):
+        return yaml.load(api_client.get_cluster_install_config(cluster_id), Loader=yaml.SafeLoader)
+    
     
 
 
