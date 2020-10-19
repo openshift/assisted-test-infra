@@ -2,9 +2,6 @@ FROM quay.io/ocpmetal/assisted-service:latest AS service
 
 FROM quay.io/app-sre/centos:8
 
-ARG client_download_repo=https://openshift-release-artifacts.svc.ci.openshift.org/4.6.0-fc.9
-ARG client_package=openshift-client-linux-4.6.0-fc.9.tar.gz
-
 RUN yum -y install make python3 libvirt-client libvirt-devel libguestfs-tools gcc unzip wget curl git python3-devel && yum clean all;
 
 RUN wget -q https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
@@ -17,7 +14,7 @@ RUN mkdir -p /root/.terraform.d/plugins
 RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.2/terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz | \
   tar -xz -C /root/.terraform.d/plugins
 
-RUN curl -SL oc.tar.gz $client_download_repo/$client_package | tar -xz -C /usr/bin
+RUN curl -SL https://openshift-release-artifacts.svc.ci.openshift.org/4.6.0-fc.6/openshift-client-linux-4.6.0-fc.6.tar.gz | tar -xz -C /usr/bin
 
 COPY requirements.txt /tmp/
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
