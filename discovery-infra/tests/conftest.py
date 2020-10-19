@@ -1,6 +1,4 @@
-import pytest
 import os
-import distutils
 from distutils import util
 
 env_variables = {

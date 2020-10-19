@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-import os
 
 TF_FOLDER = "build/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
@@ -48,3 +46,13 @@ class ClusterStatus:
     ERROR = "error"
     PENDING_FOR_INPUT = "pending-for-input"
     CANCELLED = "cancelled"
+
+
+class HostsProgressStages:
+    START_INSTALLATION = "Starting installation"
+    INSTALLING = "Installing"
+    WRITE_IMAGE_TO_DISK = "Writing image to disk"
+    WAIT_FOR_CONTROL_PLANE = "Waiting for control plane"
+    REBOOTING = "Rebooting"
+    CONFIGURING = "Configuring"
+    DONE = "Done"

@@ -267,6 +267,45 @@ def wait_till_at_least_one_host_is_in_status(
         raise
 
 
+def wait_till_at_least_one_host_is_in_stage(
+    client,
+    cluster_id,
+    stages,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT/2,
+    interval=5,
+):
+    log.info("Wait till 1 node is in stage %s" % stages)
+    try:
+        waiting.wait(
+            lambda: are_host_progress_in_stage(
+                client.get_cluster_hosts(cluster_id),
+                stages,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Node to be in of the stage %s" % stages,
+        )
+    except:
+        hosts = client.get_cluster_hosts(cluster_id)
+        log.error(f"All nodes stages: "
+                  f"{[host['progress']['current_stage'] for host in hosts]} "
+                  f"when waited for {stages}")
+        raise
+
+
+def are_host_progress_in_stage(hosts, stages, nodes_count=1):
+    log.info("Checking hosts installation stage")
+    hosts_in_stage = [host for host in hosts if
+                      (host["progress"]["current_stage"]) in stages]
+    if len(hosts_in_stage) >= nodes_count:
+        return True
+    host_info = [(host["id"], (host["progress"]["current_stage"])) for host in hosts]
+    log.info(
+        f"Asked {nodes_count} hosts to be in one of the statuses from {stages} and currently "
+        f"hosts statuses are {host_info}")
+    return False
+
+
 def wait_till_cluster_is_in_status(
     client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
 ):
