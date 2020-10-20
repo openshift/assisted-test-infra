@@ -3,7 +3,7 @@ boto3==1.13.11
 dnspython==1.16.0
 ipython
 libvirt-python==4.5.0
-pre-commit==2.5.1
+pre-commit==2.7.1
 pyyaml==5.3.1
 kubernetes==11.0.0
 requests==2.24.0
