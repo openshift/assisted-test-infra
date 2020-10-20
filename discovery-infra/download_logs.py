@@ -76,11 +76,10 @@ def get_logs_output_folder(dest: str, cluster: dict):
 
 def write_metadata_file(client: InventoryClient, cluster: dict, file_name: str):
     d = {'cluster': cluster}
+    d.update(client.get_versions())
 
-    try:
+    with suppress(KeyError):
         d['link'] = f"{get_ui_url_from_api_url(client.inventory_url)}/clusters/{cluster['id']}"
-    except KeyError:
-        pass
 
     with open(file_name, 'w') as metadata_file:
         json.dump(d, metadata_file, sort_keys=True, indent=4)
