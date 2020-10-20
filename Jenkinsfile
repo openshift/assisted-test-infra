@@ -13,6 +13,7 @@ pipeline {
         string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE', defaultValue: '', description: 'OCP Release Image from ocpmetal repository in Quay.io')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
+        string(name: 'JOB_NAME', defaultValue: "#${BUILD_NUMBER}", description: 'Job name')
         booleanParam(name: 'NOTIFY', defaultValue: true, description: 'Notify on fail (on master branch)')
     }
 
@@ -36,6 +37,9 @@ pipeline {
     stages {
         stage('Init') {
             steps {
+                script {
+                    currentBuild.displayName = "${JOB_NAME}"
+                }
                 sh "make image_build"
                 sh "make create_full_environment"
 
