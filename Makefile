@@ -304,4 +304,4 @@ test:
 	skipper make _test
 
 _test:
-	python3 -m pytest discovery-infra/tests --verbose -s
+	python3 -m pytest $(or ${TEST},${TEST},discovery-infra/tests) --verbose -s
