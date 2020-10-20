@@ -24,6 +24,7 @@ class InventoryClient(object):
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
         self.events = api.EventsApi(api_client=self.api)
+        self.versions = api.VersionsApi(api_client=self.api)
 
     def set_config_auth(self, c):
         offline_token = os.environ.get('OFFLINE_TOKEN', "")
@@ -48,13 +49,13 @@ class InventoryClient(object):
 
             # fetch new key if expired or not set yet
             params = {
-                "client_id":     "cloud-services",
-                "grant_type":    "refresh_token",
+                "client_id": "cloud-services",
+                "grant_type": "refresh_token",
                 "refresh_token": offline_token,
             }
 
             log.info("Refreshing API key")
-            response = requests.post(os.environ.get("SSO_URL"), data = params)
+            response = requests.post(os.environ.get("SSO_URL"), data=params)
             response.raise_for_status()
 
             config.api_key['Authorization'] = response.json()['access_token']
@@ -83,7 +84,7 @@ class InventoryClient(object):
     def create_day2_cluster(self, name, cluster_uuid, **cluster_params):
         cluster = models.AddHostsClusterCreateParams(
             name=name, id=cluster_uuid, **cluster_params
-            )
+        )
         log.info("Creating day 2 cluster with params %s", cluster.__dict__)
         result = self.client.register_add_hosts_cluster(new_add_hosts_cluster_params=cluster)
         return result
@@ -241,10 +242,14 @@ class InventoryClient(object):
     def cancel_cluster_install(self, cluster_id):
         log.info("Canceling installation of cluster %s", cluster_id)
         return self.client.cancel_installation(cluster_id=cluster_id)
-    
+
     def reset_cluster_install(self, cluster_id):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.reset_cluster(cluster_id=cluster_id)
+
+    def get_versions(self):
+        response = self.versions.list_component_versions()
+        return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
 
 
 def create_client(url, wait_for_api=True):
