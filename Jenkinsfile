@@ -31,7 +31,7 @@ pipeline {
         NAMESPACE = "${RUN_ID}"
     }
     options {
-      timeout(time: 1, unit: 'HOURS')
+      timeout(time: 2, unit: 'HOURS')
     }
 
     stages {
