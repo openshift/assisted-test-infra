@@ -41,13 +41,13 @@ class Signature:
         report = "\n"
         report += self._identifing_string
         report += comment
-        comment = self._find_signature_comment(key)
-        if comment is None:
+        jira_comment = self._find_signature_comment(key)
+        if jira_comment is None:
             logger.info("Adding new comment to %s", key)
             self._jclient.add_comment(key, report)
         elif should_update:
             logger.info("Updating existing comment of %s", key)
-            comment.update(body=report)
+            jira_comment.update(body=report)
         else:
             logger.debug("Not updating existing comment of %s", key)
 
@@ -122,24 +122,6 @@ def get_jira_client(netrc_file=DEFAULT_NETRC_FILE):
 # Signature runner functionality
 ############################
 LOGS_URL_FROM_DESCRIPTION = re.compile(r".*logs:\* \[(http.*)\]")
-
-'''
-def get_all_triage_tickets(jclient):
-    query = 'component = "Assisted-Installer Triage"'
-    idx = 0
-    block_size = 100
-    issues = []
-    while True:
-        i = jclient.search_issues(query, maxResults=block_size, startAt=idx, fields=['summary', 'key'])
-        if len(i) == 0:
-            break
-        #for x in i:
-        #    print("{} - {}".format(x.key, x.fields.summary))
-        issues.extend([x.fields.summary for x in i])
-        idx += block_size
-
-    return set(issues)
-'''
 
 def get_issue(jclient, issue_key):
     issue = None
