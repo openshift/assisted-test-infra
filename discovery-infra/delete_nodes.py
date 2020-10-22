@@ -35,7 +35,8 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     """ Runs terraform destroy and then cleans it with virsh cleanup to delete
         everything relevant.
     """
-    _try_to_delete_nodes(tf_folder)
+    if os.path.exists(tf_folder):
+        _try_to_delete_nodes(tf_folder)
 
     default_network_name = consts.TEST_NETWORK + namespace
     default_sec_network_name = consts.TEST_SECONDARY_NETWORK + namespace

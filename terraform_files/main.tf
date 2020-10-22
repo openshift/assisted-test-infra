@@ -57,12 +57,12 @@ resource "libvirt_domain" "master" {
 
   memory = var.libvirt_master_memory
   vcpu   = var.libvirt_master_vcpu
+  running = var.running
 
   disk {
     volume_id = element(libvirt_volume.master.*.id, count.index)
 
   }
-
   disk {
     file = var.image_path
   }
@@ -100,6 +100,7 @@ resource "libvirt_domain" "worker" {
 
   memory = var.libvirt_worker_memory
   vcpu   = var.libvirt_worker_vcpu
+  running = var.running
 
   disk {
     volume_id = element(libvirt_volume.worker.*.id, count.index)

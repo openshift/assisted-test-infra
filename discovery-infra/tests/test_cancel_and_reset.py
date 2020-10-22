@@ -15,10 +15,10 @@ class TestCancelReset(BaseTest):
         # Wait until hosts are discovered and update host roles
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
-        self.set_ingress_and_api_vips(cluster_id=cluster_id,
-                                      api_client=api_client,
-                                      controller=node_controller
-                                      )
+        self.set_network_params(cluster_id=cluster_id,
+                                api_client=api_client,
+                                controller=node_controller
+                                )
         # Start cluster install
         self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
         # Cancel cluster install once cluster installation start
@@ -44,10 +44,11 @@ class TestCancelReset(BaseTest):
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id, api_client=api_client)
         # Install Cluster
-        self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
-        # wait until all nodes are in Installed status, will fail in case one host in error
-        self.wait_for_nodes_to_install(cluster_id=cluster_id, api_client=api_client)
-        self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
+        # TODO need to think how to test it and make it quick
+        # self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
+        # # wait until all nodes are in Installed status, will fail in case one host in error
+        # self.wait_for_nodes_to_install(cluster_id=cluster_id, api_client=api_client)
+        # self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
 
     @pytest.mark.regression
     def test_cancel_reset_after_node_boot(self, api_client, node_controller):
@@ -56,10 +57,10 @@ class TestCancelReset(BaseTest):
         node_controller.start_all_nodes()
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
-        self.set_ingress_and_api_vips(cluster_id=cluster_id,
-                                      api_client=api_client,
-                                      controller=node_controller
-                                      )
+        self.set_network_params(cluster_id=cluster_id,
+                                api_client=api_client,
+                                controller=node_controller
+                                )
         self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
         # Cancel cluster install once at least one host booted
         self.wait_for_one_host_to_boot_during_install(cluster_id=cluster_id, api_client=api_client)
@@ -83,7 +84,8 @@ class TestCancelReset(BaseTest):
         # Wait for hosts to be rediscovered
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id, api_client=api_client)
-        # Install Cluster
-        self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
-        self.wait_for_nodes_to_install(cluster_id=cluster_id, api_client=api_client)
-        self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
+        # TODO need to think how to test it and make it quick
+        # # Install Cluster
+        # self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
+        # self.wait_for_nodes_to_install(cluster_id=cluster_id, api_client=api_client)
+        # self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
