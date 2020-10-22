@@ -46,8 +46,7 @@ def get_credentials_from_netrc(server, netrc_file=DEFAULT_NETRC_FILE):
     return username, password
 
 
-def get_jira_client(netrc_file):
-    username, password = get_credentials_from_netrc(urlparse(JIRA_SERVER).hostname, netrc_file)
+def get_jira_client(username, password):
     logger.info("log-in with username: %s", username)
     return jira.JIRA(JIRA_SERVER, basic_auth=(username, password))
 
@@ -91,6 +90,7 @@ def create_jira_ticket(jclient, existing_tickets, failure_data):
     new_issue = jclient.create_issue(project="MGMT",
                                      summary=summary,
                                      components=[{'name': "Assisted-installer Triage"}],
+                                     priority={'name': 'Blocker'},
                                      issuetype={'name': 'Bug'},
                                      labels=format_labels(failure_data),
                                      description=format_description(failure_data))
@@ -98,7 +98,15 @@ def create_jira_ticket(jclient, existing_tickets, failure_data):
 
 
 def main(arg):
-    jclient = get_jira_client(arg.netrc)
+    if arg.user_password is None:
+        username, password = get_credentials_from_netrc(urlparse(JIRA_SERVER).hostname, arg.netrc)
+    else:
+        try:
+            [username, password] = arg.user_password.split(":", 1)
+        except:
+            logger.error("Failed to parse user:password")
+
+    jclient = get_jira_client(username, password)
 
     try:
         res = requests.get("{}/files/".format(LOGS_COLLECTOR))
@@ -131,7 +139,10 @@ def main(arg):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--netrc", default=DEFAULT_NETRC_FILE, help="netrc file")
+    loginGroup = parser.add_argument_group(title="login options")
+    loginArgs = loginGroup.add_mutually_exclusive_group()
+    loginArgs.add_argument("--netrc", default="~/.netrc", required=False, help="netrc file")
+    loginArgs.add_argument("-up", "--user-password", required=False, help="Username and password in the format of user:pass")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
     args = parser.parse_args()
 

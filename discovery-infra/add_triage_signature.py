@@ -112,11 +112,9 @@ def get_credentials_from_netrc(server, netrc_file=DEFAULT_NETRC_FILE):
     return username, password
 
 
-def get_jira_client(netrc_file=DEFAULT_NETRC_FILE):
-    username, password = get_credentials_from_netrc(urlparse(JIRA_SERVER).hostname, netrc_file)
+def get_jira_client(username, password):
     logger.info("log-in with username: %s", username)
     return jira.JIRA(JIRA_SERVER, basic_auth=(username, password))
-
 
 ############################
 # Signature runner functionality
@@ -159,7 +157,15 @@ def get_all_triage_tickets(jclient):
 
 
 def main(args):
-    jclient = get_jira_client()
+    if args.user_password is None:
+        username, password = get_credentials_from_netrc(urlparse(JIRA_SERVER).hostname, args.netrc)
+    else:
+        try:
+            [username, password] = args.user_password.split(":", 1)
+        except:
+            logger.error("Failed to parse user:password")
+
+    jclient = get_jira_client(username, password)
 
     if args.all_issues:
         issues = get_all_triage_tickets(jclient)
@@ -174,7 +180,10 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--netrc", default=DEFAULT_NETRC_FILE, help="netrc file")
+    loginGroup = parser.add_argument_group(title="login options")
+    loginArgs = loginGroup.add_mutually_exclusive_group()
+    loginArgs.add_argument("--netrc", default="~/.netrc", required=False, help="netrc file")
+    loginArgs.add_argument("-up", "--user-password", required=False, help="Username and password in the format of user:pass")
     selectorsGroup = parser.add_argument_group(title="Issues selection")
     selectors = selectorsGroup.add_mutually_exclusive_group(required=True)
     selectors.add_argument("-a", "--all_issues", action='store_true', help="Search query to use")
