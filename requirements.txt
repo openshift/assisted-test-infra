@@ -12,4 +12,4 @@ tqdm==4.46.0
 waiting==1.4.1
 netaddr==0.8.0
 pytest==6.0.1
-python-dateutil==2.8.0
+python-dateutil==2.8.1
