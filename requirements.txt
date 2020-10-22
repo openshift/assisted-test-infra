@@ -1,6 +1,6 @@
 
 boto3==1.13.11
-dnspython==1.16.0
+dnspython==2.0.0
 ipython
 libvirt-python==4.5.0
 pre-commit==2.5.1
