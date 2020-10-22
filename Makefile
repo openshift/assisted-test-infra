@@ -240,8 +240,12 @@ destroy_nodes:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) -cn $(CLUSTER_NAME) $(OC_PARAMS)'
 	rm -rf build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
 
-destroy_all_nodes:
+destroy_all_nodes_from_namespaces:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all'
+
+destroy_all_nodes:
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py --delete-all'
+
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -301,7 +305,7 @@ _lint:
 	pre-commit run --all-files
 
 test:
-	skipper make _test
+	skipper make $(SKIPPER_PARAMS) _test
 
 _test:
 	python3 -m pytest discovery-infra/tests --verbose -s

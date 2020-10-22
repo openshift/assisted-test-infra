@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
-import base64
 import json
 import os
-import shutil
+import base64
+import requests
 import time
 
-import requests
-import urllib3
+import consts
+import shutil
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
-
-import consts
-import utils
 from logger import log
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class InventoryClient(object):
@@ -28,7 +23,6 @@ class InventoryClient(object):
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
         self.events = api.EventsApi(api_client=self.api)
-        self.versions = api.VersionsApi(api_client=self.api)
 
     def set_config_auth(self, c):
         offline_token = os.environ.get('OFFLINE_TOKEN', "")
@@ -53,13 +47,13 @@ class InventoryClient(object):
 
             # fetch new key if expired or not set yet
             params = {
-                "client_id": "cloud-services",
-                "grant_type": "refresh_token",
+                "client_id":     "cloud-services",
+                "grant_type":    "refresh_token",
                 "refresh_token": offline_token,
             }
 
             log.info("Refreshing API key")
-            response = requests.post(os.environ.get("SSO_URL"), data=params)
+            response = requests.post(os.environ.get("SSO_URL"), data = params)
             response.raise_for_status()
 
             config.api_key['Authorization'] = response.json()['access_token']
@@ -88,7 +82,7 @@ class InventoryClient(object):
     def create_day2_cluster(self, name, cluster_uuid, **cluster_params):
         cluster = models.AddHostsClusterCreateParams(
             name=name, id=cluster_uuid, **cluster_params
-        )
+            )
         log.info("Creating day 2 cluster with params %s", cluster.__dict__)
         result = self.client.register_add_hosts_cluster(new_add_hosts_cluster_params=cluster)
         return result
@@ -198,16 +192,6 @@ class InventoryClient(object):
             file_path=kubeconfig_path,
         )
 
-    def download_ignition_files(self, cluster_id, destination):
-        log.info("Downloading cluster %s ignition files to %s", cluster_id, destination)
-
-        for ignition_file in ["bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml"]:
-            response = self.client.download_cluster_files(
-                cluster_id=cluster_id, file_name=ignition_file, _preload_content=False
-            )
-            with open(os.path.join(destination, ignition_file), "wb") as _file:
-                _file.write(response.data)
-
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
         response = self.client.download_cluster_kubeconfig(
@@ -256,18 +240,10 @@ class InventoryClient(object):
     def cancel_cluster_install(self, cluster_id):
         log.info("Canceling installation of cluster %s", cluster_id)
         return self.client.cancel_installation(cluster_id=cluster_id)
-
+    
     def reset_cluster_install(self, cluster_id):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.reset_cluster(cluster_id=cluster_id)
-
-    def get_versions(self):
-        response = self.versions.list_component_versions()
-        return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
-
-    def update_discovery_ignition(self, cluster_id, update_params):
-        log.info("Updating cluster discovery ignition with %s", update_params)
-        return self.client.update_discovery_ignition(cluster_id, {"config": json.dumps(update_params)})
 
 
 def create_client(url, wait_for_api=True):

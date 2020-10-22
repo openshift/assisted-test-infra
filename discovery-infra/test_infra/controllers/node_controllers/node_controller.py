@@ -1,7 +1,7 @@
 from typing import Dict
 
 
-class NodeControler:    
+class NodeController:
     def list_nodes(self) -> Dict[str, str]:
         raise NotImplementedError
 
@@ -28,3 +28,9 @@ class NodeControler:
 
     def get_ingress_and_api_vips(self) -> dict:
         raise NotImplementedError
+
+    def destroy_all_nodes(self) -> None:
+        raise NotImplementedError
+
+    def prepare_nodes(self):
+        pass

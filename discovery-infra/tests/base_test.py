@@ -1,15 +1,11 @@
 import os
 import pytest
+import logging
 
-import utils
-import consts
-import assisted_service_api
+from test_infra import utils
+from test_infra import consts
+from test_infra import assisted_service_api
 from tests.conftest import env_variables
-
-if os.environ.get('NODE_ENV') == 'QE_VM':
-    from node_controlers.qe_vm_controler import QeVmController as nodeController
-else:
-    raise NotImplementedError
 
 
 class BaseTest:
@@ -19,9 +15,9 @@ class BaseTest:
         self.delete_cluster_if_exists(api_client=client, cluster_name=env_variables['CLUSTER_NAME'])
         return client
 
-    @pytest.fixture()
-    def node_controller(self):
-        controller = nodeController()
+    @pytest.fixture(scope="function")
+    def node_controller(self, setup_node_controller):
+        controller = setup_node_controller
         yield controller
         controller.shutdown_all_nodes()
         controller.format_all_node_disks()
@@ -56,9 +52,10 @@ class BaseTest:
 
     @staticmethod
     def generate_and_download_image(cluster_id, api_client):
+        logging.info(env_variables['ISO_DOWNLOAD_PATH'])
         api_client.generate_and_download_image(
-            cluster_id=cluster_id, 
-            ssh_key=env_variables['SSH_PUBLIC_KEY'], 
+            cluster_id=cluster_id,
+            ssh_key=env_variables['SSH_PUBLIC_KEY'],
             image_path=env_variables['ISO_DOWNLOAD_PATH']
         )
 
@@ -79,7 +76,24 @@ class BaseTest:
         )
 
     @staticmethod
+    def set_network_params(cluster_id, api_client, controller):
+        BaseTest.set_cluster_machine_cidr(cluster_id, api_client, env_variables["MACHINE_CIDR"])
+        BaseTest.set_ingress_and_api_vips(cluster_id, api_client, controller)
+        utils.wait_till_all_hosts_are_in_status(
+            client=api_client,
+            cluster_id=cluster_id,
+            nodes_count=env_variables['NUM_NODES'],
+            statuses=[consts.NodesStatus.KNOWN]
+        )
+
+    @staticmethod
+    def set_cluster_machine_cidr(cluster_id, api_client, machine_cidr):
+        api_client.update_cluster(cluster_id, {"machine_network_cidr": machine_cidr})
+
+    @staticmethod
     def set_ingress_and_api_vips(cluster_id, api_client, controller):
+        if env_variables['VIP_DHCP_ALLOCATION']:
+            return
         vips = controller.get_ingress_and_api_vips()
         api_client.update_cluster(cluster_id, vips)
 
