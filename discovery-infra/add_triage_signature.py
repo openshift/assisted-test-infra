@@ -11,6 +11,7 @@ from collections import OrderedDict
 import jira
 import requests
 from tabulate import tabulate
+import dateutil.parser
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,15 @@ class Signature:
     def __init__(self, jira_client, comment_identifying_string):
         self._jclient = jira_client
         self._identifing_string = comment_identifying_string
+
+    def update_ticket(self, url, issue_key, should_update=False):
+        try:
+            self._update_ticket(url, issue_key, should_update=should_update)
+        except:
+            logger.exception("error updating ticket")
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+        raise NotImplementedError
 
     @staticmethod
     def _get_metadata_json(cluster_url):
@@ -42,14 +52,15 @@ class Signature:
         report += self._identifing_string
         report += comment
         jira_comment = self._find_signature_comment(key)
+        signature_name = type(self).__name__
         if jira_comment is None:
-            logger.info("Adding new comment to %s", key)
+            logger.info("Adding new '%s' comment to %s", signature_name, key)
             self._jclient.add_comment(key, report)
         elif should_update:
-            logger.info("Updating existing comment of %s", key)
+            logger.info("Updating existing '%s' comment of %s", signature_name, key)
             jira_comment.update(body=report)
         else:
-            logger.debug("Not updating existing comment of %s", key)
+            logger.debug("Not updating existing '%s' comment of %s", signature_name, key)
 
     @staticmethod
     def _generate_table_for_report(hosts):
@@ -65,12 +76,16 @@ class Signature:
         '''
         return re.sub(r'(http://[^/]*/)#(/.*)', r'\1files\2', url)
 
+    @staticmethod
+    def _format_time(time_str):
+        return  dateutil.parser.isoparse(time_str).strftime("%Y-%m-%d %H:%M:%S")
+
 
 class HostsStatusSignature(Signature):
     def __init__(self, jira_client):
         super().__init__(jira_client, comment_identifying_string="h1. Host details:\n")
 
-    def update_ticket(self, url, issue_key, should_update=False):
+    def _update_ticket(self, url, issue_key, should_update=False):
 
         url = self._logs_url_fixup(url)
         try:
@@ -88,9 +103,12 @@ class HostsStatusSignature(Signature):
             role = host['role']
             if host.get('bootstrap', False):
                 role = 'bootstrap'
+            hostname = host.get('requested_hostname')
+            if hostname is None:
+                hostname = inventory['hostname']
             hosts.append(OrderedDict(
                 id=host['id'],
-                hostname=inventory['hostname'],
+                hostname=hostname,
                 progress=host['progress']['current_stage'],
                 status=host['status'],
                 role=role,
@@ -98,6 +116,65 @@ class HostsStatusSignature(Signature):
 
         report = self._generate_table_for_report(hosts)
         self._update_triaging_ticket(issue_key, report, should_update=should_update)
+
+
+class HostsExtraDetailSignature(Signature):
+    def __init__(self, jira_client):
+        super().__init__(jira_client, comment_identifying_string="h1. Host extra details:\n")
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+
+        url = self._logs_url_fixup(url)
+        try:
+            md = self._get_metadata_json(url)
+        except:
+            logger.exception("Error getting logs for %s at %s", issue_key, url)
+            return
+
+        cluster = md['cluster']
+
+        hosts = []
+        for host in cluster['hosts']:
+            inventory = json.loads(host['inventory'])
+            requested_hostname = host.get('requested_hostname', "")
+            hostname = inventory['hostname']
+            hosts.append(OrderedDict(
+                id=host['id'],
+                hostname=inventory['hostname'],
+                requested_hostname=host.get('requested_hostname', ""),
+                last_contacted=self._format_time(host['checked_in_at']),
+                installation_disk=host.get('installation_disk_path', "")))
+
+        report = self._generate_table_for_report(hosts)
+        self._update_triaging_ticket(issue_key, report, should_update=should_update)
+
+
+class ComponentsVersionSignature(Signature):
+    def __init__(self, jira_client):
+        super().__init__(jira_client, comment_identifying_string="h1. Components version information:\n")
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+
+        url = self._logs_url_fixup(url)
+        try:
+            md = self._get_metadata_json(url)
+        except:
+            logger.exception("Error getting logs for %s at %s", issue_key, url)
+            return
+
+        report = ""
+        release_tag = md.get('release_tag')
+        if release_tag:
+            report = "Release tag: {}\n".format(release_tag)
+
+        versions = md.get('versions')
+        if versions:
+            report += "assisted-installer: {}\n".format(versions['assisted-installer'])
+            report += "assisted-installer-controller: {}\n".format(versions['assisted-installer-controller'])
+            report += "assisted-installer-agent: {}\n".format(versions['discovery-agent'])
+
+        if report != "":
+            self._update_triaging_ticket(issue_key, report, should_update=should_update)
 
 
 ############################
@@ -174,8 +251,15 @@ def main(args):
 
     for issue in issues:
         url = get_logs_url_from_issue(issue)
-        s = HostsStatusSignature(jclient)
-        s.update_ticket(url, issue.key, should_update=args.update)
+        add_signatures(jclient, url, issue.key, should_update=args.update)
+
+
+def add_signatures(jclient, url, issue_key, should_update=False):
+    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature]
+
+    for sig in signatures:
+        s = sig(jclient)
+        s.update_ticket(url, issue_key, should_update=should_update)
 
 
 if __name__ == "__main__":
