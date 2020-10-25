@@ -251,15 +251,15 @@ def main(args):
 
     for issue in issues:
         url = get_logs_url_from_issue(issue)
+        add_signatures(jclient, url, issue.key, should_update=args.update)
 
-        s = ComponentsVersionSignature(jclient)
-        s.update_ticket(url, issue.key, should_update=args.update)
 
-        s = HostsStatusSignature(jclient)
-        s.update_ticket(url, issue.key, should_update=args.update)
+def add_signatures(jclient, url, issue_key, should_update=False):
+    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature]
 
-        s = HostsExtraDetailSignature(jclient)
-        s.update_ticket(url, issue.key, should_update=args.update)
+    for sig in signatures:
+        s = sig(jclient)
+        s.update_ticket(url, issue_key, should_update=should_update)
 
 
 if __name__ == "__main__":

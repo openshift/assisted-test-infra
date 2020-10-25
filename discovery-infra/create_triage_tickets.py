@@ -12,6 +12,7 @@ import sys
 from urllib.parse import urlparse
 import requests
 import jira
+import add_triage_signature
 
 
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
@@ -85,7 +86,7 @@ def create_jira_ticket(jclient, existing_tickets, failure_data):
     summary = format_summary(failure_data)
     if summary in existing_tickets:
         logger.debug("issue found: %s", summary)
-        return
+        return None
 
     new_issue = jclient.create_issue(project="MGMT",
                                      summary=summary,
@@ -95,6 +96,7 @@ def create_jira_ticket(jclient, existing_tickets, failure_data):
                                      labels=format_labels(failure_data),
                                      description=format_description(failure_data))
     logger.info("issue created: %s", new_issue)
+    return new_issue
 
 
 def main(arg):
@@ -134,7 +136,10 @@ def main(arg):
                             "status": cluster['status'],
                             "status_info": cluster['status_info'],
                             "username": cluster['user_name']}
-            create_jira_ticket(jclient, existing_tickets, cluster_data)
+            new_issue = create_jira_ticket(jclient, existing_tickets, cluster_data)
+            if new_issue is not None:
+                logs_url = "{}/files/{}".format(LOGS_COLLECTOR, failure['name'])
+                add_triage_signature.add_signatures(jclient, logs_url, new_issue.key)
 
 
 if __name__ == "__main__":
