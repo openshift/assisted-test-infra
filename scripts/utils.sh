@@ -36,9 +36,16 @@ function spawn_port_forwarding_command() {
     namespace=$3
     namespace_index=$4
     profile=$5
+    kubeconfig=$6
+    target=$7
+    ip=${8:-""}
+    port=${9:-""}
 
-    filename=${service_name}__${namespace}__${namespace_index}__assisted_installer
-
+    filename=${service_name}__${namespace}__${namespace_index}__${external_port}__assisted_installer
+    if [ "$target" = "minikube" ]; then
+        ip=$(minikube -p $profile ip)
+        port=$(kubectl --server $(get_profile_url $profile) --kubeconfig=$kubeconfig get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+    fi
     cat <<EOF >build/xinetd-$filename
 service ${service_name}
 {
@@ -49,7 +56,7 @@ service ${service_name}
   protocol	= tcp
   user		= root
   wait		= no
-  redirect	= $(minikube -p $profile ip) $(kubectl --server $(get_profile_url $profile) --kubeconfig=${KUBECONFIG} get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+  redirect	= $ip $port
   port		= ${external_port}
   only_from	= 0.0.0.0/0
   per_source	= UNLIMITED
