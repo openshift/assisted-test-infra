@@ -50,8 +50,12 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str):
         return
 
     recreate_folder(output_folder)
+    recreate_folder(os.path.join(output_folder, "cluster_files"))
 
     write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
+
+    with suppress(assisted_service_client.rest.ApiException):
+        client.download_ignition_files(cluster['id'], os.path.join(output_folder, "cluster_files"))
 
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))

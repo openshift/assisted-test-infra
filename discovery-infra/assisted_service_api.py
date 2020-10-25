@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
+import base64
 import json
 import os
-import base64
-import requests
+import shutil
 import time
+
+import requests
+import urllib3
+import waiting
+from assisted_service_client import ApiClient, Configuration, api, models
 
 import consts
 import utils
-import shutil
-import waiting
-from assisted_service_client import ApiClient, Configuration, api, models
 from logger import log
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class InventoryClient(object):
@@ -193,6 +197,16 @@ class InventoryClient(object):
             file_name="kubeconfig-noingress",
             file_path=kubeconfig_path,
         )
+
+    def download_ignition_files(self, cluster_id, destination):
+        log.info("Downloading cluster %s ignition files to %s", cluster_id, destination)
+
+        for ignition_file in ["bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml"]:
+            response = self.client.download_cluster_files(
+                cluster_id=cluster_id, file_name=ignition_file, _preload_content=False
+            )
+            with open(os.path.join(destination, ignition_file), "wb") as _file:
+                _file.write(response.data)
 
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
