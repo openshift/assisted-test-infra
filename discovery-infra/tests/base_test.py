@@ -88,6 +88,8 @@ class BaseTest:
 
     @staticmethod
     def set_cluster_machine_cidr(cluster_id, api_client, machine_cidr):
+        if not env_variables['VIP_DHCP_ALLOCATION']:
+            return
         api_client.update_cluster(cluster_id, {"machine_network_cidr": machine_cidr})
 
     @staticmethod
