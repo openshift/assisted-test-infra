@@ -15,13 +15,10 @@ class TerraformController(LibvirtController):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cluster_name = kwargs.get('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')
+        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}')
         self.params = self._terraform_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
-        self.image_path = kwargs["ISO_DOWNLOAD_PATH"]
-
-    def __del__(self):
-        self.destroy_all_nodes()
+        self.image_path = kwargs["iso_download_path"]
 
     def _create_tf_folder(self):
         tf_folder = utils.get_tf_folder(self.cluster_name)
@@ -32,21 +29,21 @@ class TerraformController(LibvirtController):
 
     # TODO move all those to conftest and pass it as kwargs
     def _terraform_params(self, **kwargs):
-        params = {"libvirt_worker_memory": kwargs.get('WORKER_MEMORY'),
-                  "libvirt_master_memory": kwargs.get('MASTER_MEMORY', 16984),
-                  "worker_count": kwargs.get('NUM_WORKERS', 0),
-                  "master_count": kwargs.get('NUM_MASTERS', consts.NUMBER_OF_MASTERS),
+        params = {"libvirt_worker_memory": kwargs.get('worker_memory'),
+                  "libvirt_master_memory": kwargs.get('master_memory', 16984),
+                  "worker_count": kwargs.get('num_workers', 0),
+                  "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
                   "cluster_name": self.cluster_name,
-                  "cluster_domain": kwargs.get('BASE_DOMAIN', "redhat.com"),
-                  "machine_cidr": kwargs.get('MACHINE_CIDR', '192.168.126.0/24'),
+                  "cluster_domain": kwargs.get('base_domain', "redhat.com"),
+                  "machine_cidr": kwargs.get('machine_cidr', '192.168.126.0/24'),
                   "libvirt_network_name": consts.TEST_NETWORK,
-                  "libvirt_network_mtu": kwargs.get('NETWORK_MTU', '1500'),
+                  "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
                   # TODO change to namespace index
                   "libvirt_network_if": 'tt0',
-                  "libvirt_worker_disk": kwargs.get('WORKER_DISK', '21474836480'),
-                  "libvirt_master_disk": kwargs.get('MASTER_DISK', '128849018880'),
+                  "libvirt_worker_disk": kwargs.get('worker_disk', '21474836480'),
+                  "libvirt_master_disk": kwargs.get('master_disk', '128849018880'),
                   "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK,
-                  "libvirt_storage_pool_path": kwargs.get('STORAGE_POOL_PATH',
+                  "libvirt_storage_pool_path": kwargs.get('storage_pool_path',
                                                           os.path.join(os.getcwd(), "storage_pool")),
                   # TODO change to namespace index
                   "libvirt_secondary_network_if": "stt0",
@@ -148,12 +145,7 @@ class TerraformController(LibvirtController):
 
     def format_node_disk(self, node_name):
         logging.info("Formating disk for %s", node_name)
-        command = f"qemu-img info {self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name} | grep 'virtual size'"
-        output = utils.run_command(command, shell=True)
-        image_size = output[0].split(' ')[2]
-
-        command = f'qemu-img create -f qcow2 {self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name} {image_size}'
-        utils.run_command(command, shell=True)
+        self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}')
 
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
@@ -211,9 +203,10 @@ class TerraformController(LibvirtController):
 
     def prepare_nodes(self):
         logging.info("Preparing nodes")
-        self.destroy_all_nodes()
+        self._delete_virsh_resources()
         if not os.path.exists(self.image_path):
-            utils.recreate_folder(os.path.dirname(self.image_path), force_recreate=True)
+            utils.recreate_folder(os.path.dirname(self.image_path), force_recreate=False)
+            # if file not exist lets create dummy
             utils.touch(self.image_path)
 
         self.params.running = False

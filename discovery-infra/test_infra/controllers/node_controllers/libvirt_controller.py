@@ -1,6 +1,8 @@
+import os
 import logging
 import libvirt
 from test_infra import consts
+from test_infra import utils
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
@@ -56,6 +58,20 @@ class LibvirtController(NodeController):
 
         for node in nodes.keys():
             self.start_node(node)
+
+    @staticmethod
+    def format_disk(disk_path):
+        logging.info("Formatting disk %s", disk_path)
+        if not os.path.exists(disk_path):
+            logging.info("Path to %s disk not exists. Skipping")
+            return
+
+        command = f"qemu-img info {disk_path} | grep 'virtual size'"
+        output = utils.run_command(command, shell=True)
+        image_size = output[0].split(' ')[2]
+
+        command = f'qemu-img create -f qcow2 {disk_path} {image_size}'
+        utils.run_command(command, shell=True)
 
     def restart_node(self, node_name):
         logging.info("Restarting %s", node_name)
