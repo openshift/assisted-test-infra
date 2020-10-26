@@ -10,6 +10,7 @@ pipeline {
     environment {
         SKIPPER_PARAMS = " "
         OFFLINE_TOKEN = credentials('admin_offline_token')
+        JIRA_CREDS = credentials('Ronnie-jira')
         LOGS_DEST = "build"
     }
     options {
@@ -20,6 +21,7 @@ pipeline {
         stage('Run') {
             steps {
                 sh "make download_logs"
+                sh "skipper run discovery-infra/create_triage_tickets.py -up ${JIRA_CREDS}"
             }
         }
     }
