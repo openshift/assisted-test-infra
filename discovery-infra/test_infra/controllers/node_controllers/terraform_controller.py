@@ -16,6 +16,7 @@ class TerraformController(LibvirtController):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}')
+        self.network_name = kwargs.get('network_name', consts.TEST_NETWORK)
         self.params = self._terraform_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
         self.image_path = kwargs["iso_download_path"]
@@ -36,7 +37,7 @@ class TerraformController(LibvirtController):
                   "cluster_name": self.cluster_name,
                   "cluster_domain": kwargs.get('base_domain', "redhat.com"),
                   "machine_cidr": kwargs.get('machine_cidr', '192.168.126.0/24'),
-                  "libvirt_network_name": consts.TEST_NETWORK,
+                  "libvirt_network_name": self.network_name,
                   "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
                   # TODO change to namespace index
                   "libvirt_network_if": 'tt0',
@@ -139,9 +140,9 @@ class TerraformController(LibvirtController):
         nodes = self.list_nodes()
         if len(nodes) == 0:
             self._create_nodes()
+            return self.list_nodes()
         else:
-            for node in nodes.keys():
-                self.start_node(node)
+            return super().start_all_nodes()
 
     def format_node_disk(self, node_name):
         logging.info("Formating disk for %s", node_name)

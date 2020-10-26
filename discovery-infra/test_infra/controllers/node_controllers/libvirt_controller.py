@@ -1,8 +1,11 @@
 import os
 import logging
 import libvirt
-from test_infra import consts
+import waiting
+from contextlib import suppress
 from test_infra import utils
+from test_infra import consts
+from test_infra.controllers.node_controllers.host import Host
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
@@ -10,9 +13,11 @@ class LibvirtController(NodeController):
 
     def __init__(self, **kwargs):
         self.libvirt_connection = libvirt.open('qemu:///system')
+        self.private_ssh_key_path = kwargs.get("private_ssh_key_path")
 
     def __del__(self):
-        self.libvirt_connection.close()
+        with suppress(Exception):
+            self.libvirt_connection.close()
 
     def list_nodes(self):
         return self.list_nodes_with_name_filter(None)
@@ -26,8 +31,7 @@ class LibvirtController(NodeController):
             if name_filter and name_filter not in domain_name:
                 continue
             if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
-                domain_state = "running" if domain.isActive() else "shut_off"
-                nodes[domain_name] = domain_state
+                nodes[domain_name] = Host(domain_name, self, self.private_ssh_key_path)
         logging.info("Found domains %s", nodes)
         return nodes
 
@@ -51,6 +55,7 @@ class LibvirtController(NodeController):
 
         if not node.isActive():
             node.create()
+            self._wait_till_domain_has_ips(node)
 
     def start_all_nodes(self):
         logging.info("Going to power-on all the nodes")
@@ -58,6 +63,7 @@ class LibvirtController(NodeController):
 
         for node in nodes.keys():
             self.start_node(node)
+        return nodes
 
     @staticmethod
     def format_disk(disk_path):
@@ -92,3 +98,40 @@ class LibvirtController(NodeController):
         logging.info("Delete all the nodes")
         self.shutdown_all_nodes()
         self.format_all_node_disks()
+
+    def is_active(self, node_name):
+        node = self.libvirt_connection.lookupByName(node_name)
+        return node.isActive()
+
+    def get_node_ips_and_macs(self, node_name):
+        node = self.libvirt_connection.lookupByName(node_name)
+        return self._get_domain_ips_and_macs(node)
+
+    def _get_domain_ips_and_macs(self, domain):
+        interfaces = domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+        ips = []
+        macs = []
+        if interfaces:
+            for (_, val) in interfaces.items():
+                if val['addrs']:
+                    for addr in val['addrs']:
+                        ips.append(addr['addr'])
+                        macs.append(val['hwaddr'])
+        if ips:
+            logging.info("Host %s ips are %s", domain.name(), ips)
+        if macs:
+            logging.info("Host %s macs are %s", domain.name(), macs)
+        return ips, macs
+
+    def _get_domain_ips(self, domain):
+        ips, _ = self._get_domain_ips_and_macs(domain)
+        return ips
+
+    def _wait_till_domain_has_ips(self, domain, timeout=120, interval=5):
+        logging.info("Waiting till host %s will have ips", domain.name())
+        waiting.wait(
+            lambda: len(self._get_domain_ips(domain)) > 0,
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Waiting for Ips",
+        )

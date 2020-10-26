@@ -1,15 +1,23 @@
 import logging
 import pytest
 import os
+from pathlib import Path
 from test_infra import consts
 from test_infra import utils
 from distutils import util
 
+qe_env = False
+
 # TODO changes it
 if os.environ.get('NODE_ENV') == 'QE_VM':
     from test_infra.controllers.node_controllers.qe_vm_controler import QeVmController as nodeController
+    qe_env = True
 else:
     from test_infra.controllers.node_controllers.terraform_controller import TerraformController as nodeController
+
+
+private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key") if not qe_env else \
+    os.path.join(str(Path.home()), ".ssh/id_rsa")
 
 env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "remote_service_url": utils.get_env('REMOTE_SERVICE_URL'),
@@ -27,7 +35,8 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "worker_disk": int(utils.get_env('WORKER_DISK', '21474836480')),
                  "master_disk": int(utils.get_env('WORKER_DISK', '128849018880')),
                  "storage_pool_path": utils.get_env('STORAGE_POOL_PATH', os.path.join(os.getcwd(), "storage_pool")),
-                 "cluster_name": utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')}
+                 "cluster_name": utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}'),
+                 "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default)}
 
 image = utils.get_env('ISO',
                       os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-installer-image.iso')).strip()

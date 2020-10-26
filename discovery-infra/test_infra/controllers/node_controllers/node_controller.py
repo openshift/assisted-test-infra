@@ -1,8 +1,9 @@
-from typing import Dict
+from typing import Dict, List
+from test_infra.controllers.node_controllers import host
 
 
 class NodeController:
-    def list_nodes(self) -> Dict[str, str]:
+    def list_nodes(self) -> Dict[str, host.Host]:
         raise NotImplementedError
 
     def shutdown_node(self, node_name: str) -> None:
@@ -14,7 +15,7 @@ class NodeController:
     def start_node(self, node_name: str) -> None:
         raise NotImplementedError
 
-    def start_all_nodes(self) -> None:
+    def start_all_nodes(self) -> List[host.Host]:
         raise NotImplementedError
 
     def restart_node(self, node_name: str) -> None:
@@ -34,3 +35,6 @@ class NodeController:
 
     def prepare_nodes(self):
         pass
+
+    def is_active(self, node_name) -> bool:
+        raise NotImplementedError
