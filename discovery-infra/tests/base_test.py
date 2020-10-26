@@ -23,14 +23,22 @@ class BaseTest:
         controller.format_all_node_disks()
 
     @staticmethod
-    def create_cluster(api_client):
-        return api_client.create_cluster(
-            env_variables['cluster_name'],
-            ssh_public_key=env_variables['ssh_public_key'],
-            pull_secret=env_variables['pull_secret'],
-            openshift_version=env_variables['openshift_version'],
-            base_dns_domain=env_variables['base_domain'],
+    def create_cluster(
+            api_client,
+            cluster_name=env_variables['cluster_name'], 
+            ssh_public_key=env_variables['ssh_public_key'], 
+            pull_secret=env_variables['pull_secret'], 
+            openshift_version=env_variables['openshift_version'], 
+            base_dns_domain=env_variables['base_domain'], 
             vip_dhcp_allocation=env_variables['vip_dhcp_allocation']
+    ):
+        return api_client.create_cluster(
+            cluster_name, 
+            ssh_public_key=ssh_public_key, 
+            pull_secret=pull_secret, 
+            openshift_version=openshift_version, 
+            base_dns_domain=base_dns_domain, 
+            vip_dhcp_allocation=vip_dhcp_allocation
         )
     
     def delete_cluster_if_exists(self, api_client, cluster_name):
@@ -51,20 +59,29 @@ class BaseTest:
         return None
 
     @staticmethod
-    def generate_and_download_image(cluster_id, api_client):
-        logging.info(env_variables['iso_download_path'])
+    def generate_and_download_image(
+        cluster_id, 
+        api_client, 
+        iso_download_path=env_variables['iso_download_path'],
+        ssh_key=env_variables['ssh_public_key']
+    ):
+        logging.info(iso_download_path)
         api_client.generate_and_download_image(
             cluster_id=cluster_id,
-            ssh_key=env_variables['ssh_public_key'],
-            image_path=env_variables['iso_download_path']
+            ssh_key=ssh_key,
+            image_path=iso_download_path
         )
 
     @staticmethod
-    def wait_until_hosts_are_discovered(cluster_id, api_client):
+    def wait_until_hosts_are_discovered(
+        cluster_id, 
+        api_client, 
+        nodes_count=env_variables['num_nodes']
+    ):
         utils.wait_till_all_hosts_are_in_status(
             client=api_client, 
             cluster_id=cluster_id, 
-            nodes_count=env_variables['num_nodes'],
+            nodes_count=nodes_count, 
             statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         )
 
@@ -76,25 +93,35 @@ class BaseTest:
         )
 
     @staticmethod
-    def set_network_params(cluster_id, api_client, controller):
-        BaseTest.set_cluster_machine_cidr(cluster_id, api_client, env_variables["machine_cidr"])
-        BaseTest.set_ingress_and_api_vips(cluster_id, api_client, controller)
+    def set_network_params(
+        cluster_id, 
+        api_client, 
+        controller,
+        nodes_count=env_variables['num_nodes'],
+        vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+        cluster_machine_cidr=env_variables['machine_cidr']
+    ):
+        if vip_dhcp_allocation:
+            BaseTest.set_cluster_machine_cidr(cluster_id, api_client, cluster_machine_cidr)
+        else:
+            BaseTest.set_ingress_and_api_vips(cluster_id, api_client, controller)    
+        
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
-            nodes_count=env_variables['num_nodes'],
+            nodes_count=nodes_count,
             statuses=[consts.NodesStatus.KNOWN]
         )
 
     @staticmethod
     def set_cluster_machine_cidr(cluster_id, api_client, machine_cidr):
+        logging.info(f'Setting Machine Network CIDR:{machine_cidr} for cluster: {cluster_id}')
         api_client.update_cluster(cluster_id, {"machine_network_cidr": machine_cidr})
 
     @staticmethod
     def set_ingress_and_api_vips(cluster_id, api_client, controller):
-        if env_variables['vip_dhcp_allocation']:
-            return
         vips = controller.get_ingress_and_api_vips()
+        logging.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {cluster_id}")
         api_client.update_cluster(cluster_id, vips)
 
     @staticmethod
@@ -182,11 +209,16 @@ class BaseTest:
         )
 
     @staticmethod
-    def wait_for_nodes_to_install(cluster_id, api_client, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
+    def wait_for_nodes_to_install(
+        cluster_id, 
+        api_client, 
+        nodes_count=env_variables['num_nodes'], 
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
+    ):
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.INSTALLED],
-            nodes_count=env_variables['num_nodes'],
+            nodes_count=nodes_count,
             timeout=timeout,
         )

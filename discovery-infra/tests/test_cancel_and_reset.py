@@ -57,10 +57,11 @@ class TestCancelReset(BaseTest):
         node_controller.start_all_nodes()
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
-        self.set_network_params(cluster_id=cluster_id,
-                                api_client=api_client,
-                                controller=node_controller
-                                )
+        self.set_network_params(
+            cluster_id=cluster_id,
+            api_client=api_client,
+            controller=node_controller
+        )
         self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
         # Cancel cluster install once at least one host booted
         self.wait_for_one_host_to_boot_during_install(cluster_id=cluster_id, api_client=api_client)
