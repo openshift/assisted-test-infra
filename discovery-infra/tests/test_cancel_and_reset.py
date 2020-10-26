@@ -5,9 +5,9 @@ from tests.base_test import BaseTest
 
 class TestCancelReset(BaseTest):
     @pytest.mark.regression
-    def test_cancel_reset_before_node_boot(self, api_client, node_controller):
+    def test_cancel_reset_before_node_boot(self, api_client, node_controller, cluster):
         # Define new cluster
-        cluster_id = self.create_cluster(api_client=api_client).id
+        cluster_id = cluster().id
         # Generate and download cluster ISO
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Boot nodes into ISO
@@ -51,8 +51,8 @@ class TestCancelReset(BaseTest):
         # self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
 
     @pytest.mark.regression
-    def test_cancel_reset_after_node_boot(self, api_client, node_controller):
-        cluster_id = self.create_cluster(api_client=api_client).id
+    def test_cancel_reset_after_node_boot(self, api_client, node_controller, cluster):
+        cluster_id = cluster().id
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         node_controller.start_all_nodes()
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)

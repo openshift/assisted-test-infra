@@ -204,7 +204,6 @@ class TerraformController(LibvirtController):
 
     def prepare_nodes(self):
         logging.info("Preparing nodes")
-        self._delete_virsh_resources()
         if not os.path.exists(self.image_path):
             utils.recreate_folder(os.path.dirname(self.image_path), force_recreate=False)
             # if file not exist lets create dummy

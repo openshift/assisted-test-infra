@@ -47,13 +47,13 @@ class InventoryClient(object):
 
             # fetch new key if expired or not set yet
             params = {
-                "client_id":     "cloud-services",
-                "grant_type":    "refresh_token",
+                "client_id": "cloud-services",
+                "grant_type": "refresh_token",
                 "refresh_token": offline_token,
             }
 
             log.info("Refreshing API key")
-            response = requests.post(os.environ.get("SSO_URL"), data = params)
+            response = requests.post(os.environ.get("SSO_URL"), data=params)
             response.raise_for_status()
 
             config.api_key['Authorization'] = response.json()['access_token']
@@ -82,7 +82,7 @@ class InventoryClient(object):
     def create_day2_cluster(self, name, cluster_uuid, **cluster_params):
         cluster = models.AddHostsClusterCreateParams(
             name=name, id=cluster_uuid, **cluster_params
-            )
+        )
         log.info("Creating day 2 cluster with params %s", cluster.__dict__)
         result = self.client.register_add_hosts_cluster(new_add_hosts_cluster_params=cluster)
         return result
@@ -216,14 +216,18 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
-    def download_cluster_events(self, cluster_id, output_file):
-        log.info("Downloading cluster events to %s", output_file)
+    def get_events(self, cluster_id):
         response = self.events.list_events(
             cluster_id=cluster_id, _preload_content=False
         )
 
+        return json.loads(response.data)
+
+    def download_cluster_events(self, cluster_id, output_file):
+        log.info("Downloading cluster events to %s", output_file)
+
         with open(output_file, "wb") as _file:
-            _file.write(json.dumps(json.loads(response.data), indent=4).encode())
+            _file.write(json.dumps(self.get_events(cluster_id), indent=4).encode())
 
     def download_host_logs(self, cluster_id, host_id, output_file):
         log.info("Downloading host logs to %s", output_file)
@@ -240,7 +244,7 @@ class InventoryClient(object):
     def cancel_cluster_install(self, cluster_id):
         log.info("Canceling installation of cluster %s", cluster_id)
         return self.client.cancel_installation(cluster_id=cluster_id)
-    
+
     def reset_cluster_install(self, cluster_id):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.reset_cluster(cluster_id=cluster_id)

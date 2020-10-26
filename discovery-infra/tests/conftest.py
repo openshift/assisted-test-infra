@@ -1,19 +1,21 @@
 import logging
-import pytest
 import os
-from pathlib import Path
-from test_infra import consts
-from test_infra import utils
 from distutils import util
+from pathlib import Path
+
+import pytest
+from test_infra import assisted_service_api, consts, utils
 
 qe_env = False
 
 # TODO changes it
 if os.environ.get('NODE_ENV') == 'QE_VM':
-    from test_infra.controllers.node_controllers.qe_vm_controler import QeVmController as nodeController
+    from test_infra.controllers.node_controllers.qe_vm_controler import \
+        QeVmController as nodeController
     qe_env = True
 else:
-    from test_infra.controllers.node_controllers.terraform_controller import TerraformController as nodeController
+    from test_infra.controllers.node_controllers.terraform_controller import \
+        TerraformController as nodeController
 
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key") if not qe_env else \
@@ -22,7 +24,7 @@ private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key") if not q
 env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "remote_service_url": utils.get_env('REMOTE_SERVICE_URL'),
                  "pull_secret": utils.get_env('PULL_SECRET'),
-                 "OFFLINE_TOKEN": utils.get_env('OFFLINE_TOKEN'),
+                 "offline_token": utils.get_env('OFFLINE_TOKEN'),
                  "openshift_version": utils.get_env('OPENSHIFT_VERSION', '4.6'),
                  "base_domain": utils.get_env('BASE_DOMAIN', "redhat.com"),
                  "num_masters": int(utils.get_env('NUM_MASTERS', consts.NUMBER_OF_MASTERS)),
@@ -45,7 +47,18 @@ env_variables["iso_download_path"] = image
 env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_masters"]
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
+def api_client():
+    url = env_variables['remote_service_url']
+
+    if not url:
+        url = utils.get_local_assisted_service_url(
+            utils.get_env('PROFILE'), utils.get_env('NAMESPACE'), 'assisted-service', utils.get_env('DEPLOY_TARGET'))
+
+    yield assisted_service_api.create_client(url)
+
+
+@pytest.fixture(scope="session")
 def setup_node_controller():
     logging.info("Setup node controller")
     controller = nodeController(**env_variables)

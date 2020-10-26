@@ -39,7 +39,7 @@ class InventoryClient(object):
         def refresh_api_key(config):
             # Get the properly padded key segment
             auth = config.api_key.get('Authorization', None)
-            if auth != None:
+            if auth is not None:
                 segment = auth.split('.')[1]
                 padding = len(segment) % 4
                 segment = segment + padding * '='
@@ -232,14 +232,18 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
-    def download_cluster_events(self, cluster_id, output_file):
-        log.info("Downloading cluster events to %s", output_file)
+    def get_events(self, cluster_id):
         response = self.events.list_events(
             cluster_id=cluster_id, _preload_content=False
         )
 
+        return json.loads(response.data)
+
+    def download_cluster_events(self, cluster_id, output_file):
+        log.info("Downloading cluster events to %s", output_file)
+
         with open(output_file, "wb") as _file:
-            _file.write(json.dumps(json.loads(response.data), indent=4).encode())
+            _file.write(json.dumps(self.get_events(cluster_id), indent=4).encode())
 
     def download_host_logs(self, cluster_id, host_id, output_file):
         log.info("Downloading host logs to %s", output_file)

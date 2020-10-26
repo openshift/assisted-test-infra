@@ -6,6 +6,9 @@ SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
 
+ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+REPORTS = $(ROOT_DIR)/reports
+
 SKIPPER_PARAMS ?= -i
 
 # assisted-service
@@ -297,6 +300,9 @@ download_iso_for_remote_use: deploy_assisted_service
 # Test #
 ########
 
+$(REPORTS):
+	-mkdir -p $(REPORTS)
+
 lint:
 	mkdir -p build
 	skipper make _lint
@@ -307,5 +313,5 @@ _lint:
 test:
 	skipper make $(SKIPPER_PARAMS) _test
 
-_test:
-	python3 -m pytest discovery-infra/tests --verbose -s
+_test: $(REPORTS)
+	python3 -m pytest $(or ${TEST},${TEST},discovery-infra/tests) --verbose -s --junit-xml=$(REPORTS)/unittest.xml

@@ -7,11 +7,11 @@ from tests.base_test import BaseTest
 class TestAgent(BaseTest):
 
     @pytest.mark.regression
-    def test_kill_agent(self, api_client, node_controller):
+    def test_kill_agent(self, api_client, node_controller, cluster):
         # start vms, kill agent, validate it was restarted and works
 
         # Define new cluster
-        cluster_id = self.create_cluster(api_client=api_client).id
+        cluster_id = cluster().id
         # Generate and download cluster ISO
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Boot nodes into ISO

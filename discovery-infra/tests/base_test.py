@@ -1,20 +1,22 @@
-import os
-import pytest
 import logging
+import os
+import random
+from contextlib import suppress
+from string import ascii_lowercase
+from typing import Optional
 
-from test_infra import utils
-from test_infra import consts
-from test_infra import assisted_service_api
+import pytest
+from assisted_service_client.rest import ApiException
+from test_infra import consts, utils
+
 from tests.conftest import env_variables
 
 
-class BaseTest:
-    @pytest.fixture()
-    def api_client(self):
-        client = assisted_service_api.create_client(env_variables['remote_service_url'])
-        self.delete_cluster_if_exists(api_client=client, cluster_name=env_variables['cluster_name'])
-        return client
+def random_name():
+    return ''.join(random.choice(ascii_lowercase) for i in range(10))
 
+
+class BaseTest:
     @pytest.fixture(scope="function")
     def node_controller(self, setup_node_controller):
         controller = setup_node_controller
@@ -22,28 +24,38 @@ class BaseTest:
         controller.shutdown_all_nodes()
         controller.format_all_node_disks()
 
-    @staticmethod
-    def create_cluster(
-            api_client,
-            cluster_name=env_variables['cluster_name'], 
-            ssh_public_key=env_variables['ssh_public_key'], 
-            pull_secret=env_variables['pull_secret'], 
-            openshift_version=env_variables['openshift_version'], 
-            base_dns_domain=env_variables['base_domain'], 
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation']
-    ):
-        return api_client.create_cluster(
-            cluster_name, 
-            ssh_public_key=ssh_public_key, 
-            pull_secret=pull_secret, 
-            openshift_version=openshift_version, 
-            base_dns_domain=base_dns_domain, 
-            vip_dhcp_allocation=vip_dhcp_allocation
-        )
-    
+    @pytest.fixture()
+    def cluster(self, api_client):
+        clusters = []
+
+        def get_cluster_func(cluster_name: Optional[str] = None):
+            if not cluster_name:
+                cluster_name = random_name()
+
+            res = api_client.create_cluster(cluster_name,
+                                            ssh_public_key=env_variables['ssh_public_key'],
+                                            openshift_version=env_variables['openshift_version'],
+                                            pull_secret=env_variables['pull_secret'],
+                                            base_dns_domain=env_variables['base_domain'],
+                                            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'])
+            clusters.append(res)
+            return res
+
+        yield get_cluster_func
+
+        for cluster in clusters:
+            with suppress(ApiException):
+                api_client.delete_cluster(cluster.id)
+
+    @pytest.fixture()
+    def clean(self, api_client):
+        clusters = api_client.clusters_list()
+        for cluster in clusters:
+            api_client.delete_cluster(cluster['id'])
+
     def delete_cluster_if_exists(self, api_client, cluster_name):
         cluster_to_delete = self.get_cluster_by_name(
-            api_client=api_client, 
+            api_client=api_client,
             cluster_name=cluster_name
         )
 
@@ -60,8 +72,8 @@ class BaseTest:
 
     @staticmethod
     def generate_and_download_image(
-        cluster_id, 
-        api_client, 
+        cluster_id,
+        api_client,
         iso_download_path=env_variables['iso_download_path'],
         ssh_key=env_variables['ssh_public_key']
     ):
@@ -74,14 +86,14 @@ class BaseTest:
 
     @staticmethod
     def wait_until_hosts_are_discovered(
-        cluster_id, 
-        api_client, 
+        cluster_id,
+        api_client,
         nodes_count=env_variables['num_nodes']
     ):
         utils.wait_till_all_hosts_are_in_status(
-            client=api_client, 
-            cluster_id=cluster_id, 
-            nodes_count=nodes_count, 
+            client=api_client,
+            cluster_id=cluster_id,
+            nodes_count=nodes_count,
             statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         )
 
@@ -94,8 +106,8 @@ class BaseTest:
 
     @staticmethod
     def set_network_params(
-        cluster_id, 
-        api_client, 
+        cluster_id,
+        api_client,
         controller,
         nodes_count=env_variables['num_nodes'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
@@ -104,8 +116,8 @@ class BaseTest:
         if vip_dhcp_allocation:
             BaseTest.set_cluster_machine_cidr(cluster_id, api_client, cluster_machine_cidr)
         else:
-            BaseTest.set_ingress_and_api_vips(cluster_id, api_client, controller)    
-        
+            BaseTest.set_ingress_and_api_vips(cluster_id, api_client, controller)
+
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
@@ -151,7 +163,7 @@ class BaseTest:
     def is_cluster_in_error_status(cluster_id, api_client):
         return utils.is_cluster_in_status(
             client=api_client,
-            cluster_id=cluster_id, 
+            cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.ERROR]
         )
 
@@ -159,7 +171,7 @@ class BaseTest:
     def is_cluster_in_cancelled_status(cluster_id, api_client):
         return utils.is_cluster_in_status(
             client=api_client,
-            cluster_id=cluster_id, 
+            cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.CANCELLED]
         )
 
@@ -170,8 +182,8 @@ class BaseTest:
     @staticmethod
     def is_cluster_in_insufficient_status(cluster_id, api_client):
         return utils.is_cluster_in_status(
-            client=api_client, 
-            cluster_id=cluster_id, 
+            client=api_client,
+            cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.INSUFFICIENT]
         )
 
@@ -182,7 +194,7 @@ class BaseTest:
     @staticmethod
     def reboot_required_nodes_into_iso_after_reset(cluster_id, api_client, controller):
         nodes_to_reboot = api_client.get_hosts_in_statuses(
-            cluster_id=cluster_id, 
+            cluster_id=cluster_id,
             statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION]
         )
         for node in nodes_to_reboot:
@@ -194,7 +206,7 @@ class BaseTest:
     @staticmethod
     def wait_until_cluster_is_ready_for_install(cluster_id, api_client):
         utils.wait_till_cluster_is_in_status(
-            client=api_client, 
+            client=api_client,
             cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.READY]
         )
@@ -202,7 +214,7 @@ class BaseTest:
     @staticmethod
     def wait_for_cluster_to_install(cluster_id, api_client, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
         utils.wait_till_cluster_is_in_status(
-            client=api_client, 
+            client=api_client,
             cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.INSTALLED],
             timeout=timeout,
@@ -210,9 +222,9 @@ class BaseTest:
 
     @staticmethod
     def wait_for_nodes_to_install(
-        cluster_id, 
-        api_client, 
-        nodes_count=env_variables['num_nodes'], 
+        cluster_id,
+        api_client,
+        nodes_count=env_variables['num_nodes'],
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
     ):
         utils.wait_till_all_hosts_are_in_status(
