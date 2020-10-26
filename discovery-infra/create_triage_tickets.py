@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python3
 
 # This script gets a list of the filed clusters from the assisted-logs-server
 # For each cluster, which does not already has a triaging Jira ticket, it creates one
