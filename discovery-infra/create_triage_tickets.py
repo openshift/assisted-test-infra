@@ -15,6 +15,7 @@ import jira
 import add_triage_signature
 
 
+DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster"]
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
 JIRA_SERVER = "https://issues.redhat.com/"
 DEFAULT_NETRC_FILE = "~/.netrc"
@@ -81,6 +82,9 @@ def get_all_triage_tickets(jclient):
 
     return set(issues)
 
+def add_watchers(jclient, issue):
+    for w in DEFAULT_WATCHERS:
+        jclient.add_watcher(issue.key, w)
 
 def create_jira_ticket(jclient, existing_tickets, failure_data):
     summary = format_summary(failure_data)
@@ -95,7 +99,9 @@ def create_jira_ticket(jclient, existing_tickets, failure_data):
                                      issuetype={'name': 'Bug'},
                                      labels=format_labels(failure_data),
                                      description=format_description(failure_data))
+
     logger.info("issue created: %s", new_issue)
+    add_watchers(jclient, new_issue)
     return new_issue
 
 
