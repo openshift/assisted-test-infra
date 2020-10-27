@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import yaml
 from contextlib import suppress
 from string import ascii_lowercase
 from typing import Optional
@@ -234,3 +235,7 @@ class BaseTest:
             nodes_count=nodes_count,
             timeout=timeout,
         )
+    
+    @staticmethod
+    def get_cluster_install_config(cluster_id, api_client):
+        return yaml.load(api_client.get_cluster_install_config(cluster_id), Loader=yaml.SafeLoader)

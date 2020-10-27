@@ -38,7 +38,10 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "master_disk": int(utils.get_env('WORKER_DISK', '128849018880')),
                  "storage_pool_path": utils.get_env('STORAGE_POOL_PATH', os.path.join(os.getcwd(), "storage_pool")),
                  "cluster_name": utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}'),
-                 "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default)}
+                 "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default),
+                 "http_proxy_url": utils.get_env('HTTP_PROXY_URL', ''),
+                 "https_proxy_url": utils.get_env('HTTPS_PROXY_URL', ''),
+                 "kubeconfig_path": utils.get_env('KUBECONFIG', '')}
 
 image = utils.get_env('ISO',
                       os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-installer-image.iso')).strip()
