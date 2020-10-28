@@ -302,7 +302,7 @@ To test with Authentication, the following additional environment variables are 
 export ENABLE_AUTH=true
 export OCM_CLIENT_ID=<SSO Service Account Name>
 export OCM_CLIENT_SECRET=<SSO Service Account Password>
-export OCM_URL=https://api.openshift.com
+export OCM_BASE_URL=https://api.openshift.com
 export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
 ```
 
