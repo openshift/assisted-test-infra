@@ -38,3 +38,6 @@ class NodeController:
 
     def is_active(self, node_name) -> bool:
         raise NotImplementedError
+
+    def set_boot_order(self, node_name, cd_first=False) -> None:
+        raise NotImplementedError

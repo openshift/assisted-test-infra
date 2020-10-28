@@ -1,5 +1,5 @@
 import logging
-from test_infra import utils
+
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 
 
@@ -14,3 +14,4 @@ class QeVmController(LibvirtController):
 
     def get_ingress_and_api_vips(self):
         return {"api_vip": "192.168.123.5", "ingress_vip": "192.168.123.10"}
+

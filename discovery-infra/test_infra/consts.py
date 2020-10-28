@@ -31,6 +31,7 @@ class NodesStatus:
     KNOWN = "known"
     INSTALLING = "installing"
     INSTALLING_IN_PROGRESS = "installing-in-progress"
+    INSTALLING_PENDING_USER_ACTION = "installing-pending-user-action"
     INSTALLED = "installed"
     ERROR = "error"
     PENDING_FOR_INPUT = "pending-for-input"

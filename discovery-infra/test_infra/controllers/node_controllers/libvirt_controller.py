@@ -2,7 +2,9 @@ import os
 import logging
 import libvirt
 import waiting
+from xml.dom import minidom
 from contextlib import suppress
+
 from test_infra import utils
 from test_infra import consts
 from test_infra.controllers.node_controllers.host import Host
@@ -127,7 +129,7 @@ class LibvirtController(NodeController):
         ips, _ = self._get_domain_ips_and_macs(domain)
         return ips
 
-    def _wait_till_domain_has_ips(self, domain, timeout=120, interval=5):
+    def _wait_till_domain_has_ips(self, domain, timeout=240, interval=5):
         logging.info("Waiting till host %s will have ips", domain.name())
         waiting.wait(
             lambda: len(self._get_domain_ips(domain)) > 0,
@@ -135,3 +137,33 @@ class LibvirtController(NodeController):
             sleep_seconds=interval,
             waiting_for="Waiting for Ips",
         )
+
+    def set_boot_order(self, node_name, cd_first=False):
+        logging.info(f"Going to set the following boot order: cd_first: {cd_first}, "
+                     f"for node: {node_name}")
+        node = self.libvirt_connection.lookupByName(node_name)
+        current_xml = node.XMLDesc(0)
+        # Creating XML obj
+        xml = minidom.parseString(current_xml.encode('utf-8'))
+        os_element = xml.getElementsByTagName('os')[0]
+        # Delete existing boot elements
+        for el in os_element.getElementsByTagName('boot'):
+            dev = el.getAttribute('dev')
+            if dev in ['cdrom', 'hd']:
+                os_element.removeChild(el)
+            else:
+                raise ValueError(f'Found unexpected boot device: \'{dev}\'')
+        # Set boot elements for hd and cdrom
+        first = xml.createElement('boot')
+        first.setAttribute('dev', 'cdrom' if cd_first else 'hd')
+        os_element.appendChild(first)
+        second = xml.createElement('boot')
+        second.setAttribute('dev', 'hd' if cd_first else 'cdrom')
+        os_element.appendChild(second)
+        # Apply new machine xml
+        dom = self.libvirt_connection.defineXML(xml.toprettyxml())
+        if dom is None:
+            raise Exception(f"Failed to set boot order cdrom first: {cd_first}, "
+                            f"for node: {node_name}")
+        logging.info(f"Boot order set successfully: cdrom first: {cd_first}, "
+                     f"for node: {node_name}")

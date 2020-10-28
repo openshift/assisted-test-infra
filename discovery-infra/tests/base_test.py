@@ -87,9 +87,9 @@ class BaseTest:
 
     @staticmethod
     def wait_until_hosts_are_discovered(
-        cluster_id,
-        api_client,
-        nodes_count=env_variables['num_nodes']
+        cluster_id, 
+        api_client, 
+        nodes_count=env_variables['num_masters']+env_variables['num_workers']
     ):
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
@@ -110,7 +110,7 @@ class BaseTest:
         cluster_id,
         api_client,
         controller,
-        nodes_count=env_variables['num_nodes'],
+        nodes_count=env_variables['num_masters']+env_variables['num_workers'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
         cluster_machine_cidr=env_variables['machine_cidr']
     ):
@@ -161,6 +161,14 @@ class BaseTest:
             stages=[consts.HostsProgressStages.REBOOTING])
 
     @staticmethod
+    def wait_for_one_host_to_be_in_wrong_boot_order(cluster_id, api_client):
+        utils.wait_till_at_least_one_host_is_in_status(
+            client=api_client,
+            cluster_id=cluster_id,
+            statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION]
+        )
+
+    @staticmethod
     def is_cluster_in_error_status(cluster_id, api_client):
         return utils.is_cluster_in_status(
             client=api_client,
@@ -187,10 +195,6 @@ class BaseTest:
             cluster_id=cluster_id,
             statuses=[consts.ClusterStatus.INSUFFICIENT]
         )
-
-    @staticmethod
-    def is_hosts_in_wrong_boot_order(cluster_id, api_client):
-        return utils.wait_till_all_hosts_are_in_status()
 
     @staticmethod
     def reboot_required_nodes_into_iso_after_reset(cluster_id, api_client, controller):
@@ -223,9 +227,9 @@ class BaseTest:
 
     @staticmethod
     def wait_for_nodes_to_install(
-        cluster_id,
-        api_client,
-        nodes_count=env_variables['num_nodes'],
+        cluster_id, 
+        api_client, 
+        nodes_count=env_variables['num_masters']+env_variables['num_workers'],
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
     ):
         utils.wait_till_all_hosts_are_in_status(
@@ -239,3 +243,17 @@ class BaseTest:
     @staticmethod
     def get_cluster_install_config(cluster_id, api_client):
         return yaml.load(api_client.get_cluster_install_config(cluster_id), Loader=yaml.SafeLoader)
+
+    @staticmethod
+    def wait_for_nodes_status_installing_or_installed(
+            cluster_id,
+            api_client,
+            nodes_count=env_variables['num_masters']+env_variables['num_workers']):
+        utils.wait_till_all_hosts_are_in_status(
+            client=api_client,
+            cluster_id=cluster_id,
+            nodes_count=nodes_count,
+            statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS,
+                      consts.NodesStatus.INSTALLED],
+            interval=30,
+        )

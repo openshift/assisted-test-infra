@@ -216,7 +216,7 @@ def wait_till_all_hosts_are_in_status(
     cluster_id,
     nodes_count,
     statuses,
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     interval=5,
 ):
@@ -243,7 +243,7 @@ def wait_till_at_least_one_host_is_in_status(
     client,
     cluster_id,
     statuses,
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     interval=5,
 ):

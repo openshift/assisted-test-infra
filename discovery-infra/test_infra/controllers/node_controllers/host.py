@@ -1,4 +1,5 @@
 import logging
+
 from test_infra.controllers.node_controllers import ssh
 
 
@@ -66,3 +67,6 @@ class Host(object):
         logging.info("Verifying if service %s is active on host %s", service, self.name)
         output = self.run_command(f'sudo systemctl is-active {service}.service || true')
         return output.strip() == "active"
+
+    def set_boot_order(self, cd_first=False):
+        self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first)
