@@ -265,6 +265,9 @@ class InventoryClient(object):
         response = self.versions.list_component_versions()
         return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
 
+    def update_discovery_ignition(self, cluster_id, update_params):
+        log.info("Updating cluster discovery ignition with %s", update_params)
+        return self.client.update_discovery_ignition(cluster_id, {"config": json.dumps(update_params)})
 
 def create_client(url, wait_for_api=True):
     log.info('Creating assisted-service client for url: %s', url)

@@ -348,6 +348,23 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             validate_dns(client, cluster.id)
 
 
+def override_ignition(client, cluster_id):
+    ignition_overrides = {
+        "ignition": {
+            "version": "3.1.0"
+        },
+        "storage": {
+            "files": [
+                {
+                    "path": "/etc/example",
+                    "contents": {"source": "data:text/plain;base64,aGVscGltdHJhcHBlZGluYXN3YWdnZXJzcGVj"}
+                }
+            ]
+        }
+    }
+    client.update_discovery_ignition(cluster_id, ignition_overrides)
+
+
 def execute_day1_flow(cluster_name):
     client = None
     cluster = {}
@@ -376,6 +393,8 @@ def execute_day1_flow(cluster_name):
                 cluster_name,
                 ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
+
+        override_ignition(client, cluster.id)
 
         image_path = os.path.join(
             consts.IMAGE_FOLDER,
