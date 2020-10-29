@@ -81,6 +81,7 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integrat
 # minikube profile is used to manage multiple minikube instances
 PROFILE := $(or $(PROFILE),minikube)
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
+OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
 
 .EXPORT_ALL_VARIABLES:
 
@@ -198,6 +199,22 @@ kill_port_forwardings:
 
 kill_all_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(UI_SERVICE_NAME)'
+
+deploy_on_ocp_cluster:
+	# service
+	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
+		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
+		CLUSTER_NAME=$(CLUSTER_NAME) CLUSTER_ID=$(CLUSTER_ID) PROFILE=$(PROFILE) \
+		scripts/deploy_assisted_service.sh
+
+	# UI
+	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
+		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
+		CLUSTER_NAME=$(CLUSTER_NAME) CLUSTER_ID=$(CLUSTER_ID) PROFILE=$(PROFILE) \
+		scripts/deploy_ui.sh
+
+config_etc_hosts_for_ocp_cluster:
+	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) --deploy-target ocp $(ADDITIONAL_PARAMS)
 
 ###########
 # Cluster #
