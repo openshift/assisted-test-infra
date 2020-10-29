@@ -1,0 +1,61 @@
+pipeline {
+    agent { label 'test-infra' }
+
+    environment {
+        SKIPPER_PARAMS = " "
+        PULL_SECRET = credentials('assisted-test-infra-pull-secret')
+        OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
+        BASE_DNS_DOMAINS = credentials('route53_dns_domain')
+        ROUTE53_SECRET = credentials('route53_secret')
+        PROFILE = "minikube"
+        NAMESPACE = "assisted-installer"
+    }
+    options {
+      timeout(time: 1, unit: 'HOURS')
+    }
+
+    stages {
+        stage('Init') {
+            steps {
+                sh "make image_build"
+                sh "make create_full_environment"
+
+                // Login
+                sh "minikube --profile ${PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh "make run"
+                sh "make test"
+            }
+            post {
+                always {
+                    junit '**/reports/*test.xml'
+                }
+            }
+        }
+    }
+
+    post {
+         always {
+            script {
+                try {
+                    ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
+                    minikube_url = "https://${ip}:8443"
+
+                    sh "kubectl --server=${minikube_url} get pods -A"
+
+                    sh '''make download_all_logs LOGS_DEST=$WORKSPACE/cluster_logs REMOTE_SERVICE_URL="$(minikube service assisted-service --url -p ${PROFILE} -n ${NAMESPACE})"'''
+
+                    for (service in ["assisted-service","postgres","scality","createimage"]) {
+                        sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
+                    }
+                } finally {
+                    sh "make destroy"
+                }
+            }
+        }
+    }
+}

@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
-import base64
 import json
 import os
-import shutil
+import base64
+import requests
 import time
 
-import requests
-import urllib3
+import consts
+import shutil
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
-
-import consts
-import utils
 from logger import log
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class InventoryClient(object):
@@ -28,7 +23,6 @@ class InventoryClient(object):
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
         self.events = api.EventsApi(api_client=self.api)
-        self.versions = api.VersionsApi(api_client=self.api)
 
     def set_config_auth(self, c):
         offline_token = os.environ.get('OFFLINE_TOKEN', "")
@@ -39,7 +33,7 @@ class InventoryClient(object):
         def refresh_api_key(config):
             # Get the properly padded key segment
             auth = config.api_key.get('Authorization', None)
-            if auth is not None:
+            if auth != None:
                 segment = auth.split('.')[1]
                 padding = len(segment) % 4
                 segment = segment + padding * '='
@@ -198,16 +192,6 @@ class InventoryClient(object):
             file_path=kubeconfig_path,
         )
 
-    def download_ignition_files(self, cluster_id, destination):
-        log.info("Downloading cluster %s ignition files to %s", cluster_id, destination)
-
-        for ignition_file in ["bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml"]:
-            response = self.client.download_cluster_files(
-                cluster_id=cluster_id, file_name=ignition_file, _preload_content=False
-            )
-            with open(os.path.join(destination, ignition_file), "wb") as _file:
-                _file.write(response.data)
-
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
         response = self.client.download_cluster_kubeconfig(
@@ -265,14 +249,22 @@ class InventoryClient(object):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.reset_cluster(cluster_id=cluster_id)
 
-    def get_versions(self):
-        response = self.versions.list_component_versions()
-        return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
+    def set_cluster_proxy(self, cluster_id, http_proxy, https_proxy='', no_proxy=''):
+        log.info(
+            "Setting proxy for cluster %s", cluster_id
+        )
+        update_params = models.ClusterUpdateParams(
+            http_proxy=http_proxy, 
+            https_proxy=https_proxy, 
+            no_proxy=no_proxy
+        )
+        return self.client.update_cluster(
+            cluster_id=cluster_id, cluster_update_params=update_params
+        )
 
-    def update_discovery_ignition(self, cluster_id, update_params):
-        log.info("Updating cluster discovery ignition with %s", update_params)
-        return self.client.update_discovery_ignition(cluster_id, {"config": json.dumps(update_params)})
-
+    def get_cluster_install_config(self, cluster_id):
+        log.info("Getting install-config for cluster %s", cluster_id)
+        return self.client.get_cluster_install_config(cluster_id=cluster_id)
 
 def create_client(url, wait_for_api=True):
     log.info('Creating assisted-service client for url: %s', url)
