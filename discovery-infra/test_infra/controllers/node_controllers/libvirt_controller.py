@@ -138,6 +138,12 @@ class LibvirtController(NodeController):
             waiting_for="Waiting for Ips",
         )
 
+    def set_correct_boot_order_to_all_nodes(self):
+        logging.info("Going to set correct boot order to all nodes")
+        nodes = self.list_nodes()
+        for node in list(nodes.values()):
+            node.set_boot_order()
+
     def set_boot_order(self, node_name, cd_first=False):
         logging.info(f"Going to set the following boot order: cd_first: {cd_first}, "
                      f"for node: {node_name}")
