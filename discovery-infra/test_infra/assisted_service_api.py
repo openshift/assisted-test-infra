@@ -266,6 +266,16 @@ class InventoryClient(object):
         log.info("Getting install-config for cluster %s", cluster_id)
         return self.client.get_cluster_install_config(cluster_id=cluster_id)
 
+
+    def patch_cluster_discovery_ignition(self, cluster_id, ignition_info):
+        log.info("patchingcluster %s discovery ignition", cluster_id)
+        return self.client.update_discovery_ignition(cluster_id=cluster_id, discovery_ignition_params=ignition_info)
+
+    def get_cluster_discovery_ignition(self, cluster_id):
+        log.info("Getting discovery ignition for cluster %s", cluster_id)
+        return self.client.get_discovery_ignition(cluster_id=cluster_id, )
+
+
 def create_client(url, wait_for_api=True):
     log.info('Creating assisted-service client for url: %s', url)
     c = InventoryClient(url)
