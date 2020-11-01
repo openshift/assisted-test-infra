@@ -22,6 +22,7 @@ import oc_utils
 import day2
 import waiting
 from logger import log
+from test_infra.tools import terraform_utils
 
 
 # Filling tfvars json files with terraform needed variables to spawn vms
@@ -101,7 +102,7 @@ def create_nodes(
         storage_path,
         master_count,
         nodes_details,
-        tf_folder
+        tf
         ):
     log.info("Creating tfvars")
     fill_tfvars(
@@ -109,13 +110,11 @@ def create_nodes(
         storage_path=storage_path,
         master_count=master_count,
         nodes_details=nodes_details,
-        tf_folder=tf_folder
+        tf_folder=tf.working_dir
     )
     log.info('Start running terraform')
     with utils.file_lock_context():
-        return utils.run_command(
-            f'make _run_terraform CLUSTER_NAME={cluster_name}'
-        )
+        return tf.apply()
 
 
 # Starts terraform nodes creation, waits till all nodes will get ip and will move to known status
@@ -127,7 +126,7 @@ def create_nodes_and_wait_till_registered(
         storage_path,
         master_count,
         nodes_details,
-        tf_folder
+        tf
         ):
     nodes_count = master_count + nodes_details["worker_count"]
     create_nodes(
@@ -136,7 +135,7 @@ def create_nodes_and_wait_till_registered(
         storage_path=storage_path,
         master_count=master_count,
         nodes_details=nodes_details,
-        tf_folder=tf_folder
+        tf=tf
     )
 
     # TODO: Check for only new nodes
@@ -294,6 +293,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     utils.recreate_folder(tf_folder)
     copy_tree(consts.TF_TEMPLATE, tf_folder)
+    tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
 
     create_nodes_and_wait_till_registered(
         cluster_name=cluster_name,
@@ -303,7 +303,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
         storage_path=args.storage_path,
         master_count=args.master_count,
         nodes_details=nodes_details,
-        tf_folder=tf_folder
+        tf=tf
     )
 
     if client:
@@ -343,6 +343,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 cluster_id=cluster.id,
                 kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
                 pull_secret=args.pull_secret,
+                tf=tf
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)

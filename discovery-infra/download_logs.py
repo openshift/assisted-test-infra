@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 
-import os
 import json
-from datetime import datetime
-from dateutil.parser import isoparse
+import os
+import subprocess
 from argparse import ArgumentParser
-from contextlib import suppress
 from collections import Counter
+from contextlib import suppress
+from datetime import datetime
 
+import assisted_service_client
+from dateutil.parser import isoparse
+
+from assisted_service_api import InventoryClient, create_client
+from consts import ClusterStatus
 from logger import log
 from utils import recreate_folder, run_command
-import assisted_service_client
-from assisted_service_api import create_client, InventoryClient
 
-FAILED_STATUSES = ["error"]
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 
 
@@ -39,7 +41,7 @@ def main():
 
 
 def should_download_logs(cluster: dict):
-    return cluster['status'] in FAILED_STATUSES
+    return cluster['status'] in [ClusterStatus.ERROR]
 
 
 def download_logs(client: InventoryClient, cluster: dict, dest: str):
@@ -51,6 +53,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str):
 
     recreate_folder(output_folder)
     recreate_folder(os.path.join(output_folder, "cluster_files"))
+    recreate_folder(os.path.join(output_folder, "must-gather"))
 
     write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
 
@@ -62,6 +65,13 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str):
 
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_logs(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar"))
+
+    kubeconfig_path = os.path.join(output_folder, "kubeconfig")
+
+    with suppress(assisted_service_client.rest.ApiException):
+        if cluster['status'] in [ClusterStatus.INSTALLED]:
+            client.download_kubeconfig(cluster['id'], kubeconfig_path)
+            download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
 
     run_command("chmod -R ugo+rx '%s'" % output_folder)
 
@@ -100,6 +110,12 @@ def get_ui_url_from_api_url(api_url: str):
             return v
     else:
         raise KeyError(api_url)
+
+
+def download_must_gather(kubeconfig: str, dest_dir: str):
+    log.info(f"Downloading must-gather to {dest_dir}")
+    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
+    subprocess.run(command, shell=True)
 
 
 def handle_arguments():

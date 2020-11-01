@@ -8,6 +8,7 @@ import logging
 from test_infra import utils
 from test_infra import virsh_cleanup
 from test_infra import consts
+from test_infra.tools import terraform_utils
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 
 
@@ -20,6 +21,7 @@ class TerraformController(LibvirtController):
         self.params = self._terraform_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
         self.image_path = kwargs["iso_download_path"]
+        self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
 
     def _create_tf_folder(self):
         tf_folder = utils.get_tf_folder(self.cluster_name)
@@ -62,13 +64,7 @@ class TerraformController(LibvirtController):
 
         self._fill_tfvars()
         logging.info('Start running terraform')
-
-        utils.run_command_with_output(
-            f'cd {self.tf_folder} && '
-            'terraform init -plugin-dir=/root/.terraform.d/plugins/ && '
-            'terraform apply -auto-approve -input=false -state=terraform.tfstate '
-            '-state-out=terraform.tfstate -var-file=terraform.tfvars.json'
-        )
+        self.tf.apply()
         if self.params.running:
             utils.wait_till_nodes_are_ready(
                 nodes_count=self.params.worker_count + self.params.master_count,
@@ -166,15 +162,7 @@ class TerraformController(LibvirtController):
     )
     def _try_to_delete_nodes(self):
         logging.info('Start running terraform delete')
-        utils.run_command_with_output(
-            f'cd {self.tf_folder} && '
-            'terraform destroy '
-            '-auto-approve '
-            '-input=false '
-            '-state=terraform.tfstate '
-            '-state-out=terraform.tfstate '
-            '-var-file=terraform.tfvars.json'
-        )
+        self.tf.destroy()
 
     def destroy_all_nodes(self, delete_tf_folder=False):
         """ Runs terraform destroy and then cleans it with virsh cleanup to delete
