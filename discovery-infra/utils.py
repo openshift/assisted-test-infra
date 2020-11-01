@@ -102,6 +102,29 @@ def get_libvirt_nodes_mac_role_ip_and_name(network_name):
         raise
 
 
+def wait_for_cvo_available():
+    waiting.wait(
+        lambda: is_cvo_available(),
+        timeout_seconds=3600,
+        sleep_seconds=20,
+        waiting_for="CVO to become available",
+    )
+
+
+def is_cvo_available():
+    try:
+        res = subprocess.check_output("kubectl --kubeconfig=build/kubeconfig get clusterversion -o json", shell=True)
+        conditions = json.loads(res)['items'][0]['status']['conditions']
+        for condition in conditions:
+            if condition['type'] == 'Available':
+                if condition['status'] == 'True':
+                    return True
+                return False
+    except:
+        log.info("exception in access the cluster api server")
+    return False
+
+
 def get_libvirt_nodes_macs(network_name):
     return get_libvirt_nodes_mac_role_ip_and_name(network_name).keys()
 
@@ -514,6 +537,7 @@ def get_network_leases(network_name):
 def create_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 
+
 def set_hosts_roles_based_on_requested_name(client, cluster_id):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
     hosts_with_roles = []
@@ -525,3 +549,15 @@ def set_hosts_roles_based_on_requested_name(client, cluster_id):
     client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
 
 
+def config_etc_hosts(cluster):
+    api_vip_dnsname = "api." + cluster.name + "." + cluster.base_dns_domain
+    with open("/etc/hosts", "r") as f:
+        hosts_lines = f.readlines()
+    for i, line in enumerate(hosts_lines):
+        if api_vip_dnsname in line:
+            hosts_lines[i] = cluster.api_vip + " " + api_vip_dnsname +"\n"
+            break
+    else:
+        hosts_lines.append(cluster.api_vip + " " + api_vip_dnsname +"\n")
+    with open("/etc/hosts", "w") as f:
+        f.writelines(hosts_lines)
