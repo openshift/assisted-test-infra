@@ -26,14 +26,14 @@ class LibvirtController(NodeController):
 
     def list_nodes_with_name_filter(self, name_filter):
         logging.info("Listing current hosts with name filter %s", name_filter)
-        nodes = {}
+        nodes = []
         domains = self.libvirt_connection.listAllDomains()
         for domain in domains:
             domain_name = domain.name()
             if name_filter and name_filter not in domain_name:
                 continue
             if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
-                nodes[domain_name] = Host(domain_name, self, self.private_ssh_key_path)
+                nodes.append(Host(domain_name, self, self.private_ssh_key_path))
         logging.info("Found domains %s", nodes)
         return nodes
 
@@ -48,8 +48,8 @@ class LibvirtController(NodeController):
         logging.info("Going to shutdown all the nodes")
         nodes = self.list_nodes()
 
-        for node in nodes.keys():
-            self.shutdown_node(node)
+        for node in nodes:
+            self.shutdown_node(node.name)
 
     def start_node(self, node_name):
         logging.info("Going to power-on %s", node_name)
@@ -63,8 +63,8 @@ class LibvirtController(NodeController):
         logging.info("Going to power-on all the nodes")
         nodes = self.list_nodes()
 
-        for node in nodes.keys():
-            self.start_node(node)
+        for node in nodes:
+            self.start_node(node.name)
         return nodes
 
     @staticmethod
@@ -90,8 +90,8 @@ class LibvirtController(NodeController):
         logging.info("Formatting all the disks")
         nodes = self.list_nodes()
 
-        for node in nodes.keys():
-            self.format_node_disk(node)
+        for node in nodes:
+            self.format_node_disk(node.name)
 
     def prepare_nodes(self):
         self.destroy_all_nodes()

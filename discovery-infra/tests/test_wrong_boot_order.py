@@ -12,7 +12,7 @@ class TestWrongBootOrder(BaseTest):
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Change boot order of a random node
         hosts = node_controller.list_nodes()
-        node = list(hosts.values())[0]
+        node = hosts[0]
         node.set_boot_order(cd_first=True)
         # Boot nodes into ISO
         node_controller.start_all_nodes()
