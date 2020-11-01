@@ -5,6 +5,7 @@ ipython
 libvirt-python==6.8.0
 pre-commit==2.7.1
 pyyaml==5.3.1
+python-terraform==0.10.1
 kubernetes==12.0.0
 munch==2.5.0
 requests==2.24.0

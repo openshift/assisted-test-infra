@@ -10,6 +10,7 @@ import utils
 import oc_utils
 import waiting
 from logger import log
+from test_infra.tools import terraform_utils
 
 
 # Verify folder to download kubeconfig exists. If will be needed in other places move to utils
@@ -74,7 +75,7 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
 # 2. Running install cluster api
 # 3. Waiting till all nodes are in installing status
 # 4. Downloads kubeconfig for future usage
-def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
+def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
     client.update_cluster_install_config(cluster_id, {"networking": {"networkType": "OpenShiftSDN"}})
@@ -113,6 +114,11 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret):
         waiting_for="Kubeconfig",
     )
 
+    # set new vips
+    if tf:
+        cluster_info = client.cluster_get(cluster.id)
+        tf.set_new_vip(cluster_info.api_vip)
+
 
 def download_logs_from_all_hosts(client, cluster_id, output_folder):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
@@ -133,10 +139,12 @@ def main():
     _verify_kube_download_folder(args.kubeconfig_path)
     log.info("Creating assisted service client")
     # if not cluster id is given, reads it from latest run
+    tf = None
     if not args.cluster_id:
         cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
         args.cluster_id = utils.get_tfvars(tf_folder)['cluster_inventory_id']
+        tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
 
     client = assisted_service_api.create_client(
         url=utils.get_assisted_service_url_by_args(
@@ -149,6 +157,7 @@ def main():
         cluster_id=args.cluster_id,
         kubeconfig_path=args.kubeconfig_path,
         pull_secret=args.pull_secret,
+        tf=tf
     )
 
 
