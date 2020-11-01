@@ -19,7 +19,7 @@ class TestAgent(BaseTest):
         test_host = list(hosts.values())[0]
         waiting.wait(
             lambda: test_host.is_service_active("agent") is True,
-            timeout_seconds=60,
+            timeout_seconds=60 * 6,
             sleep_seconds=5,
             waiting_for="Waiting for agent",
         )
@@ -28,7 +28,7 @@ class TestAgent(BaseTest):
         # wait till agent is up
         waiting.wait(
             lambda: test_host.is_service_active("agent") is True,
-            timeout_seconds=60,
+            timeout_seconds=60 * 6,
             sleep_seconds=5,
             waiting_for="Waiting for agent",
         )

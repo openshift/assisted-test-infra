@@ -21,6 +21,7 @@ class BaseTest:
     @pytest.fixture(scope="function")
     def node_controller(self, setup_node_controller):
         controller = setup_node_controller
+        controller.set_correct_boot_order_to_all_nodes()
         yield controller
         controller.shutdown_all_nodes()
         controller.format_all_node_disks()

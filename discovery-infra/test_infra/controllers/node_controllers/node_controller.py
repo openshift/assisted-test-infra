@@ -41,3 +41,6 @@ class NodeController:
 
     def set_boot_order(self, node_name, cd_first=False) -> None:
         raise NotImplementedError
+
+    def set_correct_boot_order_to_all_nodes(self) -> None:
+        raise NotImplementedError
