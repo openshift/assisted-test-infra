@@ -347,6 +347,10 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)
+            if args.wait_for_cvo:
+                cluster_info = client.cluster_get(cluster.id)
+                utils.config_etc_hosts(cluster_info)
+                utils.wait_for_cvo_available()
 
 
 def override_ignition(client, cluster_id):
@@ -537,6 +541,12 @@ if __name__ == "__main__":
         "-in",
         "--install-cluster",
         help="Install cluster, will take latest id",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-cvo",
+        "--wait-for-cvo",
+        help="Wait for CVO available after cluster installation",
         action="store_true",
     )
     parser.add_argument(
