@@ -1,7 +1,9 @@
 build
 assisted-service
 .idea
+.vscode
 .terraform
+reports/
 *__pycache__*
 minikube
 *.log

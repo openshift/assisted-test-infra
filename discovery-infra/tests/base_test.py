@@ -5,6 +5,7 @@ import yaml
 from contextlib import suppress
 from string import ascii_lowercase
 from typing import Optional
+from collections import Counter
 
 import pytest
 from assisted_service_client.rest import ApiException
@@ -83,9 +84,25 @@ class BaseTest:
         )
 
     @staticmethod
+    def wait_until_hosts_are_registered(
+        cluster_id,
+        api_client,
+        nodes_count=env_variables['num_masters']+env_variables['num_workers']
+    ):
+        utils.wait_till_all_hosts_are_in_status(
+            client=api_client,
+            cluster_id=cluster_id,
+            nodes_count=nodes_count,
+            statuses=[consts.NodesStatus.PENDING_FOR_INPUT,
+                      consts.NodesStatus.INSUFFICIENT,
+                      consts.NodesStatus.KNOWN,
+            ]
+        )
+
+    @staticmethod
     def wait_until_hosts_are_discovered(
-        cluster_id, 
-        api_client, 
+        cluster_id,
+        api_client,
         nodes_count=env_variables['num_masters']+env_variables['num_workers']
     ):
         utils.wait_till_all_hosts_are_in_status(
@@ -224,6 +241,16 @@ class BaseTest:
         )
 
     @staticmethod
+    def wait_until_cluster_starts_installation(cluster_id, api_client):
+        utils.wait_till_cluster_is_in_status(
+            client=api_client,
+            cluster_id=cluster_id,
+            statuses=[consts.ClusterStatus.PREPARING_FOR_INSTALLATION,
+                      consts.ClusterStatus.INSTALLING,
+                      consts.ClusterStatus.FINALIZING]
+        )
+
+    @staticmethod
     def wait_for_cluster_to_install(cluster_id, api_client, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
         utils.wait_till_cluster_is_in_status(
             client=api_client,
@@ -264,3 +291,50 @@ class BaseTest:
                       consts.NodesStatus.INSTALLED],
             interval=30,
         )
+
+    def setup_hosts(self, cluster_id, api_client, node_controller):
+        self.generate_and_download_image(cluster_id=cluster_id,
+                                         api_client=api_client)
+        node_controller.start_all_nodes()
+        self.wait_until_hosts_are_registered(cluster_id=cluster_id,
+                                             api_client=api_client)
+        return api_client.get_cluster_hosts(cluster_id=cluster_id)
+    
+    def prepare_for_installation(self, cluster_id, api_client, node_controller):
+        self.set_network_params(cluster_id=cluster_id,
+                                api_client=api_client,
+                                controller=node_controller)
+    
+    def expect_ready_to_install(self, cluster_id, api_client):
+        self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id,
+                                                     api_client=api_client)
+    
+    def start_installation(self, cluster_id, api_client):
+        self.start_cluster_install(cluster_id=cluster_id,
+                                   api_client=api_client)
+        self.wait_until_cluster_starts_installation(cluster_id=cluster_id,
+                                                    api_client=api_client)
+        hosts = api_client.get_cluster_hosts(cluster_id=cluster_id)
+        return {h["id"]: h["role"] for h in hosts}
+
+    def _get_matching_hosts(self, hosts, host_type, count):
+        return [{"id": h["id"], "role": host_type}
+                for h in hosts
+                if host_type in h["requested_hostname"]][:count]
+    
+    def assign_roles(self, cluster_id, api_client, hosts, requested_roles):
+        assigned_roles = self._get_matching_hosts(
+            hosts=hosts,
+            host_type=consts.NodeRoles.MASTER,
+            count=requested_roles["master"])
+
+        assigned_roles.extend(self._get_matching_hosts(
+            hosts=hosts,
+            host_type=consts.NodeRoles.WORKER,
+            count=requested_roles["worker"]))
+
+        api_client.set_hosts_roles(
+            cluster_id=cluster_id,
+            hosts_with_roles=assigned_roles)
+
+        return assigned_roles
