@@ -249,6 +249,10 @@ class InventoryClient(object):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.reset_cluster(cluster_id=cluster_id)
 
+    def disable_host(self, cluster_id, host_id):
+        log.info(f"Disabling host: {host_id}, in cluster id: {cluster_id}")
+        return self.client.disable_host(cluster_id=cluster_id, host_id=host_id)
+
     def set_cluster_proxy(self, cluster_id, http_proxy, https_proxy='', no_proxy=''):
         log.info(
             "Setting proxy for cluster %s", cluster_id
