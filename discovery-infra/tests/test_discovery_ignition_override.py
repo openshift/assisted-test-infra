@@ -26,7 +26,7 @@ class TestDiscoveryIgnition(BaseTest):
         # Wait until hosts are discovered and update host roles
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         # Verify override
-        for test_host in hosts.values():
+        for test_host in hosts:
             file_content = test_host.run_command("cat {}".format(override_path))
             assert file_content == test_string
 
