@@ -32,7 +32,7 @@ def fill_tfvars(
         master_count,
         nodes_details,
         tf_folder
-        ):
+):
     tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
         tfvars = json.load(_file)
@@ -103,7 +103,7 @@ def create_nodes(
         master_count,
         nodes_details,
         tf
-        ):
+):
     log.info("Creating tfvars")
     fill_tfvars(
         image_path=image_path,
@@ -127,7 +127,7 @@ def create_nodes_and_wait_till_registered(
         master_count,
         nodes_details,
         tf
-        ):
+):
     nodes_count = master_count + nodes_details["worker_count"]
     create_nodes(
         cluster_name=cluster_name,
@@ -169,8 +169,8 @@ def set_hosts_roles(client, cluster_id, network_name):
             inventory = json.loads(host["inventory"])
 
             if libvirt_mac.lower() in map(
-                lambda interface: interface["mac_address"].lower(),
-                inventory["interfaces"],
+                    lambda interface: interface["mac_address"].lower(),
+                    inventory["interfaces"],
             ):
                 added_hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
 
@@ -353,23 +353,6 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 utils.wait_for_cvo_available()
 
 
-def override_ignition(client, cluster_id):
-    ignition_overrides = {
-        "ignition": {
-            "version": "3.1.0"
-        },
-        "storage": {
-            "files": [
-                {
-                    "path": "/etc/example",
-                    "contents": {"source": "data:text/plain;base64,aGVscGltdHJhcHBlZGluYXN3YWdnZXJzcGVj"}
-                }
-            ]
-        }
-    }
-    client.update_discovery_ignition(cluster_id, ignition_overrides)
-
-
 def execute_day1_flow(cluster_name):
     client = None
     cluster = {}
@@ -398,8 +381,6 @@ def execute_day1_flow(cluster_name):
                 cluster_name,
                 ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
-
-        override_ignition(client, cluster.id)
 
         image_path = os.path.join(
             consts.IMAGE_FOLDER,
@@ -434,7 +415,7 @@ def main():
     if args.day2_cluster:
         day2.execute_day2_flow(cluster_id, args)
 
-    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run discovery flow")
     parser.add_argument(
