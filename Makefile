@@ -330,4 +330,4 @@ test:
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS)
-	python3 -m pytest $(or ${TEST},${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
+	python3 -m pytest $(or ${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
