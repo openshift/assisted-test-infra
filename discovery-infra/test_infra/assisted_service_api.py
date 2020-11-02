@@ -13,19 +13,19 @@ from logger import log
 
 
 class InventoryClient(object):
-    def __init__(self, inventory_url):
+    def __init__(self, inventory_url, offline_token, pull_secret):
         self.inventory_url = inventory_url
         configs = Configuration()
         configs.host = self.inventory_url + "/api/assisted-install/v1"
         configs.verify_ssl = False
-        self.set_config_auth(configs)
+        self.set_config_auth(configs, offline_token)
+        self._set_x_secret_key(configs, pull_secret)
 
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
         self.events = api.EventsApi(api_client=self.api)
 
-    def set_config_auth(self, c):
-        offline_token = os.environ.get('OFFLINE_TOKEN', "")
+    def set_config_auth(self, c, offline_token):
         if offline_token == "":
             log.info("OFFLINE_TOKEN not set, skipping authentication headers")
             return
@@ -60,6 +60,14 @@ class InventoryClient(object):
 
         c.api_key_prefix['Authorization'] = 'Bearer'
         c.refresh_api_key_hook = refresh_api_key
+
+    def _set_x_secret_key(self, c, pull_secret):
+        if not pull_secret:
+            log.info("pull secret not set, skipping agent authentication headers")
+            return
+
+        log.info("Setting X-Secret-Key")
+        c.api_key['X-Secret-Key'] = json.loads(pull_secret)['auths']['cloud.openshift.com']['auth']
 
     def wait_for_api_readiness(self):
         log.info("Waiting for inventory api to be ready")
@@ -280,10 +288,49 @@ class InventoryClient(object):
         log.info("Getting discovery ignition for cluster %s", cluster_id)
         return self.client.get_discovery_ignition(cluster_id=cluster_id, )
 
+    def register_host(self, cluster_id, host_id):
+        log.info(f"Registering host: {host_id} to cluster: {cluster_id}")
+        host_params = models.HostCreateParams(host_id=host_id)
+        self.client.register_host(cluster_id, host_params)
 
-def create_client(url, wait_for_api=True):
+    def host_get_next_step(self, cluster_id, host_id):
+        log.info(f"Getting next step for host: {host_id} in cluster: {cluster_id}")
+        return self.client.get_next_steps(
+            cluster_id=cluster_id, 
+            host_id=host_id
+        )
+
+    def host_post_step_result(self, cluster_id, host_id, **kwargs):
+        reply = models.StepReply(**kwargs)
+        self.client.post_step_reply(cluster_id=cluster_id, host_id=host_id, reply=reply)
+
+    def host_update_progress(self, cluster_id, host_id, current_stage, progress_info=None):
+        host_progress = models.HostProgress(current_stage=current_stage, progress_info=progress_info)
+        self.client.update_host_install_progress(
+            cluster_id=cluster_id, 
+            host_id=host_id, 
+            host_progress=host_progress
+        )
+
+    def complete_cluster_installation(self, cluster_id, is_success, error_info=None):
+        completion_params=models.CompletionParams(is_success=is_success, error_info=error_info)
+        self.client.complete_installation(
+            cluster_id=cluster_id, 
+            completion_params=completion_params
+        )
+
+    def get_cluster_admin_credentials(self, cluster_id):
+        return self.client.get_credentials(cluster_id=cluster_id)
+
+
+def create_client(
+    url,
+    offline_token=os.environ.get('OFFLINE_TOKEN', ""), 
+    pull_secret="",
+    wait_for_api=True
+    ):
     log.info('Creating assisted-service client for url: %s', url)
-    c = InventoryClient(url)
+    c = InventoryClient(url, offline_token, pull_secret)
     if wait_for_api:
         c.wait_for_api_readiness()
     return c
