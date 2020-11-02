@@ -46,6 +46,7 @@ class BaseTest:
         yield get_cluster_func
 
         for cluster in clusters:
+            logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}')
             with suppress(ApiException):
                 api_client.delete_cluster(cluster.id)
 
