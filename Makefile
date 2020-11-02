@@ -54,6 +54,7 @@ API_VIP_DNSNAME := $(or $(API_VIP_DNSNAME),"")
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
+PUBLIC_CONTAINER_REGISTRIES := $(or $(PUBLIC_CONTAINER_REGISTRIES), quay.io)
 
 # deploy
 IMAGE_TAG := latest
