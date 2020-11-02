@@ -1,5 +1,5 @@
 
-boto3==1.16.5
+boto3==1.16.9
 dnspython==2.0.0
 ipython
 libvirt-python==6.8.0
