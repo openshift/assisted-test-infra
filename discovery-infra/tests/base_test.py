@@ -9,6 +9,7 @@ from typing import Optional
 import pytest
 from assisted_service_client.rest import ApiException
 from test_infra import consts, utils
+from test_infra.helper_classes.cluster import Cluster
 
 from tests.conftest import env_variables
 
@@ -34,12 +35,7 @@ class BaseTest:
             if not cluster_name:
                 cluster_name = random_name()
 
-            res = api_client.create_cluster(cluster_name,
-                                            ssh_public_key=env_variables['ssh_public_key'],
-                                            openshift_version=env_variables['openshift_version'],
-                                            pull_secret=env_variables['pull_secret'],
-                                            base_dns_domain=env_variables['base_domain'],
-                                            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'])
+            res = Cluster(api_client=api_client, cluster_name=cluster_name)
             clusters.append(res)
             return res
 
@@ -47,7 +43,7 @@ class BaseTest:
 
         for cluster in clusters:
             with suppress(ApiException):
-                api_client.delete_cluster(cluster.id)
+                cluster.delete()
 
     @pytest.fixture()
     def clean(self, api_client):
