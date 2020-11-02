@@ -90,3 +90,48 @@ class TestCancelReset(BaseTest):
         # self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
         # self.wait_for_nodes_to_install(cluster_id=cluster_id, api_client=api_client)
         # self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
+
+    @pytest.mark.regression
+    def test_cancel_reset_one_node_unavailable(self, api_client, node_controller, cluster):
+        cluster_id = cluster().id
+        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        node_controller.start_all_nodes()
+        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
+        self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
+        self.set_network_params(
+            cluster_id=cluster_id,
+            api_client=api_client,
+            controller=node_controller
+        )
+        self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
+        # Cancel cluster install once cluster installation start
+        self.wait_for_installing_in_progress(cluster_id=cluster_id, api_client=api_client)
+        self.cancel_cluster_install(cluster_id=cluster_id, api_client=api_client)
+        assert self.is_cluster_in_cancelled_status(
+            cluster_id=cluster_id,
+            api_client=api_client
+        )
+        # Shutdown one node
+        nodes = node_controller.list_nodes()
+        node = nodes[0]
+        node.shutdown()
+        # Reset cluster install
+        self.reset_cluster_install(cluster_id=cluster_id, api_client=api_client)
+        assert self.is_cluster_in_insufficient_status(
+            cluster_id=cluster_id,
+            api_client=api_client
+        )
+        # Reboot required nodes into ISO
+        self.reboot_required_nodes_into_iso_after_reset(
+            cluster_id=cluster_id,
+            api_client=api_client,
+            controller=node_controller
+        )
+        # Wait for hosts to be rediscovered
+        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
+        self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id, api_client=api_client)
+        # TODO need to think how to test it and make it quick
+        # # Install Cluster
+        # self.start_cluster_install(cluster_id=cluster_id, api_client=api_client)
+        # self.wait_for_nodes_to_install(cluster_id=cluster_id, api_client=api_client)
+        # self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
