@@ -116,10 +116,10 @@ def is_cvo_available():
         res = subprocess.check_output("kubectl --kubeconfig=build/kubeconfig get clusterversion -o json", shell=True)
         conditions = json.loads(res)['items'][0]['status']['conditions']
         for condition in conditions:
-            if condition['type'] == 'Available':
-                if condition['status'] == 'True':
+            if condition['type'] == 'Available' and condition['status'] == 'True':
                     return True
-                return False
+            if condition['type'] != 'Available' and condition['status'] == 'True':
+                log.info("CVO condition %s is True, because: %s", condition['type'], condition['message'])
     except:
         log.info("exception in access the cluster api server")
     return False

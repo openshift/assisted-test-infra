@@ -349,6 +349,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             validate_dns(client, cluster.id)
             if args.wait_for_cvo:
                 cluster_info = client.cluster_get(cluster.id)
+                log.info("Start waiting till CVO status is available")
                 utils.config_etc_hosts(cluster_info)
                 utils.wait_for_cvo_available()
 
