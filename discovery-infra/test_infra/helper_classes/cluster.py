@@ -38,11 +38,17 @@ class Cluster:
     def get_details(self):
         return self.api_client.cluster_get(self.id)
 
+    def get_cluster_name(self):
+        return self.get_details().name
+
     def get_hosts(self):
         return self.api_client.get_cluster_hosts(self.id)
 
     def get_host_ids(self):
         return [host["id"] for host in self.get_hosts()]
+
+    def get_host_ids_names_mapping(self):
+        return {host["id"]: host["requested_hostname"] for host in self.get_hosts()}
 
     def get_host_assigned_roles(self):
         hosts = self.get_hosts()
@@ -175,7 +181,7 @@ class Cluster:
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
-            stages=[consts.HostsProgressStages.WRITE_IMAGE_TO_DISK],
+            stages=[consts.HostsProgressStages.WRITE_IMAGE_TO_DISK, consts.HostsProgressStages.REBOOTING],
             nodes_count=nodes_count,
         )
 
@@ -225,6 +231,36 @@ class Cluster:
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.CONFIGURING],
             nodes_count=env_variables['num_masters']-1
+        )
+
+    def wait_for_hosts_passed_reboot(self, nodes_count=env_variables['num_nodes']):
+        stages = [consts.HostsProgressStages.REBOOTING,
+                  consts.HostsProgressStages.CONFIGURING,
+                  consts.HostsProgressStages.JOINED,
+                  consts.HostsProgressStages.WAIT_FOR_IGNITION,
+                  consts.HostsProgressStages.DONE]
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=stages,
+            nodes_count=nodes_count
+        )
+
+    def wait_for_hosts_configuring(self, nodes_count=env_variables['num_nodes']):
+        stages = [consts.HostsProgressStages.CONFIGURING, consts.HostsProgressStages.DONE]
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=stages,
+            nodes_count=nodes_count
+        )
+
+    def wait_for_hosts_done(self, nodes_count=env_variables['num_nodes']):
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=[consts.HostsProgressStages.DONE],
+            nodes_count=nodes_count
         )
 
     def start_install_and_wait_for_installed(self,
@@ -545,3 +581,36 @@ class Cluster:
         cluster.wait_until_hosts_are_discovered()
         cluster.wait_for_ready_to_install()
 
+    def get_events(self, host_id=''):
+        return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
+
+    def _find_event(self, event_to_find, reference_time, params_list, host_id):
+        events_list = self.get_events(host_id=host_id)
+        for event in events_list:
+            if event_to_find in event['message']:
+                # Adding a 2 sec buffer to account for a small time diff between the machine and the time on staging
+                if utils.to_utc(event['event_time']) >= reference_time-2:
+                    if all(param in event['message'] for param in params_list):
+                        event_exist = True
+                        logging.info(f"Event to find: {event_to_find} exists with its params")
+                        return True
+        else:
+            return False
+
+    def wait_for_event(self, event_to_find, reference_time, params_list=[], host_id=''):
+        logging.info(f"Searching for event: {event_to_find}")
+        try:
+            waiting.wait(
+                lambda: self._find_event(
+                    event_to_find,
+                    reference_time,
+                    params_list,
+                    host_id
+                ),
+                timeout_seconds=10,
+                sleep_seconds=2,
+                waiting_for="Event: %s" % event_to_find,
+            )
+        except waiting.exceptions.TimeoutExpired:
+            logging.error(f"Event: {event_to_find} did't found")
+            raise

@@ -248,9 +248,9 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
-    def get_events(self, cluster_id):
+    def get_events(self, cluster_id, host_id=''):
         response = self.events.list_events(
-            cluster_id=cluster_id, _preload_content=False
+            cluster_id=cluster_id, host_id=host_id, _preload_content=False
         )
 
         return json.loads(response.data)
