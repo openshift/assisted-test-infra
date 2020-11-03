@@ -16,7 +16,7 @@ class TestAgent(BaseTest):
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Boot nodes into ISO
         hosts = node_controller.start_all_nodes()
-        test_host = list(hosts.values())[0]
+        test_host = hosts[0]
         waiting.wait(
             lambda: test_host.is_service_active("agent") is True,
             timeout_seconds=60 * 6,

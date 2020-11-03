@@ -11,6 +11,7 @@ volumes:
   - /tmp:/tmp/
   - /var/lib/libvirt/dnsmasq/:/var/lib/libvirt/dnsmasq/
   - $HOME/.cache/libvirt/:$HOME/.cache/libvirt/
+  - $HOME/.ssh/:$HOME/.ssh/
 env:
   PULL_SECRET: $PULL_SECRET
   NUM_WORKERS: $NUM_WORKERS
