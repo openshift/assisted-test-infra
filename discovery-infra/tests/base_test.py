@@ -190,6 +190,16 @@ class BaseTest:
         api_client.reset_cluster_install(cluster_id=cluster_id)
 
     @staticmethod
+    def disable_worker_nodes(cluster_id, api_client):
+        hosts = api_client.get_cluster_hosts(cluster_id=cluster_id)
+        for host in hosts:
+            if host["role"] == consts.NodeRoles.WORKER:
+                host_name = host["requested_hostname"]
+                logging.info(f"Going to disable host: {host_name} in cluster: {cluster_id}")
+                api_client.disable_host(cluster_id=cluster_id, host_id=host["id"])
+
+
+    @staticmethod
     def is_cluster_in_insufficient_status(cluster_id, api_client):
         return utils.is_cluster_in_status(
             client=api_client,
