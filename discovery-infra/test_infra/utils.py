@@ -239,10 +239,12 @@ def wait_till_all_hosts_are_in_status(
         log.info("All nodes: %s", hosts)
         raise
 
+
 def wait_till_at_least_one_host_is_in_status(
     client,
     cluster_id,
     statuses,
+    nodes_count=1,
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     interval=5,
@@ -253,7 +255,7 @@ def wait_till_at_least_one_host_is_in_status(
         waiting.wait(
             lambda: are_hosts_in_status(
                 client.get_cluster_hosts(cluster_id),
-                1,
+                nodes_count,
                 statuses,
                 fall_on_error_status,
             ),
