@@ -258,8 +258,8 @@ class InventoryClient(object):
             "Setting proxy for cluster %s", cluster_id
         )
         update_params = models.ClusterUpdateParams(
-            http_proxy=http_proxy, 
-            https_proxy=https_proxy, 
+            http_proxy=http_proxy,
+            https_proxy=https_proxy,
             no_proxy=no_proxy
         )
         return self.client.update_cluster(
@@ -270,10 +270,11 @@ class InventoryClient(object):
         log.info("Getting install-config for cluster %s", cluster_id)
         return self.client.get_cluster_install_config(cluster_id=cluster_id)
 
-
     def patch_cluster_discovery_ignition(self, cluster_id, ignition_info):
         log.info("patchingcluster %s discovery ignition", cluster_id)
-        return self.client.update_discovery_ignition(cluster_id=cluster_id, discovery_ignition_params=ignition_info)
+        return self.client.update_discovery_ignition(cluster_id=cluster_id,
+                                                     discovery_ignition_params=models.DiscoveryIgnitionParams(
+                                                         config=json.dumps(ignition_info)))
 
     def get_cluster_discovery_ignition(self, cluster_id):
         log.info("Getting discovery ignition for cluster %s", cluster_id)
