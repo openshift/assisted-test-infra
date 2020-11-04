@@ -136,6 +136,7 @@ class LibvirtController(NodeController):
             timeout_seconds=timeout,
             sleep_seconds=interval,
             waiting_for="Waiting for Ips",
+            expected_exceptions=Exception
         )
 
     def set_correct_boot_order_to_all_nodes(self):
