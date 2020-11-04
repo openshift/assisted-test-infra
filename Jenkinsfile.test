@@ -1,17 +1,24 @@
 pipeline {
     agent { label 'test-infra' }
 
+    parameters {
+        booleanParam(name: 'NOTIFY', defaultValue: true, description: 'Notify on fail (on master branch)')
+    }
+
     environment {
         SKIPPER_PARAMS = " "
+        PROFILE = "minikube"
+        NAMESPACE = "assisted-installer"
+
+        /* Credentials */
         PULL_SECRET = credentials('assisted-test-infra-pull-secret')
         OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
-        PROFILE = "minikube"
-        NAMESPACE = "assisted-installer"
+        SLACK_TOKEN = credentials('slack-token')
     }
     options {
-      timeout(time: 1, unit: 'HOURS')
+      timeout(time: 5, unit: 'HOURS')
     }
 
     stages {
@@ -41,13 +48,19 @@ pipeline {
     post {
          always {
             script {
+                if ((env.BRANCH_NAME == 'master') && env.NOTIFY && (currentBuild.currentResult == "ABORTED" || currentBuild.currentResult == "FAILURE")){
+                    script {
+                        def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
+                        writeJSON(file: 'data.txt', json: data, pretty: 4)
+                    }
+                    sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
+                }
+
                 try {
                     ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
                     minikube_url = "https://${ip}:8443"
 
                     sh "kubectl --server=${minikube_url} get pods -A"
-
-                    sh '''make download_all_logs LOGS_DEST=$WORKSPACE/cluster_logs REMOTE_SERVICE_URL="$(minikube service assisted-service --url -p ${PROFILE} -n ${NAMESPACE})"'''
 
                     for (service in ["assisted-service","postgres","scality","createimage"]) {
                         sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
@@ -56,6 +69,8 @@ pipeline {
                     sh "make destroy"
                 }
             }
+
+            archiveArtifacts artifacts: '*.log', fingerprint: true
         }
     }
 }
