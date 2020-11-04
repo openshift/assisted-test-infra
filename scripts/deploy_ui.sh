@@ -31,7 +31,7 @@ if [ "${DEPLOY_TARGET}" == "minikube" ]; then
     wait_for_url_and_run "http://${NODE_IP}:${UI_PORT}" "spawn_port_forwarding_command $UI_SERVICE_NAME $UI_PORT $NAMESPACE $NAMESPACE_INDEX $PROFILE $KUBECONFIG minikube"
     print_log "OCP METAL UI can be reached at http://${NODE_IP}:${UI_PORT}"
 elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
-    IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_ui $OCP_KUBECONFIG $UI_SERVICE_NAME $NAMESPACE")
+    IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_ui $OCP_KUBECONFIG $UI_SERVICE_NAME $NAMESPACE" 2>&1 | tee /dev/tty | tail -1)
     read -r CLUSTER_VIP SERVICE_NODEPORT <<< "$IP_NODEPORT"
 
     add_firewalld_port $OCP_UI_PORT
