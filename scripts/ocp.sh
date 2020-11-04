@@ -8,13 +8,12 @@ function deploy_service() {
     service_base_url=$4
     namespace=$5
     nodeport=""
-	{
-        SERVICE_BASE_URL=$service_base_url discovery-infra/update_assisted_service_cm.py
-        cp $kubeconfig assisted-service/build/kubeconfig
-        make config_etc_hosts_for_ocp_cluster
-        make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service
-        nodeport=$(kubectl --kubeconfig=$kubeconfig get svc/$service_name -n $namespace -o=jsonpath='{.spec.ports[0].nodePort}')
-    } &>/dev/null
+
+    SERVICE_BASE_URL=$service_base_url discovery-infra/update_assisted_service_cm.py
+    cp $kubeconfig assisted-service/build/kubeconfig
+    make config_etc_hosts_for_ocp_cluster
+    make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service
+    nodeport=$(kubectl --kubeconfig=$kubeconfig get svc/$service_name -n $namespace -o=jsonpath='{.spec.ports[0].nodePort}')
 
     read -ra def <<< "$(tail -1 /etc/hosts)"
     read -r cluster_vip <<< "$def"
@@ -27,11 +26,10 @@ function deploy_ui() {
     service_name=$2
     namespace=$3
     nodeport=""
-	{
-        make config_etc_hosts_for_ocp_cluster
-        make -C assisted-service/ deploy-ui-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig
-        nodeport=$(kubectl --kubeconfig=$kubeconfig get svc/$service_name -n $namespace -o=jsonpath='{.spec.ports[0].nodePort}')
-    } &> /dev/null
+
+    make config_etc_hosts_for_ocp_cluster
+    make -C assisted-service/ deploy-ui-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig
+    nodeport=$(kubectl --kubeconfig=$kubeconfig get svc/$service_name -n $namespace -o=jsonpath='{.spec.ports[0].nodePort}')
 
     read -ra def <<< "$(tail -1 /etc/hosts)"
     read -r cluster_vip <<< "$def"
