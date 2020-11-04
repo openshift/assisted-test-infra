@@ -196,6 +196,6 @@ class TerraformController(LibvirtController):
             utils.recreate_folder(os.path.dirname(self.image_path), force_recreate=False)
             # if file not exist lets create dummy
             utils.touch(self.image_path)
-
+        self.destroy_all_nodes()
         self.params.running = False
         self._create_nodes()

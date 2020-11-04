@@ -45,9 +45,9 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
         tfvars.get('libvirt_network_name', default_network_name),
         tfvars.get('libvirt_secondary_network_name', default_sec_network_name),
     )
-
-    log.info('Deleting %s', tf_folder)
-    shutil.rmtree(tf_folder)
+    if os.path.exists(tf_folder):
+        log.info('Deleting %s', tf_folder)
+        shutil.rmtree(tf_folder)
 
 
 @utils.on_exception(
@@ -98,8 +98,10 @@ def delete_cluster(cluster_name, namespace):
         cluster_name, namespace
     )
 
+    tfvars = {}
     tf_folder = utils.get_tf_folder(cluster_name, namespace)
-    tfvars = utils.get_tfvars(tf_folder)
+    if os.path.exists(tf_folder):
+        tfvars = utils.get_tfvars(tf_folder)
 
     if not args.only_nodes:
         try_to_delete_cluster(namespace, tfvars)
