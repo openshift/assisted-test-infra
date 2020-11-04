@@ -27,6 +27,9 @@ class NodeController:
     def format_all_node_disks(self) -> None:
         raise NotImplementedError
 
+    def add_disk(self, node_name: str, size: str) -> None:
+        raise NotImplementedError
+
     def get_ingress_and_api_vips(self) -> dict:
         raise NotImplementedError
 

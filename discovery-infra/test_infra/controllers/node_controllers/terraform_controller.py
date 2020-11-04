@@ -144,6 +144,11 @@ class TerraformController(LibvirtController):
         logging.info("Formating disk for %s", node_name)
         self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}')
 
+    def add_disk(self, node_name, size):
+        logging.info("Add disk for %s", node_name)
+        vol_path = f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}-secondary'
+        self.create_disk(vol_path=vol_path, size=size, pool_name=self.cluster_name )
+
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
             ipaddress.ip_address(

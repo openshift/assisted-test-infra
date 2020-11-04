@@ -1,4 +1,5 @@
 import os
+import os.path
 import logging
 import libvirt
 import waiting
@@ -79,6 +80,11 @@ class LibvirtController(NodeController):
 
         command = f'qemu-img create -f qcow2 {disk_path} {image_size}'
         utils.run_command(command, shell=True)
+
+    def create_disk(self, vol_path, size, pool_name):
+        logging.info("Creating disk %s", vol_path)
+        self.add_disk_to_pool(pool_name=pool_name, vol_path=vol_path, vol_size=size)
+
 
     def restart_node(self, node_name):
         logging.info("Restarting %s", node_name)
@@ -167,3 +173,30 @@ class LibvirtController(NodeController):
                             f"for node: {node_name}")
         logging.info(f"Boot order set successfully: cdrom first: {cd_first}, "
                      f"for node: {node_name}")
+
+    def add_disk_to_pool(self, pool_name, vol_path, vol_size):
+        logging.info(f"add_disk_to_pool: {pool_name}, "
+                     f"for vol_path: {vol_path}"
+                     f"for vol_size: {vol_size}")
+        stgvol_xml = f"""
+        <volume>
+        <name>{os.path.basename(vol_path)}</name>
+        <allocation>0</allocation>
+        <capacity unit="G">{vol_size}</capacity>
+        <target>
+            <path>{vol_path}</path>
+            <permissions>
+            <owner>107</owner>
+            <group>107</group>
+            <mode>0744</mode>
+            <label>secondary</label>
+            </permissions>
+        </target>
+        </volume>"""
+        pool = self.libvirt_connection.storagePoolLookupByName(pool_name)
+        if pool == None:
+            raise Exception(f'Failed to locate StoragePool object. {pool_name}')
+
+        stgvol = pool.createXML(stgvol_xml, 0)
+        if stgvol == None:
+            raise Exception(f'Failed to create a StorageVol objects. {vol_path}')
