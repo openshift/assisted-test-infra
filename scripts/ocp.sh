@@ -3,7 +3,7 @@ set -euo pipefail
 
 function deploy_service() {
     kubeconfig=$1
-    service_onprem=$2
+    service=$2
     service_name=$3
     service_base_url=$4
     namespace=$5
@@ -12,7 +12,7 @@ function deploy_service() {
         SERVICE_BASE_URL=$service_base_url discovery-infra/update_assisted_service_cm.py
         cp $kubeconfig assisted-service/build/kubeconfig
         make config_etc_hosts_for_ocp_cluster
-        make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service_onprem
+        make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service
         nodeport=$(kubectl --kubeconfig=$kubeconfig get svc/$service_name -n $namespace -o=jsonpath='{.spec.ports[0].nodePort}')
     } &>/dev/null
 
