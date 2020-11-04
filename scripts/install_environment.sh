@@ -64,7 +64,7 @@ function is_libvirtd_tcp_socket_enabled_and_running() {
     libvirtd_tcp_status=$(sudo systemctl status libvirtd-tcp.socket)
     if [[ -z $(echo $libvirtd_tcp_status | grep running) ]]; then
         echo "false"
-    elseif [[ -z $(echo $libvirtd_tcp_status | grep enabled) ]]
+    elif [[ -z $(echo $libvirtd_tcp_status | grep enabled) ]]; then
         echo "false"
     else
         echo "true"
