@@ -1,5 +1,4 @@
 import logging
-
 from test_infra.controllers.node_controllers import ssh
 
 
@@ -77,4 +76,11 @@ class Host(object):
         return output.strip() == "active"
 
     def set_boot_order(self, cd_first=False):
+        logging.info("Setting boot order with cd_first=%s on %s", cd_first, self.name)
         self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first)
+
+    def set_boot_order_flow(self, cd_first=False, start=True):
+        self.shutdown()
+        self.set_boot_order(cd_first)
+        if start:
+            self.start()
