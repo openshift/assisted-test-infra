@@ -143,7 +143,7 @@ def main():
     if not args.cluster_id:
         cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-        args.cluster_id = utils.get_tfvars(tf_folder)['cluster_inventory_id']
+        args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
 
     client = assisted_service_api.create_client(

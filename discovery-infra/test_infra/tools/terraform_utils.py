@@ -17,7 +17,8 @@ class TerraformUtils:
         self.tf.cmd("init -plugin-dir=/root/.terraform.d/plugins/", raise_on_error=True)
 
     def apply(self, refresh=True):
-        return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh, input=True, skip_plan=True)
+        return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh,
+                                                  input=False, skip_plan=True)
         if return_value != 0:
             message = f'Terraform apply failed with return value {return_value}, output {output} , error {err}'
             logging.error(message)
@@ -36,4 +37,4 @@ class TerraformUtils:
         self.change_variables(variables={"api_vip": api_vip})
 
     def destroy(self):
-        self.tf.destroy(force=True, input=True)
+        self.tf.destroy(force=True, input=False, auto_approve=True)
