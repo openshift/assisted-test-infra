@@ -14,7 +14,7 @@ def get_ocp_cluster(args):
     if not args.cluster_id:
         cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-        args.cluster_id = utils.get_tfvars(tf_folder)['cluster_inventory_id']
+        args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
     client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
     )
