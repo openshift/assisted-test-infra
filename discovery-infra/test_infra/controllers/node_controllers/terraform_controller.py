@@ -192,10 +192,10 @@ class TerraformController(LibvirtController):
 
     def prepare_nodes(self):
         logging.info("Preparing nodes")
+        self.destroy_all_nodes()
         if not os.path.exists(self.image_path):
             utils.recreate_folder(os.path.dirname(self.image_path), force_recreate=False)
             # if file not exist lets create dummy
             utils.touch(self.image_path)
-        self.destroy_all_nodes()
         self.params.running = False
         self._create_nodes()
