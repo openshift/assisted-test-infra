@@ -71,7 +71,7 @@ class LibvirtController(NodeController):
     def format_disk(disk_path):
         logging.info("Formatting disk %s", disk_path)
         if not os.path.exists(disk_path):
-            logging.info("Path to %s disk not exists. Skipping")
+            logging.info("Path to %s disk not exists. Skipping", disk_path)
             return
 
         command = f"qemu-img info {disk_path} | grep 'virtual size'"
