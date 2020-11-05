@@ -27,7 +27,6 @@ class Cluster:
     def delete(self):
         self.api_client.delete_cluster(self.id)
 
-
     def get_details(self):
         return self.api_client.cluster_get(self.id)
 
@@ -72,16 +71,19 @@ class Cluster:
         if vip_dhcp_allocation:
             self.set_machine_cidr(cluster_machine_cidr)
         else:
-            self.set_ingress_and_api_vips(controller)
+            self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
     def set_machine_cidr(self, machine_cidr):
         logging.info(f'Setting Machine Network CIDR:{machine_cidr} for cluster: {self.id}')
         self.api_client.update_cluster(self.id, {"machine_network_cidr": machine_cidr})
 
-    def set_ingress_and_api_vips(self, controller):
-        vips = controller.get_ingress_and_api_vips()
+    def set_ingress_and_api_vips(self, vips):
         logging.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, vips)
+
+    def set_ssh_key(self, ssh_key):
+        logging.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, ssh_key)
 
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
@@ -92,6 +94,14 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS],
             nodes_count=nodes_count
+        )
+
+    def wait_for_write_image_to_disk(self, nodes_count=1):
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=[consts.HostsProgressStages.WRITE_IMAGE_TO_DISK],
+            nodes_count=nodes_count,
         )
 
     def wait_for_node_status(self, statuses, nodes_count=1):
@@ -108,6 +118,22 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.ERROR]
         )
+
+    def wait_for_at_least_one_host_to_boot_during_install(self, nodes_count=1):
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=[consts.HostsProgressStages.REBOOTING],
+            nodes_count=nodes_count
+        )
+
+    def disable_worker_hosts(self):
+        hosts = self.api_client.get_cluster_hosts(cluster_id=self.id)
+        for host in hosts:
+            if host["role"] == consts.NodeRoles.WORKER:
+                host_name = host["requested_hostname"]
+                logging.info(f"Going to disable host: {host_name} in cluster: {self.id}")
+                self.api_client.disable_host(cluster_id=self.id, host_id=host["id"])
 
     def cancel_install(self):
         self.api_client.cancel_cluster_install(cluster_id=self.id)

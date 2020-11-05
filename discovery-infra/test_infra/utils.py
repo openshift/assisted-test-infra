@@ -281,15 +281,17 @@ def wait_till_at_least_one_host_is_in_stage(
     client,
     cluster_id,
     stages,
+    nodes_count=1,
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT/2,
     interval=5,
 ):
-    log.info("Wait till 1 node is in stage %s" % stages)
+    log.info(f"Wait till {nodes_count} node is in stage {stages}")
     try:
         waiting.wait(
             lambda: are_host_progress_in_stage(
                 client.get_cluster_hosts(cluster_id),
                 stages,
+                nodes_count,
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
