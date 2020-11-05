@@ -1,7 +1,14 @@
+import logging
 import pytest
+
+from netaddr import IPNetwork
 
 from tests.base_test import BaseTest
 from tests.conftest import env_variables
+from assisted_service_client.rest import ApiException
+
+
+logger = logging.getLogger(__name__)
 
 
 class TestCancelReset(BaseTest):
@@ -161,3 +168,141 @@ class TestCancelReset(BaseTest):
                                        api_client=api_client,
                                        nodes_count=env_variables['num_masters'])
         self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
+
+    @pytest.mark.regression
+    def test_reset_cluster_while_at_least_one_node_finished_installation(
+        self,
+        api_client,
+        node_controller,
+        cluster
+    ):
+        new_cluster = cluster()
+        logger.debug(
+            'Cluster ID for '
+            'test_reset_cluster_while_at_least_one_node_finished_installation'
+            'is %s', new_cluster.id
+        )
+        new_cluster.prepare_for_install(node_controller)
+        new_cluster.start_install()
+        new_cluster.wait_for_nodes_to_install(nodes_count=1)
+        new_cluster.cancel_install()
+        assert new_cluster.is_in_cancelled_status(), \
+            f'cluster {new_cluster.id} failed to cancel after at least one ' \
+            f'host has finished installation'
+        new_cluster.reset_install()
+        assert new_cluster.is_in_insufficient_status(), \
+            f'cluster {new_cluster.id} failed to reset from canceled state'
+        new_cluster.reboot_required_nodes_into_iso_after_reset(node_controller)
+        new_cluster.wait_until_hosts_are_discovered()
+        new_cluster.wait_for_ready_to_install()
+        # new_cluster.start_install()
+        # new_cluster.wait_for_nodes_to_install()
+        # new_cluster.wait_for_install()
+
+    @pytest.mark.regression
+    def test_cluster_install_and_reset_10_times(
+            self,
+            api_client,
+            node_controller,
+            cluster
+    ):
+        new_cluster = cluster()
+        logger.debug(
+            'Cluster ID for '
+            'test_cluster_install_and_reset_10_times is %s', new_cluster.id
+        )
+        new_cluster.prepare_for_install(node_controller)
+        for i in range(10):
+            logger.debug(
+                'test_cluster_install_and_reset_10_times attempt number: %d',
+                i + 1
+            )
+            new_cluster.start_install()
+            new_cluster.wait_for_nodes_to_install(nodes_count=1)
+            new_cluster.cancel_install()
+            assert new_cluster.is_in_cancelled_status(), \
+                f'cluster {new_cluster.id} failed to cancel after on attempt ' \
+                f'number: {i}'
+            new_cluster.reset_install()
+            assert new_cluster.is_in_insufficient_status(), \
+                f'cluster {new_cluster.id} failed to reset from on attempt ' \
+                f'number: {i}'
+            new_cluster.reboot_required_nodes_into_iso_after_reset(
+                node_controller)
+            new_cluster.wait_until_hosts_are_discovered()
+            new_cluster.wait_for_ready_to_install()
+
+        new_cluster.start_install()
+        new_cluster.wait_for_nodes_to_install()
+        new_cluster.wait_for_install()
+
+    @pytest.mark.regression
+    def test_reset_cluster_after_successful_installation(
+            self,
+            api_client,
+            node_controller,
+            cluster
+    ):
+        new_cluster = cluster()
+        logger.debug(
+            'Cluster ID for '
+            'test_reset_cluster_while_at_least_one_node_finished_installation'
+            'is %s', new_cluster.id
+        )
+
+        new_cluster.prepare_for_install(node_controller)
+        new_cluster.start_install()
+        new_cluster.wait_for_nodes_to_install()
+        new_cluster.wait_for_install()
+
+        with pytest.raises(ApiException):
+            # TODO: catch the specific error code
+            new_cluster.cancel_install()
+
+        with pytest.raises(ApiException):
+            # TODO: catch the specific error code
+            new_cluster.reset_install()
+
+    # TODO: Finish test
+    @pytest.mark.skip
+    def test_reset_cluster_after_changing_cluster_configuration(
+            self,
+            api_client,
+            node_controller,
+            cluster
+    ):
+        new_cluster = cluster()
+        logger.debug(
+            'Cluster ID for '
+            'test_reset_cluster_after_changing_cluster_configuration is %s',
+            new_cluster.id
+        )
+
+        new_cluster.prepare_for_install(node_controller)
+        new_cluster.start_install()
+        new_cluster.wait_for_nodes_to_install(nodes_count=1)
+        new_cluster.cancel_install()
+        assert new_cluster.is_in_cancelled_status(), \
+            f'cluster {new_cluster.id} failed to cancel'
+        new_cluster.reset_install()
+        assert new_cluster.is_in_insufficient_status(), \
+            f'cluster {new_cluster.id} failed to reset from canceled state'
+        vips = node_controller.get_ingress_and_api_vips()
+        api_vip = IPNetwork(vips['api_vip'])
+        api_vip += 1
+        ingress_vip = IPNetwork(vips['ingress_vip'])
+        ingress_vip += 1
+
+        self.client.update_params(
+            new_cluster.id,
+            {
+                'api_vip': str(api_vip),
+                'ingress_vip': str(ingress_vip),
+                #'pull_secret': # TODO: COMPLETE
+            }
+        )
+
+        new_cluster.start_install()
+        new_cluster.wait_for_nodes_to_install()
+        new_cluster.wait_for_install()
+
