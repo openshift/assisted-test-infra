@@ -77,15 +77,47 @@ class Cluster:
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
 
-    def wait_for_installing_in_progress(self):
+    def wait_for_installing_in_progress(self, nodes_count=1):
         utils.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS]
+            statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS],
+            nodes_count=nodes_count
+        )
+
+    def wait_for_node_status(self, statuses, nodes_count=1):
+        utils.wait_till_at_least_one_host_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=statuses,
+            nodes_count=nodes_count
+        )
+
+    def wait_for_cluster_in_error_status(self):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.ERROR]
         )
 
     def cancel_install(self):
         self.api_client.cancel_cluster_install(cluster_id=self.id)
+
+    def get_bootstrap_hostname(self):
+        hosts = self.get_nodes_by_role(consts.NodeRoles.MASTER)
+        for host in hosts:
+            if host.get('bootstrap'):
+                logging.info("Bootstrap node is: %s", host["requested_hostname"])
+                return host["requested_hostname"]
+
+    def get_nodes_by_role(self, role):
+        hosts = self.api_client.get_cluster_hosts(self.id)
+        nodes_by_role = []
+        for host in hosts:
+            if host["role"] == role:
+                nodes_by_role.append(host)
+        logging.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
+        return nodes_by_role
 
     def get_reboot_required_nodes(self):
         return self.api_client.get_hosts_in_statuses(
@@ -100,6 +132,14 @@ class Cluster:
             controller.shutdown_node(node_name)
             controller.format_node_disk(node_name)
             controller.start_node(node_name)
+
+    def wait_for_one_host_to_be_in_wrong_boot_order(self, fall_on_error_status=True):
+        utils.wait_till_at_least_one_host_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
+            fall_on_error_status=fall_on_error_status,
+        )
 
     def wait_for_ready_to_install(self):
         utils.wait_till_cluster_is_in_status(

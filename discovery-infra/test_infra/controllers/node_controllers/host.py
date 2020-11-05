@@ -63,6 +63,14 @@ class Host(object):
         logging.info("Killing service %s on host %s", service, self.name)
         self.run_command(f'sudo systemctl kill {service}.service || true')
 
+    def kill_podman_container_by_name(self, container_name):
+        output = self.run_command(f"sudo su root -c 'podman ps | grep {container_name}'")
+        logging.info(f"Container details on {self.name}: provided container name: {container_name}, output: "
+                     f"\n {output}")
+        logging.info(f"Killing container: {container_name}")
+        output = self.run_command(f"sudo su root -c 'podman kill {container_name}'")
+        logging.info(f"Output of kill container command: {output}")
+
     def is_service_active(self, service):
         logging.info("Verifying if service %s is active on host %s", service, self.name)
         output = self.run_command(f'sudo systemctl is-active {service}.service || true')

@@ -176,19 +176,12 @@ class BaseTest:
             stages=[consts.HostsProgressStages.REBOOTING])
 
     @staticmethod
-    def wait_for_one_host_to_be_in_wrong_boot_order(cluster_id, api_client):
+    def wait_for_one_host_to_be_in_wrong_boot_order(cluster_id, api_client, fall_on_error_status=True):
         utils.wait_till_at_least_one_host_is_in_status(
             client=api_client,
             cluster_id=cluster_id,
-            statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION]
-        )
-
-    @staticmethod
-    def is_cluster_in_error_status(cluster_id, api_client):
-        return utils.is_cluster_in_status(
-            client=api_client,
-            cluster_id=cluster_id,
-            statuses=[consts.ClusterStatus.ERROR]
+            statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
+            fall_on_error_status=fall_on_error_status,
         )
 
     @staticmethod
@@ -274,10 +267,11 @@ class BaseTest:
             nodes_count=nodes_count,
             timeout=timeout,
         )
-    
+
     @staticmethod
     def get_cluster_install_config(cluster_id, api_client):
         return yaml.load(api_client.get_cluster_install_config(cluster_id), Loader=yaml.SafeLoader)
+
 
     @staticmethod
     def wait_for_nodes_status_installing_or_installed(
