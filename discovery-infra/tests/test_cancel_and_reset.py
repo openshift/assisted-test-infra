@@ -169,12 +169,10 @@ class TestCancelReset(BaseTest):
         self.wait_for_cluster_to_install(cluster_id=cluster_id, api_client=api_client)
 
     @pytest.mark.regression
-    def test_reset_cluster_while_at_least_one_node_finished_installation(
-        self,
-        api_client,
-        node_controller,
-        cluster
-    ):
+    def test_reset_cluster_while_at_least_one_node_finished_installation(self,
+                                                                         api_client,
+                                                                         node_controller,
+                                                                         cluster):
         new_cluster = cluster()
         logger.debug(
             'Cluster ID for '
@@ -199,12 +197,10 @@ class TestCancelReset(BaseTest):
         # new_cluster.wait_for_install()
 
     @pytest.mark.regression
-    def test_cluster_install_and_reset_10_times(
-            self,
-            api_client,
-            node_controller,
-            cluster
-    ):
+    def test_cluster_install_and_reset_10_times(self,
+                                                api_client,
+                                                node_controller,
+                                                cluster):
         new_cluster = cluster()
         logger.debug(
             'Cluster ID for '
@@ -217,7 +213,7 @@ class TestCancelReset(BaseTest):
                 i + 1
             )
             new_cluster.start_install()
-            new_cluster.wait_for_nodes_to_install(nodes_count=1)
+            new_cluster.wait_for_write_image_to_disk(nodes_count=2)
             new_cluster.cancel_install()
             assert new_cluster.is_in_cancelled_status(), \
                 f'cluster {new_cluster.id} failed to cancel after on attempt ' \

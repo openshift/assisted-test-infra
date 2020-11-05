@@ -94,6 +94,14 @@ class Cluster:
             nodes_count=nodes_count
         )
 
+    def wait_for_write_image_to_disk(self, nodes_count=1):
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=[consts.HostsProgressStages.WRITE_IMAGE_TO_DISK],
+            nodes_count=nodes_count,
+        )
+
     def wait_for_node_status(self, statuses, nodes_count=1):
         utils.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
