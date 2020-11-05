@@ -333,3 +333,10 @@ class BaseTest:
             hosts_with_roles=assigned_roles)
 
         return assigned_roles
+        
+    @staticmethod
+    def assert_http_error_code(api_call, status, reason, **kwargs):
+        with pytest.raises(ApiException) as response:
+            api_call(**kwargs)
+        assert response.value.status == status
+        assert response.value.reason == reason

@@ -28,6 +28,15 @@ class Cluster:
         self.api_client.delete_cluster(self.id)
 
 
+    def get_details(self):
+        return self.api_client.cluster_get(self.id)
+
+    def get_hosts(self):
+        return self.api_client.get_cluster_hosts(self.id)
+
+    def get_host_ids(self):
+        return [host["id"] for host in self.get_hosts()]
+
     def generate_and_download_image(
         self,
         iso_download_path=env_variables['iso_download_path'],
@@ -212,3 +221,42 @@ class Cluster:
             cluster_machine_cidr=cluster_machine_cidr
         )
         self.wait_for_ready_to_install()
+
+    def download_kubeconfig_no_ingress(
+        self, kubeconfig_path=env_variables['kubeconfig_path']
+        ):
+        self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
+
+    def get_install_config(self):
+        self.api_client.get_cluster_install_config(self.id)
+
+    def get_admin_credentials(self):
+        return self.api_client.get_cluster_admin_credentials(self.id)
+
+    def register_dummy_host(self):
+        dummy_host_id = "b164df18-0ff1-4b85-9121-059f10f58f71"
+        self.api_client.register_host(self.id, dummy_host_id)
+
+    def host_get_next_step(self, host_id):
+        return self.api_client.host_get_next_step(self.id, host_id)
+
+    def host_post_step_result(self, host_id, step_type, step_id, exit_code, output):
+        self.api_client.host_post_step_result(
+            self.id, 
+            host_id,
+            step_type=step_type,
+            step_id=step_id,
+            exit_code=exit_code,
+            output=output
+        )
+
+    def host_update_install_progress(self, host_id, current_stage, progress_info=None):
+        self.api_client.host_update_progress(
+            self.id,
+            host_id,
+            current_stage,
+            progress_info=progress_info
+        )
+
+    def host_complete_install(self):
+        self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)

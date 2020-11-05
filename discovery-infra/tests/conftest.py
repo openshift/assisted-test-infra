@@ -52,13 +52,16 @@ env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_m
 
 @pytest.fixture(scope="session")
 def api_client():
+    yield get_api_client()
+
+def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
     url = env_variables['remote_service_url']
 
     if not url:
         url = utils.get_local_assisted_service_url(
             utils.get_env('PROFILE'), utils.get_env('NAMESPACE'), 'assisted-service', utils.get_env('DEPLOY_TARGET'))
-
-    yield assisted_service_api.create_client(url)
+    
+    return assisted_service_api.create_client(url, offline_token, **kwargs)
 
 
 @pytest.fixture(scope="session")
