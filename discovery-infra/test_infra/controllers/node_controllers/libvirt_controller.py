@@ -7,7 +7,7 @@ from contextlib import suppress
 
 from test_infra import utils
 from test_infra import consts
-from test_infra.controllers.node_controllers.host import Host
+from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
@@ -33,7 +33,7 @@ class LibvirtController(NodeController):
             if name_filter and name_filter not in domain_name:
                 continue
             if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
-                nodes.append(Host(domain_name, self, self.private_ssh_key_path))
+                nodes.append(Node(domain_name, self, self.private_ssh_key_path))
         logging.info("Found domains %s", nodes)
         return nodes
 
