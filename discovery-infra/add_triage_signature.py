@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Common functionality
 ############################
 class Signature:
+    is_dry_run = False
     def __init__(self, jira_client, comment_identifying_string):
         self._jclient = jira_client
         self._identifing_string = comment_identifying_string
@@ -53,6 +54,10 @@ class Signature:
         report += comment
         jira_comment = self._find_signature_comment(key)
         signature_name = type(self).__name__
+        if self.is_dry_run:
+            print(comment)
+            return
+
         if jira_comment is None:
             logger.info("Adding new '%s' comment to %s", signature_name, key)
             self._jclient.add_comment(key, report)
@@ -244,6 +249,9 @@ def main(args):
 
     jclient = get_jira_client(username, password)
 
+    if args.dry_run:
+        Signature.is_dry_run = True
+
     if args.all_issues:
         issues = get_all_triage_tickets(jclient)
     else:
@@ -256,6 +264,7 @@ def main(args):
 
 def add_signatures(jclient, url, issue_key, should_update=False):
     signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature]
+
 
     for sig in signatures:
         s = sig(jclient)
@@ -274,6 +283,7 @@ if __name__ == "__main__":
     selectors.add_argument("-i", "--issue", required=False, help="Triage issue key")
     parser.add_argument("-u", "--update", action="store_true", help="Update ticket even if comment already exist")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
+    parser.add_argument("-d", "--dry-run", action="store_true", help="Dry run. Don't update tickets")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARN, format='%(levelname)-10s %(message)s')
