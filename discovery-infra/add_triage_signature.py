@@ -55,7 +55,7 @@ class Signature:
         jira_comment = self._find_signature_comment(key)
         signature_name = type(self).__name__
         if self.is_dry_run:
-            print(comment)
+            print(report)
             return
 
         if jira_comment is None:
@@ -182,6 +182,46 @@ class ComponentsVersionSignature(Signature):
             self._update_triaging_ticket(issue_key, report, should_update=should_update)
 
 
+class LibvirtRebootFlagSignature(Signature):
+    def __init__(self, jira_client):
+        super().__init__(jira_client, comment_identifying_string="h1. Potential hosts with libvirt _on_reboot_ flag issue (MGMT-2840):\n")
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+
+        url = self._logs_url_fixup(url)
+        try:
+            md = self._get_metadata_json(url)
+        except:
+            logger.exception("Error getting logs for %s at %s", issue_key, url)
+            return
+
+        cluster = md['cluster']
+
+        # this signature is relevant only if all hosts, but the bootstrap is in 'Rebooting' stage
+        hosts = []
+        for host in cluster['hosts']:
+            inventory = json.loads(host['inventory'])
+            requested_hostname = host.get('requested_hostname', "")
+            hostname = inventory['disks']
+
+            if (len(inventory['disks']) == 1 and "KVM" in inventory['system_vendor']['product_name'] and
+                host['progress']['current_stage'] == 'Rebooting' and host['status'] == 'error'):
+                if host['role'] == 'bootstrap':
+                    return
+
+                hosts.append(OrderedDict(
+                    id=host['id'],
+                    hostname=inventory['hostname'],
+                    role = host['role'],
+                    progress=host['progress']['current_stage'],
+                    status=host['status'],
+                    num_disks=len(inventory.get('disks', []))))
+
+        if len(hosts)+1 == len(cluster['hosts']):
+            report = self._generate_table_for_report(hosts)
+            self._update_triaging_ticket(issue_key, report, should_update=should_update)
+
+
 ############################
 # Common functionality
 ############################
@@ -263,8 +303,7 @@ def main(args):
 
 
 def add_signatures(jclient, url, issue_key, should_update=False):
-    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature]
-
+    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, LibvirtRebootFlagSignature]
 
     for sig in signatures:
         s = sig(jclient)
