@@ -36,11 +36,6 @@ class Nodes(object):
     def get_masters(self):
         return [node for node in self.nodes if node.is_master_in_name()]
 
-    def set_correct_boot_order_to_all_nodes(self):
-        logging.info("Going to set correct boot order to all nodes")
-        for node in self.nodes:
-            node.set_boot_order()
-
     @property
     def nodes_as_dict(self):
         if not self._nodes_as_dict:
@@ -74,6 +69,7 @@ class Nodes(object):
 
     def set_correct_boot_order(self, nodes=None):
         nodes = nodes or self.nodes
+        logging.info("Going to set correct boot order to nodes: %s", nodes)
         self.run_for_given_nodes(nodes, "set_boot_order_flow")
 
     def run_for_all_nodes(self, func_name, *args):

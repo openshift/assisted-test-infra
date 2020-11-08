@@ -30,7 +30,7 @@ class TestProxy(BaseTest):
         ]
     )
     @pytest.mark.proxy
-    def test_http_proxy(self, api_client, node_controller, cluster, http_proxy, https_proxy):
+    def test_http_proxy(self, api_client, nodes, cluster, http_proxy, https_proxy):
         expected_http_proxy_value = http_proxy
         expected_https_proxy_value = https_proxy if https_proxy else http_proxy
         #Define new cluster
@@ -50,13 +50,13 @@ class TestProxy(BaseTest):
             cluster_id=cluster_id, api_client=api_client
         )
         # Boot nodes into ISO
-        node_controller.start_all_nodes()
+        nodes.start_all()
         # Wait until hosts are disovered and update host roles
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
         self.set_network_params(cluster_id=cluster_id,
                                 api_client=api_client,
-                                controller=node_controller
+                                controller=nodes.controller
                                 )
         #wait until cluster is ready to install
         self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id, api_client=api_client)

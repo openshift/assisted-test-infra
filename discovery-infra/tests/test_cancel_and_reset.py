@@ -23,10 +23,10 @@ DUMMY_SSH_KEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj+lurtXW2WxojtNXSxEWWTmk
 
 class TestCancelReset(BaseTest):
     @pytest.mark.sanity
-    def test_cancel_reset_before_node_boot(self, api_client, node_controller, cluster):
+    def test_cancel_reset_before_node_boot(self, api_client, nodes, cluster):
         # Define new cluster
         new_cluster = cluster()
-        new_cluster.prepare_for_install(controller=node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         # Start cluster install
         new_cluster.start_install()
         # Cancel cluster install once cluster installation start
@@ -36,7 +36,7 @@ class TestCancelReset(BaseTest):
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status()
         # Reboot required nodes into ISO
-        new_cluster.reboot_required_nodes_into_iso_after_reset(controller=node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
@@ -47,9 +47,9 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_for_install()
 
     @pytest.mark.regression
-    def test_cancel_reset_after_node_boot(self, api_client, node_controller, cluster):
+    def test_cancel_reset_after_node_boot(self, api_client, nodes, cluster):
         new_cluster = cluster()
-        new_cluster.prepare_for_install(controller=node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
         # Cancel cluster install once at least one host booted
         new_cluster.wait_for_at_least_one_host_to_boot_during_install()
@@ -59,7 +59,7 @@ class TestCancelReset(BaseTest):
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status()
         # Reboot required nodes into ISO
-        new_cluster.reboot_required_nodes_into_iso_after_reset(controller=node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
@@ -69,23 +69,22 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_for_install()
 
     @pytest.mark.regression
-    def test_cancel_reset_one_node_unavailable(self, api_client, node_controller, cluster):
+    def test_cancel_reset_one_node_unavailable(self, api_client, nodes, cluster):
         new_cluster = cluster()
-        new_cluster.prepare_for_install(controller=node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
         # Cancel cluster install once cluster installation start
         new_cluster.wait_for_installing_in_progress(nodes_count=2)
         new_cluster.cancel_install()
         assert new_cluster.is_in_cancelled_status()
         # Shutdown one node
-        nodes = node_controller.list_nodes()
-        node = nodes[0]
+        node = nodes.get_random_node()
         node.shutdown()
         # Reset cluster install
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status()
         # Reboot required nodes into ISO
-        new_cluster.reboot_required_nodes_into_iso_after_reset(controller=node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
@@ -95,9 +94,9 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_for_install()
 
     @pytest.mark.regression
-    def test_cancel_reset_while_disable_workers(self, api_client, node_controller, cluster):
+    def test_cancel_reset_while_disable_workers(self, api_client, nodes, cluster):
         new_cluster = cluster()
-        new_cluster.prepare_for_install(controller=node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.disable_worker_hosts()
         new_cluster.start_install()
         # Cancel cluster install once cluster installation start
@@ -108,7 +107,7 @@ class TestCancelReset(BaseTest):
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status()
         # Reboot required nodes into ISO
-        new_cluster.reboot_required_nodes_into_iso_after_reset(controller=node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered(nodes_count=env_variables['num_masters'])
         new_cluster.wait_for_ready_to_install()
@@ -120,13 +119,13 @@ class TestCancelReset(BaseTest):
     @pytest.mark.regression
     def test_reset_cluster_while_at_least_one_node_finished_installation(self,
                                                                          api_client,
-                                                                         node_controller,
+                                                                         nodes,
                                                                          cluster):
         new_cluster = cluster()
         logger.debug(f'Cluster ID for '
                      f'test_reset_cluster_while_at_least_one_node_finished_installation is '
                      f'{new_cluster.id}')
-        new_cluster.prepare_for_install(node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
         new_cluster.wait_for_nodes_to_install(nodes_count=1)
         new_cluster.cancel_install()
@@ -136,7 +135,7 @@ class TestCancelReset(BaseTest):
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status(), \
             f'cluster {new_cluster.id} failed to reset from canceled state'
-        new_cluster.reboot_required_nodes_into_iso_after_reset(node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
         new_cluster.start_install()
@@ -147,12 +146,12 @@ class TestCancelReset(BaseTest):
     @pytest.mark.skip
     def test_cluster_install_and_reset_10_times(self,
                                                 api_client,
-                                                node_controller,
+                                                nodes,
                                                 cluster):
         new_cluster = cluster()
         logger.debug(f'Cluster ID for test_cluster_install_and_reset_10_times is'
                      f' {new_cluster.id}')
-        new_cluster.prepare_for_install(node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         for i in range(10):
             logger.debug(f'test_cluster_install_and_reset_10_times attempt number: {i + 1}')
             new_cluster.start_install()
@@ -166,7 +165,7 @@ class TestCancelReset(BaseTest):
                 f'cluster {new_cluster.id} failed to reset from on attempt ' \
                 f'number: {i}'
             new_cluster.reboot_required_nodes_into_iso_after_reset(
-                node_controller)
+                nodes=nodes)
             new_cluster.wait_until_hosts_are_discovered()
             new_cluster.wait_for_ready_to_install()
 
@@ -178,13 +177,13 @@ class TestCancelReset(BaseTest):
     def test_reset_cluster_after_successful_installation(
             self,
             api_client,
-            node_controller,
+            nodes,
             cluster):
         new_cluster = cluster()
         logger.debug(f'Cluster ID for '
                      f'test_reset_cluster_while_at_least_one_node_finished_installation is'
                      f' {new_cluster.id}')
-        new_cluster.prepare_for_install(node_controller)
+        new_cluster.prepare_for_install(nodes)
         new_cluster.start_install()
         new_cluster.wait_for_nodes_to_install()
         new_cluster.wait_for_install()
@@ -201,7 +200,7 @@ class TestCancelReset(BaseTest):
     def test_reset_cluster_after_changing_cluster_configuration(
             self,
             api_client,
-            node_controller,
+            nodes,
             cluster):
         new_cluster = cluster()
         logger.debug(
@@ -210,7 +209,7 @@ class TestCancelReset(BaseTest):
             new_cluster.id
         )
 
-        new_cluster.prepare_for_install(node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
         new_cluster.wait_for_nodes_to_install(nodes_count=1)
         new_cluster.cancel_install()
@@ -219,12 +218,11 @@ class TestCancelReset(BaseTest):
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status(), \
             f'cluster {new_cluster.id} failed to reset from canceled state'
-        vips = node_controller.get_ingress_and_api_vips()
+        vips = nodes.controller.get_ingress_and_api_vips()
         api_vip = IPNetwork(vips['api_vip'])
         api_vip += 1
         ingress_vip = IPNetwork(vips['ingress_vip'])
         ingress_vip += 1
-
         api_vip = str(api_vip).split("/")[0]
         ingress_vip = str(ingress_vip).split("/")[0]
         new_cluster.set_ingress_and_api_vips({
@@ -232,7 +230,7 @@ class TestCancelReset(BaseTest):
                 'ingress_vip': ingress_vip})
         new_cluster.set_ssh_key({'ssh_public_key': DUMMY_SSH_KEY})
         new_cluster.reboot_required_nodes_into_iso_after_reset(
-            node_controller)
+            nodes)
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
         new_cluster.start_install()
@@ -240,26 +238,24 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_for_install()
 
     @pytest.mark.regression
-    def test_cancel_reset_after_installation_failure(self, api_client, node_controller, cluster):
+    def test_cancel_reset_after_installation_failure(self, api_client, nodes, cluster):
         # Define new cluster
         new_cluster = cluster()
-        new_cluster.prepare_for_install(controller=node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         # Start cluster install
         new_cluster.start_install()
         new_cluster.wait_for_installing_in_progress(nodes_count=env_variables['num_nodes'])
         # Kill bootstrap installer to simulate cluster error
         b_node_name = new_cluster.get_bootstrap_hostname()
-        for node in node_controller.list_nodes():
-            if node.name == b_node_name:
-                node.kill_podman_container_by_name("assisted-installer")
-                break
+        bootstrap = nodes.get_bootstrap_node(cluster=new_cluster)
+        bootstrap.kill_podman_container_by_name("assisted-installer")
         # Wait for cluster state Error
         new_cluster.wait_for_cluster_in_error_status()
         # Reset cluster install
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status()
         # Reboot required nodes into ISO
-        new_cluster.reboot_required_nodes_into_iso_after_reset(controller=node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
@@ -272,26 +268,21 @@ class TestCancelReset(BaseTest):
     @pytest.mark.regression
     def test_cancel_reset_after_installation_failure_and_wrong_boot(self,
                                                                     api_client,
-                                                                    node_controller,
+                                                                    nodes,
                                                                     cluster):
         # Define new cluster
         new_cluster = cluster()
         # Change boot order to a master node
-        hosts = node_controller.list_nodes_with_name_filter(consts.NodeRoles.MASTER)
-        selected_master = hosts[0]
-        selected_master.set_boot_order(cd_first=True)
+        selected_master = nodes.get_masters()[0]
+        nodes.set_wrong_boot_order(selected_master)
         # Start cluster install
-        new_cluster.prepare_for_install(controller=node_controller)
+        new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
         new_cluster.wait_for_installing_in_progress(nodes_count=env_variables['num_nodes'])
         # Kill worker installer to simulate host error
         worker_nodes = new_cluster.get_nodes_by_role(consts.NodeRoles.WORKER)
-        selected_worker = worker_nodes[0]
-        nodes = node_controller.list_nodes()
-        for node in nodes:
-            if selected_worker["requested_hostname"] == node.name:
-                node.kill_podman_container_by_name("assisted-installer")
-                break
+        selected_worker = nodes.get_cluster_host_obj_from_node(worker_nodes[0])
+        selected_worker.kill_podman_container_by_name("assisted-installer")
         # Wait for node Error
         new_cluster.wait_for_node_status([consts.NodesStatus.ERROR])
         # Wait for wong boot order
@@ -304,7 +295,7 @@ class TestCancelReset(BaseTest):
         assert new_cluster.is_in_insufficient_status()
         # Fix boot order and reboot required nodes into ISO
         selected_master.set_boot_order(cd_first=False)
-        new_cluster.reboot_required_nodes_into_iso_after_reset(controller=node_controller)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()

@@ -7,7 +7,7 @@ from tests.base_test import BaseTest
 class TestAgent(BaseTest):
 
     @pytest.mark.regression
-    def test_kill_agent(self, api_client, node_controller, cluster):
+    def test_kill_agent(self, api_client, nodes, cluster):
         # start vms, kill agent, validate it was restarted and works
 
         # Define new cluster
@@ -15,8 +15,8 @@ class TestAgent(BaseTest):
         # Generate and download cluster ISO
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Boot nodes into ISO
-        hosts = node_controller.start_all_nodes()
-        test_host = hosts[0]
+        nodes.start_all_nodes()
+        test_host = nodes.nodes[0]
         waiting.wait(
             lambda: test_host.is_service_active("agent") is True,
             timeout_seconds=60 * 6,

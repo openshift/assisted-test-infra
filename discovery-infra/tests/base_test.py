@@ -20,15 +20,12 @@ def random_name():
 
 
 class BaseTest:
-    @pytest.fixture(scope="function")
-    def node_controller(self, setup_node_controller):
-        controller = setup_node_controller
-        yield controller
 
     @pytest.fixture(scope="function")
-    def nodes(self, node_controller):
-        nodes = Nodes(node_controller, env_variables["private_ssh_key_path"])
-        nodes.set_correct_boot_order_to_all_nodes()
+    def nodes(self, setup_node_controller):
+        controller = setup_node_controller
+        nodes = Nodes(controller, env_variables["private_ssh_key_path"])
+        nodes.set_correct_boot_order()
         yield nodes
         nodes.shutdown_all()
         nodes.format_all()

@@ -25,7 +25,7 @@ class TestDiscoveryIgnition(BaseTest):
     }
 
     @pytest.mark.regression
-    def test_discovery_ignition_override(self, api_client, node_controller, cluster):
+    def test_discovery_ignition_override(self, api_client, nodes, cluster):
         """ Test happy flow.
 
         Create a discovery ignition override
@@ -43,11 +43,11 @@ class TestDiscoveryIgnition(BaseTest):
         # Generate and download cluster ISO
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Boot nodes into ISO
-        hosts = node_controller.start_all_nodes()
+        nodes.start_all()
         # Wait until hosts are discovered and update host roles
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         # Verify override
-        self.validate_ignition_override(hosts, TestDiscoveryIgnition.override_path)
+        self.validate_ignition_override(nodes, TestDiscoveryIgnition.override_path)
 
     # TODO: replace "skip" with "regression" once:
     #  "MGMT-2758 Invalidate existing discovery ISO in case the user created a discovery ignition override" is done
@@ -104,7 +104,7 @@ class TestDiscoveryIgnition(BaseTest):
             raise Exception("Expected patch_cluster_discovery_ignition to fail due to unsupported ignition version")
 
     @pytest.mark.regression
-    def test_discovery_ignition_multiple_calls(self, api_client, node_controller, cluster):
+    def test_discovery_ignition_multiple_calls(self, api_client, nodes, cluster):
         """ Apply multiple discovery ignition overrides to the cluster.
         Create a discovery ignition override and than create another one
         Download the ISO
@@ -128,15 +128,15 @@ class TestDiscoveryIgnition(BaseTest):
         # Generate and download cluster ISO
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
         # Boot nodes into ISO
-        hosts = node_controller.start_all_nodes()
+        nodes.start_all()
         # Wait until hosts are discovered and update host roles
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         # Verify override
-        self.validate_ignition_override(hosts, override_path_2)
+        self.validate_ignition_override(nodes, override_path_2)
 
     @staticmethod
-    def validate_ignition_override(hosts, file_path, expected_content=TEST_STRING):
-        for test_host in hosts:
-            logging.info("Verifying {} applied the override".format(test_host.name))
-            file_content = test_host.run_command("cat {}".format(file_path))
-            assert file_content == expected_content
+    def validate_ignition_override(nodes, file_path, expected_content=TEST_STRING):
+        logging.info("Verifying pplied the override for all hosts")
+        results = nodes.run_ssh_command_on_given_nodes(nodes.nodes, "cat {}".format(file_path))
+        for _, result in results.items():
+            assert result == expected_content
