@@ -4,7 +4,7 @@ from contextlib import suppress
 from string import ascii_lowercase
 from typing import Optional
 from tests.base_test import BaseTest
-from tests.conftest import env_variables, get_api_client
+from tests.conftest import get_api_client
 from assisted_service_client.rest import ApiException
 from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes.cluster import Cluster
@@ -16,7 +16,7 @@ SECOND_PULL_SECRET = utils.get_env('SECOND_PULL_SECRET')
 def api_client():
     yield get_api_client
 
-@pytest.mark.skipif(not env_variables['offline_token'], reason="not cloud env")
+@pytest.mark.skipif(not utils.get_env("OFFLINE_TOKEN", ""), reason="no cloud env")
 class TestAuth(BaseTest):
     @pytest.fixture()
     def cluster(self):
@@ -46,11 +46,12 @@ class TestAuth(BaseTest):
         cluster.host_update_install_progress(host_id, "Failed")
 
     @pytest.mark.regression
-    def test_user_authorization_negative(self, api_client, node_controller, cluster):
+    def test_user_authorization_negative(self, env, api_client, node_controller, cluster):
+        node_controller = node_controller(env)
         client_user1 = api_client()
         client_user2 = api_client(offline_token=SECOND_OFFLINE_TOKEN)
 
-        cluster_client_user1 = cluster(client_user1, cluster_name=env_variables['cluster_name'])
+        cluster_client_user1 = cluster(client_user1, cluster_name=env['cluster_name'])
         cluster_client_user2 = cluster(client_user2, cluster_id=cluster_client_user1.id)
 
         #user2 cannot get user1's cluster 
@@ -134,7 +135,8 @@ class TestAuth(BaseTest):
 
 
     @pytest.mark.regression
-    def test_agent_authorization_negative(self, api_client, node_controller, cluster):
+    def test_agent_authorization_negative(self, env, api_client, node_controller, cluster):
+        node_controller = node_controller(env)
         client_user1 = api_client()
         client_user2 = api_client(
             offline_token='', 
@@ -142,7 +144,7 @@ class TestAuth(BaseTest):
             wait_for_api=False
         )
         
-        cluster_client_user1 = cluster(client_user1, cluster_name=env_variables['cluster_name'])
+        cluster_client_user1 = cluster(client_user1, cluster_name=env['cluster_name'])
         cluster_client_user2 = cluster(client_user2, cluster_id=cluster_client_user1.id)
 
         #agent with user2 pull secret cannot get user1's cluster details

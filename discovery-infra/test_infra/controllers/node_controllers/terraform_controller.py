@@ -16,7 +16,7 @@ class TerraformController(LibvirtController):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}')
+        self.cluster_name = kwargs.get('cluster_name', consts.CLUSTER_PREFIX)
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK)
         self.params = self._terraform_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
@@ -27,6 +27,8 @@ class TerraformController(LibvirtController):
         tf_folder = utils.get_tf_folder(self.cluster_name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
+        utils.recreate_folder(os.path.join(tf_folder, "network"))
+        utils.recreate_folder(os.path.join(tf_folder, "volume"))
         copy_tree(consts.TF_TEMPLATE, tf_folder)
         return tf_folder
 

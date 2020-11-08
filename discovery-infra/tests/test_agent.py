@@ -7,7 +7,8 @@ from tests.base_test import BaseTest
 class TestAgent(BaseTest):
 
     @pytest.mark.regression
-    def test_kill_agent(self, api_client, node_controller, cluster):
+    def test_kill_agent(self, env, api_client, node_controller, cluster):
+        node_controller = node_controller(env)
         # start vms, kill agent, validate it was restarted and works
 
         # Define new cluster

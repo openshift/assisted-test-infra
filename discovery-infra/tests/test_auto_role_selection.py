@@ -5,8 +5,10 @@ from tests.base_test import BaseTest
 
 
 class TestRoleSelection(BaseTest):
-    def test_automatic_role_assignment(self, api_client, node_controller, cluster):
+    def test_automatic_role_assignment(self, env, api_client, node_controller, cluster):
         """Let the system automatically assign all roles in a satisfying environment."""
+        env.update(num_masters=3, num_workers=2, num_nodes=5)
+        node_controller = node_controller(env)
         cluster_id = cluster().id
 
         self.setup_hosts(cluster_id=cluster_id,
@@ -22,8 +24,10 @@ class TestRoleSelection(BaseTest):
 
         assert Counter(actual_assignments.values()) == Counter(master=3, worker=2)
 
-    def test_partial_role_assignment(self, api_client, node_controller, cluster):
+    def test_partial_role_assignment(self, env, api_client, node_controller, cluster):
         """Let the system semi-automatically assign roles in a satisfying environment."""
+        env.update(num_masters=3, num_workers=2, num_nodes=5)
+        node_controller = node_controller(env)
         cluster_id = cluster().id
 
         hosts = self.setup_hosts(cluster_id=cluster_id,

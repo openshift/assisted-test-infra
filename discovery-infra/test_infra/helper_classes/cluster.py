@@ -1,27 +1,27 @@
 import logging
 
-from tests.conftest import env_variables
 from test_infra import consts, utils
 
 
 class Cluster:
     
-    def __init__(self, api_client, cluster_name, cluster_id=None):
+    def __init__(self, api_client, cluster_name, env, cluster_id=None):
+        self._env = env
         self.api_client = api_client
 
         if cluster_id:
             self.id = cluster_id
         else:
             self.id = self._create(cluster_name).id
-    
+
     def _create(self, cluster_name):
         return self.api_client.create_cluster(
             cluster_name,
-            ssh_public_key=env_variables['ssh_public_key'],
-            openshift_version=env_variables['openshift_version'],
-            pull_secret=env_variables['pull_secret'],
-            base_dns_domain=env_variables['base_domain'],
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation']
+            ssh_public_key=self._env['ssh_public_key'],
+            openshift_version=self._env['openshift_version'],
+            pull_secret=self._env['pull_secret'],
+            base_dns_domain=self._env['base_domain'],
+            vip_dhcp_allocation=self._env['vip_dhcp_allocation']
         )
 
     def delete(self):
@@ -37,18 +37,23 @@ class Cluster:
     def get_host_ids(self):
         return [host["id"] for host in self.get_hosts()]
 
-    def generate_and_download_image(
-        self,
-        iso_download_path=env_variables['iso_download_path'],
-        ssh_key=env_variables['ssh_public_key']
-        ):
+    def generate_and_download_image(self, iso_download_path=None, ssh_key=None):
+        if iso_download_path is None:
+            iso_download_path = self._env["iso_download_path"]
+
+        if ssh_key is None:
+            ssh_key = self._env["ssh_public_key"]
+
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
             ssh_key=ssh_key,
-            image_path=iso_download_path
+            image_path=iso_download_path,
         )
 
-    def wait_until_hosts_are_discovered(self,nodes_count=env_variables['num_nodes']):
+    def wait_until_hosts_are_discovered(self, nodes_count=None):
+        if nodes_count is None:
+            nodes_count = self._env["num_nodes"]
+
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -62,13 +67,14 @@ class Cluster:
             cluster_id=self.id
         )
 
-    def set_network_params(
-        self, 
-        controller,
-        nodes_count=env_variables['num_nodes'],
-        vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr']
-    ):
+    def set_network_params(self, controller, nodes_count=None, vip_dhcp_allocation=None, cluster_machine_cidr=None):
+        if nodes_count is None:
+            nodes_count = self._env["num_nodes"]
+        if vip_dhcp_allocation is None:
+            vip_dhcp_allocation = self._env["vip_dhcp_allocation"]
+        if cluster_machine_cidr is None:
+            cluster_machine_cidr = self._env["machine_cidr"]
+
         if vip_dhcp_allocation:
             self.set_machine_cidr(cluster_machine_cidr)
         else:
@@ -174,11 +180,10 @@ class Cluster:
             statuses=[consts.ClusterStatus.INSUFFICIENT]
         )
     
-    def wait_for_nodes_to_install(
-        self, 
-        nodes_count=env_variables['num_nodes'],
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
-    ):
+    def wait_for_nodes_to_install(self,  nodes_count=None, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
+        if nodes_count is None:
+            nodes_count = self._env['num_nodes']
+
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -199,14 +204,25 @@ class Cluster:
         )
 
     def prepare_for_install(
-        self, 
-        controller,
-        iso_download_path=env_variables['iso_download_path'],
-        ssh_key=env_variables['ssh_public_key'],
-        nodes_count=env_variables['num_nodes'],
-        vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr']
-        ):
+            self,
+            controller,
+            iso_download_path=None,
+            ssh_key=None,
+            nodes_count=None,
+            vip_dhcp_allocation=None,
+            cluster_machine_cidr=None):
+
+        if iso_download_path is None:
+            iso_download_path = self._env["iso_download_path"]
+        if ssh_key is None:
+            ssh_key = self._env["ssh_public_key"]
+        if nodes_count is None:
+            nodes_count = self._env["num_nodes"]
+        if vip_dhcp_allocation is None:
+            vip_dhcp_allocation = self._env["vip_dhcp_allocation"]
+        if cluster_machine_cidr is None:
+            cluster_machine_cidr = self._env["machine_cidr"]
+
         self.generate_and_download_image(
             iso_download_path=iso_download_path,
             ssh_key=ssh_key,
@@ -222,9 +238,10 @@ class Cluster:
         )
         self.wait_for_ready_to_install()
 
-    def download_kubeconfig_no_ingress(
-        self, kubeconfig_path=env_variables['kubeconfig_path']
-        ):
+    def download_kubeconfig_no_ingress(self, kubeconfig_path=None):
+        if kubeconfig_path is None:
+            kubeconfig_path = self._env["kubeconfig_path"]
+
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
 
     def get_install_config(self):

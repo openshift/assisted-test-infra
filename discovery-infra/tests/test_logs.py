@@ -51,8 +51,9 @@ class TestDownloadLogs(BaseTest):
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id, api_client=api_client)
 
-    def test_collect_logs_on_success(self, api_client, node_controller, cluster):
+    def test_collect_logs_on_success(self, env, api_client, node_controller, cluster):
         # Define new cluster and prepare it for installation
+        node_controller = node_controller(env)
         cluster_id = cluster().id
         self.setup_hosts(cluster_id, api_client, node_controller)
         self.prepare_for_installation(cluster_id, api_client, node_controller)
@@ -74,8 +75,9 @@ class TestDownloadLogs(BaseTest):
 
     
     @pytest.mark.regression
-    def test_collect_logs_on_failure(self, api_client, node_controller, cluster):
-        '''cancel insllation after at least one host is booted and check that logs are uploaded'''
+    def test_collect_logs_on_failure(self, env, api_client, node_controller, cluster):
+        '''cancel installation after at least one host is booted and check that logs are uploaded'''
+        node_controller = node_controller(env)
         # Define new cluster and prepare it for installation
         '''starting first installation'''
         cluster_id = cluster().id

@@ -12,31 +12,39 @@ from assisted_service_client.rest import ApiException
 from test_infra import consts, utils
 from test_infra.helper_classes.cluster import Cluster
 
-from tests.conftest import env_variables
-
 
 def random_name():
     return ''.join(random.choice(ascii_lowercase) for i in range(10))
 
 
 class BaseTest:
-    @pytest.fixture(scope="function")
-    def node_controller(self, setup_node_controller):
-        controller = setup_node_controller
-        controller.set_correct_boot_order_to_all_nodes()
-        yield controller
-        controller.shutdown_all_nodes()
-        controller.format_all_node_disks()
+    @pytest.fixture()
+    def node_controller(self, node_controller_class):
+        controller = None
+
+        def create_node_controller(env):
+            controller = node_controller_class(**env)
+            logging.info("Setup node controller")
+            controller.prepare_nodes()
+            controller.set_correct_boot_order_to_all_nodes()
+            return controller
+
+        yield create_node_controller
+
+        if controller is not None:
+            logging.info("Teardown node controller")
+            controller.destroy_all_nodes()
 
     @pytest.fixture()
-    def cluster(self, api_client):
+    def cluster(self, env, api_client):
+        self._env = env
         clusters = []
 
         def get_cluster_func(cluster_name: Optional[str] = None):
             if not cluster_name:
                 cluster_name = random_name()
 
-            res = Cluster(api_client=api_client, cluster_name=cluster_name)
+            res = Cluster(api_client=api_client, cluster_name=cluster_name, env=env)
             clusters.append(res)
             return res
 
@@ -62,21 +70,19 @@ class BaseTest:
         if cluster_to_delete:
             api_client.delete_cluster(cluster_id=cluster_to_delete['id'])
 
-    @staticmethod
-    def get_cluster_by_name(api_client, cluster_name):
+    def get_cluster_by_name(self, api_client, cluster_name):
         clusters = api_client.clusters_list()
         for cluster in clusters:
             if cluster['name'] == cluster_name:
                 return cluster
         return None
 
-    @staticmethod
-    def generate_and_download_image(
-        cluster_id,
-        api_client,
-        iso_download_path=env_variables['iso_download_path'],
-        ssh_key=env_variables['ssh_public_key']
-    ):
+    def generate_and_download_image(self, cluster_id, api_client, iso_download_path=None, ssh_key=None):
+        if iso_download_path is None:
+            iso_download_path = self._env["iso_download_path"]
+        if ssh_key is None:
+            ssh_key = self._env["ssh_public_key"]
+
         logging.info(iso_download_path)
         api_client.generate_and_download_image(
             cluster_id=cluster_id,
@@ -84,12 +90,10 @@ class BaseTest:
             image_path=iso_download_path
         )
 
-    @staticmethod
-    def wait_until_hosts_are_registered(
-        cluster_id,
-        api_client,
-        nodes_count=env_variables['num_masters']+env_variables['num_workers']
-    ):
+    def wait_until_hosts_are_registered(self, cluster_id, api_client, nodes_count=None):
+        if nodes_count is None:
+            nodes_count = self._env["num_masters"] + self._env["num_workers"]
+
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
@@ -100,12 +104,10 @@ class BaseTest:
             ]
         )
 
-    @staticmethod
-    def wait_until_hosts_are_discovered(
-        cluster_id,
-        api_client,
-        nodes_count=env_variables['num_masters']+env_variables['num_workers']
-    ):
+    def wait_until_hosts_are_discovered(self, cluster_id, api_client, nodes_count=None):
+        if nodes_count is None:
+            nodes_count = self._env["num_masters"] + self._env["num_workers"]
+
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
@@ -113,22 +115,28 @@ class BaseTest:
             statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         )
 
-    @staticmethod
-    def set_host_roles(cluster_id, api_client):
+    def set_host_roles(self, cluster_id, api_client):
         utils.set_hosts_roles_based_on_requested_name(
             client=api_client,
-            cluster_id=cluster_id
+            cluster_id=cluster_id,
         )
 
-    @staticmethod
     def set_network_params(
+        self,
         cluster_id,
         api_client,
         controller,
-        nodes_count=env_variables['num_masters']+env_variables['num_workers'],
-        vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr']
+        nodes_count=None,
+        vip_dhcp_allocation=None,
+        cluster_machine_cidr=None
     ):
+        if nodes_count is None:
+            nodes_count = self._env["num_masters"] + self._env["num_workers"]
+        if vip_dhcp_allocation is None:
+            vip_dhcp_allocation = self._env["vip_dhcp_allocation"]
+        if cluster_machine_cidr is None:
+            cluster_machine_cidr = self._env["machine_cidr"]
+
         if vip_dhcp_allocation:
             BaseTest.set_cluster_machine_cidr(cluster_id, api_client, cluster_machine_cidr)
         else:
@@ -253,13 +261,16 @@ class BaseTest:
             timeout=timeout,
         )
 
-    @staticmethod
     def wait_for_nodes_to_install(
+        self,
         cluster_id, 
         api_client, 
-        nodes_count=env_variables['num_masters']+env_variables['num_workers'],
+        nodes_count=None,
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
     ):
+        if nodes_count is None:
+            nodes_count = self._env["num_masters"] + self._env["num_workers"]
+
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
@@ -272,12 +283,10 @@ class BaseTest:
     def get_cluster_install_config(cluster_id, api_client):
         return yaml.load(api_client.get_cluster_install_config(cluster_id), Loader=yaml.SafeLoader)
 
+    def wait_for_nodes_status_installing_or_installed(self, cluster_id, api_client, nodes_count=None):
+        if nodes_count is None:
+            nodes_count = self._env["num_masters"] + self._env["num_workers"]
 
-    @staticmethod
-    def wait_for_nodes_status_installing_or_installed(
-            cluster_id,
-            api_client,
-            nodes_count=env_variables['num_masters']+env_variables['num_workers']):
         utils.wait_till_all_hosts_are_in_status(
             client=api_client,
             cluster_id=cluster_id,
@@ -294,16 +303,16 @@ class BaseTest:
         self.wait_until_hosts_are_registered(cluster_id=cluster_id,
                                              api_client=api_client)
         return api_client.get_cluster_hosts(cluster_id=cluster_id)
-    
+
     def prepare_for_installation(self, cluster_id, api_client, node_controller):
         self.set_network_params(cluster_id=cluster_id,
                                 api_client=api_client,
                                 controller=node_controller)
-    
+
     def expect_ready_to_install(self, cluster_id, api_client):
         self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id,
                                                      api_client=api_client)
-    
+
     def start_installation(self, cluster_id, api_client):
         self.start_cluster_install(cluster_id=cluster_id,
                                    api_client=api_client)

@@ -5,7 +5,8 @@ from tests.base_test import BaseTest
 
 class TestWrongBootOrder(BaseTest):
     @pytest.mark.regression
-    def test_wrong_boot_order_one_node(self, api_client, node_controller, cluster):
+    def test_wrong_boot_order_one_node(self, env, api_client, node_controller, cluster):
+        node_controller = node_controller(env)
         # Define new cluster
         cluster_id = cluster().id
         # Generate and download cluster ISO
