@@ -11,7 +11,7 @@ import pytest
 from assisted_service_client.rest import ApiException
 from test_infra import consts, utils
 from test_infra.helper_classes.cluster import Cluster
-
+from test_infra.helper_classes.nodes import Nodes
 from tests.conftest import env_variables
 
 
@@ -23,10 +23,15 @@ class BaseTest:
     @pytest.fixture(scope="function")
     def node_controller(self, setup_node_controller):
         controller = setup_node_controller
-        controller.set_correct_boot_order_to_all_nodes()
         yield controller
-        controller.shutdown_all_nodes()
-        controller.format_all_node_disks()
+
+    @pytest.fixture(scope="function")
+    def nodes(self, node_controller):
+        nodes = Nodes(node_controller, env_variables["private_ssh_key_path"])
+        nodes.set_correct_boot_order_to_all_nodes()
+        yield nodes
+        nodes.shutdown_all()
+        nodes.format_all()
 
     @pytest.fixture()
     def cluster(self, api_client):
@@ -215,18 +220,6 @@ class BaseTest:
         )
 
     @staticmethod
-    def reboot_required_nodes_into_iso_after_reset(cluster_id, api_client, controller):
-        nodes_to_reboot = api_client.get_hosts_in_statuses(
-            cluster_id=cluster_id,
-            statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION]
-        )
-        for node in nodes_to_reboot:
-            node_name = node["requested_hostname"]
-            controller.shutdown_node(node_name)
-            controller.format_node_disk(node_name)
-            controller.start_node(node_name)
-
-    @staticmethod
     def wait_until_cluster_is_ready_for_install(cluster_id, api_client):
         utils.wait_till_cluster_is_in_status(
             client=api_client,
@@ -287,19 +280,14 @@ class BaseTest:
             interval=30,
         )
 
-    def setup_hosts(self, cluster_id, api_client, node_controller):
+    def setup_hosts(self, cluster_id, api_client, nodes):
         self.generate_and_download_image(cluster_id=cluster_id,
                                          api_client=api_client)
-        node_controller.start_all_nodes()
+        nodes.start_all()
         self.wait_until_hosts_are_registered(cluster_id=cluster_id,
                                              api_client=api_client)
         return api_client.get_cluster_hosts(cluster_id=cluster_id)
-    
-    def prepare_for_installation(self, cluster_id, api_client, node_controller):
-        self.set_network_params(cluster_id=cluster_id,
-                                api_client=api_client,
-                                controller=node_controller)
-    
+
     def expect_ready_to_install(self, cluster_id, api_client):
         self.wait_until_cluster_is_ready_for_install(cluster_id=cluster_id,
                                                      api_client=api_client)
@@ -333,10 +321,3 @@ class BaseTest:
             hosts_with_roles=assigned_roles)
 
         return assigned_roles
-        
-    @staticmethod
-    def assert_http_error_code(api_call, status, reason, **kwargs):
-        with pytest.raises(ApiException) as response:
-            api_call(**kwargs)
-        assert response.value.status == status
-        assert response.value.reason == reason

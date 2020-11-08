@@ -154,19 +154,15 @@ class Cluster:
         logging.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
         return nodes_by_role
 
-    def get_reboot_required_nodes(self):
+    def get_reboot_required_hosts(self):
         return self.api_client.get_hosts_in_statuses(
             cluster_id=self.id,
             statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION]
         )
 
-    def reboot_required_nodes_into_iso_after_reset(self, controller):
-        nodes_to_reboot = self.get_reboot_required_nodes()
-        for node in nodes_to_reboot:
-            node_name = node["requested_hostname"]
-            controller.shutdown_node(node_name)
-            controller.format_node_disk(node_name)
-            controller.start_node(node_name)
+    def reboot_required_nodes_into_iso_after_reset(self, nodes):
+        hosts_to_reboot = self.get_reboot_required_hosts()
+        nodes.run_for_given_nodes_by_cluster_hosts(cluster_hosts=hosts_to_reboot, func_name="reset")
 
     def wait_for_one_host_to_be_in_wrong_boot_order(self, fall_on_error_status=True):
         utils.wait_till_at_least_one_host_is_in_status(
@@ -226,7 +222,7 @@ class Cluster:
 
     def prepare_for_install(
         self, 
-        controller,
+        nodes,
         iso_download_path=env_variables['iso_download_path'],
         ssh_key=env_variables['ssh_public_key'],
         nodes_count=env_variables['num_nodes'],
@@ -237,11 +233,11 @@ class Cluster:
             iso_download_path=iso_download_path,
             ssh_key=ssh_key,
         )
-        controller.start_all_nodes()
+        nodes.start_all()
         self.wait_until_hosts_are_discovered(nodes_count=nodes_count)
         self.set_host_roles()
         self.set_network_params(
-            controller=controller,
+            controller=nodes.node_controller,
             nodes_count=nodes_count,
             vip_dhcp_allocation=vip_dhcp_allocation,
             cluster_machine_cidr=cluster_machine_cidr
@@ -286,3 +282,9 @@ class Cluster:
 
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
+
+    def setup_nodes(self, nodes):
+        self.generate_and_download_image()
+        nodes.start_all()
+        self.wait_until_hosts_are_discovered(nodes_count=len(nodes))
+        return nodes.create_nodes_cluster_hosts_mapping(cluster=self)

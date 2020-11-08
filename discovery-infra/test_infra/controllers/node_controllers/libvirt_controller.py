@@ -33,7 +33,7 @@ class LibvirtController(NodeController):
             if name_filter and name_filter not in domain_name:
                 continue
             if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
-                nodes.append(Node(domain_name, self, self.private_ssh_key_path))
+                nodes.append(domain)
         logging.info("Found domains %s", nodes)
         return nodes
 
@@ -138,12 +138,6 @@ class LibvirtController(NodeController):
             waiting_for="Waiting for Ips",
             expected_exceptions=Exception
         )
-
-    def set_correct_boot_order_to_all_nodes(self):
-        logging.info("Going to set correct boot order to all nodes")
-        nodes = self.list_nodes()
-        for node in nodes:
-            node.set_boot_order()
 
     def set_boot_order(self, node_name, cd_first=False):
         logging.info(f"Going to set the following boot order: cd_first: {cd_first}, "
