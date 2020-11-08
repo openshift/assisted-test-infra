@@ -52,7 +52,7 @@ class TestDiscoveryIgnition(BaseTest):
     # TODO: replace "skip" with "regression" once:
     #  "MGMT-2758 Invalidate existing discovery ISO in case the user created a discovery ignition override" is done
     @pytest.mark.skip
-    def test_discovery_ignition_after_ISO_was_created(self, api_client, node_controller, cluster):
+    def test_discovery_ignition_after_ISO_was_created(self, api_client, nodes, cluster):
         """ Verify that we create a new ISO upon discovery igniton override in case one already exists.
         Download the ISO
         Create a discovery ignition override
@@ -75,14 +75,14 @@ class TestDiscoveryIgnition(BaseTest):
         self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
 
         # Boot nodes into ISO
-        hosts = node_controller.start_all_nodes()
+        nodes.start_all()
         # Wait until hosts are discovered and update host roles
         self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
         # Verify override
-        self.validate_ignition_override(hosts, override_path)
+        self.validate_ignition_override(nodes.nodes, override_path)
 
     @pytest.mark.regression
-    def test_discovery_ignition_bad_format(self, api_client, node_controller, cluster):
+    def test_discovery_ignition_bad_format(self, api_client, nodes, cluster):
         """Create a discovery ignition override with bad content
         make sure patch API fail
         """

@@ -25,10 +25,10 @@ class BaseTest:
     def nodes(self, setup_node_controller):
         controller = setup_node_controller
         nodes = Nodes(controller, env_variables["private_ssh_key_path"])
-        nodes.set_correct_boot_order()
+        nodes.set_correct_boot_order(start_nodes=False)
         yield nodes
         nodes.shutdown_all()
-        nodes.format_all()
+        nodes.format_all_disks()
 
     @pytest.fixture()
     def cluster(self, api_client):
@@ -318,3 +318,10 @@ class BaseTest:
             hosts_with_roles=assigned_roles)
 
         return assigned_roles
+
+    @staticmethod
+    def assert_http_error_code(api_call, status, reason, **kwargs):
+        with pytest.raises(ApiException) as response:
+            api_call(**kwargs)
+        assert response.value.status == status
+        assert response.value.reason == reason

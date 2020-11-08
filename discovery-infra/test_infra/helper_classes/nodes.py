@@ -3,9 +3,8 @@ import json
 from typing import Dict
 import random
 from munch import Munch
-from test_infra import consts
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.tools.concurrently import run_in_parallel
+from test_infra.tools.concurrently import run_concurrently
 
 
 class NodeMapping(object):
@@ -27,7 +26,7 @@ class Nodes(object):
     @property
     def nodes(self):
         if not self._nodes:
-            self._nodes = self.list()
+            self._nodes = self._list()
         return self._nodes
 
     def __len__(self):
@@ -42,7 +41,7 @@ class Nodes(object):
             self._nodes_as_dict = {node.name: node for node in self.nodes}
         return self._nodes_as_dict
 
-    def list(self):
+    def _list(self):
         nodes = self.controller.list_nodes()
         return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes]
 
@@ -55,7 +54,7 @@ class Nodes(object):
     def start_all(self):
         self.run_for_all_nodes("start")
 
-    def format_all(self):
+    def format_all_disks(self):
         self.run_for_all_nodes("format_disk")
 
     def destroy_all(self):
@@ -67,10 +66,10 @@ class Nodes(object):
     def reboot_given(self, nodes):
         self.run_for_given_nodes(nodes, "restart")
 
-    def set_correct_boot_order(self, nodes=None):
+    def set_correct_boot_order(self, nodes=None, start_nodes=False):
         nodes = nodes or self.nodes
         logging.info("Going to set correct boot order to nodes: %s", nodes)
-        self.run_for_given_nodes(nodes, "set_boot_order_flow")
+        self.run_for_given_nodes(nodes, "set_boot_order_flow", False, start_nodes)
 
     def run_for_all_nodes(self, func_name, *args):
         return self.run_for_given_nodes(self.nodes, func_name, *args)
@@ -78,7 +77,7 @@ class Nodes(object):
     @staticmethod
     def run_for_given_nodes(nodes, func_name, *args):
         logging.info("Running %s on nodes : %s", func_name, nodes)
-        return run_in_parallel([(getattr(node, func_name), *args) for node in nodes])
+        return run_concurrently([(getattr(node, func_name), *args) for node in nodes])
 
     def run_for_given_nodes_by_cluster_hosts(self, cluster_hosts, func_name, *args):
         return self.run_for_given_nodes([self.get_node_from_cluster_host(host) for
@@ -86,7 +85,7 @@ class Nodes(object):
 
     @staticmethod
     def run_ssh_command_on_given_nodes(nodes, command) -> Dict:
-        return run_in_parallel({node.name: (node.run_command, command) for node in nodes})
+        return run_concurrently({node.name: (node.run_command, command) for node in nodes})
 
     def set_wrong_boot_order(self, nodes=None, start_nodes=True):
         nodes = nodes or self.nodes

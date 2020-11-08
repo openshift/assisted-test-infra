@@ -44,9 +44,9 @@ class TestGeneral(BaseTest):
         cluster_id = self.test_discovery(api_client, cluster, nodes)
         self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
         hosts = api_client.get_cluster_hosts(cluster_id=cluster_id)
-        for node in hosts:
-            hostname = node["requested_hostname"]
-            role = node["role"]
+        for host in hosts:
+            hostname = host["requested_hostname"]
+            role = host["role"]
             if "master" in hostname:
                 assert role == consts.NodeRoles.MASTER
             elif "worker" in hostname:

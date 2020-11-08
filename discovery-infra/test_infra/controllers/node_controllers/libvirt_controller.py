@@ -7,7 +7,6 @@ from contextlib import suppress
 
 from test_infra import utils
 from test_infra import consts
-from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
@@ -91,7 +90,7 @@ class LibvirtController(NodeController):
         nodes = self.list_nodes()
 
         for node in nodes:
-            self.format_node_disk(node.name)
+            self.format_node_disk(node.name())
 
     def prepare_nodes(self):
         self.destroy_all_nodes()

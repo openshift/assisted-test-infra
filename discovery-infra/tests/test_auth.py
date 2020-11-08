@@ -122,7 +122,7 @@ class TestAuth(BaseTest):
             reason="Not Found",
         )
 
-        cluster_client_user1.wait_for_nodes_to_install()
+        cluster_client_user1.wait_for_hosts_to_install()
         cluster_client_user1.wait_for_install()
 
         # user2 cannot get user2's cluster credentials
@@ -204,7 +204,7 @@ class TestAuth(BaseTest):
             reason="Not Found",
         )
 
-        cluster_client_user1.wait_for_nodes_to_install()
+        cluster_client_user1.wait_for_hosts_to_install()
 
         # agent with user2 pull secret cannot complete installation
         self.assert_http_error_code(

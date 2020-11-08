@@ -93,6 +93,7 @@ class Node(object):
         self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first)
 
     def set_boot_order_flow(self, cd_first=False, start=True):
+        logging.info("Setting boot order , cd_first=%s, start=%s", cd_first, start)
         self.shutdown()
         self.set_boot_order(cd_first)
         if start:
