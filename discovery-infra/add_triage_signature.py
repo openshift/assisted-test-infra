@@ -148,7 +148,10 @@ class HostsExtraDetailSignature(Signature):
                 hostname=inventory['hostname'],
                 requested_hostname=host.get('requested_hostname', ""),
                 last_contacted=self._format_time(host['checked_in_at']),
-                installation_disk=host.get('installation_disk_path', "")))
+                installation_disk=host.get('installation_disk_path', ""),
+                product_name=inventory['system_vendor']['product_name'],
+                manufacturer=inventory['system_vendor']['manufacturer'],
+            ))
 
         report = self._generate_table_for_report(hosts)
         self._update_triaging_ticket(issue_key, report, should_update=should_update)
