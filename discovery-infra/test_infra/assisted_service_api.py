@@ -6,6 +6,7 @@ import requests
 import time
 
 import consts
+from test_infra import utils
 import shutil
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
@@ -26,7 +27,7 @@ class InventoryClient(object):
         self.events = api.EventsApi(api_client=self.api)
 
     def set_config_auth(self, c, offline_token):
-        if offline_token == "":
+        if not offline_token:
             log.info("OFFLINE_TOKEN not set, skipping authentication headers")
             return
 
@@ -325,7 +326,7 @@ class InventoryClient(object):
 
 def create_client(
     url,
-    offline_token=os.environ.get('OFFLINE_TOKEN', ""), 
+    offline_token=utils.get_env('OFFLINE_TOKEN'),
     pull_secret="",
     wait_for_api=True
     ):
