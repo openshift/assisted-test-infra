@@ -48,7 +48,7 @@ class LibvirtController(NodeController):
         nodes = self.list_nodes()
 
         for node in nodes:
-            self.shutdown_node(node.name)
+            self.shutdown_node(node.name())
 
     def start_node(self, node_name):
         logging.info("Going to power-on %s", node_name)
@@ -63,7 +63,7 @@ class LibvirtController(NodeController):
         nodes = self.list_nodes()
 
         for node in nodes:
-            self.start_node(node.name)
+            self.start_node(node.name())
         return nodes
 
     @staticmethod
