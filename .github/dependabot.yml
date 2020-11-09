@@ -9,3 +9,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "approved"
+      - "ok-to-test"
+      - "lgtm"
