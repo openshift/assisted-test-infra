@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Common functionality
 ############################
 class Signature:
+    is_dry_run = False
     def __init__(self, jira_client, comment_identifying_string):
         self._jclient = jira_client
         self._identifing_string = comment_identifying_string
@@ -53,6 +54,10 @@ class Signature:
         report += comment
         jira_comment = self._find_signature_comment(key)
         signature_name = type(self).__name__
+        if self.is_dry_run:
+            print(report)
+            return
+
         if jira_comment is None:
             logger.info("Adding new '%s' comment to %s", signature_name, key)
             self._jclient.add_comment(key, report)
@@ -143,7 +148,10 @@ class HostsExtraDetailSignature(Signature):
                 hostname=inventory['hostname'],
                 requested_hostname=host.get('requested_hostname', ""),
                 last_contacted=self._format_time(host['checked_in_at']),
-                installation_disk=host.get('installation_disk_path', "")))
+                installation_disk=host.get('installation_disk_path', ""),
+                product_name=inventory['system_vendor']['product_name'],
+                manufacturer=inventory['system_vendor']['manufacturer'],
+            ))
 
         report = self._generate_table_for_report(hosts)
         self._update_triaging_ticket(issue_key, report, should_update=should_update)
@@ -174,6 +182,46 @@ class ComponentsVersionSignature(Signature):
             report += "assisted-installer-agent: {}\n".format(versions['discovery-agent'])
 
         if report != "":
+            self._update_triaging_ticket(issue_key, report, should_update=should_update)
+
+
+class LibvirtRebootFlagSignature(Signature):
+    def __init__(self, jira_client):
+        super().__init__(jira_client, comment_identifying_string="h1. Potential hosts with libvirt _on_reboot_ flag issue (MGMT-2840):\n")
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+
+        url = self._logs_url_fixup(url)
+        try:
+            md = self._get_metadata_json(url)
+        except:
+            logger.exception("Error getting logs for %s at %s", issue_key, url)
+            return
+
+        cluster = md['cluster']
+
+        # this signature is relevant only if all hosts, but the bootstrap is in 'Rebooting' stage
+        hosts = []
+        for host in cluster['hosts']:
+            inventory = json.loads(host['inventory'])
+            requested_hostname = host.get('requested_hostname', "")
+            hostname = inventory['disks']
+
+            if (len(inventory['disks']) == 1 and "KVM" in inventory['system_vendor']['product_name'] and
+                host['progress']['current_stage'] == 'Rebooting' and host['status'] == 'error'):
+                if host['role'] == 'bootstrap':
+                    return
+
+                hosts.append(OrderedDict(
+                    id=host['id'],
+                    hostname=inventory['hostname'],
+                    role = host['role'],
+                    progress=host['progress']['current_stage'],
+                    status=host['status'],
+                    num_disks=len(inventory.get('disks', []))))
+
+        if len(hosts)+1 == len(cluster['hosts']):
+            report = self._generate_table_for_report(hosts)
             self._update_triaging_ticket(issue_key, report, should_update=should_update)
 
 
@@ -244,6 +292,9 @@ def main(args):
 
     jclient = get_jira_client(username, password)
 
+    if args.dry_run:
+        Signature.is_dry_run = True
+
     if args.all_issues:
         issues = get_all_triage_tickets(jclient)
     else:
@@ -255,7 +306,7 @@ def main(args):
 
 
 def add_signatures(jclient, url, issue_key, should_update=False):
-    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature]
+    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, LibvirtRebootFlagSignature]
 
     for sig in signatures:
         s = sig(jclient)
@@ -274,6 +325,7 @@ if __name__ == "__main__":
     selectors.add_argument("-i", "--issue", required=False, help="Triage issue key")
     parser.add_argument("-u", "--update", action="store_true", help="Update ticket even if comment already exist")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
+    parser.add_argument("-d", "--dry-run", action="store_true", help="Dry run. Don't update tickets")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARN, format='%(levelname)-10s %(message)s')
