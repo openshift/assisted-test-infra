@@ -1,46 +1,39 @@
+import pytest
 from collections import Counter
-
+import logging
 from consts import NodeRoles
 from tests.base_test import BaseTest
 
 
 class TestRoleSelection(BaseTest):
+    @pytest.mark.regression
     def test_automatic_role_assignment(self, api_client, nodes, cluster):
         """Let the system automatically assign all roles in a satisfying environment."""
-        cluster_id = cluster().id
+        new_cluster = cluster()
 
-        self.setup_hosts(cluster_id=cluster_id,
-                         api_client=api_client,
-                         nodes=nodes)
-        self.set_network_params(cluster_id=cluster_id,
-                                api_client=api_client,
-                                controller=nodes.controller)
+        logging.info(new_cluster.setup_nodes(nodes))
+        new_cluster.set_network_params(nodes.controller)
+        new_cluster.wait_for_ready_to_install()
+        new_cluster.start_install()
+        new_cluster.wait_for_installing_in_progress()
 
-        self.expect_ready_to_install(cluster_id=cluster_id,
-                                     api_client=api_client)
-        actual_assignments = self.start_installation(cluster_id=cluster_id,
-                                                     api_client=api_client)
+        host_assignments = new_cluster.get_host_assigned_roles()
 
-        assert Counter(actual_assignments.values()) == Counter(master=3, worker=2)
+        assert Counter(host_assignments.values()) == Counter(master=3, worker=2)
 
+    @pytest.mark.regression
     def test_partial_role_assignment(self, api_client, nodes, cluster):
         """Let the system semi-automatically assign roles in a satisfying environment."""
-        cluster_id = cluster().id
+        new_cluster = cluster()
 
-        hosts = self.setup_hosts(cluster_id=cluster_id,
-                                 api_client=api_client,
-                                 nodes=nodes)
-        self.set_network_params(cluster_id=cluster_id,
-                                api_client=api_client,
-                                controller=nodes.controller)
-        self.expect_ready_to_install(cluster_id=cluster_id,
-                                     api_client=api_client)
-        manually_assigned_roles = self.assign_roles(cluster_id=cluster_id,
-                                                    api_client=api_client,
-                                                    hosts=hosts,
-                                                    requested_roles=Counter(master=1, worker=1))
-        actual_assignments = self.start_installation(cluster_id=cluster_id,
-                                                     api_client=api_client)
+        new_cluster.setup_nodes(nodes)
+        new_cluster.set_network_params(nodes.controller)
+        new_cluster.wait_for_ready_to_install()
+
+        manually_assigned_roles = new_cluster.set_host_roles(requested_roles=Counter(master=1, worker=1))
+        new_cluster.start_install()
+        new_cluster.wait_for_installing_in_progress()
+        actual_assignments = new_cluster.get_host_assigned_roles()
 
         assert Counter(actual_assignments.values()) == Counter(master=3, worker=2)
         assert set(tuple(a.values()) for a in manually_assigned_roles) <= set(actual_assignments.items())
