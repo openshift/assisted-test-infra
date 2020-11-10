@@ -1,5 +1,3 @@
-from tempfile import NamedTemporaryFile
-
 import consts
 import pytest
 from assisted_service_client.rest import ApiException
@@ -8,12 +6,14 @@ from tests.base_test import BaseTest, random_name
 
 
 class TestGeneral(BaseTest):
+    @pytest.mark.regression
     def test_create_cluster(self, api_client, cluster):
         c = cluster()
         assert c.id in map(lambda cluster: cluster['id'], api_client.clusters_list())
         assert api_client.cluster_get(c.id)
         assert api_client.get_events(c.id)
 
+    @pytest.mark.regression
     def test_delete_cluster(self, api_client, cluster):
         c = cluster()
         assert api_client.cluster_get(c.id)
@@ -25,6 +25,7 @@ class TestGeneral(BaseTest):
             assert api_client.cluster_get(c.id)
 
     @pytest.mark.xfail
+    @pytest.mark.regression
     def test_cluster_unique_name(self, api_client, cluster):
         cluster_name = random_name()
 
@@ -34,16 +35,17 @@ class TestGeneral(BaseTest):
             cluster(cluster_name)
 
     def test_discovery(self, api_client, cluster, nodes):
-        cluster_id = cluster().id
-        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        c = cluster()
+        c.generate_and_download_image()
         nodes.start_all()
-        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
-        return cluster_id
+        c.wait_until_hosts_are_discovered()
+        return c
 
+    @pytest.mark.regression
     def test_select_roles(self, api_client, cluster, nodes):
-        cluster_id = self.test_discovery(api_client, cluster, nodes)
-        self.set_host_roles(cluster_id=cluster_id, api_client=api_client)
-        hosts = api_client.get_cluster_hosts(cluster_id=cluster_id)
+        c = self.test_discovery(api_client, cluster, nodes)
+        c.set_host_roles()
+        hosts = c.get_hosts()
         for host in hosts:
             hostname = host["requested_hostname"]
             role = host["role"]

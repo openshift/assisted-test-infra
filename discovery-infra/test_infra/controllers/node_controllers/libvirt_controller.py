@@ -128,7 +128,7 @@ class LibvirtController(NodeController):
         ips, _ = self._get_domain_ips_and_macs(domain)
         return ips
 
-    def _wait_till_domain_has_ips(self, domain, timeout=240, interval=5):
+    def _wait_till_domain_has_ips(self, domain, timeout=360, interval=5):
         logging.info("Waiting till host %s will have ips", domain.name())
         waiting.wait(
             lambda: len(self._get_domain_ips(domain)) > 0,
