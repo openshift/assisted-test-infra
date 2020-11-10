@@ -11,26 +11,26 @@ class TestAgent(BaseTest):
         # start vms, kill agent, validate it was restarted and works
 
         # Define new cluster
-        cluster_id = cluster().id
+        new_cluster = cluster()
         # Generate and download cluster ISO
-        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.generate_and_download_image()
         # Boot nodes into ISO
-        nodes.start_all_nodes()
-        test_host = nodes.nodes[0]
+        nodes.start_all()
+        test_node = nodes.get_random_node()
         waiting.wait(
-            lambda: test_host.is_service_active("agent") is True,
+            lambda: test_node.is_service_active("agent") is True,
             timeout_seconds=60 * 6,
             sleep_seconds=5,
             waiting_for="Waiting for agent",
         )
         # kill agent
-        test_host.kill_service("agent")
+        test_node.kill_service("agent")
         # wait till agent is up
         waiting.wait(
-            lambda: test_host.is_service_active("agent") is True,
+            lambda: test_node.is_service_active("agent") is True,
             timeout_seconds=60 * 6,
             sleep_seconds=5,
             waiting_for="Waiting for agent",
         )
         # Wait until hosts are discovered and update host roles
-        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.wait_until_hosts_are_discovered()

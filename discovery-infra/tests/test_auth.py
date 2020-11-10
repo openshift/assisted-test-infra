@@ -100,6 +100,7 @@ class TestAuth(BaseTest):
 
         # start cluster install
         cluster_client_user1.start_install()
+        cluster_client_user1.wait_for_installing_in_progress()
 
         # user2 cannot download files from user2's cluster
         self.assert_http_error_code(
@@ -168,13 +169,14 @@ class TestAuth(BaseTest):
         )
 
         host_ids = cluster_client_user1.get_host_ids()
+        test_host_id = host_ids[0]
 
         # agent with user2 pull secret cannot get next step
         self.assert_http_error_code(
             api_call=cluster_client_user2.host_get_next_step,
             status=404,
             reason="Not Found",
-            host_id=host_ids[0]
+            host_id=test_host_id
         )
 
         # agent with user2 pull secret cannot update on next step
@@ -183,10 +185,11 @@ class TestAuth(BaseTest):
             status=404,
             reason="Not Found",
             cluster=cluster_client_user2,
-            host_id=host_ids[0]
+            host_id=test_host_id
         )
 
         cluster_client_user1.start_install()
+        cluster_client_user1.wait_for_installing_in_progress()
 
         # agent with user2 pull secret cannot update install progress
         self.assert_http_error_code(
@@ -194,7 +197,7 @@ class TestAuth(BaseTest):
             status=404,
             reason="Not Found",
             cluster=cluster_client_user2,
-            host_id=host_ids[0]
+            host_id=test_host_id
         )
 
         # user2 cannot download files from user2's cluster

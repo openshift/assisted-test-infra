@@ -1,4 +1,5 @@
 import logging
+from collections import Counter
 
 from tests.conftest import env_variables
 from test_infra import consts, utils
@@ -36,6 +37,10 @@ class Cluster:
     def get_host_ids(self):
         return [host["id"] for host in self.get_hosts()]
 
+    def get_host_assigned_roles(self):
+        hosts = self.get_hosts()
+        return {h["id"]: h["role"] for h in hosts}
+
     def generate_and_download_image(
         self,
         iso_download_path=env_variables['iso_download_path'],
@@ -55,11 +60,29 @@ class Cluster:
             statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         )
 
-    def set_host_roles(self):
-        utils.set_hosts_roles_based_on_requested_name(
-            client=self.api_client,
-            cluster_id=self.id
-        )
+    def _get_matching_hosts(self, host_type, count):
+        hosts = self.get_hosts()
+        return [{"id": h["id"], "role": host_type}
+                for h in hosts
+                if host_type in h["requested_hostname"]][:count]
+
+    def set_host_roles(
+        self, 
+        requested_roles=Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
+    ):
+        assigned_roles = self._get_matching_hosts(
+            host_type=consts.NodeRoles.MASTER,
+            count=requested_roles["master"])
+
+        assigned_roles.extend(self._get_matching_hosts(
+            host_type=consts.NodeRoles.WORKER,
+            count=requested_roles["worker"]))
+
+        self.api_client.set_hosts_roles(
+            cluster_id=self.id,
+            hosts_with_roles=assigned_roles)
+
+        return assigned_roles
 
     def set_network_params(
         self, 

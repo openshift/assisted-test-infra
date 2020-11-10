@@ -101,16 +101,15 @@ class Nodes(object):
 
     def create_nodes_cluster_hosts_mapping(self, cluster):
         node_mapping_dict = {}
-        for cluster_host_object in cluster.get_nodes():
-            inventory = json.loads(cluster_host_object["inventory"])
-            name = inventory["hostname"]
-            node_mapping_dict[cluster_host_object["hostname"]] = NodeMapping(self.nodes_as_dict[name],
+        for cluster_host_object in cluster.get_hosts():
+            name = self.get_cluster_hostname(cluster_host_object)
+            node_mapping_dict[name] = NodeMapping(self.nodes_as_dict[name],
                                                                              Munch.fromDict(cluster_host_object))
         return node_mapping_dict
 
     def get_node_from_cluster_host(self, cluster_host_object):
-        inventory = json.loads(cluster_host_object["inventory"])
-        return self.get_node_by_hostname(inventory["hostname"])
+        hostname = self.get_cluster_hostname(cluster_host_object)
+        return self.get_node_by_hostname(hostname)
 
     def get_node_by_hostname(self, get_node_by_hostname):
         return self.nodes_as_dict[get_node_by_hostname]
@@ -118,3 +117,8 @@ class Nodes(object):
     def get_cluster_host_obj_from_node(self, cluster, node):
         mapping = self.create_nodes_cluster_hosts_mapping(cluster=cluster)
         return mapping[node.name].cluster_host
+
+    def get_cluster_hostname(self, cluster_host_object):
+        inventory = json.loads(cluster_host_object["inventory"])
+        return inventory["hostname"]
+
