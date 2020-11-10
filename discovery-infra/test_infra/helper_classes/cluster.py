@@ -110,6 +110,10 @@ class Cluster:
 
     def patch_discovery_ignition(self, ignition):
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
+        
+    def set_proxy_values(self, http_proxy, https_proxy='', no_proxy=''):
+        logging.info(f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} for cluster: {self.id}")
+        self.api_client.set_cluster_proxy(self.id, http_proxy, https_proxy, no_proxy)
 
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
@@ -286,11 +290,16 @@ class Cluster:
         ):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
 
+    def download_kubeconfig(
+        self, kubeconfig_path=env_variables['kubeconfig_path']
+        ):
+        self.api_client.download_kubeconfig(self.id, kubeconfig_path)
+
     def download_installation_logs(self, path):
         self.api_client.download_cluster_logs(self.id, path)
 
     def get_install_config(self):
-        self.api_client.get_cluster_install_config(self.id)
+        return self.api_client.get_cluster_install_config(self.id)
 
     def get_admin_credentials(self):
         return self.api_client.get_cluster_admin_credentials(self.id)
