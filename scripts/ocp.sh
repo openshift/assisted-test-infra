@@ -7,12 +7,13 @@ function deploy_service() {
     service_name=$3
     service_base_url=$4
     namespace=$5
+    controller_image=$6
     nodeport=""
 
     SERVICE_BASE_URL=$service_base_url discovery-infra/update_assisted_service_cm.py
     cp $kubeconfig assisted-service/build/kubeconfig
     make config_etc_hosts_for_ocp_cluster
-    make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service
+    make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service CONTROLLER_OCP_IMAGE=$controller_image
     nodeport=$(kubectl --kubeconfig=$kubeconfig get svc/$service_name -n $namespace -o=jsonpath='{.spec.ports[0].nodePort}')
 
     read -ra def <<< "$(tail -1 /etc/hosts)"
