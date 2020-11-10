@@ -127,6 +127,17 @@ class Cluster:
             nodes_count=nodes_count
         )
 
+    def start_install_and_wait_for_installed(self,
+                                             wait_for_hosts=True,
+                                             wait_for_cluster_install=True,
+                                             nodes_count=env_variables['num_nodes']
+                                             ):
+        self.start_install()
+        if wait_for_hosts:
+            self.wait_for_hosts_to_install(nodes_count=nodes_count)
+        if wait_for_cluster_install:
+            self.wait_for_install()
+
     def disable_worker_hosts(self):
         hosts = self.api_client.get_cluster_hosts(cluster_id=self.id)
         for host in hosts:
@@ -248,6 +259,9 @@ class Cluster:
         self, kubeconfig_path=env_variables['kubeconfig_path']
         ):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
+
+    def download_installation_logs(self, path):
+        self.api_client.download_cluster_logs(self.id, path)
 
     def get_install_config(self):
         self.api_client.get_cluster_install_config(self.id)

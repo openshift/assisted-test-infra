@@ -132,9 +132,11 @@ def get_cluster_hosts_with_mac(client, cluster_id, macs):
 def to_utc(timestr):
     return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
 
+
 def get_logs_collected_at(client, cluster_id):
     hosts = client.get_cluster_hosts(cluster_id)
     return [to_utc(host["logs_collected_at"]) for host in hosts]
+
 
 def get_tfvars(tf_folder):
     tf_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)

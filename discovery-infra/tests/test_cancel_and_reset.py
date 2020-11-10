@@ -41,10 +41,8 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
         # Install Cluster
-        new_cluster.start_install()
         # wait until all nodes are in Installed status, will fail in case one host in error
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
     def test_cancel_reset_after_node_boot(self, api_client, nodes, cluster):
@@ -63,10 +61,8 @@ class TestCancelReset(BaseTest):
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        # Install Cluster
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
     def test_cancel_reset_one_node_unavailable(self, api_client, nodes, cluster):
@@ -88,10 +84,8 @@ class TestCancelReset(BaseTest):
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        # Install Cluster
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
     def test_cancel_reset_while_disable_workers(self, api_client, nodes, cluster):
@@ -111,10 +105,8 @@ class TestCancelReset(BaseTest):
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered(nodes_count=env_variables['num_masters'])
         new_cluster.wait_for_ready_to_install()
-        # Install Cluster
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install(nodes_count=env_variables['num_masters'])
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until master nodes are in Installed status
+        new_cluster.start_install_and_wait_for_installed(nodes_count=env_variables['num_masters'])
 
     @pytest.mark.regression
     def test_reset_cluster_while_at_least_one_node_finished_installation(self,
@@ -138,12 +130,10 @@ class TestCancelReset(BaseTest):
         new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    @pytest.mark.skip
     def test_cluster_install_and_reset_10_times(self,
                                                 api_client,
                                                 nodes,
@@ -155,7 +145,7 @@ class TestCancelReset(BaseTest):
         for i in range(10):
             logger.debug(f'test_cluster_install_and_reset_10_times attempt number: {i + 1}')
             new_cluster.start_install()
-            new_cluster.wait_for_write_image_to_disk(nodes_count=2)
+            new_cluster.wait_for_write_image_to_disk(nodes_count=1)
             new_cluster.cancel_install()
             assert new_cluster.is_in_cancelled_status(), \
                 f'cluster {new_cluster.id} failed to cancel after on attempt ' \
@@ -169,9 +159,8 @@ class TestCancelReset(BaseTest):
             new_cluster.wait_until_hosts_are_discovered()
             new_cluster.wait_for_ready_to_install()
 
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
     def test_reset_cluster_after_successful_installation(
@@ -184,10 +173,7 @@ class TestCancelReset(BaseTest):
                      f'test_reset_cluster_while_at_least_one_node_finished_installation is'
                      f' {new_cluster.id}')
         new_cluster.prepare_for_install(nodes)
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
-
+        new_cluster.start_install_and_wait_for_installed()
         with pytest.raises(ApiException):
             # TODO: catch the specific error code
             new_cluster.cancel_install()
@@ -233,9 +219,8 @@ class TestCancelReset(BaseTest):
             nodes)
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        new_cluster.start_install()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
     def test_cancel_reset_after_installation_failure(self, api_client, nodes, cluster):
@@ -259,11 +244,8 @@ class TestCancelReset(BaseTest):
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        # Install Cluster
-        new_cluster.start_install()
-        # wait until all nodes are in Installed status, will fail in case one host in error
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
     def test_cancel_reset_after_installation_failure_and_wrong_boot(self,
@@ -299,8 +281,5 @@ class TestCancelReset(BaseTest):
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        # Install Cluster
-        new_cluster.start_install()
-        # wait until all nodes are in Installed status, will fail in case one host in error
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
