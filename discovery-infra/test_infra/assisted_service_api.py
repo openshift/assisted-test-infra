@@ -280,7 +280,7 @@ class InventoryClient(object):
         return self.client.get_cluster_install_config(cluster_id=cluster_id)
 
     def patch_cluster_discovery_ignition(self, cluster_id, ignition_info):
-        log.info("patchingcluster %s discovery ignition", cluster_id)
+        log.info("Patching cluster %s discovery ignition", cluster_id)
         return self.client.update_discovery_ignition(cluster_id=cluster_id,
                                                      discovery_ignition_params=models.DiscoveryIgnitionParams(
                                                          config=json.dumps(ignition_info)))

@@ -108,6 +108,9 @@ class Cluster:
         logging.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, ssh_key)
 
+    def patch_discovery_ignition(self, ignition):
+        self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
+
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
 
