@@ -23,7 +23,7 @@ DUMMY_SSH_KEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj+lurtXW2WxojtNXSxEWWTmk
 
 class TestCancelReset(BaseTest):
     @pytest.mark.sanity
-    def test_cancel_reset_before_node_boot(self, api_client, nodes, cluster):
+    def test_cancel_reset_before_node_boot(self, nodes, cluster):
         # Define new cluster
         new_cluster = cluster()
         new_cluster.prepare_for_install(nodes=nodes)
@@ -45,7 +45,7 @@ class TestCancelReset(BaseTest):
         new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    def test_cancel_reset_after_node_boot(self, api_client, nodes, cluster):
+    def test_cancel_reset_after_node_boot(self, nodes, cluster):
         new_cluster = cluster()
         new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
@@ -88,7 +88,7 @@ class TestCancelReset(BaseTest):
         # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    def test_cancel_reset_while_disable_workers(self, api_client, nodes, cluster):
+    def test_cancel_reset_while_disable_workers(self, nodes, cluster):
         new_cluster = cluster()
         new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.disable_worker_hosts()
@@ -109,10 +109,7 @@ class TestCancelReset(BaseTest):
         new_cluster.start_install_and_wait_for_installed(nodes_count=env_variables['num_masters'])
 
     @pytest.mark.regression
-    def test_reset_cluster_while_at_least_one_node_finished_installation(self,
-                                                                         api_client,
-                                                                         nodes,
-                                                                         cluster):
+    def test_reset_cluster_while_at_least_one_node_finished_installation(self, nodes, cluster):
         new_cluster = cluster()
         logger.debug(f'Cluster ID for '
                      f'test_reset_cluster_while_at_least_one_node_finished_installation is '
@@ -134,10 +131,7 @@ class TestCancelReset(BaseTest):
         # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    def test_cluster_install_and_reset_10_times(self,
-                                                api_client,
-                                                nodes,
-                                                cluster):
+    def test_cluster_install_and_reset_10_times(self, nodes, cluster):
         new_cluster = cluster()
         logger.debug(f'Cluster ID for test_cluster_install_and_reset_10_times is'
                      f' {new_cluster.id}')
@@ -163,11 +157,7 @@ class TestCancelReset(BaseTest):
         # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    def test_reset_cluster_after_successful_installation(
-            self,
-            api_client,
-            nodes,
-            cluster):
+    def test_reset_cluster_after_successful_installation(self, nodes, cluster):
         new_cluster = cluster()
         logger.debug(f'Cluster ID for '
                      f'test_reset_cluster_while_at_least_one_node_finished_installation is'
@@ -183,11 +173,7 @@ class TestCancelReset(BaseTest):
             new_cluster.reset_install()
 
     @pytest.mark.regression
-    def test_reset_cluster_after_changing_cluster_configuration(
-            self,
-            api_client,
-            nodes,
-            cluster):
+    def test_reset_cluster_after_changing_cluster_configuration(self, nodes, cluster):
         new_cluster = cluster()
         logger.debug(
             'Cluster ID for '
@@ -223,7 +209,7 @@ class TestCancelReset(BaseTest):
         # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    def test_cancel_reset_after_installation_failure(self, api_client, nodes, cluster):
+    def test_cancel_reset_after_installation_failure(self, nodes, cluster):
         # Define new cluster
         new_cluster = cluster()
         new_cluster.prepare_for_install(nodes=nodes)
@@ -231,7 +217,6 @@ class TestCancelReset(BaseTest):
         new_cluster.start_install()
         new_cluster.wait_for_installing_in_progress(nodes_count=env_variables['num_nodes'])
         # Kill bootstrap installer to simulate cluster error
-        b_node_name = new_cluster.get_bootstrap_hostname()
         bootstrap = nodes.get_bootstrap_node(cluster=new_cluster)
         bootstrap.kill_podman_container_by_name("assisted-installer")
         # Wait for cluster state Error
@@ -248,15 +233,12 @@ class TestCancelReset(BaseTest):
         # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
-    def test_cancel_reset_after_installation_failure_and_wrong_boot(self,
-                                                                    api_client,
-                                                                    nodes,
-                                                                    cluster):
+    def test_cancel_reset_after_installation_failure_and_wrong_boot(self, nodes, cluster):
         # Define new cluster
         new_cluster = cluster()
         # Change boot order to a master node
         selected_master = nodes.get_masters()[0]
-        nodes.set_wrong_boot_order(selected_master)
+        selected_master.set_boot_order(cd_first=True)
         # Start cluster install
         new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()

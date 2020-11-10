@@ -133,7 +133,7 @@ function additional_configs() {
     sudo chmod ugo+rx "$(dirname "$(pwd)")"
     echo "disaling selinux by setenforce 0"
     sudo setenforce 0 || true
-
+    sudo chmod 600 ssh_key/key
 }
 
 install_packages

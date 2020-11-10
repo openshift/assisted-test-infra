@@ -52,6 +52,7 @@ env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_m
 
 @pytest.fixture(scope="session")
 def api_client():
+    logging.info(f'--- SETUP --- api_client\n')
     yield get_api_client()
 
 def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
@@ -66,9 +67,9 @@ def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
 
 @pytest.fixture(scope="session")
 def setup_node_controller():
-    logging.info("Setup node controller")
+    logging.info(f'--- SETUP --- node controller\n')
     controller = nodeController(**env_variables)
     controller.prepare_nodes()
     yield controller
-    logging.info("Teardown node controller")
+    logging.info(f'--- TEARDOWN --- node controller\n')
     controller.destroy_all_nodes()

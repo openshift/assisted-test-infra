@@ -7,7 +7,7 @@ from tests.base_test import BaseTest
 
 class TestRoleSelection(BaseTest):
     @pytest.mark.regression
-    def test_automatic_role_assignment(self, api_client, nodes, cluster):
+    def test_automatic_role_assignment(self, nodes, cluster):
         """Let the system automatically assign all roles in a satisfying environment."""
         new_cluster = cluster()
 
@@ -22,7 +22,7 @@ class TestRoleSelection(BaseTest):
         assert Counter(host_assignments.values()) == Counter(master=3, worker=2)
 
     @pytest.mark.regression
-    def test_partial_role_assignment(self, api_client, nodes, cluster):
+    def test_partial_role_assignment(self, nodes, cluster):
         """Let the system semi-automatically assign roles in a satisfying environment."""
         new_cluster = cluster()
 
