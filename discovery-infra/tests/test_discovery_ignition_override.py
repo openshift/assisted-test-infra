@@ -33,26 +33,26 @@ class TestDiscoveryIgnition(BaseTest):
         Verify the override was applied
         """
         # Define new cluster
-        cluster_id = cluster().id
-
+        new_cluster = cluster()
         ignition_override = copy.deepcopy(TestDiscoveryIgnition.base_ignition)
         override_path = "/etc/test_discovery_ignition_override"
         ignition_override["storage"]["files"][0]["path"] = override_path
-        api_client.patch_cluster_discovery_ignition(cluster_id, ignition_override)
+        new_cluster.patch_discovery_ignition(ignition=ignition_override)
 
         # Generate and download cluster ISO
-        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.generate_and_download_image()
         # Boot nodes into ISO
         nodes.start_all()
         # Wait until hosts are discovered and update host roles
-        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.wait_until_hosts_are_discovered()
+        new_cluster.set_host_roles()
         # Verify override
-        self.validate_ignition_override(nodes, TestDiscoveryIgnition.override_path)
+        self._validate_ignition_override(nodes, TestDiscoveryIgnition.override_path)
 
-    # TODO: replace "skip" with "regression" once:
-    #  "MGMT-2758 Invalidate existing discovery ISO in case the user created a discovery ignition override" is done
-    @pytest.mark.skip
-    def test_discovery_ignition_after_ISO_was_created(self, api_client, nodes, cluster):
+    #  Test fails due to: "MGMT-2758 Invalidate existing discovery ISO in case the user
+    #                                   created a discovery ignition override"
+    @pytest.mark.regression
+    def test_discovery_ignition_after_iso_was_created(self, api_client, nodes, cluster):
         """ Verify that we create a new ISO upon discovery igniton override in case one already exists.
         Download the ISO
         Create a discovery ignition override
@@ -61,25 +61,25 @@ class TestDiscoveryIgnition(BaseTest):
         Verify the override was applied
         """
         # Define new cluster
-        cluster_id = cluster().id
+        new_cluster = cluster()
 
         ignition_override = copy.deepcopy(TestDiscoveryIgnition.base_ignition)
-        override_path = "/etc/test_discovery_ignition_after_ISO_was_created"
+        override_path = "/etc/test_discovery_ignition_after_iso_was_created"
         ignition_override["storage"]["files"][0]["path"] = override_path
 
         # Generate and download cluster ISO
-        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.generate_and_download_image()
         # Apply the patch after the ISO was created
-        api_client.patch_cluster_discovery_ignition(cluster_id, ignition_override)
+        new_cluster.patch_discovery_ignition(ignition=ignition_override)
         # Generate and download cluster ISO again
-        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.generate_and_download_image()
 
         # Boot nodes into ISO
         nodes.start_all()
         # Wait until hosts are discovered and update host roles
-        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.wait_until_hosts_are_discovered()
         # Verify override
-        self.validate_ignition_override(nodes.nodes, override_path)
+        self._validate_ignition_override(nodes, override_path)
 
     @pytest.mark.regression
     def test_discovery_ignition_bad_format(self, api_client, nodes, cluster):
@@ -87,21 +87,19 @@ class TestDiscoveryIgnition(BaseTest):
         make sure patch API fail
         """
         # Define new cluster
-        cluster_id = cluster().id
+        new_cluster = cluster()
 
         ignition_override = copy.deepcopy(TestDiscoveryIgnition.base_ignition)
         test_string = "not base 64b content"
         override_path = "/etc/test_discovery_ignition_bad_format"
         ignition_override["storage"]["files"][0]["path"] = override_path
         ignition_override["storage"]["files"][0]["contents"] = {"source": f"data:text/plain;base64,{test_string}"}
-
         try:
-            api_client.patch_cluster_discovery_ignition(cluster_id, ignition_override)
-        # TODO: change this to BadRequest
+            new_cluster.patch_discovery_ignition(ignition=ignition_override)
         except Exception:
             logging.info("Got an exception while trying to update a cluster with unsupported discovery igniton")
         else:
-            raise Exception("Expected patch_cluster_discovery_ignition to fail due to unsupported ignition version")
+            raise Exception("Expected patch_discovery_ignition to fail due to unsupported ignition version")
 
     @pytest.mark.regression
     def test_discovery_ignition_multiple_calls(self, api_client, nodes, cluster):
@@ -112,31 +110,32 @@ class TestDiscoveryIgnition(BaseTest):
         Verify the last override was applied
         """
         # Define new cluster
-        cluster_id = cluster().id
+        new_cluster = cluster()
 
         ignition_override = copy.deepcopy(TestDiscoveryIgnition.base_ignition)
         override_path = "/etc/test_discovery_ignition_multiple_calls_1"
         ignition_override["storage"]["files"][0]["path"] = override_path
-        api_client.patch_cluster_discovery_ignition(cluster_id, ignition_override)
+        new_cluster.patch_discovery_ignition(ignition=ignition_override)
 
         ignition_override_2 = copy.deepcopy(TestDiscoveryIgnition.base_ignition)
         override_path_2 = "/etc/test_discovery_ignition_multiple_calls_2"
         ignition_override_2["storage"]["files"][0]["path"] = override_path_2
         # Create another discovery ignition override
-        api_client.patch_cluster_discovery_ignition(cluster_id, ignition_override_2)
+        new_cluster.patch_discovery_ignition(ignition=ignition_override_2)
 
-        # Generate and download cluster ISO
-        self.generate_and_download_image(cluster_id=cluster_id, api_client=api_client)
+        # Generate and download cluster ISO again
+        new_cluster.generate_and_download_image()
         # Boot nodes into ISO
         nodes.start_all()
         # Wait until hosts are discovered and update host roles
-        self.wait_until_hosts_are_discovered(cluster_id=cluster_id, api_client=api_client)
+        new_cluster.wait_until_hosts_are_discovered()
+
         # Verify override
-        self.validate_ignition_override(nodes, override_path_2)
+        self._validate_ignition_override(nodes, override_path_2)
 
     @staticmethod
-    def validate_ignition_override(nodes, file_path, expected_content=TEST_STRING):
-        logging.info("Verifying pplied the override for all hosts")
+    def _validate_ignition_override(nodes, file_path, expected_content=TEST_STRING):
+        logging.info("Verifying ignition override for all hosts")
         results = nodes.run_ssh_command_on_given_nodes(nodes.nodes, "cat {}".format(file_path))
         for _, result in results.items():
             assert result == expected_content
