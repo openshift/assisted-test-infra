@@ -23,12 +23,12 @@ elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
     print_log "Starting port forwarding for deployment/$SERVICE_NAME on port $OCP_SERVICE_PORT"
     add_firewalld_port $OCP_SERVICE_PORT
 
-    OCP_BASE_URL=http://$SERVICE_URL:$OCP_SERVICE_PORT
-	IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_service $OCP_KUBECONFIG $SERVICE $SERVICE_NAME $OCP_BASE_URL $NAMESPACE" 2>&1 | tee /dev/tty | tail -1)
+    SERVICE_BASE_URL=http://$SERVICE_URL:$OCP_SERVICE_PORT
+	IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_service $OCP_KUBECONFIG $SERVICE $SERVICE_NAME $SERVICE_BASE_URL $NAMESPACE $CONTROLLER_OCP_IMAGE" 2>&1 | tee /dev/tty | tail -1)
     read -r CLUSTER_VIP SERVICE_NODEPORT <<< "$IP_NODEPORT"
 
-    wait_for_url_and_run "$OCP_BASE_URL" "spawn_port_forwarding_command $SERVICE_NAME $OCP_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $PROFILE $OCP_KUBECONFIG ocp $CLUSTER_VIP $SERVICE_NODEPORT"
-    print_log "${SERVICE_NAME} can be reached at http://${SERVICE_URL}:${OCP_SERVICE_PORT}"
+    wait_for_url_and_run "$SERVICE_BASE_URL" "spawn_port_forwarding_command $SERVICE_NAME $OCP_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $PROFILE $OCP_KUBECONFIG ocp $CLUSTER_VIP $SERVICE_NODEPORT"
+    print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL}"
 else
     print_log "Updating assisted_service params"
     skipper run discovery-infra/update_assisted_service_cm.py ENABLE_AUTH=${ENABLE_AUTH}

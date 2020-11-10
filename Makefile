@@ -86,6 +86,7 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integrat
 PROFILE := $(or $(PROFILE),minikube)
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
+CONTROLLER_OCP_IMAGE := $(or ${CONTROLLER_OCP_IMAGE},quay.io/ocpmetal/assisted-installer-controller-ocp:latest)
 
 .EXPORT_ALL_VARIABLES:
 
@@ -208,7 +209,7 @@ deploy_on_ocp_cluster:
 	# service
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
 		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
-		CLUSTER_NAME=$(CLUSTER_NAME) CLUSTER_ID=$(CLUSTER_ID) PROFILE=$(PROFILE) SERVICE=$(SERVICE) \
+		CLUSTER_NAME=$(CLUSTER_NAME) CLUSTER_ID=$(CLUSTER_ID) PROFILE=$(PROFILE) SERVICE=$(SERVICE) CONTROLLER_OCP_IMAGE=$(CONTROLLER_OCP_IMAGE) \
 		scripts/deploy_assisted_service.sh
 
 	# UI
