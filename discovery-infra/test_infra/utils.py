@@ -348,6 +348,30 @@ def is_cluster_in_status(client, cluster_id, statuses):
         log.exception("Failed to get cluster %s info", cluster_id)
 
 
+def get_cluster_validation_value(cluster_info, validation_section, validation_id):
+    found_status = "validation not found"
+    validations = json.loads(cluster_info.validations_info)
+    for validation in validations[validation_section]:
+        if validation['id'] == validation_id:
+            found_status = validation['status']
+            break
+    return found_status
+
+
+def get_host_validation_value(cluster_info, host_id, validation_section, validation_id):
+    for host in cluster_info.hosts:
+        if host.id != host_id:
+            continue
+        found_status = "validation not found"
+        validations = json.loads(host.validations_info)
+        for validation in validations[validation_section]:
+            if validation['id'] == validation_id:
+                found_status = validation['status']
+                break
+        return found_status
+    return "host not found"
+
+
 def folder_exists(file_path):
     folder = Path(file_path).parent
     if not folder:

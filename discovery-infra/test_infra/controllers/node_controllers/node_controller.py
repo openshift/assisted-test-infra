@@ -44,3 +44,18 @@ class NodeController:
 
     def set_correct_boot_order_to_all_nodes(self) -> None:
         raise NotImplementedError
+
+    def get_host_id(self, node_name: str) -> str:
+        raise NotImplementedError
+
+    def get_cpu_cores(self, node_name: str) -> int:
+        raise NotImplementedError
+
+    def set_cpu_cores(self, node_name: str, core_count: int) -> None:
+        raise NotImplementedError
+
+    def get_ram_kib(self, node_name: str) -> int:
+        raise NotImplementedError
+
+    def set_ram_kib(self, node_name: str, ram_kib: int) -> None:
+        raise NotImplementedError

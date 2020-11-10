@@ -167,3 +167,38 @@ class LibvirtController(NodeController):
                             f"for node: {node_name}")
         logging.info(f"Boot order set successfully: cdrom first: {cd_first}, "
                      f"for node: {node_name}")
+
+    def get_host_id(self, node_name):
+        dom = self.libvirt_connection.lookupByName(node_name)
+        return dom.UUIDString()
+
+    def get_cpu_cores(self, node_name):
+        xml = self._get_xml(node_name)
+        vcpu_element = xml.getElementsByTagName('vcpu')[0]
+        return int(vcpu_element.firstChild.nodeValue)
+
+    def set_cpu_cores(self, node_name, core_count):
+        logging.info(f"Going to set vcpus to {core_count} for node: {node_name}")
+        dom = self.libvirt_connection.lookupByName(node_name)
+        dom.setVcpusFlags(core_count)
+        logging.info(f"Successfully set vcpus to {core_count} for node: {node_name}")
+
+    def get_ram_kib(self, node_name):
+        xml = self._get_xml(node_name)
+        memory_element = xml.getElementsByTagName('memory')[0]
+        return int(memory_element.firstChild.nodeValue)
+
+    def set_ram_kib(self, node_name, ram_kib):
+        logging.info(f"Going to set memory to {ram_kib} for node: {node_name}")
+        xml = self._get_xml(node_name)
+        memory_element = xml.getElementsByTagName('memory')[0]
+        memory_element.firstChild.replaceWholeText(ram_kib)
+        dom = self.libvirt_connection.defineXML(xml.toprettyxml())
+        if dom is None:
+            raise Exception(f"Failed to set memory for node: {node_name}")
+        logging.info(f"Successfully set memory to {ram_kib} for node: {node_name}")
+
+    def _get_xml(self, node_name):
+        dom = self.libvirt_connection.lookupByName(node_name)
+        current_xml = dom.XMLDesc(0)
+        return minidom.parseString(current_xml.encode('utf-8'))

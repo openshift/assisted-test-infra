@@ -200,7 +200,7 @@ class TestCancelReset(BaseTest):
         new_cluster.set_ingress_and_api_vips({
                 'api_vip': api_vip,
                 'ingress_vip': ingress_vip})
-        new_cluster.set_ssh_key({'ssh_public_key': DUMMY_SSH_KEY})
+        new_cluster.set_ssh_key(DUMMY_SSH_KEY)
         new_cluster.reboot_required_nodes_into_iso_after_reset(
             nodes)
         new_cluster.wait_until_hosts_are_discovered()

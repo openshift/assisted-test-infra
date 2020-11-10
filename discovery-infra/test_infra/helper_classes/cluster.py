@@ -1,4 +1,5 @@
 import logging
+import waiting
 import yaml
 from collections import Counter
 
@@ -53,12 +54,17 @@ class Cluster:
             image_path=iso_download_path
         )
 
-    def wait_until_hosts_are_discovered(self,nodes_count=env_variables['num_nodes']):
+    def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
+        allow_insufficient=False
+        ):
+        statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
+        if allow_insufficient:
+            statuses.append(consts.NodesStatus.INSUFFICIENT)
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             nodes_count=nodes_count,
-            statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
+            statuses=statuses
         )
 
     def _get_matching_hosts(self, host_type, count):
@@ -107,7 +113,15 @@ class Cluster:
 
     def set_ssh_key(self, ssh_key):
         logging.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
-        self.api_client.update_cluster(self.id, ssh_key)
+        self.api_client.update_cluster(self.id, {"ssh_public_key": ssh_key})
+
+    def set_base_dns_domain(self, base_dns_domain):
+        logging.info(f"Setting base DNS domain:{base_dns_domain} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
+
+    def set_pull_secret(self, pull_secret):
+        logging.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"pull_secret": pull_secret})
 
     def patch_discovery_ignition(self, ignition):
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
@@ -148,6 +162,13 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.ERROR]
+        )
+
+    def wait_for_pending_for_input_status(self):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.PENDING_FOR_INPUT]
         )
 
     def wait_for_at_least_one_host_to_boot_during_install(self, nodes_count=1):
@@ -345,3 +366,73 @@ class Cluster:
         nodes.start_all()
         self.wait_until_hosts_are_discovered(nodes_count=len(nodes))
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
+
+    def wait_for_cluster_validation(
+        self, validation_section, validation_id, statuses,
+        timeout=consts.VALIDATION_TIMEOUT, interval=2
+    ):
+        logging.info(f"Wait until cluster %s validation %s is in status %s",
+            self.id, validation_id, statuses)
+        try:
+            waiting.wait(
+                lambda: self.is_cluster_validation_in_status(
+                    validation_section=validation_section,
+                    validation_id=validation_id,
+                    statuses=statuses
+                ),
+                timeout_seconds=timeout,
+                sleep_seconds=interval,
+                waiting_for="Cluster validation to be in status %s" % statuses,
+            )
+        except:
+            logging.error("Cluster validation status is: %s",
+                utils.get_cluster_validation_value(
+                    self.api_client.cluster_get(self.id), validation_section,
+                        validation_id))
+            raise
+
+    def is_cluster_validation_in_status(
+        self, validation_section, validation_id, statuses
+    ):
+        logging.info("Is cluster %s validation %s in status %s",
+            self.id, validation_id, statuses)
+        try:
+            return utils.get_cluster_validation_value(
+                self.api_client.cluster_get(self.id),
+                validation_section, validation_id) in statuses
+        except:
+            log.exception("Failed to get cluster %s validation info", self.id)
+
+    def wait_for_host_validation(
+        self, host_id, validation_section, validation_id, statuses,
+        timeout=consts.VALIDATION_TIMEOUT, interval=2
+    ):
+        logging.info("Wait until host %s validation %s is in status %s", host_id,
+            validation_id, statuses)
+        try:
+            waiting.wait(
+                lambda: self.is_host_validation_in_status(
+                    host_id=host_id,
+                    validation_section=validation_section,
+                    validation_id=validation_id,
+                    statuses=statuses
+                ),
+                timeout_seconds=timeout,
+                sleep_seconds=interval,
+                waiting_for="Host validation to be in status %s" % statuses,
+            )
+        except:
+            logging.error("Host validation status is: %s",
+                utils.get_host_validation_value(self.api_client.cluster_get(self.id),
+                host_id, validation_section, validation_id))
+            raise
+
+    def is_host_validation_in_status(
+            self, host_id, validation_section, validation_id, statuses
+    ):
+        logging.info("Is host %s validation %s in status %s", host_id, validation_id, statuses)
+        try:
+            return utils.get_host_validation_value(self.api_client.cluster_get(self.id),
+                host_id, validation_section, validation_id) in statuses
+        except:
+            logging.exception("Failed to get cluster %s validation info", self.id)
