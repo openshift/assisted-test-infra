@@ -17,6 +17,10 @@ SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-ser
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 
+# assisted-service
+INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
+INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted-installer")
+
 # ui service
 UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),ocp-metal-ui)
 
@@ -86,7 +90,7 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integrat
 PROFILE := $(or $(PROFILE),minikube)
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
-CONTROLLER_OCP_IMAGE := $(or ${CONTROLLER_OCP_IMAGE},quay.io/ocpmetal/assisted-installer-controller-ocp:latest)
+CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-controller-ocp:stable)
 
 .EXPORT_ALL_VARIABLES:
 
@@ -205,21 +209,33 @@ kill_port_forwardings:
 kill_all_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(UI_SERVICE_NAME)'
 
-deploy_on_ocp_cluster:
+#########
+# Day 2 #
+#########
+
+deploy_on_ocp_cluster: bring_assisted_installer
+	# controller
+	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
+		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
+		PROFILE=$(PROFILE) CONTROLLER_OCP=$(CONTROLLER_OCP) \
+		scripts/deploy_controller.sh
+
 	# service
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
 		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
-		CLUSTER_NAME=$(CLUSTER_NAME) CLUSTER_ID=$(CLUSTER_ID) PROFILE=$(PROFILE) SERVICE=$(SERVICE) CONTROLLER_OCP_IMAGE=$(CONTROLLER_OCP_IMAGE) \
+		PROFILE=$(PROFILE) SERVICE=$(SERVICE) \
 		scripts/deploy_assisted_service.sh
 
 	# UI
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
-		CLUSTER_NAME=$(CLUSTER_NAME) CLUSTER_ID=$(CLUSTER_ID) PROFILE=$(PROFILE) \
+		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) PROFILE=$(PROFILE) \
 		scripts/deploy_ui.sh
 
 config_etc_hosts_for_ocp_cluster:
 	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) --deploy-target ocp $(ADDITIONAL_PARAMS)
+
+bring_assisted_installer:
+	@if cd assisted-installer >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(INSTALLER_BRANCH); else git clone --branch $(INSTALLER_BRANCH) $(INSTALLER_REPO);fi
 
 ###########
 # Cluster #
