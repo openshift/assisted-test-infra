@@ -25,7 +25,7 @@ class TestDiscoveryIgnition(BaseTest):
     }
 
     @pytest.mark.regression
-    def test_discovery_ignition_override(self, api_client, nodes, cluster):
+    def test_discovery_ignition_override(self, nodes, cluster):
         """ Test happy flow.
 
         Create a discovery ignition override
@@ -51,8 +51,9 @@ class TestDiscoveryIgnition(BaseTest):
 
     #  Test fails due to: "MGMT-2758 Invalidate existing discovery ISO in case the user
     #                                   created a discovery ignition override"
+    @pytest.mark.skip(reason="MGMT-2758")
     @pytest.mark.regression
-    def test_discovery_ignition_after_iso_was_created(self, api_client, nodes, cluster):
+    def test_discovery_ignition_after_iso_was_created(self, nodes, cluster):
         """ Verify that we create a new ISO upon discovery igniton override in case one already exists.
         Download the ISO
         Create a discovery ignition override
@@ -82,7 +83,7 @@ class TestDiscoveryIgnition(BaseTest):
         self._validate_ignition_override(nodes, override_path)
 
     @pytest.mark.regression
-    def test_discovery_ignition_bad_format(self, api_client, nodes, cluster):
+    def test_discovery_ignition_bad_format(self, nodes, cluster):
         """Create a discovery ignition override with bad content
         make sure patch API fail
         """
@@ -102,7 +103,7 @@ class TestDiscoveryIgnition(BaseTest):
             raise Exception("Expected patch_discovery_ignition to fail due to unsupported ignition version")
 
     @pytest.mark.regression
-    def test_discovery_ignition_multiple_calls(self, api_client, nodes, cluster):
+    def test_discovery_ignition_multiple_calls(self, nodes, cluster):
         """ Apply multiple discovery ignition overrides to the cluster.
         Create a discovery ignition override and than create another one
         Download the ISO

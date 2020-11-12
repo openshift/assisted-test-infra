@@ -1,4 +1,5 @@
 import logging
+import yaml
 from collections import Counter
 
 from tests.conftest import env_variables
@@ -227,6 +228,13 @@ class Cluster:
             statuses=[consts.ClusterStatus.CANCELLED]
         )
 
+    def is_installing(self):
+        return utils.is_cluster_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSTALLING]
+        )
+
     def reset_install(self):
         self.api_client.reset_cluster_install(cluster_id=self.id)
 
@@ -299,7 +307,7 @@ class Cluster:
         self.api_client.download_cluster_logs(self.id, path)
 
     def get_install_config(self):
-        return self.api_client.get_cluster_install_config(self.id)
+        return yaml.load(self.api_client.get_cluster_install_config(self.id), Loader=yaml.SafeLoader)
 
     def get_admin_credentials(self):
         return self.api_client.get_cluster_admin_credentials(self.id)

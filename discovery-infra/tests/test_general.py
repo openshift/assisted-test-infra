@@ -26,7 +26,7 @@ class TestGeneral(BaseTest):
 
     @pytest.mark.xfail
     @pytest.mark.regression
-    def test_cluster_unique_name(self, api_client, cluster):
+    def test_cluster_unique_name(self, cluster):
         cluster_name = random_name()
 
         _ = cluster(cluster_name)
@@ -34,7 +34,8 @@ class TestGeneral(BaseTest):
         with pytest.raises(ApiException):
             cluster(cluster_name)
 
-    def test_discovery(self, api_client, cluster, nodes):
+    @pytest.mark.regression
+    def test_discovery(self, cluster, nodes):
         c = cluster()
         c.generate_and_download_image()
         nodes.start_all()
@@ -43,7 +44,7 @@ class TestGeneral(BaseTest):
 
     @pytest.mark.regression
     def test_select_roles(self, api_client, cluster, nodes):
-        c = self.test_discovery(api_client, cluster, nodes)
+        c = self.test_discovery(cluster, nodes)
         c.set_host_roles()
         hosts = c.get_hosts()
         for host in hosts:

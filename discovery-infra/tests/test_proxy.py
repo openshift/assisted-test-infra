@@ -58,10 +58,3 @@ class TestProxy(BaseTest):
             http_proxy=expected_http_proxy_value,
             https_proxy=expected_https_proxy_value
         )
-
-
-
-
-
-
-

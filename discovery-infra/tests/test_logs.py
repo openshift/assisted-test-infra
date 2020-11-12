@@ -27,7 +27,7 @@ class TestDownloadLogs(BaseTest):
         new_cluster.prepare_for_install(nodes=nodes)
         # download logs into a file. At this point logs are not uploaded
         path = "/tmp/test_on-success_logs.tar"
-        self._verify_no_logs_uploaded(new_cluster.id, api_client, path)
+        self._verify_no_logs_uploaded(new_cluster, path)
 
         # install the cluster
         started_cluster_install_at = time.time()
@@ -74,9 +74,9 @@ class TestDownloadLogs(BaseTest):
         self._verify_logs_uploaded(path, expected_min_log_num)
         self._verify_logs_are_current(started_cluster_install_at, logs_collected_at)
 
-    def _verify_no_logs_uploaded(self, cluster_id, api_client, path):
+    def _verify_no_logs_uploaded(self, cluster, path):
         with pytest.raises(ApiException) as ex:
-            api_client.download_cluster_logs(cluster_id, path)
+            cluster.download_installation_logs(path)
         assert "No log files" in str(ex.value)
 
     def _verify_logs_uploaded(self, path, expected_min_log_num):
