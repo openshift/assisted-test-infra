@@ -10,6 +10,8 @@ class Node(object):
         self.private_ssh_key_path = private_ssh_key_path
         self.username = username
         self.node_controller = node_controller
+        self.original_vcpu_count = self.get_cpu_cores()
+        self.original_ram_kib = self.get_ram_kib()
         self._ips = []
         self._macs = []
 
@@ -98,3 +100,24 @@ class Node(object):
         self.set_boot_order(cd_first)
         if start:
             self.start()
+
+    def get_host_id(self):
+        return self.node_controller.get_host_id(self.name)
+
+    def get_cpu_cores(self):
+        return self.node_controller.get_cpu_cores(self.name)
+
+    def set_cpu_cores(self, core_count):
+        self.node_controller.set_cpu_cores(self.name, core_count)
+
+    def reset_cpu_cores(self):
+        self.set_cpu_cores(self.original_vcpu_count)
+
+    def get_ram_kib(self):
+        return self.node_controller.get_ram_kib(self.name)
+
+    def set_ram_kib(self, ram_kib):
+        self.node_controller.set_ram_kib(self.name, ram_kib)
+
+    def reset_ram_kib(self):
+        self.set_ram_kib(self.original_ram_kib)

@@ -66,3 +66,8 @@ class BaseTest:
             api_call(**kwargs)
         assert response.value.status == status
         assert response.value.reason == reason
+
+    @staticmethod
+    def assert_cluster_validation(cluster_info, validation_section, validation_id, expected_status):
+        found_status = utils.get_cluster_validation_value(cluster_info, validation_section, validation_id)
+        assert found_status == expected_status, "Found validation status " + found_status + " rather than " + expected_status + " for validation " + validation_id
