@@ -25,7 +25,7 @@ def main():
 
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
-        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest)
+        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.download_all)
     else:
         clusters = client.clusters_list()
 
@@ -35,7 +35,7 @@ def main():
 
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
-                download_logs(client, cluster, args.dest)
+                download_logs(client, cluster, args.dest, args.download_all)
 
         print(Counter(map(lambda cluster: cluster['status'], clusters)))
 
@@ -44,16 +44,15 @@ def should_download_logs(cluster: dict):
     return cluster['status'] in [ClusterStatus.ERROR]
 
 
-def download_logs(client: InventoryClient, cluster: dict, dest: str):
+def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool):
     output_folder = get_logs_output_folder(dest, cluster)
 
     if os.path.isdir(output_folder):
-        log.info(f"Skipping. The logs direct {output_folder} already exists.")
+        log.info(f"Skipping. The logs directory {output_folder} already exists.")
         return
 
     recreate_folder(output_folder)
     recreate_folder(os.path.join(output_folder, "cluster_files"))
-    recreate_folder(os.path.join(output_folder, "must-gather"))
 
     write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
 
@@ -66,11 +65,13 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str):
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_logs(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar"))
 
-    kubeconfig_path = os.path.join(output_folder, "kubeconfig")
+    kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
 
     with suppress(assisted_service_client.rest.ApiException):
-        if cluster['status'] in [ClusterStatus.INSTALLED]:
-            client.download_kubeconfig(cluster['id'], kubeconfig_path)
+        client.download_kubeconfig_no_ingress(cluster['id'], kubeconfig_path)
+
+        if must_gather:
+            recreate_folder(os.path.join(output_folder, "must-gather"))
             download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
 
     run_command("chmod -R ugo+rx '%s'" % output_folder)

@@ -191,7 +191,6 @@ class InventoryClient(object):
             _file.write(response.data)
 
     def download_kubeconfig_no_ingress(self, cluster_id, kubeconfig_path):
-        log.info("Downloading kubeconfig-noingress to %s", kubeconfig_path)
         self.download_and_save_file(
             cluster_id=cluster_id,
             file_name="kubeconfig-noingress",
