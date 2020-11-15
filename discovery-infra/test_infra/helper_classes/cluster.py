@@ -1,5 +1,6 @@
 import logging
 import waiting
+import random
 import yaml
 from collections import Counter
 
@@ -73,6 +74,10 @@ class Cluster:
                 for h in hosts
                 if host_type in h["requested_hostname"]][:count]
 
+    def set_cluster_name(self, cluster_name):
+        logging.info(f'Setting Cluster Name:{cluster_name} for cluster: {self.id}')
+        self.api_client.update_cluster(self.id, {"name": cluster_name})
+
     def set_host_roles(
         self, 
         requested_roles=Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
@@ -122,6 +127,11 @@ class Cluster:
     def set_pull_secret(self, pull_secret):
         logging.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"pull_secret": pull_secret})
+
+    def set_host_name(self, host_id, requested_name):
+        logging.info(f"Setting Required Host Name:{requested_name}, for Host ID: {host_id}")
+        host_data = {"hosts_names": [{"id": host_id, "hostname": requested_name}]}
+        self.api_client.update_cluster(self.id, host_data)
 
     def patch_discovery_ignition(self, ignition):
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
@@ -216,6 +226,9 @@ class Cluster:
                 nodes_by_role.append(host)
         logging.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
         return nodes_by_role
+
+    def get_random_host_by_role(self, role):
+        return random.choice(self.get_hosts_by_role(role))
 
     def get_reboot_required_hosts(self):
         return self.api_client.get_hosts_in_statuses(

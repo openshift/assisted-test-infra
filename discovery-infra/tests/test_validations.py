@@ -1,9 +1,10 @@
-import json
+import random
 import pytest
 
 from test_infra import consts
 from tests.base_test import BaseTest
 from tests.conftest import env_variables
+from assisted_service_client.rest import ApiException
 
 
 class TestValidations(BaseTest):
@@ -80,3 +81,36 @@ class TestValidations(BaseTest):
         new_cluster.wait_until_hosts_are_discovered(allow_insufficient=True)
         new_cluster.wait_for_host_validation(vcpu_host_id, "hardware", "has-min-cpu-cores", ["success"])
         new_cluster.wait_for_host_validation(ram_host_id, "hardware", "has-min-memory", ["success"])
+
+    @pytest.mark.regression
+    @pytest.mark.skip(reason="BZ:1897916")
+    def test_hosts_and_cluster_max_length(self, cluster, nodes):
+        # This test check installation with max cluster name length (54),
+        # and max host name length (63)
+
+        # Trying to create a cluster with more then 54 chars
+        cluster_name = "this-is-a-very-long-cluster-name-this-is-a-very-long-cluster-name-this-is-a-very"
+        self.assert_string_length(cluster_name, 80)
+        # TODO: assert on error code and reason
+        with pytest.raises(ApiException):
+            cluster(cluster_name)
+        c = cluster()
+        # Trying to update cluster name to have more then 54 chars
+        with pytest.raises(ApiException):
+            c.set_cluster_name(cluster_name)
+        # Set cluster name with exactly 54 chars
+        cluster_name = "this-is-exactly-54-chars-cluster-name-for-testing-abcd"
+        self.assert_string_length(cluster_name, 54)
+        c.set_cluster_name(cluster_name)
+        c.prepare_for_install(nodes=nodes)
+        random_master_host = c.get_random_host_by_role(role=consts.NodeRoles.MASTER)
+        # Trying to set host name with more than 63 chars
+        long_hostname = "this-is-a-more-than-63chars-long-host-name-this-is-more-than-63chars-long-host12"
+        self.assert_string_length(long_hostname, 80)
+        with pytest.raises(ApiException):
+            c.set_host_name(host_id=random_master_host["id"], requested_name=long_hostname)
+        # Set host name with exactly 63 chars
+        long_hostname = "this-is-a-63chars-long-host-name-this-is-a-63chars-long-host-12"
+        self.assert_string_length(long_hostname, 63)
+        c.set_host_name(host_id=random_master_host["id"], requested_name=long_hostname)
+        c.start_install_and_wait_for_installed()
