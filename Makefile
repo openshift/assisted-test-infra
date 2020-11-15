@@ -24,6 +24,9 @@ INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted
 # ui service
 UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),ocp-metal-ui)
 
+# Monitoring services
+PROMETHEUS_SERVICE_NAME := $(or $(PROMETHEUS_SERVICE_NAME),prometheus-k8s)
+
 # nodes params
 ISO := $(or $(ISO), "") # ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
 NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
@@ -205,6 +208,9 @@ set_dns:
 deploy_ui: start_minikube
 	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
 
+deploy_prometheus_ui:
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_prometheus_ui.sh
+
 test_ui: deploy_ui
 	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
 
@@ -213,6 +219,7 @@ kill_port_forwardings:
 
 kill_all_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(UI_SERVICE_NAME)'
+	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(PROMETHEUS_SERVICE_NAME)'
 
 ########
 # IPv6 #
@@ -324,6 +331,7 @@ bring_assisted_service:
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)
+	make deploy_prometheus_ui
 
 delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forwardings
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
