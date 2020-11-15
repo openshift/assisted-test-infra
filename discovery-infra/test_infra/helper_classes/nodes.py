@@ -32,6 +32,10 @@ class Nodes(object):
     def __len__(self):
         return len(self.nodes)
 
+    def __iter__(self):
+        for n in self.nodes:
+            yield n
+
     def get_masters(self):
         return [node for node in self.nodes if node.is_master_in_name()]
 

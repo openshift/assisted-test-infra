@@ -235,6 +235,21 @@ class Cluster:
             fall_on_error_status=fall_on_error_status,
         )
 
+    def wait_for_hosts_to_be_in_wrong_boot_order(
+            self,
+            nodes_count=env_variables['num_nodes'],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            fall_on_error_status=True
+    ):
+        utils.wait_till_all_hosts_are_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSTALLING_PENDING_USER_ACTION],
+            nodes_count=nodes_count,
+            timeout=timeout,
+            fall_on_error_status=fall_on_error_status
+        )
+
     def wait_for_ready_to_install(self):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
@@ -401,7 +416,7 @@ class Cluster:
                 self.api_client.cluster_get(self.id),
                 validation_section, validation_id) in statuses
         except:
-            log.exception("Failed to get cluster %s validation info", self.id)
+            logging.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_host_validation(
         self, host_id, validation_section, validation_id, statuses,
@@ -436,3 +451,17 @@ class Cluster:
                 host_id, validation_section, validation_id) in statuses
         except:
             logging.exception("Failed to get cluster %s validation info", self.id)
+
+    def wait_for_cluster_to_be_in_installing_pending_user_action_status(self):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSTALLING_PENDING_USER_ACTION]
+        )
+
+    def wait_for_cluster_to_be_in_installing_status(self):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSTALLING]
+        )
