@@ -233,6 +233,7 @@ class TestCancelReset(BaseTest):
         # new_cluster.start_install_and_wait_for_installed()
 
     @pytest.mark.regression
+    @pytest.mark.wrong_boot_order
     def test_cancel_reset_after_installation_failure_and_wrong_boot(self, nodes, cluster):
         # Define new cluster
         new_cluster = cluster()
@@ -251,6 +252,7 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_for_host_status([consts.NodesStatus.ERROR])
         # Wait for wong boot order
         new_cluster.wait_for_one_host_to_be_in_wrong_boot_order(fall_on_error_status=False)
+        new_cluster.wait_for_cluster_to_be_in_installing_pending_user_action_status()
         # Cancel cluster install once cluster installation start
         new_cluster.cancel_install()
         assert new_cluster.is_in_cancelled_status()
