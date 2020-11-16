@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=invalid-name,bare-except,missing-function-docstring,too-few-public-methods,missing-class-docstring,missing-module-docstring,line-too-long
 
 import argparse
 import logging
@@ -8,6 +9,7 @@ import json
 from urllib.parse import urlparse
 import re
 from collections import OrderedDict
+from collections import defaultdict
 import jira
 import requests
 from tabulate import tabulate
@@ -85,6 +87,15 @@ class Signature:
     def _format_time(time_str):
         return  dateutil.parser.isoparse(time_str).strftime("%Y-%m-%d %H:%M:%S")
 
+    @staticmethod
+    def _get_hostname(host):
+        hostname = host.get('requested_hostname')
+        if hostname:
+            return  hostname
+
+        inventory = json.loads(host['inventory'])
+        return inventory['hostname']
+
 
 class HostsStatusSignature(Signature):
     def __init__(self, jira_client):
@@ -103,17 +114,13 @@ class HostsStatusSignature(Signature):
 
         hosts = []
         for host in cluster['hosts']:
-            inventory = json.loads(host['inventory'])
             info = host['status_info']
             role = host['role']
             if host.get('bootstrap', False):
                 role = 'bootstrap'
-            hostname = host.get('requested_hostname')
-            if hostname is None:
-                hostname = inventory['hostname']
             hosts.append(OrderedDict(
                 id=host['id'],
-                hostname=hostname,
+                hostname=self._get_hostname(host),
                 progress=host['progress']['current_stage'],
                 status=host['status'],
                 role=role,
@@ -141,8 +148,6 @@ class HostsExtraDetailSignature(Signature):
         hosts = []
         for host in cluster['hosts']:
             inventory = json.loads(host['inventory'])
-            requested_hostname = host.get('requested_hostname', "")
-            hostname = inventory['hostname']
             hosts.append(OrderedDict(
                 id=host['id'],
                 hostname=inventory['hostname'],
@@ -152,6 +157,46 @@ class HostsExtraDetailSignature(Signature):
                 product_name=inventory['system_vendor']['product_name'],
                 manufacturer=inventory['system_vendor']['manufacturer'],
                 disks_count=len(inventory['disks'])
+            ))
+
+        report = self._generate_table_for_report(hosts)
+        self._update_triaging_ticket(issue_key, report, should_update=should_update)
+
+
+class StorageDetailSignature(Signature):
+    def __init__(self, jira_client):
+        super().__init__(jira_client, comment_identifying_string="h1. Host storage details:\n")
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+
+        url = self._logs_url_fixup(url)
+        try:
+            md = self._get_metadata_json(url)
+        except:
+            logger.exception("Error getting logs for %s at %s", issue_key, url)
+            return
+
+        cluster = md['cluster']
+
+        hosts = []
+        for host in cluster['hosts']:
+            inventory = json.loads(host['inventory'])
+            disks = inventory['disks']
+            disks_details = defaultdict(list)
+            for d in disks:
+                disks_details['type'].append(d.get('drive_type', ""))
+                disks_details['bootable'].append(str(d.get('bootable', "NA")))
+                disks_details['name'].append(d.get('name', ""))
+                disks_details['path'].append(d.get('path', ""))
+                disks_details['by-path'].append(d.get('by_path', ""))
+            hosts.append(OrderedDict(
+                id=host['id'],
+                hostname=self._get_hostname(host),
+                disk_name="\n".join(disks_details['name']),
+                disk_type="\n".join(disks_details['type']),
+                disk_path="\n".join(disks_details['path']),
+                disk_bootable="\n".join(disks_details['bootable']),
+                disk_by_path="\n".join(disks_details['by-path'])
             ))
 
         report = self._generate_table_for_report(hosts)
@@ -205,18 +250,16 @@ class LibvirtRebootFlagSignature(Signature):
         hosts = []
         for host in cluster['hosts']:
             inventory = json.loads(host['inventory'])
-            requested_hostname = host.get('requested_hostname', "")
-            hostname = inventory['disks']
 
             if (len(inventory['disks']) == 1 and "KVM" in inventory['system_vendor']['product_name'] and
-                host['progress']['current_stage'] == 'Rebooting' and host['status'] == 'error'):
+                    host['progress']['current_stage'] == 'Rebooting' and host['status'] == 'error'):
                 if host['role'] == 'bootstrap':
                     return
 
                 hosts.append(OrderedDict(
                     id=host['id'],
-                    hostname=inventory['hostname'],
-                    role = host['role'],
+                    hostname=self._get_hostname(host),
+                    role=host['role'],
                     progress=host['progress']['current_stage'],
                     status=host['status'],
                     num_disks=len(inventory.get('disks', []))))
@@ -307,8 +350,7 @@ def main(args):
 
 
 def add_signatures(jclient, url, issue_key, should_update=False):
-    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, LibvirtRebootFlagSignature]
-
+    signatures = [StorageDetailSignature, ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, LibvirtRebootFlagSignature]
     for sig in signatures:
         s = sig(jclient)
         s.update_ticket(url, issue_key, should_update=should_update)
