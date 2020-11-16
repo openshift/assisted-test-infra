@@ -15,7 +15,14 @@ def set_cluster_pull_secret(client, cluster_id, pull_secret):
     client.set_pull_secret(cluster_id, pull_secret)
 
 
-def execute_day2_flow(ocp_cluster_id, args):
+def execute_day2_cloud_flow(ocp_cluster_id, args):
+    execute_day2_flow(ocp_cluster_id, args, "cloud")
+
+
+def execute_day2_ocp_flow(ocp_cluster_id, args):
+    execute_day2_flow(ocp_cluster_id, args, "ocp")
+
+def execute_day2_flow(ocp_cluster_id, args, day2_type_flag):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
     client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
@@ -25,13 +32,18 @@ def execute_day2_flow(ocp_cluster_id, args):
     ocp_openshift_version = ocp_cluster.openshift_version
     ocp_api_vip_dnsname = "api." + ocp_cluster_name + "." + ocp_cluster.base_dns_domain
     ocp_api_vip_ip = ocp_cluster.api_vip
-    cluster_id = str(uuid.uuid4())
-    cluster = client.create_day2_cluster(
-        ocp_cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(ocp_openshift_version, ocp_api_vip_dnsname)
-    )
+    if day2_type_flag == "ocp":
+        cluster = ocp_cluster
+        terraform_cluster_dir_prefix = "test-infra-cluster-assisted-installer"
+    else:
+        cluster_id = str(uuid.uuid4())
+        cluster = client.create_day2_cluster(
+            ocp_cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(ocp_openshift_version, ocp_api_vip_dnsname)
+        )
+        set_cluster_pull_secret(client, cluster_id, args.pull_secret)
+        terraform_cluster_dir_prefix = ocp_cluster_name
 
-    set_cluster_pull_secret(client, cluster_id, args.pull_secret)
-
+    config_etc_hosts(ocp_api_vip_ip, ocp_api_vip_dnsname)
     image_path = os.path.join(
             consts.IMAGE_FOLDER,
             f'{args.namespace}-installer-image.iso'
@@ -44,32 +56,49 @@ def execute_day2_flow(ocp_cluster_id, args):
 
     day2_nodes_flow(
         client,
-        ocp_cluster_name,
+        terraform_cluster_dir_prefix,
         cluster,
         image_path,
         args.number_of_day2_workers,
         ocp_api_vip_ip,
         ocp_api_vip_dnsname,
         args.namespace,
-        args.install_cluster
+        args.install_cluster,
+        day2_type_flag
     )
 
 
-def day2_nodes_flow(client, cluster_name, cluster, image_path, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace, install_cluster_flag):
-    tf_network_name, total_num_nodes = apply_day2_tf_configuration(cluster_name, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace)
+def day2_nodes_flow(client,
+                    terraform_cluster_dir_prefix,
+                    cluster,
+                    image_path,
+                    num_worker_nodes,
+                    api_vip_ip,
+                    api_vip_dnsname,
+                    namespace,
+                    install_cluster_flag,
+                    day2_type_flag):
+    tf_network_name, total_num_nodes = apply_day2_tf_configuration(terraform_cluster_dir_prefix, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace)
     with utils.file_lock_context():
         utils.run_command(
-            f'make _apply_terraform CLUSTER_NAME={cluster_name}'
+            f'make _apply_terraform CLUSTER_NAME={terraform_cluster_dir_prefix}'
         )
     time.sleep(5)
 
+    if day2_type_flag == "ocp":
+        num_nodes_to_wait = total_num_nodes
+        installed_status = consts.NodesStatus.INSTALLED
+    else:
+        num_nodes_to_wait = num_worker_nodes
+        installed_status = consts.NodesStatus.DAY2_INSTALLED
+
     utils.wait_till_nodes_are_ready(
-        nodes_count=total_num_nodes, network_name=tf_network_name
+        nodes_count=num_nodes_to_wait, network_name=tf_network_name
     )
 
     waiting.wait(
         lambda: utils.are_libvirt_nodes_in_cluster_hosts(
-            client, cluster.id, num_worker_nodes
+            client, cluster.id, num_nodes_to_wait
         ),
         timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
         sleep_seconds=10,
@@ -88,7 +117,6 @@ def day2_nodes_flow(client, cluster_name, cluster, image_path, num_worker_nodes,
 
     if install_cluster_flag:
         log.info("Start installing all known nodes in the cluster %s", cluster.id)
-        config_etc_hosts(api_vip_ip, api_vip_dnsname)
         ocp_orig_ready_nodes = get_ocp_cluster_ready_nodes_num()
         client.install_day2_cluster(cluster.id)
 
@@ -96,16 +124,16 @@ def day2_nodes_flow(client, cluster_name, cluster, image_path, num_worker_nodes,
         utils.wait_till_all_hosts_are_in_status(
             client=client,
             cluster_id=cluster.id,
-            nodes_count=num_worker_nodes,
+            nodes_count=num_nodes_to_wait,
             statuses=[
-                consts.NodesStatus.DAY2_INSTALLED
+                installed_status
             ],
             interval=30,
         )
 
         log.info("Start waiting until installed nodes has actually been added to the OCP cluster")
         waiting.wait(
-            lambda: wait_nodes_join_ocp_cluster(ocp_orig_ready_nodes, num_worker_nodes),
+            lambda: wait_nodes_join_ocp_cluster(ocp_orig_ready_nodes, num_worker_nodes, day2_type_flag),
             timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
             sleep_seconds=30,
             waiting_for="Day2 nodes to be added to OCP cluster",
@@ -153,8 +181,9 @@ def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_
     tfvars[worker_ip_type] = worker_ips_list
 
 
-def wait_nodes_join_ocp_cluster(num_orig_nodes, num_new_nodes):
-    approve_workers_on_ocp_cluster()
+def wait_nodes_join_ocp_cluster(num_orig_nodes, num_new_nodes, day2_type_flag):
+    if day2_type_flag == "cloud":
+        approve_workers_on_ocp_cluster()
     return get_ocp_cluster_ready_nodes_num() == num_orig_nodes + num_new_nodes
 
 

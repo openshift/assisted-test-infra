@@ -232,7 +232,7 @@ deploy_on_ocp_cluster: bring_assisted_installer
 		scripts/deploy_ui.sh
 
 config_etc_hosts_for_ocp_cluster:
-	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) --deploy-target ocp $(ADDITIONAL_PARAMS)
+	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) $(ADDITIONAL_PARAMS)
 
 bring_assisted_installer:
 	@if cd assisted-installer >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(INSTALLER_BRANCH); else git clone --branch $(INSTALLER_BRANCH) $(INSTALLER_REPO);fi
@@ -261,17 +261,17 @@ deploy_nodes_with_install:
 deploy_nodes:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) DAY1_PARAMS=--day1-cluster
 
-_deploy_day2_nodes:
-	discovery-infra/start_discovery.py -i $(ISO) -k '$(SSH_PUB_KEY)' -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -ov $(OPENSHIFT_VERSION) -id $(CLUSTER_ID) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) --day2-cluster yes -avi $(API_VIP_IP) -avd $(API_VIP_DNSNAME) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS)
-
 deploy_day2_nodes:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) DAY2_PARAMS=--day2-cluster
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster'"
 
-deploy_day2_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" DAY2_PARAMS=--day2-cluster
+deploy_day2_cloud_nodes_with_install:
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cluster ${ADDITIONAL_PARAMS}'" DEPLOY_TARGET=minikube
+
+deploy_day2_ocp_nodes_with_install:
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-ocp-cluster'" DEPLOY_TARGET=ocp
 
 install_day1_and_day2:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" DAY2_PARAMS=--day2-cluster DAY1_PARAMS=--day1-cluster
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
 
 destroy_nodes:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) -cn $(CLUSTER_NAME) $(OC_PARAMS)'

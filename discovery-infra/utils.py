@@ -434,6 +434,10 @@ def get_local_assisted_service_url(profile, namespace, service, deploy_target):
     if deploy_target == "podman-localhost":
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
         return f'http://{assisted_hostname_or_ip}:8090'
+    elif deploy_target == "ocp":
+        res = subprocess.check_output("ip route get 1", shell=True).split()[6]
+        ip = str(res, "utf-8")
+        return f'http://{ip}:7000'
     else:
         # default deploy target is minikube
         log.info('Getting minikube %s URL in %s namespace', service, namespace)
