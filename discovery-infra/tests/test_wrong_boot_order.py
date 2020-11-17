@@ -2,6 +2,7 @@ import pytest
 import time
 import logging
 
+from test_infra import consts
 from tests.base_test import BaseTest
 
 
@@ -188,3 +189,35 @@ class TestWrongBootOrder(BaseTest):
         new_cluster.wait_for_cluster_to_be_in_installing_status()
         new_cluster.wait_for_hosts_to_install()
         new_cluster.wait_for_install()
+
+    @pytest.mark.regression
+    def test_cluster_state_move_from_incorrect_boot_to_error(self, nodes, cluster):
+        # Define new cluster
+        new_cluster = cluster()
+        # Change boot order to all masters
+        master_nodes = nodes.get_masters()
+        nodes.set_wrong_boot_order(master_nodes, False)
+        # Start cluster install
+        new_cluster.prepare_for_install(nodes=nodes)
+        new_cluster.start_install()
+        new_cluster.wait_for_installing_in_progress()
+        # Wait until one host is in wrong boot order
+        new_cluster.wait_for_one_host_to_be_in_wrong_boot_order()
+        new_cluster.wait_for_cluster_to_be_in_installing_pending_user_action_status()
+        # Kill bootstrap installer to simulate cluster error
+        bootstrap = nodes.get_bootstrap_node(cluster=new_cluster)
+        bootstrap.kill_podman_container_by_name("assisted-installer")
+        # Wait for node and cluster Error
+        new_cluster.wait_for_host_status([consts.NodesStatus.ERROR])
+        new_cluster.wait_for_cluster_in_error_status()
+        # Reset cluster install
+        new_cluster.reset_install()
+        assert new_cluster.is_in_insufficient_status()
+        # Fix boot order and reboot required nodes into ISO
+        nodes.set_correct_boot_order(master_nodes, False)
+        new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
+        # Wait for hosts to be rediscovered
+        new_cluster.wait_until_hosts_are_discovered()
+        new_cluster.wait_for_ready_to_install()
+        # Install Cluster and wait until all nodes are in Installed status
+        # new_cluster.start_install_and_wait_for_installed()
