@@ -90,7 +90,7 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integrat
 PROFILE := $(or $(PROFILE),minikube)
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
-CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-controller-ocp:stable)
+CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-controller-ocp:latest)
 
 .EXPORT_ALL_VARIABLES:
 
