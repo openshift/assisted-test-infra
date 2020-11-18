@@ -413,8 +413,10 @@ def main():
     cluster_id = args.cluster_id
     if args.day1_cluster:
         cluster_id = execute_day1_flow(cluster_name)
-    if args.day2_cluster:
-        day2.execute_day2_flow(cluster_id, args)
+    if args.day2_cloud_cluster:
+        day2.execute_day2_cloud_flow(cluster_id, args)
+    if args.day2_ocp_cluster:
+        day2.execute_day2_ocp_flow(cluster_id, args)
 
 
 if __name__ == "__main__":
@@ -616,8 +618,13 @@ if __name__ == "__main__":
         default=False
     )
     parser.add_argument(
-        "--day2-cluster",
-        help="day2 cluster",
+        "--day2-cloud-cluster",
+        help="day2 cloud cluster",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--day2-ocp-cluster",
+        help="day2 ocp cluster",
         action="store_true",
     )
     parser.add_argument(

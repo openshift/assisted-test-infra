@@ -68,7 +68,7 @@ if __name__ == "__main__":
         '--deploy-target',
         help='Where assisted-service is deployed',
         type=str,
-        default='ocp'
+        default='minikube'
     )
     parser.add_argument(
         "--config-etc-hosts",

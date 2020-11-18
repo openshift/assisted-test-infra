@@ -24,8 +24,9 @@ elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
     add_firewalld_port $OCP_SERVICE_PORT
 
     SERVICE_BASE_URL=http://$SERVICE_URL:$OCP_SERVICE_PORT
-	IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_service $OCP_KUBECONFIG $SERVICE $SERVICE_NAME $SERVICE_BASE_URL $NAMESPACE $CONTROLLER_OCP" 2>&1 | tee /dev/tty | tail -1)
+    IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_service $OCP_KUBECONFIG $SERVICE $SERVICE_NAME $SERVICE_BASE_URL $NAMESPACE $CONTROLLER_OCP" 2>&1 | tee /dev/tty | tail -1)
     read -r CLUSTER_VIP SERVICE_NODEPORT <<< "$IP_NODEPORT"
+    print_log "CLUSTER_VIP is ${CLUSTER_VIP}, SERVICE_NODEPORT is ${SERVICE_NODEPORT}"
 
     wait_for_url_and_run "$SERVICE_BASE_URL" "spawn_port_forwarding_command $SERVICE_NAME $OCP_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $PROFILE $OCP_KUBECONFIG ocp $CLUSTER_VIP $SERVICE_NODEPORT"
     print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL}"
