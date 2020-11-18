@@ -15,35 +15,34 @@ def set_cluster_pull_secret(client, cluster_id, pull_secret):
     client.set_pull_secret(cluster_id, pull_secret)
 
 
-def execute_day2_cloud_flow(ocp_cluster_id, args):
-    execute_day2_flow(ocp_cluster_id, args, "cloud")
+def execute_day2_cloud_flow(cluster_id, args):
+    execute_day2_flow(cluster_id, args, "cloud")
 
 
-def execute_day2_ocp_flow(ocp_cluster_id, args):
-    execute_day2_flow(ocp_cluster_id, args, "ocp")
+def execute_day2_ocp_flow(cluster_id, args):
+    execute_day2_flow(cluster_id, args, "ocp")
 
-def execute_day2_flow(ocp_cluster_id, args, day2_type_flag):
+def execute_day2_flow(cluster_id, args, day2_type_flag):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
     client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
     )
-    ocp_cluster = client.cluster_get(cluster_id=ocp_cluster_id)
-    ocp_cluster_name = ocp_cluster.name
-    ocp_openshift_version = ocp_cluster.openshift_version
-    ocp_api_vip_dnsname = "api." + ocp_cluster_name + "." + ocp_cluster.base_dns_domain
-    ocp_api_vip_ip = ocp_cluster.api_vip
+    cluster = client.cluster_get(cluster_id=cluster_id)
+    cluster_name = cluster.name
+    openshift_version = cluster.openshift_version
+    api_vip_dnsname = "api." + cluster_name + "." + cluster.base_dns_domain
+    api_vip_ip = cluster.api_vip
+    terraform_cluster_dir_prefix = cluster_name
     if day2_type_flag == "ocp":
-        cluster = ocp_cluster
         terraform_cluster_dir_prefix = "test-infra-cluster-assisted-installer"
     else:
         cluster_id = str(uuid.uuid4())
         cluster = client.create_day2_cluster(
-            ocp_cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(ocp_openshift_version, ocp_api_vip_dnsname)
+            cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(openshift_version, api_vip_dnsname)
         )
         set_cluster_pull_secret(client, cluster_id, args.pull_secret)
-        terraform_cluster_dir_prefix = ocp_cluster_name
 
-    config_etc_hosts(ocp_api_vip_ip, ocp_api_vip_dnsname)
+    config_etc_hosts(api_vip_ip, api_vip_dnsname)
     image_path = os.path.join(
             consts.IMAGE_FOLDER,
             f'{args.namespace}-installer-image.iso'
@@ -60,8 +59,8 @@ def execute_day2_flow(ocp_cluster_id, args, day2_type_flag):
         cluster,
         image_path,
         args.number_of_day2_workers,
-        ocp_api_vip_ip,
-        ocp_api_vip_dnsname,
+        api_vip_ip,
+        api_vip_dnsname,
         args.namespace,
         args.install_cluster,
         day2_type_flag
