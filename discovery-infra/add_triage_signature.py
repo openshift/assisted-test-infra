@@ -350,7 +350,7 @@ def main(args):
 
 
 def add_signatures(jclient, url, issue_key, should_update=False):
-    signatures = [StorageDetailSignature, ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, LibvirtRebootFlagSignature]
+    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, StorageDetailSignature, LibvirtRebootFlagSignature]
     for sig in signatures:
         s = sig(jclient)
         s.update_ticket(url, issue_key, should_update=should_update)
