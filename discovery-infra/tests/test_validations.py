@@ -9,6 +9,7 @@ from assisted_service_client.rest import ApiException
 
 class TestValidations(BaseTest):
     @pytest.mark.regression
+    @pytest.mark.skip(reason="test issue. WIP")
     def test_basic_cluster_validations(self, cluster):
         new_cluster = cluster()
 
@@ -50,6 +51,7 @@ class TestValidations(BaseTest):
         nodes.run_for_all_nodes("reset_ram_kib")
 
     @pytest.mark.regression
+    @pytest.mark.skip(reason="test issue. WIP")
     def test_host_insufficient(self, cluster, modified_nodes):
         new_cluster = cluster()
         new_cluster.generate_and_download_image()
