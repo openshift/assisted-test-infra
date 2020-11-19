@@ -4,6 +4,7 @@ import logging
 
 from test_infra import consts
 from tests.base_test import BaseTest
+from tests.conftest import env_variables
 
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,7 @@ class TestWrongBootOrder(BaseTest):
         new_cluster.wait_for_installing_in_progress()
 
         # Wait until wrong boot order - all hosts except bootstrap
-        new_cluster.wait_for_hosts_to_be_in_wrong_boot_order(len(nodes)-1)
+        new_cluster.wait_for_hosts_to_be_in_wrong_boot_order(nodes_count=env_variables['num_masters']-1)
         new_cluster.wait_for_cluster_to_be_in_installing_pending_user_action_status()
 
         # Cancel and reset installation
@@ -111,33 +112,16 @@ class TestWrongBootOrder(BaseTest):
             f'cluster {new_cluster.id} failed to reset installation'
 
         # Reboot required nodes into HD
-        bootstrap = nodes.get_bootstrap_node(cluster=new_cluster)
-        for n in nodes:
-            if n.name == bootstrap.name:
-                continue
-            n.shutdown()
-            n.set_boot_order(cd_first=False)
-
+        nodes.set_correct_boot_order(start_nodes=False)
         new_cluster.reboot_required_nodes_into_iso_after_reset(
             nodes=nodes)
 
-        # Cancel and reset installation
+        # Install Cluster
         new_cluster.wait_until_hosts_are_discovered()
         new_cluster.wait_for_ready_to_install()
-        new_cluster.start_install()
-
-        # Wait until bootstrap is in wrong boot order
-        new_cluster.wait_for_one_host_to_be_in_wrong_boot_order()
-        new_cluster.wait_for_cluster_to_be_in_installing_pending_user_action_status()
-
-        # Reboot bootstrap into HD
-        bootstrap.shutdown()
-        bootstrap.set_boot_order(cd_first=False)
-        bootstrap.start()
-
-        new_cluster.wait_for_cluster_to_be_in_installing_status()
-        new_cluster.wait_for_hosts_to_install()
-        new_cluster.wait_for_install()
+        # new_cluster.start_install()
+        # new_cluster.wait_for_hosts_to_install()
+        # new_cluster.wait_for_install()
 
     @pytest.mark.regression
     def test_installation_succeeded_on_incorrect_boot_order_timeout_is_ignored(self,

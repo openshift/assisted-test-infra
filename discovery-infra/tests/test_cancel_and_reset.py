@@ -238,17 +238,20 @@ class TestCancelReset(BaseTest):
         # Define new cluster
         new_cluster = cluster()
         # Change boot order to a master node
-        selected_master = nodes.get_masters()[0]
-        selected_master.set_boot_order(cd_first=True)
+        master_nodes = nodes.get_masters()
+        nodes.set_wrong_boot_order(master_nodes, False)
         # Start cluster install
         new_cluster.prepare_for_install(nodes=nodes)
         new_cluster.start_install()
-        new_cluster.wait_for_installing_in_progress(nodes_count=env_variables['num_nodes'])
+        # Wait for specific worker to be in installing in progress
+        worker_host = new_cluster.get_random_host_by_role(consts.NodeRoles.WORKER)
+        new_cluster.wait_for_specific_host_status(host=worker_host,
+                                                  statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
         # Kill worker installer to simulate host error
-        worker_host = new_cluster.get_hosts_by_role(consts.NodeRoles.WORKER)[0]
         selected_worker_node = nodes.get_node_from_cluster_host(worker_host)
         selected_worker_node.kill_podman_container_by_name("assisted-installer")
         # Wait for node Error
+        new_cluster.get_hosts()
         new_cluster.wait_for_host_status([consts.NodesStatus.ERROR])
         # Wait for wong boot order
         new_cluster.wait_for_one_host_to_be_in_wrong_boot_order(fall_on_error_status=False)
@@ -260,7 +263,7 @@ class TestCancelReset(BaseTest):
         new_cluster.reset_install()
         assert new_cluster.is_in_insufficient_status()
         # Fix boot order and reboot required nodes into ISO
-        selected_master.set_boot_order(cd_first=False)
+        nodes.set_correct_boot_order(master_nodes, False)
         new_cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
         # Wait for hosts to be rediscovered
         new_cluster.wait_until_hosts_are_discovered()

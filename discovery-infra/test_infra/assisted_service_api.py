@@ -185,6 +185,15 @@ class InventoryClient(object):
             ]:
                 return host
 
+    def get_host_by_name(self, cluster_id, host_name):
+        hosts = self.get_cluster_hosts(cluster_id)
+
+        for host in hosts:
+            hostname = host.get('requested_hostname')
+            if hostname == host_name:
+                log.info(f"Requested host by name: {host_name}, host details: {host}")
+                return host
+
     def download_and_save_file(self, cluster_id, file_name, file_path):
         log.info("Downloading %s to %s", file_name, file_path)
         response = self.client.download_cluster_files(
