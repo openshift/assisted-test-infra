@@ -105,7 +105,7 @@ def get_libvirt_nodes_mac_role_ip_and_name(network_name):
 
 
 def get_libvirt_nodes_macs(network_name):
-    return get_libvirt_nodes_mac_role_ip_and_name(network_name).keys()
+    return [lease["mac"] for lease in get_network_leases(network_name)]
 
 
 def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
@@ -591,6 +591,12 @@ def create_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 
 
+def create_ip_address_nested_list(node_count, starting_ip_addr):
+    return [[str(ipaddress.ip_address(starting_ip_addr) + i)] for i in range(node_count)]
+
+def create_empty_nested_list(node_count):
+    return [[] for i in range(node_count)]
+
 def set_hosts_roles_based_on_requested_name(client, cluster_id):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
     hosts_with_roles = []
@@ -599,7 +605,7 @@ def set_hosts_roles_based_on_requested_name(client, cluster_id):
         role = consts.NodeRoles.MASTER if "master" in host["requested_hostname"] else consts.NodeRoles.WORKER
         hosts_with_roles.append({"id": host["id"], "role": role})
     
-    client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
+    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
 
 
 def get_env(env, default=None):

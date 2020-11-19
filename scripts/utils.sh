@@ -49,8 +49,6 @@ function spawn_port_forwarding_command() {
     cat <<EOF >build/xinetd-$filename
 service ${service_name}
 {
-  flags		= IPv4
-  bind		= 0.0.0.0
   type		= UNLISTED
   socket_type	= stream
   protocol	= tcp
@@ -58,7 +56,6 @@ service ${service_name}
   wait		= no
   redirect	= $ip $port
   port		= ${external_port}
-  only_from	= 0.0.0.0/0
   per_source	= UNLIMITED
   instances	= UNLIMITED
 }
@@ -83,6 +80,10 @@ function kill_port_forwardings() {
 
 function get_main_ip() {
     echo "$(ip route get 1 | sed 's/^.*src \([^ ]*\).*$/\1/;q')"
+}
+
+function get_main_ip_v6() {
+    echo "$(ip -6 route get ::ffff:100:0 | sed 's/^.*src \([^ ]*\).*$/\1/;q')"
 }
 
 function wait_for_url_and_run() {

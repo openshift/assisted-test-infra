@@ -90,7 +90,7 @@ class Cluster:
             host_type=consts.NodeRoles.WORKER,
             count=requested_roles["worker"]))
 
-        self.api_client.set_hosts_roles(
+        self.api_client.update_hosts(
             cluster_id=self.id,
             hosts_with_roles=assigned_roles)
 
@@ -98,7 +98,7 @@ class Cluster:
 
     def set_specific_host_role(self, host, role):
         assignment_role = [{"id": host["id"], "role": role}]
-        self.api_client.set_hosts_roles(
+        self.api_client.update_hosts(
             cluster_id=self.id,
             hosts_with_roles=assignment_role)
 

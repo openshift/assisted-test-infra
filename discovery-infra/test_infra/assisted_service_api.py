@@ -138,11 +138,11 @@ class InventoryClient(object):
         self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key)
         self.download_image(cluster_id=cluster_id, image_path=image_path)
 
-    def set_hosts_roles(self, cluster_id, hosts_with_roles):
+    def update_hosts(self, cluster_id, hosts_with_roles, hosts_names=None):
         log.info(
             "Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id
         )
-        hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles)
+        hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles, hosts_names=hosts_names)
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=hosts
         )

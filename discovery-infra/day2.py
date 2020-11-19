@@ -170,13 +170,13 @@ def get_network_nodes_from_terraform(tf_folder):
 
 
 def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_type):
-    master_end_ip = tfvars[master_ip_type][-1]
+    master_end_ip = tfvars[master_ip_type][-1][0]
     workers_ip_list = tfvars[worker_ip_type]
-    if not workers_ip_list:
+    if not len(workers_ip_list):
         worker_starting_ip = ipaddress.ip_address(master_end_ip)
     else:
-        worker_starting_ip = ipaddress.ip_address(tfvars[worker_ip_type][-1])
-    worker_ips_list = workers_ip_list + utils.create_ip_address_list(num_worker_nodes, worker_starting_ip + 1)
+        worker_starting_ip = ipaddress.ip_address(tfvars[worker_ip_type][-1][0])
+    worker_ips_list = workers_ip_list + utils.create_ip_address_nested_list(num_worker_nodes, worker_starting_ip + 1)
     tfvars[worker_ip_type] = worker_ips_list
 
 

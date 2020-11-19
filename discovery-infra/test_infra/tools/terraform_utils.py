@@ -33,6 +33,9 @@ class TerraformUtils:
             json.dump(tfvars, _file)
         self.apply(refresh=refresh)
 
+    def get_state(self):
+        return self.tf.tfstate
+
     def set_new_vip(self, api_vip):
         self.change_variables(variables={"api_vip": api_vip})
 
