@@ -279,6 +279,36 @@ def wait_till_at_least_one_host_is_in_status(
         raise
 
 
+def wait_till_specific_host_is_in_status(
+    client,
+    cluster_id,
+    host_name,
+    nodes_count,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
+):
+    log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
+
+    try:
+        waiting.wait(
+            lambda: are_hosts_in_status(
+                [client.get_host_by_name(cluster_id, host_name)],
+                nodes_count,
+                statuses,
+                fall_on_error_status,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Node to be in of the statuses %s" % statuses,
+        )
+    except:
+        hosts = client.get_cluster_hosts(cluster_id)
+        log.info("All nodes: %s", hosts)
+        raise
+
+
 def wait_till_at_least_one_host_is_in_stage(
     client,
     cluster_id,

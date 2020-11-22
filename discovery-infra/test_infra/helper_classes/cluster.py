@@ -167,6 +167,15 @@ class Cluster:
             nodes_count=nodes_count
         )
 
+    def wait_for_specific_host_status(self, host, statuses, nodes_count=1):
+        utils.wait_till_specific_host_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            host_name=host.get('requested_hostname'),
+            statuses=statuses,
+            nodes_count=nodes_count
+        )
+
     def wait_for_cluster_in_error_status(self):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
