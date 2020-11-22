@@ -36,6 +36,12 @@ class LibvirtController(NodeController):
         logging.info("Found domains %s", nodes)
         return nodes
 
+    def list_networks(self):
+        return self.libvirt_connection.listAllNetworks()
+
+    def list_leases(self, network_name):
+        return self.libvirt_connection.networkLookupByName(network_name).DHCPLeases()
+
     def shutdown_node(self, node_name):
         logging.info("Going to shutdown %s", node_name)
         node = self.libvirt_connection.lookupByName(node_name)

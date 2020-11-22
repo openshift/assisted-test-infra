@@ -8,8 +8,13 @@ from test_infra import assisted_service_api, consts, utils
 
 qe_env = False
 
+
+def is_qe_env():
+    return os.environ.get('NODE_ENV') == 'QE_VM'
+
+
 # TODO changes it
-if os.environ.get('NODE_ENV') == 'QE_VM':
+if is_qe_env():
     from test_infra.controllers.node_controllers.qe_vm_controler import \
         QeVmController as nodeController
     qe_env = True
