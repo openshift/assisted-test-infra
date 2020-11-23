@@ -20,3 +20,4 @@ jira==2.0.0
 tabulate==0.8.7
 paramiko==2.7.2
 openshift-client==1.0.9
+Jinja2===2.10.1

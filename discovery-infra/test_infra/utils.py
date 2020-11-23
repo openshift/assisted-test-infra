@@ -17,7 +17,7 @@ import libvirt
 import waiting
 import requests
 import filelock
-import consts
+from test_infra import consts
 import oc_utils
 from logger import log
 from retry import retry
@@ -44,7 +44,7 @@ def run_command(command, shell=False, raise_errors=True):
     out = _io_buffer_to_str(process.stdout).strip()
     err = _io_buffer_to_str(process.stderr).strip()
 
-    if raise_errors and err:
+    if raise_errors and process.returncode != 0:
         raise RuntimeError(
             f'command: {command} exited with an error: {err} '
             f'code: {process.returncode}'
@@ -626,3 +626,19 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
         hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
     with open("/etc/hosts", "w") as f:
         f.writelines(hosts_lines)
+
+def run_container(container_name, image ,flags=[]):
+    logging.info(f'Running Container {container_name}')
+    run_container_cmd = f'podman {consts.PODMAN_FLAGS} run --name {container_name}'
+    
+    for flag in flags:
+        run_container_cmd += f' {flag}'
+
+    run_container_cmd += f' {image}'
+
+    run_command(run_container_cmd, shell=True)
+
+def remove_running_container(container_name):
+    logging.info(f'Removing Container {container_name}')
+    container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman {consts.PODMAN_FLAGS} rm {container_name}'
+    run_command(container_rm_cmd, shell=True)
