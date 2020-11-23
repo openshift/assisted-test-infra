@@ -15,7 +15,7 @@ import jira
 import add_triage_signature
 
 
-DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster"]
+DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
 JIRA_SERVER = "https://issues.redhat.com/"
 DEFAULT_NETRC_FILE = "~/.netrc"
