@@ -41,13 +41,14 @@ function deploy_ui() {
 function deploy_controller() {
     kubeconfig=$1
     service_base_url=$2
-    namespace=$3
-    controller_image=$4
+    cluster_id=$3
+    namespace=$4
+    controller_image=$5
 
     mkdir -p assisted-installer/build
     cp $kubeconfig assisted-installer/build/kubeconfig
     make -C assisted-installer/ deploy_controller_on_ocp_cluster OCP_KUBECONFIG=$kubeconfig \
-        SERVICE_BASE_URL=$service_base_url CONTROLLER_OCP=$controller_image
+        SERVICE_BASE_URL=$service_base_url CLUSTER_ID=$cluster_id CONTROLLER_OCP=$controller_image
 }
 
 "$@"

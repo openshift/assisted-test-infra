@@ -214,12 +214,6 @@ kill_all_port_forwardings:
 #########
 
 deploy_on_ocp_cluster: bring_assisted_installer
-	# controller
-	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
-		PROFILE=$(PROFILE) CONTROLLER_OCP=$(CONTROLLER_OCP) \
-		scripts/deploy_controller.sh
-
 	# service
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
 		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
@@ -231,8 +225,14 @@ deploy_on_ocp_cluster: bring_assisted_installer
 		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) PROFILE=$(PROFILE) \
 		scripts/deploy_ui.sh
 
+	# controller
+	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
+		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
+		PROFILE=$(PROFILE) CONTROLLER_OCP=$(CONTROLLER_OCP) \
+		scripts/deploy_controller.sh
+
 config_etc_hosts_for_ocp_cluster:
-	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) $(ADDITIONAL_PARAMS)
+	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) $(ADDITIONAL_PARAMS)
 
 bring_assisted_installer:
 	@if cd assisted-installer >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(INSTALLER_BRANCH); else git clone --branch $(INSTALLER_BRANCH) $(INSTALLER_REPO);fi
