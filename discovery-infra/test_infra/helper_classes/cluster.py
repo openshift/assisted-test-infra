@@ -99,10 +99,11 @@ class Cluster:
     def set_network_params(
         self, 
         controller,
-        nodes_count=env_variables['num_nodes'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
         cluster_machine_cidr=env_variables['machine_cidr']
     ):
+        self.api_client.update_cluster(self.id, {"vip_dhcp_allocation": vip_dhcp_allocation})
+
         if vip_dhcp_allocation:
             self.set_machine_cidr(cluster_machine_cidr)
         else:
@@ -345,7 +346,6 @@ class Cluster:
         self.set_host_roles()
         self.set_network_params(
             controller=nodes.controller,
-            nodes_count=nodes_count,
             vip_dhcp_allocation=vip_dhcp_allocation,
             cluster_machine_cidr=cluster_machine_cidr
         )

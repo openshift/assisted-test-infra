@@ -1,10 +1,16 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 from test_infra.controllers.node_controllers import node
 
 
 class NodeController:
     def list_nodes(self) -> Dict[str, node.Node]:
         raise NotImplementedError
+
+    def list_networks(self) -> List[Any]:
+        return NotImplementedError
+
+    def list_leases(self, network_name: str) -> List[Any]:
+        return NotImplementedError
 
     def shutdown_node(self, node_name: str) -> None:
         raise NotImplementedError
