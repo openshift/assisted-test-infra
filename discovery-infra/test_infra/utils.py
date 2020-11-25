@@ -606,3 +606,17 @@ def get_env(env, default=None):
 def touch(path):
     with open(path, 'a'):
         os.utime(path, None)
+
+
+def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
+    api_vip_dnsname = "api." + cluster_name + "." + base_dns_domain
+    with open("/etc/hosts", "r") as f:
+        hosts_lines = f.readlines()
+    for i, line in enumerate(hosts_lines):
+        if api_vip_dnsname in line:
+            hosts_lines[i] = f"{api_vip} {api_vip_dnsname}\n"
+            break
+    else:
+        hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
+    with open("/etc/hosts", "w") as f:
+        f.writelines(hosts_lines)

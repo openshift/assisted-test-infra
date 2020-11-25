@@ -22,6 +22,7 @@ import oc_utils
 import day2
 import waiting
 from logger import log
+from test_infra.utils import config_etc_hosts
 from test_infra.tools import terraform_utils
 
 
@@ -350,7 +351,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             if args.wait_for_cvo:
                 cluster_info = client.cluster_get(cluster.id)
                 log.info("Start waiting till CVO status is available")
-                utils.config_etc_hosts(cluster_info)
+                config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, cluster_info.api_vip)
                 utils.wait_for_cvo_available()
 
 
