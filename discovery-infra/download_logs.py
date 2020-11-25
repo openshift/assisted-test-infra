@@ -15,6 +15,7 @@ from assisted_service_api import InventoryClient, create_client
 from consts import ClusterStatus
 from logger import log
 from utils import recreate_folder, run_command
+from test_infra.utils import config_etc_hosts
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 
@@ -72,6 +73,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
         if must_gather:
             recreate_folder(os.path.join(output_folder, "must-gather"))
+            config_etc_hosts(cluster['name'], cluster['base_dns_domain'], cluster['api_vip'])
             download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
 
     run_command("chmod -R ugo+rx '%s'" % output_folder)

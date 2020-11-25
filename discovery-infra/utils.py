@@ -551,17 +551,3 @@ def set_hosts_roles_based_on_requested_name(client, cluster_id):
         hosts_with_roles.append({"id": host["id"], "role": role})
     
     client.set_hosts_roles(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
-
-
-def config_etc_hosts(cluster):
-    api_vip_dnsname = "api." + cluster.name + "." + cluster.base_dns_domain
-    with open("/etc/hosts", "r") as f:
-        hosts_lines = f.readlines()
-    for i, line in enumerate(hosts_lines):
-        if api_vip_dnsname in line:
-            hosts_lines[i] = cluster.api_vip + " " + api_vip_dnsname +"\n"
-            break
-    else:
-        hosts_lines.append(cluster.api_vip + " " + api_vip_dnsname +"\n")
-    with open("/etc/hosts", "w") as f:
-        f.writelines(hosts_lines)
