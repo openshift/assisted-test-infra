@@ -9,6 +9,7 @@ pipeline {
         SKIPPER_PARAMS = " "
         PROFILE = "minikube"
         NAMESPACE = "assisted-installer"
+        IMAGE_EXPIRATION_TIME="10m"
 
         /* Credentials */
         PULL_SECRET = credentials('assisted-test-infra-pull-secret')
