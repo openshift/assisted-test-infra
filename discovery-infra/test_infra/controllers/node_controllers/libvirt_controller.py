@@ -191,7 +191,7 @@ class LibvirtController(NodeController):
 
     def get_ram_kib(self, node_name):
         xml = self._get_xml(node_name)
-        memory_element = xml.getElementsByTagName('memory')[0]
+        memory_element = xml.getElementsByTagName('currentMemory')[0]
         return int(memory_element.firstChild.nodeValue)
 
     def set_ram_kib(self, node_name, ram_kib):
@@ -199,6 +199,8 @@ class LibvirtController(NodeController):
         xml = self._get_xml(node_name)
         memory_element = xml.getElementsByTagName('memory')[0]
         memory_element.firstChild.replaceWholeText(ram_kib)
+        current_memory_element = xml.getElementsByTagName('currentMemory')[0]
+        current_memory_element.firstChild.replaceWholeText(ram_kib)
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
             raise Exception(f"Failed to set memory for node: {node_name}")

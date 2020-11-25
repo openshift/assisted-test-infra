@@ -9,7 +9,6 @@ from assisted_service_client.rest import ApiException
 
 class TestValidations(BaseTest):
     @pytest.mark.regression
-    @pytest.mark.skip(reason="test issue. WIP")
     def test_basic_cluster_validations(self, cluster):
         new_cluster = cluster()
 
@@ -21,9 +20,9 @@ class TestValidations(BaseTest):
         self.assert_cluster_validation(orig_cluster, "hosts-data", "sufficient-masters-count", "failure")
         self.assert_cluster_validation(orig_cluster, "network", "machine-cidr-defined", "failure")
         self.assert_cluster_validation(orig_cluster, "network", "machine-cidr-equals-to-calculated-cidr", "pending")
-        self.assert_cluster_validation(orig_cluster, "network", "api-vip-defined", "pending")
+        self.assert_cluster_validation(orig_cluster, "network", "api-vip-defined", "failure")
         self.assert_cluster_validation(orig_cluster, "network", "api-vip-valid", "pending")
-        self.assert_cluster_validation(orig_cluster, "network", "ingress-vip-defined", "pending")
+        self.assert_cluster_validation(orig_cluster, "network", "ingress-vip-defined", "failure")
         self.assert_cluster_validation(orig_cluster, "network", "ingress-vip-valid", "pending")
         self.assert_cluster_validation(orig_cluster, "network", "dns-domain-defined", "success")
         self.assert_cluster_validation(orig_cluster, "network", "cluster-cidr-defined", "success")
@@ -51,7 +50,6 @@ class TestValidations(BaseTest):
         nodes.run_for_all_nodes("reset_ram_kib")
 
     @pytest.mark.regression
-    @pytest.mark.skip(reason="test issue. WIP")
     def test_host_insufficient(self, cluster, modified_nodes):
         new_cluster = cluster()
         new_cluster.generate_and_download_image()
@@ -63,7 +61,7 @@ class TestValidations(BaseTest):
 
         # Modify RAM amount on the second node to be insufficient
         ram_node = modified_nodes.nodes[1]
-        ram_node.set_ram_kib(2097152)  # 2GB
+        ram_node.set_ram_kib(3145728)  # 3GB
         ram_host_id = ram_node.get_host_id()
 
         modified_nodes.start_all()
