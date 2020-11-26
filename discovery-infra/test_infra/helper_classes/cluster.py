@@ -96,6 +96,12 @@ class Cluster:
 
         return assigned_roles
 
+    def set_specific_host_role(self, host, role):
+        assignment_role = [{"id": host["id"], "role": role}]
+        self.api_client.set_hosts_roles(
+            cluster_id=self.id,
+            hosts_with_roles=assignment_role)
+
     def set_network_params(
         self, 
         controller,
@@ -160,12 +166,13 @@ class Cluster:
             nodes_count=nodes_count,
         )
 
-    def wait_for_host_status(self, statuses, nodes_count=1):
+    def wait_for_host_status(self, statuses, nodes_count=1, fall_on_error_status=True):
         utils.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=statuses,
-            nodes_count=nodes_count
+            nodes_count=nodes_count,
+            fall_on_error_status=fall_on_error_status
         )
 
     def wait_for_specific_host_status(self, host, statuses, nodes_count=1):
@@ -211,12 +218,14 @@ class Cluster:
             self.wait_for_install()
 
     def disable_worker_hosts(self):
-        hosts = self.api_client.get_cluster_hosts(cluster_id=self.id)
+        hosts = self.get_hosts_by_role(consts.NodeRoles.WORKER)
         for host in hosts:
-            if host["role"] == consts.NodeRoles.WORKER:
-                host_name = host["requested_hostname"]
-                logging.info(f"Going to disable host: {host_name} in cluster: {self.id}")
-                self.api_client.disable_host(cluster_id=self.id, host_id=host["id"])
+            self.disable_host(host)
+
+    def disable_host(self, host):
+        host_name = host["requested_hostname"]
+        logging.info(f"Going to disable host: {host_name} in cluster: {self.id}")
+        self.api_client.disable_host(cluster_id=self.id, host_id=host["id"])
 
     def cancel_install(self):
         self.api_client.cancel_cluster_install(cluster_id=self.id)
@@ -307,7 +316,8 @@ class Cluster:
     def wait_for_hosts_to_install(
         self, 
         nodes_count=env_variables['num_nodes'],
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True
     ):
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -315,6 +325,7 @@ class Cluster:
             statuses=[consts.ClusterStatus.INSTALLED],
             nodes_count=nodes_count,
             timeout=timeout,
+            fall_on_error_status=fall_on_error_status,
         )
 
     def wait_for_install(

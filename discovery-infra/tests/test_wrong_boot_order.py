@@ -190,7 +190,7 @@ class TestWrongBootOrder(BaseTest):
         new_cluster.wait_for_cluster_to_be_in_installing_pending_user_action_status()
         # Kill bootstrap installer to simulate cluster error
         bootstrap = nodes.get_bootstrap_node(cluster=new_cluster)
-        bootstrap.kill_podman_container_by_name("assisted-installer")
+        bootstrap.kill_installer()
         # Wait for node and cluster Error
         new_cluster.wait_for_host_status([consts.NodesStatus.ERROR])
         new_cluster.wait_for_cluster_in_error_status()

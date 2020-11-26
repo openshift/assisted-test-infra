@@ -1,4 +1,3 @@
-import random
 import pytest
 
 from test_infra import consts
@@ -7,7 +6,16 @@ from tests.conftest import env_variables
 from assisted_service_client.rest import ApiException
 
 
+@pytest.mark.validations
 class TestValidations(BaseTest):
+    def _wait_and_kill_installer(self, cluster, nodes, host):
+        # Wait for specific host to be in installing in progress
+        cluster.wait_for_specific_host_status(host=host,
+                                              statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
+        # Kill master installer to simulate host error
+        selected_node = nodes.get_node_from_cluster_host(host)
+        selected_node.kill_installer()
+
     @pytest.mark.regression
     def test_basic_cluster_validations(self, cluster):
         new_cluster = cluster()
@@ -114,3 +122,89 @@ class TestValidations(BaseTest):
         self.assert_string_length(long_hostname, 63)
         c.set_host_name(host_id=random_master_host["id"], requested_name=long_hostname)
         c.start_install_and_wait_for_installed()
+
+    @pytest.mark.regression
+    def test_cluster_nodes_count(self, nodes, cluster):
+        # This test check that cluster has exactly 3 master nodes, or 3 masters and more then 1 workers.
+
+        # Define new cluster
+        new_cluster = cluster()
+        # Wait for cluster to be in Ready to install (with 3 masters and 2 workers)
+        new_cluster.prepare_for_install(nodes=nodes)
+        cluster_details = new_cluster.get_details()
+        self.assert_cluster_validation(cluster_details, "hosts-data", "sufficient-masters-count", "success")
+        # set master role to a worker host
+        random_worker = new_cluster.get_random_host_by_role(role=consts.NodeRoles.WORKER)
+        new_cluster.set_specific_host_role(random_worker, role=consts.NodeRoles.MASTER)
+        new_cluster.wait_for_cluster_validation("hosts-data", "sufficient-masters-count", ["failure"])
+        # set back worker role
+        new_cluster.set_specific_host_role(random_worker, role=consts.NodeRoles.WORKER)
+        new_cluster.wait_for_cluster_validation("hosts-data", "sufficient-masters-count", ["success"])
+        # Disable the first worker node
+        worker_hosts = new_cluster.get_hosts_by_role(role=consts.NodeRoles.WORKER)
+        worker_host1 = worker_hosts[0]
+        worker_host2 = worker_hosts[1]
+        new_cluster.disable_host(host=worker_host1)
+        cluster_details = new_cluster.get_details()
+        self.assert_cluster_validation(cluster_details, "hosts-data", "sufficient-masters-count", "failure")
+        # Disable the second worker node
+        new_cluster.disable_host(host=worker_host2)
+        new_cluster.wait_for_ready_to_install()
+        cluster_details = new_cluster.get_details()
+        self.assert_cluster_validation(cluster_details, "hosts-data", "sufficient-masters-count", "success")
+        # Disable master node
+        master_host = new_cluster.get_random_host_by_role(role=consts.NodeRoles.MASTER)
+        new_cluster.disable_host(host=master_host)
+        cluster_details = new_cluster.get_details()
+        self.assert_cluster_validation(cluster_details, "hosts-data", "sufficient-masters-count", "failure")
+
+    @pytest.mark.regression
+    def test_cluster_error_when_master_in_error(self, nodes, cluster):
+        # Define new cluster
+        new_cluster = cluster()
+        # Start cluster install
+        new_cluster.prepare_for_install(nodes=nodes)
+        new_cluster.start_install()
+        # Wait for specific master to be in installing in progress
+        master_host = new_cluster.get_random_host_by_role(consts.NodeRoles.MASTER)
+        self._wait_and_kill_installer(new_cluster, nodes, master_host)
+        # Wait for host Error
+        new_cluster.wait_for_host_status([consts.NodesStatus.ERROR])
+        # Wait for Cluster status: Error
+        new_cluster.wait_for_cluster_in_error_status()
+
+    @pytest.mark.regression
+    def test_cluster_error_when_two_worker_in_error(self, nodes, cluster):
+        # Define new cluster
+        new_cluster = cluster()
+        # Start cluster install
+        new_cluster.prepare_for_install(nodes=nodes)
+        new_cluster.start_install()
+        # Wait for both workers to be in installing in progress, and kill installer
+        worker_hosts = new_cluster.get_hosts_by_role(role=consts.NodeRoles.WORKER)
+        worker_host1 = worker_hosts[0]
+        worker_host2 = worker_hosts[1]
+        self._wait_and_kill_installer(new_cluster, nodes, worker_host1)
+        self._wait_and_kill_installer(new_cluster, nodes, worker_host2)
+        # Wait for Hosts status: Error
+        new_cluster.wait_for_host_status(statuses=[consts.NodesStatus.ERROR],
+                                         nodes_count=2,
+                                         fall_on_error_status=False)
+        # Wait for Cluster status: Error
+        new_cluster.wait_for_cluster_in_error_status()
+
+    @pytest.mark.regression
+    def test_installation_success_while_one_worker_error(self, nodes, cluster):
+        # Define new cluster
+        new_cluster = cluster()
+        # Start cluster install
+        new_cluster.prepare_for_install(nodes=nodes)
+        new_cluster.start_install()
+        # Wait for specific worker to be in installing in progress, and kill installer
+        worker_host = new_cluster.get_random_host_by_role(consts.NodeRoles.WORKER)
+        self._wait_and_kill_installer(new_cluster, nodes, worker_host)
+        # Wait for node Error
+        new_cluster.wait_for_host_status([consts.NodesStatus.ERROR], fall_on_error_status=False)
+        # Wait for nodes to install
+        new_cluster.wait_for_hosts_to_install(nodes_count=4, fall_on_error_status=False)
+        new_cluster.wait_for_install()
