@@ -2,17 +2,20 @@ import logging
 import os
 import random
 import yaml
+import pytest
+import json
+import shutil
 from contextlib import suppress
 from string import ascii_lowercase
 from typing import Optional
 from collections import Counter
 
-import pytest
 from assisted_service_client.rest import ApiException
 from test_infra import consts, utils
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.nodes import Nodes
 from tests.conftest import env_variables
+from download_logs import download_logs
 
 
 def random_name():
@@ -31,7 +34,7 @@ class BaseTest:
         nodes.format_all_disks()
 
     @pytest.fixture()
-    def cluster(self, api_client):
+    def cluster(self, api_client, request):
         clusters = []
 
         def get_cluster_func(cluster_name: Optional[str] = None):
@@ -45,6 +48,8 @@ class BaseTest:
         yield get_cluster_func
 
         for cluster in clusters:
+            logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
+            self.collect_test_logs(cluster, api_client, request.node)
             logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
             if cluster.is_installing() or cluster.is_finalizing():
                 cluster.cancel_install()
@@ -77,3 +82,10 @@ class BaseTest:
     def assert_string_length(string, expected_len):
         assert len(string) == expected_len, "Expected len string of: " + str(expected_len) + \
                                             " rather than: " + str(len(string)) + " String value: " + string
+
+    @staticmethod
+    def collect_test_logs(cluster, api_client, test):
+        log_dir_name = f"{env_variables['log_folder']}/{test.name}"
+        with suppress(ApiException):
+            cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
+            download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed)
