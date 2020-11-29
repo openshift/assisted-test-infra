@@ -296,6 +296,13 @@ class Cluster:
             statuses=[consts.ClusterStatus.CANCELLED]
         )
 
+    def is_finalizing(self):
+        return utils.is_cluster_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.FINALIZING]
+        )
+
     def is_installing(self):
         return utils.is_cluster_in_status(
             client=self.api_client,
