@@ -218,7 +218,7 @@ class TestCancelReset(BaseTest):
         new_cluster.wait_for_installing_in_progress(nodes_count=env_variables['num_nodes'])
         # Kill bootstrap installer to simulate cluster error
         bootstrap = nodes.get_bootstrap_node(cluster=new_cluster)
-        bootstrap.kill_podman_container_by_name("assisted-installer")
+        bootstrap.kill_installer()
         # Wait for cluster state Error
         new_cluster.wait_for_cluster_in_error_status()
         # Reset cluster install
@@ -249,7 +249,7 @@ class TestCancelReset(BaseTest):
                                                   statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
         # Kill worker installer to simulate host error
         selected_worker_node = nodes.get_node_from_cluster_host(worker_host)
-        selected_worker_node.kill_podman_container_by_name("assisted-installer")
+        selected_worker_node.kill_installer()
         # Wait for node Error
         new_cluster.get_hosts()
         new_cluster.wait_for_host_status([consts.NodesStatus.ERROR])

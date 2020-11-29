@@ -373,7 +373,13 @@ def wait_till_cluster_is_in_status(
 def is_cluster_in_status(client, cluster_id, statuses):
     log.info("Is cluster %s in status %s", cluster_id, statuses)
     try:
-        return client.cluster_get(cluster_id).status in statuses
+        cluster_status = client.cluster_get(cluster_id).status
+        if cluster_status in statuses:
+            return True
+        else:
+            log.info(f"Cluster not yet in its required status. "
+                     f"Current status: {cluster_status}")
+            return False
     except:
         log.exception("Failed to get cluster %s info", cluster_id)
 

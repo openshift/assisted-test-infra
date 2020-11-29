@@ -73,6 +73,9 @@ class Node(object):
     def format_disk(self):
         self.node_controller.format_node_disk(self.name)
 
+    def kill_installer(self):
+        self.kill_podman_container_by_name("assisted-installer")
+
     def kill_service(self, service):
         logging.info("Killing service %s on host %s", service, self.name)
         self.run_command(f'sudo systemctl kill {service}.service || true')
