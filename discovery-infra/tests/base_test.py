@@ -46,7 +46,7 @@ class BaseTest:
 
         for cluster in clusters:
             logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
-            if cluster.is_installing():
+            if cluster.is_installing() or cluster.is_finalizing():
                 cluster.cancel_install()
 
             with suppress(ApiException):
