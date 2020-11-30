@@ -7,7 +7,7 @@ import argparse
 import shutil
 from functools import partial
 
-import assisted_service_api
+from test_infra import assisted_service_api
 import consts
 import utils
 import oc_utils
