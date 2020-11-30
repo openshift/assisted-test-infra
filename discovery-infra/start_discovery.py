@@ -14,7 +14,7 @@ import distutils.util
 from pathlib import Path
 from netaddr import IPNetwork
 
-import assisted_service_api
+from test_infra import assisted_service_api
 import consts
 import install_cluster
 import utils

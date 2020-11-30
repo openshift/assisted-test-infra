@@ -11,7 +11,7 @@ from datetime import datetime
 import assisted_service_client
 from dateutil.parser import isoparse
 
-from assisted_service_api import InventoryClient, create_client
+from test_infra.assisted_service_api import InventoryClient, create_client
 from consts import ClusterStatus
 from logger import log
 from utils import recreate_folder, run_command

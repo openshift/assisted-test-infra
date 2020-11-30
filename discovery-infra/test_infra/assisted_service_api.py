@@ -25,6 +25,7 @@ class InventoryClient(object):
         self.api = ApiClient(configuration=configs)
         self.client = api.InstallerApi(api_client=self.api)
         self.events = api.EventsApi(api_client=self.api)
+        self.versions = api.VersionsApi(api_client=self.api)
 
     def set_config_auth(self, c, offline_token):
         if not offline_token:
@@ -210,6 +211,16 @@ class InventoryClient(object):
             file_path=kubeconfig_path,
         )
 
+    def download_ignition_files(self, cluster_id, destination):
+        log.info("Downloading cluster %s ignition files to %s", cluster_id, destination)
+
+        for ignition_file in ["bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml"]:
+            response = self.client.download_cluster_files(
+                cluster_id=cluster_id, file_name=ignition_file, _preload_content=False
+            )
+            with open(os.path.join(destination, ignition_file), "wb") as _file:
+                _file.write(response.data)
+
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
         response = self.client.download_cluster_kubeconfig(
@@ -331,6 +342,10 @@ class InventoryClient(object):
 
     def get_cluster_admin_credentials(self, cluster_id):
         return self.client.get_credentials(cluster_id=cluster_id)
+
+    def get_versions(self):
+        response = self.versions.list_component_versions()
+        return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
 
 
 def create_client(

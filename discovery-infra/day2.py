@@ -6,7 +6,7 @@ import subprocess
 import utils
 import waiting
 import uuid
-import assisted_service_api
+from test_infra import assisted_service_api
 import consts
 from logger import log
 
