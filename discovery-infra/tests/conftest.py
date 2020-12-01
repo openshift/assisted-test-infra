@@ -44,7 +44,8 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "storage_pool_path": utils.get_env('STORAGE_POOL_PATH', os.path.join(os.getcwd(), "storage_pool")),
                  "cluster_name": utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}'),
                  "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default),
-                 "kubeconfig_path": utils.get_env('KUBECONFIG', '')}
+                 "kubeconfig_path": utils.get_env('KUBECONFIG', ''),
+                 "log_folder": utils.get_env('LOG_FOLDER', consts.LOG_FOLDER)}
 
 image = utils.get_env('ISO',
                       os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-installer-image.iso')).strip()
@@ -76,3 +77,15 @@ def setup_node_controller():
     yield controller
     logging.info(f'--- TEARDOWN --- node controller\n')
     controller.destroy_all_nodes()
+
+@pytest.fixture(scope="session", autouse=True)
+def prepare_logs():
+    logging.info(f'--- SETUP --- Creating Logs Folder\n')
+    utils.recreate_folder(env_variables['log_folder'])
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    result = outcome.get_result()
+
+    setattr(item, "result_" + result.when, result)
