@@ -19,6 +19,7 @@ class TerraformController(LibvirtController):
         self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}')
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK)
         self.params = self._terraform_params(**kwargs)
+        self.network_params = self._network_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
         self.image_path = kwargs["iso_download_path"]
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
@@ -38,7 +39,6 @@ class TerraformController(LibvirtController):
                   "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
                   "cluster_name": self.cluster_name,
                   "cluster_domain": kwargs.get('base_domain', "redhat.com"),
-                  "machine_cidr": kwargs.get('machine_cidr', '192.168.126.0/24'),
                   "libvirt_network_name": self.network_name,
                   "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
                   # TODO change to namespace index
@@ -50,10 +50,16 @@ class TerraformController(LibvirtController):
                                                           os.path.join(os.getcwd(), "storage_pool")),
                   # TODO change to namespace index
                   "libvirt_secondary_network_if": "stt0",
-                  "provisioning_cidr": '192.168.144.0/24',
                   "running": True
                   }
         return Munch.fromDict(params)
+
+    def _network_params(self, **kwargs):
+        net_params = {
+            "machine_cidr": kwargs.get('machine_cidr', '192.168.126.0/24'),
+            "provisioning_cidr": '192.168.144.0/24'
+        }
+        return Munch.fromDict(net_params)
 
     def list_nodes(self):
         return self.list_nodes_with_name_filter(self.cluster_name)
@@ -77,28 +83,30 @@ class TerraformController(LibvirtController):
         logging.info("Filling tfvars")
         with open(tfvars_json_file) as _file:
             tfvars = json.load(_file)
-        logging.info(self.params.machine_cidr)
+        logging.info(self.network_params.machine_cidr)
         master_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.params.machine_cidr).network_address
+                ipaddress.IPv4Network(self.network_params.machine_cidr).network_address
             )
             + 10
         )
         worker_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.params.machine_cidr).network_address
+                ipaddress.IPv4Network(self.network_params.machine_cidr).network_address
             )
             + 10
             + int(tfvars["master_count"])
         )
         tfvars['image_path'] = self.image_path
         tfvars['master_count'] = self.params.master_count
-        tfvars['libvirt_master_ips'] = utils.create_ip_address_list(
+        tfvars['libvirt_master_ips'] = utils.create_ip_address_nested_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
         )
-        tfvars['libvirt_worker_ips'] = utils.create_ip_address_list(
+        tfvars['libvirt_worker_ips'] = utils.create_ip_address_nested_list(
             self.params.worker_count, starting_ip_addr=worker_starting_ip
         )
+        tfvars['machine_cidr_addresses'] = [self.network_params.machine_cidr]
+        tfvars['provisioning_cidr_addresses'] = [self.network_params.provisioning_cidr]
         tfvars['api_vip'] = self.get_ingress_and_api_vips()["api_vip"]
         tfvars['running'] = self.params.running
         tfvars.update(self.params)
@@ -110,23 +118,23 @@ class TerraformController(LibvirtController):
     def _secondary_tfvars(self):
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.params.provisioning_cidr).network_address
+                ipaddress.IPv4Network(self.network_params.provisioning_cidr).network_address
             )
             + 10
         )
         secondary_worker_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.params.provisioning_cidr).network_address
+                ipaddress.IPv4Network(self.network_params.provisioning_cidr).network_address
             )
             + 10
             + int(self.params.master_count)
         )
         return {
-            'libvirt_secondary_worker_ips': utils.create_ip_address_list(
+            'libvirt_secondary_worker_ips': utils.create_ip_address_nested_list(
                 self.params.worker_count,
                 starting_ip_addr=secondary_worker_starting_ip
             ),
-            'libvirt_secondary_master_ips': utils.create_ip_address_list(
+            'libvirt_secondary_master_ips': utils.create_ip_address_nested_list(
                 self.params.master_count,
                 starting_ip_addr=secondary_master_starting_ip
             )
@@ -147,7 +155,7 @@ class TerraformController(LibvirtController):
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.params.machine_cidr).network_address
+                ipaddress.IPv4Network(self.network_params.machine_cidr).network_address
             )
             + 100
         )

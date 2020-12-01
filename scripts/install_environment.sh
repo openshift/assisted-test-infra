@@ -112,6 +112,32 @@ function config_firewalld() {
     sudo systemctl start firewalld
 }
 
+function config_squid() {
+    echo "Config squid"
+    sudo dnf install -y squid
+    sudo sed -i  -e '/^.*allowed_ips.*$/d' -e '/^acl CONNECT.*/a acl allowed_ips src 2001:db8::/120' -e '/^http_access deny all/i http_access allow allowed_ips'  /etc/squid/squid.conf
+    sudo systemctl restart squid
+    sudo firewall-cmd --zone=libvirt --add-port=3128/tcp
+}
+
+function fix_ipv6_routing() {
+  sudo sed -i '/^net[.]ipv6[.]conf[.][^.]*[.]accept_ra = 2$/d' /etc/sysctl.conf
+  for intf in `ls -l /sys/class/net/ | grep root | grep -v virtual | awk '{print $9}'` ; do
+      if sudo test ! -f "/proc/sys/net/ipv6/conf/${intf}/accept_ra"; then
+          echo "WARNING: It looks like IPv6 is disabled on this host and might not work"
+          return
+      fi
+      echo "net.ipv6.conf.${intf}.accept_ra = 2" | sudo tee --append /etc/sysctl.conf
+  done
+  sudo sysctl --load
+  fname=/etc/NetworkManager/dispatcher.d/40-sysctl-load.sh
+  sudo cat <<EOF > $fname
+#! /bin/bash
+sysctl --load
+EOF
+  sudo chmod +x $fname
+}
+
 function additional_configs() {
     if [ "${ADD_USER_TO_SUDO}" != "n" ]; then
         current_user=$(whoami)
@@ -131,7 +157,7 @@ function additional_configs() {
     fi
     touch ~/.gitconfig
     sudo chmod ugo+rx "$(dirname "$(pwd)")"
-    echo "disaling selinux by setenforce 0"
+    echo "disabling selinux by setenforce 0"
     sudo setenforce 0 || true
     sudo chmod 600 ssh_key/key
 }
@@ -141,4 +167,6 @@ install_libvirt
 install_runtime_container
 install_skipper
 config_firewalld
+config_squid
+fix_ipv6_routing
 additional_configs
