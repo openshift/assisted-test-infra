@@ -1,7 +1,7 @@
 import pytest
 from collections import Counter
 import logging
-from consts import NodeRoles
+from test_infra.consts import NodeRoles
 from tests.base_test import BaseTest
 
 

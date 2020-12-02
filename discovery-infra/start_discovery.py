@@ -14,10 +14,8 @@ import distutils.util
 from pathlib import Path
 from netaddr import IPNetwork
 
-from test_infra import assisted_service_api
-import consts
+from test_infra import assisted_service_api, consts, utils
 import install_cluster
-import utils
 import oc_utils
 import day2
 import waiting
