@@ -12,6 +12,7 @@ volumes:
   - /var/lib/libvirt/dnsmasq/:/var/lib/libvirt/dnsmasq/
   - $HOME/.cache/libvirt/:$HOME/.cache/libvirt/
   - $HOME/.ssh/:$HOME/.ssh/
+  - /usr/local/bin/oc:/usr/local/bin/oc
 env:
   PULL_SECRET: $PULL_SECRET
   SECOND_PULL_SECRET: $SECOND_PULL_SECRET
