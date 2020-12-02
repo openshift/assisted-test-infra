@@ -69,7 +69,7 @@ class TestValidations(BaseTest):
 
         # Modify RAM amount on the second node to be insufficient
         ram_node = modified_nodes.nodes[1]
-        ram_node.set_ram_kib(3145728)  # 3GB
+        ram_node.set_ram_kib(2621440)  # 2.5GB
         ram_host_id = ram_node.get_host_id()
 
         modified_nodes.start_all()

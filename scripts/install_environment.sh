@@ -160,6 +160,7 @@ function additional_configs() {
     echo "disabling selinux by setenforce 0"
     sudo setenforce 0 || true
     sudo chmod 600 ssh_key/key
+    sudo firewall-cmd --zone=libvirt --add-port=59151-59154/tcp
 }
 
 install_packages

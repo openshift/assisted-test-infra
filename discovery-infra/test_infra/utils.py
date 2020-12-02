@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import time
 import datetime
+import random
+from string import ascii_lowercase
 from pathlib import Path
 from functools import wraps
 from contextlib import contextmanager
@@ -369,7 +371,6 @@ def wait_till_cluster_is_in_status(
         log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
 
-
 def is_cluster_in_status(client, cluster_id, statuses):
     log.info("Is cluster %s in status %s", cluster_id, statuses)
     try:
@@ -406,6 +407,10 @@ def get_host_validation_value(cluster_info, host_id, validation_section, validat
                 break
         return found_status
     return "host not found"
+
+
+def get_random_name(length=8):
+    return ''.join(random.choice(ascii_lowercase) for i in range(length))
 
 
 def folder_exists(file_path):
@@ -594,8 +599,10 @@ def create_ip_address_list(node_count, starting_ip_addr):
 def create_ip_address_nested_list(node_count, starting_ip_addr):
     return [[str(ipaddress.ip_address(starting_ip_addr) + i)] for i in range(node_count)]
 
+
 def create_empty_nested_list(node_count):
     return [[] for i in range(node_count)]
+
 
 def set_hosts_roles_based_on_requested_name(client, cluster_id):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
@@ -621,19 +628,23 @@ def touch(path):
 
 
 def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
+    lock_file = "/tmp/test_etc_hosts.lock"
     api_vip_dnsname = "api." + cluster_name + "." + base_dns_domain
-    with open("/etc/hosts", "r") as f:
-        hosts_lines = f.readlines()
-    for i, line in enumerate(hosts_lines):
-        if api_vip_dnsname in line:
-            hosts_lines[i] = f"{api_vip} {api_vip_dnsname}\n"
-            break
-    else:
-        hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
-    with open("/etc/hosts", "w") as f:
-        f.writelines(hosts_lines)
+    with file_lock_context(lock_file):
+        with open("/etc/hosts", "r") as f:
+            hosts_lines = f.readlines()
+        for i, line in enumerate(hosts_lines):
+            if api_vip_dnsname in line:
+                hosts_lines[i] = f"{api_vip} {api_vip_dnsname}\n"
+                break
+        else:
+            hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
+        with open("/etc/hosts", "w") as f:
+            f.writelines(hosts_lines)
+            logging.info("Updated /etc/hosts: %s", api_vip_dnsname)
 
-def run_container(container_name, image ,flags=[]):
+
+def run_container(container_name, image, flags=[]):
     logging.info(f'Running Container {container_name}')
     run_container_cmd = f'podman {consts.PODMAN_FLAGS} run --name {container_name}'
     
@@ -643,6 +654,7 @@ def run_container(container_name, image ,flags=[]):
     run_container_cmd += f' {image}'
 
     run_command(run_container_cmd, shell=True)
+
 
 def remove_running_container(container_name):
     logging.info(f'Removing Container {container_name}')

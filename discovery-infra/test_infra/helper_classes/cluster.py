@@ -17,6 +17,7 @@ class Cluster:
             self.id = cluster_id
         else:
             self.id = self._create(cluster_name).id
+            self.name = cluster_name
     
     def _create(self, cluster_name):
         return self.api_client.create_cluster(

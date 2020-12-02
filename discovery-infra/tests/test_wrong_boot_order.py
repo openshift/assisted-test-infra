@@ -99,8 +99,8 @@ class TestWrongBootOrder(BaseTest):
         new_cluster.start_install()
         new_cluster.wait_for_installing_in_progress()
 
-        # Wait until wrong boot order - all hosts except bootstrap
-        new_cluster.wait_for_hosts_to_be_in_wrong_boot_order(nodes_count=env_variables['num_masters']-1)
+        # Wait until wrong boot order
+        new_cluster.wait_for_hosts_to_be_in_wrong_boot_order(nodes_count=2)
         new_cluster.wait_for_cluster_to_be_in_installing_pending_user_action_status()
 
         # Cancel and reset installation

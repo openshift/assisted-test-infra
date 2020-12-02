@@ -2,7 +2,8 @@ import consts
 import pytest
 from assisted_service_client.rest import ApiException
 
-from tests.base_test import BaseTest, random_name
+import test_infra.utils as infra_utils
+from tests.base_test import BaseTest
 
 
 class TestGeneral(BaseTest):
@@ -27,7 +28,7 @@ class TestGeneral(BaseTest):
     @pytest.mark.xfail
     @pytest.mark.regression
     def test_cluster_unique_name(self, cluster):
-        cluster_name = random_name()
+        cluster_name = infra_utils.get_random_name()
 
         _ = cluster(cluster_name)
 
