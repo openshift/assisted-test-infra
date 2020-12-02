@@ -26,7 +26,7 @@ function install_kubectl() {
 function install_oc() {
     if ! [ -x "$(command -v oc)" ]; then
         echo "Installing oc..."
-        curl -Lo oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/oc/${OPENSHIFT_VERSION:-4.5}/linux/oc.tar.gz && ${SUDO} tar -C /usr/local/bin -xf oc.tar.gz && rm -f oc.tar.gz
+        curl -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.6.0/openshift-client-linux-4.6.0.tar.gz | tar -xz -C /usr/local/bin
     else
         echo "oc is already installed"
     fi
