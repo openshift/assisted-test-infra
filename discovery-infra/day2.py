@@ -3,11 +3,10 @@ import json
 import ipaddress
 import time
 import subprocess
-import utils
 import waiting
 import uuid
-from test_infra import assisted_service_api
-import consts
+
+from test_infra import assisted_service_api, utils, consts
 from logger import log
 
 

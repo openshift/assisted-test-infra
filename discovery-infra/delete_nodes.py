@@ -7,9 +7,7 @@ import argparse
 import shutil
 from functools import partial
 
-from test_infra import assisted_service_api
-import consts
-import utils
+from test_infra import assisted_service_api, utils, consts
 import oc_utils
 import virsh_cleanup
 from logger import log

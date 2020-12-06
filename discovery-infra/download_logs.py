@@ -12,10 +12,9 @@ import assisted_service_client
 from dateutil.parser import isoparse
 
 from test_infra.assisted_service_api import InventoryClient, create_client
-from consts import ClusterStatus
+from test_infra.consts import ClusterStatus
 from logger import log
-from utils import recreate_folder, run_command
-from test_infra.utils import config_etc_hosts
+from test_infra.utils import config_etc_hosts, recreate_folder, run_command
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 

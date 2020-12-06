@@ -103,6 +103,28 @@ def get_libvirt_nodes_mac_role_ip_and_name(network_name):
         )
         raise
 
+def wait_for_cvo_available():
+    waiting.wait(
+        lambda: is_cvo_available(),
+        timeout_seconds=3600,
+        sleep_seconds=20,
+        waiting_for="CVO to become available",
+    )
+
+
+def is_cvo_available():
+    try:
+        res = subprocess.check_output("kubectl --kubeconfig=build/kubeconfig get clusterversion -o json", shell=True)
+        conditions = json.loads(res)['items'][0]['status']['conditions']
+        for condition in conditions:
+            if condition['type'] == 'Available' and condition['status'] == 'True':
+                    return True
+            if condition['type'] != 'Available' and condition['status'] == 'True':
+                log.info("CVO condition %s is True, because: %s", condition['type'], condition['message'])
+    except:
+        log.info("exception in access the cluster api server")
+    return False
+
 
 def get_libvirt_nodes_macs(network_name):
     return [lease["mac"] for lease in get_network_leases(network_name)]
@@ -486,6 +508,10 @@ def get_local_assisted_service_url(profile, namespace, service, deploy_target):
     if deploy_target == "podman-localhost":
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
         return f'http://{assisted_hostname_or_ip}:8090'
+    elif deploy_target == "ocp":
+        res = subprocess.check_output("ip route get 1", shell=True).split()[6]
+        ip = str(res, "utf-8")
+        return f'http://{ip}:7000'
     else:
         # default deploy target is minikube
         log.info('Getting minikube %s URL in %s namespace', service, namespace)

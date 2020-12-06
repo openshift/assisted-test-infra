@@ -4,9 +4,7 @@
 import os
 import argparse
 
-from test_infra import assisted_service_api
-import consts
-import utils
+from test_infra import assisted_service_api, consts, utils
 import oc_utils
 import waiting
 from logger import log

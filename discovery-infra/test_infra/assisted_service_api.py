@@ -5,8 +5,7 @@ import base64
 import requests
 import time
 
-import consts
-from test_infra import utils
+from test_infra import consts, utils
 import shutil
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models

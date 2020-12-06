@@ -1,4 +1,4 @@
-import consts
+from test_infra import consts
 import pytest
 from assisted_service_client.rest import ApiException
 

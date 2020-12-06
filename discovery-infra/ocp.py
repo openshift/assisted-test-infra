@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import day2
-import utils
-import oc_utils
-from test_infra import assisted_service_api
-import consts
 import sys
+
+import day2
+import oc_utils
+from test_infra import assisted_service_api, utils, consts
 
 
 def get_ocp_cluster(args):
