@@ -236,6 +236,10 @@ class InventoryClient(object):
         log.info("Installing day2 cluster %s", cluster_id)
         return self.client.install_hosts(cluster_id=cluster_id)
 
+    def install_day2_host(self, cluster_id, host_id):
+        log.info("Installing day2 host %s, cluster %s", host_id, cluster_id)
+        return self.client.install_host(cluster_id=cluster_id, host_id=host_id)
+
     def download_cluster_logs(self, cluster_id, output_file):
         log.info("Downloading cluster logs to %s", output_file)
         response = self.client.download_cluster_logs(
