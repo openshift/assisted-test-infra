@@ -2,6 +2,7 @@ import ipaddress
 import os
 import shutil
 import json
+import uuid
 from munch import Munch
 from distutils.dir_util import copy_tree
 import logging
@@ -16,10 +17,11 @@ class TerraformController(LibvirtController):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}')
-        self.network_name = kwargs.get('network_name', consts.TEST_NETWORK)
+        self.cluster_suffix = self._get_random_name()
+        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}') + "-" + self.cluster_suffix
+        self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
+        self.network_conf = kwargs.get('net_asset')
         self.params = self._terraform_params(**kwargs)
-        self.network_params = self._network_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
         self.image_path = kwargs["iso_download_path"]
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
@@ -31,6 +33,9 @@ class TerraformController(LibvirtController):
         copy_tree(consts.TF_TEMPLATE, tf_folder)
         return tf_folder
 
+    def _get_random_name(self):
+        return uuid.uuid4().hex[:8].lower()
+
     # TODO move all those to conftest and pass it as kwargs
     def _terraform_params(self, **kwargs):
         params = {"libvirt_worker_memory": kwargs.get('worker_memory'),
@@ -39,27 +44,23 @@ class TerraformController(LibvirtController):
                   "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
                   "cluster_name": self.cluster_name,
                   "cluster_domain": kwargs.get('base_domain', "redhat.com"),
+                  "machine_cidr": self.network_conf.machine_cidr,
                   "libvirt_network_name": self.network_name,
                   "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
                   # TODO change to namespace index
-                  "libvirt_network_if": 'tt0',
+                  "libvirt_network_if": self.network_conf.libvirt_network_if,
                   "libvirt_worker_disk": kwargs.get('worker_disk', '21474836480'),
                   "libvirt_master_disk": kwargs.get('master_disk', '128849018880'),
-                  "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK,
+                  "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.cluster_suffix,
                   "libvirt_storage_pool_path": kwargs.get('storage_pool_path',
-                                                          os.path.join(os.getcwd(), "storage_pool")),
+                                                          os.path.join(os.getcwd(),
+                                                                       "storage_pool")),
                   # TODO change to namespace index
-                  "libvirt_secondary_network_if": "stt0",
+                  "libvirt_secondary_network_if": self.network_conf.libvirt_secondary_network_if,
+                  "provisioning_cidr": self.network_conf.provisioning_cidr,
                   "running": True
                   }
         return Munch.fromDict(params)
-
-    def _network_params(self, **kwargs):
-        net_params = {
-            "machine_cidr": kwargs.get('machine_cidr', '192.168.126.0/24'),
-            "provisioning_cidr": '192.168.144.0/24'
-        }
-        return Munch.fromDict(net_params)
 
     def list_nodes(self):
         return self.list_nodes_with_name_filter(self.cluster_name)
@@ -83,16 +84,16 @@ class TerraformController(LibvirtController):
         logging.info("Filling tfvars")
         with open(tfvars_json_file) as _file:
             tfvars = json.load(_file)
-        logging.info(self.network_params.machine_cidr)
+        logging.info(self.network_conf.machine_cidr)
         master_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.network_params.machine_cidr).network_address
+                ipaddress.IPv4Network(self.network_conf.machine_cidr).network_address
             )
             + 10
         )
         worker_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.network_params.machine_cidr).network_address
+                ipaddress.IPv4Network(self.network_conf.machine_cidr).network_address
             )
             + 10
             + int(tfvars["master_count"])
@@ -105,8 +106,8 @@ class TerraformController(LibvirtController):
         tfvars['libvirt_worker_ips'] = utils.create_ip_address_nested_list(
             self.params.worker_count, starting_ip_addr=worker_starting_ip
         )
-        tfvars['machine_cidr_addresses'] = [self.network_params.machine_cidr]
-        tfvars['provisioning_cidr_addresses'] = [self.network_params.provisioning_cidr]
+        tfvars['machine_cidr_addresses'] = [self.network_conf.machine_cidr]
+        tfvars['provisioning_cidr_addresses'] = [self.network_conf.provisioning_cidr]
         tfvars['api_vip'] = self.get_ingress_and_api_vips()["api_vip"]
         tfvars['running'] = self.params.running
         tfvars.update(self.params)
@@ -118,13 +119,13 @@ class TerraformController(LibvirtController):
     def _secondary_tfvars(self):
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.network_params.provisioning_cidr).network_address
+                ipaddress.IPv4Network(self.network_conf.provisioning_cidr).network_address
             )
             + 10
         )
         secondary_worker_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.network_params.provisioning_cidr).network_address
+                ipaddress.IPv4Network(self.network_conf.provisioning_cidr).network_address
             )
             + 10
             + int(self.params.master_count)
@@ -155,7 +156,7 @@ class TerraformController(LibvirtController):
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.IPv4Network(self.network_params.machine_cidr).network_address
+                ipaddress.IPv4Network(self.network_conf.machine_cidr).network_address
             )
             + 100
         )

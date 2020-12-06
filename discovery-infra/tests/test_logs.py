@@ -89,6 +89,7 @@ class TestDownloadLogs(BaseTest):
             tar.close()
         finally:
             # clean up
+            path = os.path.abspath(path)
             os.remove(path)
 
     def _verify_logs_are_current(self, started_cluster_install_at, logs_collected_at):

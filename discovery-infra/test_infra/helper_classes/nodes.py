@@ -64,6 +64,12 @@ class Nodes(object):
     def destroy_all(self):
         self.run_for_all_nodes("shutdown")
 
+    def destroy_all_nodes(self):
+        self.controller.destroy_all_nodes()
+
+    def prepare_nodes(self):
+        self.controller.prepare_nodes()
+
     def reboot_all(self):
         self.run_for_all_nodes("restart")
 

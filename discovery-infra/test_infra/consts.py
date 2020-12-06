@@ -1,7 +1,7 @@
 
 TF_FOLDER = "build/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
-IMAGE_FOLDER = "/tmp/images"
+IMAGE_FOLDER = "/tmp/test_images"
 TF_MAIN_JSON_NAME = "main.tf"
 BASE_IMAGE_FOLDER = "/tmp/images"
 IMAGE_NAME = "installer-image.iso"
@@ -10,8 +10,9 @@ SSH_KEY = "ssh_key/key.pub"
 NODES_REGISTERED_TIMEOUT = 600
 CLUSTER_INSTALLATION_TIMEOUT = 60 * 60   # 60 minutes
 START_CLUSTER_INSTALLATION_TIMEOUT = 360
-VALIDATION_TIMEOUT = 3 * 60
+VALIDATION_TIMEOUT = 6 * 60
 TF_TEMPLATE = "terraform_files"
+TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
 NUMBER_OF_MASTERS = 3
 TEST_INFRA = "test-infra"
 CLUSTER = CLUSTER_PREFIX = "%s-cluster" % TEST_INFRA
