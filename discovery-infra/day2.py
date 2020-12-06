@@ -117,7 +117,8 @@ def day2_nodes_flow(client,
     if install_cluster_flag:
         log.info("Start installing all known nodes in the cluster %s", cluster.id)
         ocp_orig_ready_nodes = get_ocp_cluster_ready_nodes_num()
-        client.install_day2_cluster(cluster.id)
+        hosts = client.get_cluster_hosts(cluster.id)
+        [client.install_day2_host(cluster.id, host['id']) for host in hosts if host["status"] == 'known']
 
         log.info("Start waiting until all nodes of cluster %s have been installed( reached added-to-existing-clustertate)",  cluster.id)
         utils.wait_till_all_hosts_are_in_status(
