@@ -4,7 +4,7 @@
 import argparse
 import subprocess
 
-import utils
+from test_infra import utils
 
 from logger import log
 
