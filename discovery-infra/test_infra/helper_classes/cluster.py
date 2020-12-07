@@ -4,7 +4,7 @@ import random
 import yaml
 from collections import Counter
 
-from tests.conftest import env_variables
+from test_infra.env_vars import env_variables
 from test_infra import consts, utils
 
 
