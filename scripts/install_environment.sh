@@ -30,7 +30,7 @@ function install_libvirt() {
     if ! version_is_greater "$current_version" "$minimum_version"; then
         add_libvirt_listen_flag
     else
-        sudo dnf install -y libgcrypt-1.8.5-4.el8.x86_64
+        sudo dnf install -y libgcrypt-1.8.5-4.el8.x86_64 || true
         start_and_enable_libvirtd_tcp_socket
     fi
 
