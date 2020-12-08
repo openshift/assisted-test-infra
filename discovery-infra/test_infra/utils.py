@@ -14,6 +14,7 @@ from string import ascii_lowercase
 from pathlib import Path
 from functools import wraps
 from contextlib import contextmanager
+import xml.dom.minidom as md
 
 import libvirt
 import waiting
@@ -615,7 +616,14 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
 def get_network_leases(network_name):
     with file_lock_context():
         net = conn.networkLookupByName(network_name)
-        return net.DHCPLeases()
+        desc = md.parseString(net.XMLDesc())
+
+        # return net.DHCPLeases() // TODO: getting the information from the XML dump until dhcp-leases bug is fixed
+        try:
+            hosts = desc.getElementsByTagName("network")[0].getElementsByTagName("ip")[0].getElementsByTagName("dhcp")[0].getElementsByTagName("host")
+            return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"), "hostname": host.getAttribute("name")}, hosts))
+        except IndexError:
+            return []
 
 
 def create_ip_address_list(node_count, starting_ip_addr):
