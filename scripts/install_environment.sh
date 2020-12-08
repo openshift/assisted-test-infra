@@ -18,7 +18,7 @@ function install_libvirt() {
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
-    minimum_version="5.5.100"
+    minimum_version="5.6.0"
 
     echo "Setting libvirt values"
     sudo sed -i -e 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
@@ -28,9 +28,13 @@ function install_libvirt() {
     sudo sed -i -e 's/#security_driver = "selinux"/security_driver = "none"/g' /etc/libvirt/qemu.conf
 
     if ! version_is_greater "$current_version" "$minimum_version"; then
-        add_libvirt_listen_flag
+        echo "Minimal supported version of libvirt is $minimum_version"
+        exit 1
     else
-        sudo dnf install -y libgcrypt-1.8.5-4.el8.x86_64
+        if ! rpm -qa | grep libgcrypt-1.8.5-4; then
+            mkdir -p build
+            curl -Lo build/libgcrypt-1.8.5-4.el8.x86_64.rpm https://rpmfind.net/linux/centos/8.3.2011/BaseOS/x86_64/os/Packages/libgcrypt-1.8.5-4.el8.x86_64.rpm && sudo dnf -y install build/libgcrypt-1.8.5-4.el8.x86_64.rpm
+        fi
         start_and_enable_libvirtd_tcp_socket
     fi
 
