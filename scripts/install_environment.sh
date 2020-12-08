@@ -15,7 +15,7 @@ function version_is_greater() {
 function install_libvirt() {
     echo "Installing libvirt..."
     sudo dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm
-    sudo systemctl enable --now libvirtd
+    sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
     minimum_version="5.5.100"
@@ -30,6 +30,7 @@ function install_libvirt() {
     if ! version_is_greater "$current_version" "$minimum_version"; then
         add_libvirt_listen_flag
     else
+        sudo dnf install -y libgcrypt-1.8.5-4.el8.x86_64
         start_and_enable_libvirtd_tcp_socket
     fi
 
@@ -53,7 +54,12 @@ function start_and_enable_libvirtd_tcp_socket() {
         return
     fi
     echo "libvirtd version is greater then 5.5.x, starting libvirtd-tcp.socket"
+    echo "Removing --listen flag to libvirt"
+    sudo sed -i -e 's/LIBVIRTD_ARGS="--listen"/#LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
     sudo systemctl stop libvirtd
+    sudo systemctl unmask libvirtd-tcp.socket
+    sudo systemctl unmask libvirtd.socket
+    sudo systemctl unmask libvirtd-ro.socket
     sudo systemctl restart libvirtd.socket
     sudo systemctl enable --now libvirtd-tcp.socket
     sudo systemctl start libvirtd-tcp.socket
@@ -110,6 +116,9 @@ function config_firewalld() {
     sudo dnf install -y firewalld
     sudo systemctl unmask --now firewalld
     sudo systemctl start firewalld
+
+    # Restart to see we are using firewalld
+    sudo systemctl restart libvirtd
 }
 
 function config_squid() {
