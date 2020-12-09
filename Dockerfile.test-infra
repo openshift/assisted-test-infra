@@ -2,7 +2,11 @@ FROM quay.io/ocpmetal/assisted-service:latest AS service
 
 FROM quay.io/app-sre/centos:8.3.2011
 
-RUN yum -y install make python3 libvirt-client libvirt-devel libguestfs-tools gcc unzip wget curl git python3-devel podman httpd-tools && yum clean all;
+RUN yum -y install \
+  make gcc unzip wget curl git podman httpd-tools \
+  python38 python38-devel \
+  libvirt-client libvirt-devel libguestfs-tools && \
+  yum clean all;
 
 RUN wget -q https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
 
