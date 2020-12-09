@@ -82,7 +82,9 @@ class LibvirtController(NodeController):
         command = f"qemu-img info {disk_path} | grep 'virtual size'"
         output = utils.run_command(command, shell=True)
         image_size = output[0].split(' ')[2]
-
+        # Fix for libvirt 6.0.0
+        if image_size.isdigit():
+            image_size += "G"
         command = f'qemu-img create -f qcow2 {disk_path} {image_size}'
         utils.run_command(command, shell=True)
 
