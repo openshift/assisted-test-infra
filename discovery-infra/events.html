@@ -1,0 +1,95 @@
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<!-- INCLUDING JQUERY-->
+	<script src="https://code.jquery.com/jquery-3.5.1.js">
+	</script>
+
+	<!-- CSS FOR STYLING THE PAGE -->
+	<style>
+		table {
+			margin: 0 auto;
+			font-size: large;
+			border: 1px solid black;
+		}
+
+		h1 {
+			text-align: center;
+			color: #006600;
+			font-size: xx-large;
+			font-family: 'Gill Sans',
+				'Gill Sans MT', ' Calibri',
+				'Trebuchet MS', 'sans-serif';
+		}
+
+		td {
+			background-color: #E4F5D4;
+			border: 1px solid black;
+		}
+
+		th,
+		td {
+			font-weight: bold;
+			border: 1px solid black;
+			padding: 10px;
+			text-align: center;
+		}
+
+		td {
+			font-weight: lighter;
+		}
+	</style>
+</head>
+
+<body>
+	<section>
+		<!-- TABLE CONSTRUCTION-->
+		<table id='table'>
+			<!-- HEADING FORMATION -->
+			<tr>
+				<th>Cluster ID</th>
+				<th>Host ID</th>
+				<th>Time</th>
+				<th>Message</th>
+				<th>Severity</th>
+			</tr>
+
+			<script>
+				$(document).ready(function () {
+					var str = window.location.pathname;
+					var res = str.split("_");
+					var uuid = res[2].split("/");
+					filename = "cluster_" + uuid[0] + "_events.json";
+					// FETCHING DATA FROM JSON FILE
+					$.getJSON(filename,
+						function (data) {
+							var event = '';
+
+							// ITERATING THROUGH OBJECTS
+							$.each(data, function (key, value) {
+
+								//CONSTRUCTION OF ROWS HAVING
+								// DATA FROM JSON OBJECT
+								event += '<tr>';
+								event += '<td>' + value.cluster_id + '</td>';
+								if (typeof value.host_id !== 'undefined') {
+									event += '<td>' + value.host_id + '</td>';
+								} else {
+									event += '<td>' + '' + '</td>';
+								}
+								event += '<td>' + value.event_time + '</td>';
+								event += '<td>' + value.message + '</td>';
+								event += '<td>' + value.severity + '</td>';
+								event += '</tr>';
+							});
+
+							//INSERTING ROWS INTO TABLE
+							$('#table').append(event);
+						});
+				});
+			</script>
+	</section>
+</body>
+
+</html>

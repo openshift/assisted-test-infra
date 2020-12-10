@@ -10,6 +10,7 @@ from datetime import datetime
 
 import assisted_service_client
 from dateutil.parser import isoparse
+import shutil
 
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus
@@ -61,6 +62,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
+        shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)),"events.html"), output_folder)
 
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_logs(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar"))
