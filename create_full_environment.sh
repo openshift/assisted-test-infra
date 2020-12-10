@@ -35,7 +35,8 @@ make image_build
 echo "Done creating image"
 
 echo "Installing minikube and oc"
-make install_minikube
+scripts/install_minikube.sh
+echo "Done installing minikube and oc"
 
 if [ -z "${NO_MINIKUBE}" ]; then
     echo "Install and start minikube"

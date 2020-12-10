@@ -23,6 +23,7 @@ WAIT_FOR_BM_API = 900
 NAMESPACE_POOL_SIZE = 15
 PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
 LOG_FOLDER = "/tmp/assisted_test_infra_logs"
+DEFAULT_OPENSHIFT_VERSION = "4.6"
 
 
 class NodeRoles:
