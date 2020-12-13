@@ -39,7 +39,7 @@ class MachineNetwork(object):
         self.cidr_v4 = machine_cidr_4
         self.cidr_v6 = machine_cidr_6
         self.provisioning_cidr_v4 = _get_provisioning_cidr(machine_cidr_4, ns_index)
-        self.provisioning_cidr_v6 = _get_provisioning_cidr(machine_cidr_6, ns_index)
+        self.provisioning_cidr_v6 = _get_provisioning_cidr6(machine_cidr_6, ns_index)
 
 
 # Filling tfvars json files with terraform needed variables to spawn vms
@@ -204,22 +204,27 @@ def create_nodes_and_wait_till_registered(
     )
 
     # TODO: Check for only new nodes
-    utils.wait_till_nodes_are_ready(
-        nodes_count=nodes_count, network_name=nodes_details["libvirt_network_name"]
-    )
     if not inventory_client:
+        # We will wait for leases only if only nodes are created without connection to s
+        utils.wait_till_nodes_are_ready(
+            nodes_count=nodes_count, network_name=nodes_details["libvirt_network_name"]
+        )
         log.info("No inventory url, will not wait till nodes registration")
         return
 
     log.info("Wait till nodes will be registered")
-    waiting.wait(
-        lambda: utils.are_all_libvirt_nodes_in_cluster_hosts(
-            inventory_client, cluster.id, nodes_details["libvirt_network_name"]
-        ),
-        timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
-        sleep_seconds=10,
-        waiting_for="Nodes to be registered in inventory service",
-    )
+
+    # In case there is assisted service connection, registration to the cluster in the assisted service
+    # is checked, and not relying on libvirt leases.  This overcomes bug in libvirt that does not report
+    # all DHCP leases.
+    utils.wait_till_all_hosts_are_in_status(
+        client=inventory_client,
+        cluster_id=cluster.id,
+        nodes_count=nodes_count,
+        statuses=[
+            consts.NodesStatus.INSUFFICIENT,
+            consts.NodesStatus.PENDING_FOR_INPUT,
+        ])
 
 
 # Set nodes roles by vm name
@@ -329,6 +334,13 @@ def _create_node_details(cluster_name):
 def _get_provisioning_cidr(cidr, ns_index):
     provisioning_cidr = IPNetwork(cidr)
     provisioning_cidr += ns_index + consts.NAMESPACE_POOL_SIZE
+    return str(provisioning_cidr)
+
+def _get_provisioning_cidr6(cidr, ns_index):
+    provisioning_cidr = IPNetwork(cidr)
+    provisioning_cidr += ns_index
+    for _ in range(4):
+        provisioning_cidr += (1 << 63)
     return str(provisioning_cidr)
 
 
@@ -473,7 +485,7 @@ def execute_day1_flow(cluster_name):
         args.vm_network_cidr = str(net_cidr)
 
     if not args.vm_network_cidr6:
-        net_cidr = IPNetwork('2001:db8::/120')
+        net_cidr = IPNetwork('1001:db8::/120')
         net_cidr += args.ns_index
         args.vm_network_cidr6 = str(net_cidr)
 
@@ -596,13 +608,13 @@ if __name__ == "__main__":
         "--cluster-network6",
         help="Cluster network with cidr",
         type=str,
-        default="2002:db8::/110",
+        default="2002:db8::/53",
     )
     parser.add_argument(
         "-hp", "--host-prefix", help="Host prefix to use", type=int, default=23
     )
     parser.add_argument(
-        "-hp6", "--host-prefix6", help="Host prefix to use", type=int, default=119
+        "-hp6", "--host-prefix6", help="Host prefix to use", type=int, default=64
     )
     parser.add_argument(
         "-sn",
@@ -650,7 +662,7 @@ if __name__ == "__main__":
         "--vm-network-cidr6",
         help="Vm network cidr for IPv6",
         type=str,
-        default='2001:db8::/120'
+        default='1001:db8::/120'
     )
     parser.add_argument(
         "-nM", "--network-mtu", help="Network MTU", type=int, default=1500

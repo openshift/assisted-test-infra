@@ -612,18 +612,26 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
     finally:
         lock.release()
 
+def _get_hosts_from_network(net):
+    desc = md.parseString(net.XMLDesc())
+    try:
+        hosts = desc.getElementsByTagName("network")[0].getElementsByTagName("ip")[0].getElementsByTagName("dhcp")[0].getElementsByTagName("host")
+        return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"), "hostname": host.getAttribute("name")}, hosts))
+    except IndexError:
+        return []
+
+def _merge(leases, hosts):
+    lips = [l["ipaddr"] for l in leases]
+    ret = leases + [h for h in hosts if h["ipaddr"] not in lips]
+    return ret
+
 
 def get_network_leases(network_name):
     with file_lock_context():
         net = conn.networkLookupByName(network_name)
-        desc = md.parseString(net.XMLDesc())
-
-        # return net.DHCPLeases() // TODO: getting the information from the XML dump until dhcp-leases bug is fixed
-        try:
-            hosts = desc.getElementsByTagName("network")[0].getElementsByTagName("ip")[0].getElementsByTagName("dhcp")[0].getElementsByTagName("host")
-            return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"), "hostname": host.getAttribute("name")}, hosts))
-        except IndexError:
-            return []
+        leases =  net.DHCPLeases() # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
+        hosts = _get_hosts_from_network(net)
+        return _merge(leases, hosts)
 
 
 def create_ip_address_list(node_count, starting_ip_addr):
