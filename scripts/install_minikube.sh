@@ -2,6 +2,11 @@
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
 function install_minikube() {
+    if [ "${DEPLOY_TARGET}" != "minikube" ]; then
+        echo "Skips installing minikube when deployment target is ${DEPLOY_TARGET}..."
+        return
+    fi
+
     if ! [ -x "$(command -v minikube)" ]; then
         echo "Installing minikube..."
         curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.8.2/minikube-linux-amd64
@@ -31,10 +36,6 @@ function install_oc() {
         echo "oc is already installed"
     fi
 }
-
-if [ "${DEPLOY_TARGET}" != "minikube" ]; then
-    exit 0
-fi
 
 install_minikube
 install_kubectl

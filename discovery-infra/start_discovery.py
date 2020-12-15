@@ -293,7 +293,7 @@ def _get_vips_ips(machine_net):
 def _cluster_create_params():
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     params = {
-        "openshift_version": args.openshift_version,
+        "openshift_version": utils.get_openshift_version(),
         "base_dns_domain": args.base_dns_domain,
         "cluster_network_cidr": args.cluster_network if ipv4 else args.cluster_network6,
         "cluster_network_host_prefix": args.host_prefix if ipv4 else args.host_prefix6,
@@ -619,9 +619,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-ps", "--pull-secret", help="Pull secret", type=str, default=""
-    )
-    parser.add_argument(
-        "-ov", "--openshift-version", help="Openshift version", type=str, default="4.5"
     )
     parser.add_argument(
         "-bd",

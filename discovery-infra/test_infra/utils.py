@@ -694,3 +694,13 @@ def remove_running_container(container_name):
     logging.info(f'Removing Container {container_name}')
     container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman {consts.PODMAN_FLAGS} rm {container_name}'
     run_command(container_rm_cmd, shell=True)
+
+
+def get_openshift_version():
+    release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
+
+    if release_image:
+        stdout, _, _ = run_command(f"oc adm release info '{release_image}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'", shell=True)
+        return stdout
+
+    return get_env('OPENSHIFT_VERSION', consts.DEFAULT_OPENSHIFT_VERSION)
