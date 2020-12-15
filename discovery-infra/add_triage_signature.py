@@ -84,10 +84,6 @@ class Signature:
         return re.sub(r'(http://[^/]*/)#(/.*)', r'\1files\2', url)
 
     @staticmethod
-    def _format_time(time_str):
-        return  dateutil.parser.isoparse(time_str).strftime("%Y-%m-%d %H:%M:%S")
-
-    @staticmethod
     def _get_hostname(host):
         hostname = host.get('requested_hostname')
         if hostname:
@@ -152,7 +148,7 @@ class HostsExtraDetailSignature(Signature):
                 id=host['id'],
                 hostname=inventory['hostname'],
                 requested_hostname=host.get('requested_hostname', ""),
-                last_contacted=self._format_time(host['checked_in_at']),
+                last_contacted=format_time(host['checked_in_at']),
                 installation_disk=host.get('installation_disk_path', ""),
                 product_name=inventory['system_vendor']['product_name'],
                 manufacturer=inventory['system_vendor']['manufacturer'],
@@ -347,6 +343,10 @@ def main(args):
     for issue in issues:
         url = get_logs_url_from_issue(issue)
         add_signatures(jclient, url, issue.key, should_update=args.update)
+
+
+def format_time(time_str):
+    return  dateutil.parser.isoparse(time_str).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def add_signatures(jclient, url, issue_key, should_update=False):

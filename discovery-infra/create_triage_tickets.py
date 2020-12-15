@@ -25,7 +25,8 @@ h1. Cluster Info
 
 *Cluster ID:* [{cluster_id}|https://cloud.redhat.com/openshift/assisted-installer/clusters/{cluster_id}]
 *Username:* {username}
-*created_at:* {created_at}
+*Created_at:* {created_at}
+*Installation started at:* {installation_started_at}
 *Failed on:* {failed_on}
 *status:* {status}
 *status_info:* {status_info}
@@ -137,8 +138,9 @@ def main(arg):
             cluster_data = {"cluster_id": cluster['id'],
                             "failure_id": failure['name'],
                             "openshift_version": cluster['openshift_version'],
-                            "created_at": cluster['created_at'],
-                            "failed_on": cluster['status_updated_at'],
+                            "created_at": add_triage_signature.format_time(cluster['created_at']),
+                            "installation_started_at": add_triage_signature.format_time(cluster['install_started_at']),
+                            "failed_on": add_triage_signature.format_time(cluster['status_updated_at']),
                             "status": cluster['status'],
                             "status_info": cluster['status_info'],
                             "username": cluster['user_name']}
