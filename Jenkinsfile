@@ -42,6 +42,7 @@ pipeline {
                 script {
                     currentBuild.displayName = "${JOB_NAME}"
                 }
+                sh "make clean"
                 sh "make image_build"
                 sh "make create_full_environment"
 
