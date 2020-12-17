@@ -42,6 +42,7 @@ class NodesStatus:
     PENDING_FOR_INPUT = "pending-for-input"
     DAY2_INSTALLED = "added-to-existing-cluster"
     RESETING_PENDING_USER_ACTION = "resetting-pending-user-action"
+    DISCONNECTED = "disconnected"
 
 
 class ClusterStatus:

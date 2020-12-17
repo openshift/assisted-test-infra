@@ -9,7 +9,7 @@ from test_infra import consts, utils
 
 
 class Cluster:
-    
+
     def __init__(self, api_client, cluster_name, cluster_id=None):
         self.api_client = api_client
 
@@ -54,6 +54,15 @@ class Cluster:
             cluster_id=self.id,
             ssh_key=ssh_key,
             image_path=iso_download_path
+        )
+
+    def wait_until_hosts_are_disconnected(self, nodes_count=env_variables['num_nodes']):
+        statuses = [consts.NodesStatus.DISCONNECTED]
+        utils.wait_till_all_hosts_are_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            nodes_count=nodes_count,
+            statuses=statuses
         )
 
     def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
