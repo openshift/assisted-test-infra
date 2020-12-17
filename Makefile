@@ -17,7 +17,7 @@ SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-ser
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 
-# assisted-service
+# assisted-installer
 INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
 INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted-installer")
 
@@ -67,6 +67,7 @@ IMAGE_TAG := latest
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
+SERVICE_REPLICAS_COUNT := 3
 
 IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
