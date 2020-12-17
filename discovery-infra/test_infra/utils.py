@@ -697,7 +697,7 @@ def remove_running_container(container_name):
 
 
 def get_openshift_version():
-    release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
+    release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE')
 
     if release_image:
         stdout, _, _ = run_command(f"oc adm release info '{release_image}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'", shell=True)

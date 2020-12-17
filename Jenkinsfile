@@ -11,7 +11,7 @@ pipeline {
         string(name: 'IGNITION_GENERATE_IMAGE', defaultValue: '', description: 'assisted-ignition-generator image')
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'Installer image to use')
         string(name: 'CONTROLLER_IMAGE', defaultValue: '', description: 'Controller image to use')
-        string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE', defaultValue: '', description: 'OCP Release Image from ocpmetal repository in Quay.io')
+        string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE', defaultValue: '', description: 'OCP Release Image to override the default one')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
         string(name: 'JOB_NAME', defaultValue: "#${BUILD_NUMBER}", description: 'Job name')
