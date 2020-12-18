@@ -8,6 +8,7 @@ import shlex
 import shutil
 import subprocess
 import time
+import tempfile
 import datetime
 import random
 from string import ascii_lowercase
@@ -700,7 +701,13 @@ def get_openshift_version():
     release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
 
     if release_image:
-        stdout, _, _ = run_command(f"oc adm release info '{release_image}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'", shell=True)
+        f = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        f.write(os.getenv('PULL_SECRET'))
+        f.close()
+        try:
+            stdout, _, _ = run_command(f"oc adm release info '{release_image}' --registry-config '{f.name}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'", shell=True)
+        finally:
+            os.unlink(f.name)
         return stdout
 
     return get_env('OPENSHIFT_VERSION', consts.DEFAULT_OPENSHIFT_VERSION)
