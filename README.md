@@ -324,6 +324,14 @@ the assisted-service using a pod on your local host.
 
 ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "podman-localhost" deployments, set it to the FQDN or IP address of the host.
 
+Optionally, you can also provide OPENSHIFT_INSTALL_RELEASE_IMAGE and PUBLIC_CONTAINER_REGISTRIES:
+```
+export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.6.4-x86_64
+export PUBLIC_CONTAINER_REGISTRIES=quay.io
+```
+
+If you do not export the optional variables, it will run with the default specified in assisted-service/onprem-environment.
+
 Then run the same commands described in the instructions above to execute the test.
 
 To run the full flow:
