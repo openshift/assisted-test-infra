@@ -12,10 +12,18 @@ export SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${SERVICE_POR
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export PROFILE=${PROFILE:-assisted-installer}
 export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
+export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
+export PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES:-}
 
 mkdir -p build
 
 if [ "${DEPLOY_TARGET}" == "podman-localhost" ]; then
+    if [ -n "$OPENSHIFT_INSTALL_RELEASE_IMAGE" ]; then
+        sed -i "s|OPENSHIFT_INSTALL_RELEASE_IMAGE=.*|OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE}|" assisted-service/onprem-environment
+    fi
+    if [ -n "$PUBLIC_CONTAINER_REGISTRIES" ]; then
+        sed -i "s|PUBLIC_CONTAINER_REGISTRIES=.*|PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/onprem-environment
+    fi
     sed -i "s/SERVICE_BASE_URL=http:\/\/127.0.0.1/SERVICE_BASE_URL=http:\/\/${ASSISTED_SERVICE_HOST}/" assisted-service/onprem-environment
     echo "HW_VALIDATOR_MIN_DISK_SIZE_GIB=20" >> assisted-service/onprem-environment
     make -C assisted-service/ deploy-onprem
