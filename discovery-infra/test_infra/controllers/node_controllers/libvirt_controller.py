@@ -61,8 +61,14 @@ class LibvirtController(NodeController):
         node = self.libvirt_connection.lookupByName(node_name)
 
         if not node.isActive():
-            node.create()
-            self._wait_till_domain_has_ips(node)
+            try:
+                node.create()
+                self._wait_till_domain_has_ips(node)
+            except waiting.exceptions.TimeoutExpired:
+                 logging.warning("Node %s failed to recive IP, retrying", node_name)
+                 self.shutdown_node(node_name)
+                 node.create()
+                 self._wait_till_domain_has_ips(node)
 
     def start_all_nodes(self):
         logging.info("Going to power-on all the nodes")
