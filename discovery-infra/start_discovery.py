@@ -303,6 +303,7 @@ def _cluster_create_params():
         "https_proxy": args.https_proxy,
         "no_proxy": args.no_proxy,
         "vip_dhcp_allocation": bool(args.vip_dhcp_allocation),
+        "additional_ntp_source": consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
     }
     return params
 
