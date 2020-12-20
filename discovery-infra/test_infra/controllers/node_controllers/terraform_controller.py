@@ -21,10 +21,13 @@ class TerraformController(LibvirtController):
         self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}') + "-" + self.cluster_suffix
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
         self.network_conf = kwargs.get('net_asset')
+        self.cluster_domain = kwargs.get('base_domain', "redhat.com")
         self.params = self._terraform_params(**kwargs)
         self.tf_folder = self._create_tf_folder()
         self.image_path = kwargs["iso_download_path"]
+        self.bootstrap_in_place = kwargs.get('bootstrap_in_place', False)
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
+        self.master_ips = None
 
     def _create_tf_folder(self):
         tf_folder = utils.get_tf_folder(self.cluster_name)
@@ -40,10 +43,12 @@ class TerraformController(LibvirtController):
     def _terraform_params(self, **kwargs):
         params = {"libvirt_worker_memory": kwargs.get('worker_memory'),
                   "libvirt_master_memory": kwargs.get('master_memory', 16984),
+                  "libvirt_worker_vcpu": kwargs.get("worker_vcpu", 4),
+                  "libvirt_master_vcpu": kwargs.get("master_vcpu", 4),
                   "worker_count": kwargs.get('num_workers', 0),
                   "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
                   "cluster_name": self.cluster_name,
-                  "cluster_domain": kwargs.get('base_domain', "redhat.com"),
+                  "cluster_domain": self.cluster_domain,
                   "machine_cidr": self.network_conf.machine_cidr,
                   "libvirt_network_name": self.network_name,
                   "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
@@ -100,7 +105,7 @@ class TerraformController(LibvirtController):
         )
         tfvars['image_path'] = self.image_path
         tfvars['master_count'] = self.params.master_count
-        tfvars['libvirt_master_ips'] = utils.create_ip_address_nested_list(
+        self.master_ips = tfvars['libvirt_master_ips'] = utils.create_ip_address_nested_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
         )
         tfvars['libvirt_worker_ips'] = utils.create_ip_address_nested_list(
@@ -108,6 +113,7 @@ class TerraformController(LibvirtController):
         )
         tfvars['machine_cidr_addresses'] = [self.network_conf.machine_cidr]
         tfvars['provisioning_cidr_addresses'] = [self.network_conf.provisioning_cidr]
+        tfvars['bootstrap_in_place'] = self.bootstrap_in_place
         tfvars['api_vip'] = self.get_ingress_and_api_vips()["api_vip"]
         tfvars['running'] = self.params.running
         tfvars.update(self.params)

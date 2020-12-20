@@ -1,6 +1,7 @@
 import os
-import urllib3
 import json
+import urllib3
+import subprocess
 
 from kubernetes.config.kube_config import load_kube_config
 from kubernetes.config.kube_config import Configuration
@@ -168,3 +169,31 @@ def _load_resource_config_dict(resource):
         'kubectl.kubernetes.io/last-applied-configuration'
     ]
     return json.loads(raw)
+
+
+def get_operators_status(kubeconfig):
+    command = ["/usr/local/bin/oc",
+               "--kubeconfig", kubeconfig,
+               "get", "clusteroperators", "-o", "json"]
+
+    response = subprocess.run(command, stdout=subprocess.PIPE)
+    if response.returncode != 0:
+        return {}
+
+    output = json.loads(response.stdout)
+    statuses = {}
+
+    for item in output["items"]:
+        name = item["metadata"]["name"]
+        if "conditions" not in item["status"]:
+            statuses[name] = False
+            continue
+
+        for condition in item["status"]["conditions"]:
+            if condition["type"] == "Available":
+                statuses[name] = condition["status"] == "True"
+                break
+        else:
+            statuses[name] = False
+
+    return statuses

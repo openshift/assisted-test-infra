@@ -29,6 +29,9 @@ class Nodes(object):
             self._nodes = self._list()
         return self._nodes
 
+    def __getitem__(self, i):
+        return self.nodes[i]
+
     def __len__(self):
         return len(self.nodes)
 

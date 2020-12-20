@@ -42,16 +42,29 @@ class Node(object):
             self._set_ips_and_macs()
         return self._macs
 
+    @property
+    def ssh_connection(self):
+        return ssh.SshConnection(self.ips[0],
+                                 private_ssh_key_path=self.private_ssh_key_path,
+                                 username=self.username)
+
+    def upload_file(self, local_source_path, remote_target_path):
+        with self.ssh_connection as ssh:
+            return ssh.upload_file(local_source_path, remote_target_path)
+
+    def download_file(self, remote_source_path, local_target_path):
+        with self.ssh_connection as ssh:
+            return ssh.download_file(remote_source_path, local_target_path)
+
     def run_command(self, bash_command, background=False):
         output = ""
         if not self.node_controller.is_active:
             raise Exception("%s is not active, can't run given command")
-        with ssh.SshConnection(self.ips[0], private_ssh_key_path=self.private_ssh_key_path,
-                               username=self.username) as run:
+        with self.ssh_connection as ssh:
             if background:
-                run.background_script(bash_command)
+                ssh.background_script(bash_command)
             else:
-                output = run.script(bash_command, verbose=False)
+                output = ssh.script(bash_command, verbose=False)
         return output
 
     def shutdown(self):

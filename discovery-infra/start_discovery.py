@@ -18,14 +18,13 @@ import day2
 from logger import log
 from test_infra.utils import config_etc_hosts
 from test_infra.tools import terraform_utils
+import bootstrap_in_place as ibip
 
 
 class MachineNetwork(object):
-
-    YES_VALUES = [ 'yes', 'true', 'y']
+    YES_VALUES = ['yes', 'true', 'y']
 
     def __init__(self, ip_v4, ip_v6, machine_cidr_4, machine_cidr_6, ns_index):
-
         self.has_ip_v4 = ip_v4.lower() in MachineNetwork.YES_VALUES
         self.has_ip_v6 = ip_v6.lower() in MachineNetwork.YES_VALUES
 
@@ -89,7 +88,6 @@ def fill_tfvars(
     if machine_net.has_ip_v6:
         machine_cidr_addresses += [machine_net.cidr_v6]
         provisioning_cidr_addresses += [machine_net.provisioning_cidr_v6]
-
 
     tfvars['machine_cidr_addresses'] = machine_cidr_addresses
     tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses
@@ -251,6 +249,7 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False):
 
     client.update_hosts(cluster_id=cluster_id, hosts_with_roles=added_hosts, hosts_names=hostnames)
 
+
 def set_cluster_vips(client, cluster_id, machine_net):
     cluster_info = client.cluster_get(cluster_id)
     api_vip, ingress_vip = _get_vips_ips(machine_net)
@@ -268,7 +267,6 @@ def set_cluster_machine_cidr(client, cluster_id, machine_net):
 
 
 def _get_vips_ips(machine_net):
-
     if machine_net.has_ip_v4:
         network_subnet_starting_ip = str(
             ipaddress.ip_address(
@@ -339,6 +337,7 @@ def _get_provisioning_cidr(cidr, ns_index):
     provisioning_cidr = IPNetwork(cidr)
     provisioning_cidr += ns_index + consts.NAMESPACE_POOL_SIZE
     return str(provisioning_cidr)
+
 
 def _get_provisioning_cidr6(cidr, ns_index):
     provisioning_cidr = IPNetwork(cidr)
@@ -465,10 +464,12 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, cluster_info.api_vip)
                 utils.wait_for_cvo_available()
 
+
 def _get_libvirt_nodes_from_tf_state(networks_names, tf_state):
     nodes = _extract_nodes_from_tf_state(tf_state, networks_names, consts.NodeRoles.MASTER)
     nodes.update(_extract_nodes_from_tf_state(tf_state, networks_names, consts.NodeRoles.WORKER))
     return nodes
+
 
 def _extract_nodes_from_tf_state(tf_state, networks_names, role):
     domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
@@ -479,9 +480,10 @@ def _extract_nodes_from_tf_state(tf_state, networks_names, role):
             if nic["network_name"] not in networks_names:
                 continue
 
-            data[nic["mac"]] =  {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
+            data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
 
     return data
+
 
 def execute_day1_flow(cluster_name):
     client = None
@@ -560,6 +562,8 @@ def main():
         day2.execute_day2_cloud_flow(cluster_id, args)
     if args.day2_ocp_cluster:
         day2.execute_day2_ocp_flow(cluster_id, args)
+    if args.bootstrap_in_place:
+        ibip.execute_ibip_flow(args)
 
 
 
@@ -832,8 +836,14 @@ if __name__ == "__main__":
         type=str,
         default='baremetal'
     )
+    parser.add_argument(
+        "--bootstrap-in-place",
+        help="single node cluster with bootstrap in place flow",
+        action="store_true",
+    )
+
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
-    if not args.pull_secret and args.install_cluster:
+    if not args.pull_secret:
         raise Exception("Can't install cluster without pull secret, please provide one")
     main()
