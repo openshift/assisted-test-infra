@@ -21,4 +21,4 @@ tabulate==0.8.7
 paramiko==2.7.2
 openshift-client==1.0.12
 Jinja2===2.11.2
-pytest-xdist==2.1.0
+pytest-xdist==2.2.0
