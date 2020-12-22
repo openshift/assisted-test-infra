@@ -424,6 +424,15 @@ def nodes_flow(client, cluster_name, cluster, image_path):
     )
 
     if client:
+        if args.none_platform:
+            client.client.update_cluster(
+                cluster_id=cluster.id,
+                cluster_update_params={
+                    'user_managed_networking': True,
+                    'vip_dhcp_allocation': False
+                }
+            )
+
         cluster_info = client.cluster_get(cluster.id)
         macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
 
@@ -541,15 +550,6 @@ def execute_day1_flow(cluster_name):
             image_path=image_path,
             ssh_key=args.ssh_key,
         )
-
-        if args.none_platform:
-            client.client.update_cluster(
-                cluster_id=cluster.id,
-                cluster_update_params={
-                    'user_managed_networking': True,
-                    'vip_dhcp_allocation': False
-                }
-            )
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
