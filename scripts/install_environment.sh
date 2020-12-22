@@ -151,6 +151,13 @@ EOF
   sudo chmod +x $fname
 }
 
+function configure_iptables() {
+    iptables -I FORWARD -i virbr141 -o virbr126 -j ACCEPT
+    iptables -I FORWARD -i virbr126 -o virbr141 -j ACCEPT
+    IP=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
+    iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT -m iprange --src-range 192.168.126.0-192.168.146.0 --to-source ${IP}
+}
+
 function additional_configs() {
     if [ "${ADD_USER_TO_SUDO}" != "n" ]; then
         current_user=$(whoami)
@@ -183,4 +190,5 @@ install_skipper
 config_firewalld
 config_squid
 fix_ipv6_routing
+configure_iptables
 additional_configs
