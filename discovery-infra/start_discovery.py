@@ -544,8 +544,11 @@ def execute_day1_flow(cluster_name):
 
         if args.none_platform:
             client.client.update_cluster(
-                user_managed_networking=True,
-                vip_dhcp_allocation=False
+                cluster_id=cluster.id,
+                cluster_update_params={
+                    'user_managed_networking': True,
+                    'vip_dhcp_allocation': False
+                }
             )
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
