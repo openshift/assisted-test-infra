@@ -542,6 +542,12 @@ def execute_day1_flow(cluster_name):
             ssh_key=args.ssh_key,
         )
 
+        if args.none_platform:
+            client.client.update_cluster(
+                user_managed_networking=True,
+                vip_dhcp_allocation=False
+            )
+
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
         try:
