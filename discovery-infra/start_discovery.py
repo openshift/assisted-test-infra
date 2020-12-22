@@ -485,12 +485,14 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 utils.wait_for_cvo_available()
 
 def _get_libvirt_nodes_from_tf_state(network_name, tf_state):
-    nodes = _extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.MASTER)
-    nodes.update(_extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.WORKER))
+    nodes = _extract_nodes_from_tf_state(tf_state, network_name, "master", consts.NodeRoles.MASTER)
+    nodes.update(_extract_nodes_from_tf_state(tf_state, network_name, "worker", consts.NodeRoles.WORKER))
+    nodes.update(_extract_nodes_from_tf_state(tf_state, network_name, "secondary_master", consts.NodeRoles.WORKER))
+    nodes.update(_extract_nodes_from_tf_state(tf_state, network_name, "secondary_worker", consts.NodeRoles.WORKER))
     return nodes
 
-def _extract_nodes_from_tf_state(tf_state, network_name, role):
-    domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
+def _extract_nodes_from_tf_state(tf_state, network_name, name, role):
+    domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == name)
     data = {}
     for d in domains:
         for nic in d["attributes"]["network_interface"]:
