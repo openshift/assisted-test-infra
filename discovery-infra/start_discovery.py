@@ -426,14 +426,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
     if client:
         cluster_info = client.cluster_get(cluster.id)
         macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
-        if args.none_platform:
-            client.client.update_cluster(
-                cluster_id=cluster.id,
-                cluster_update_params={
-                    'user_managed_networking': True,
-                    'vip_dhcp_allocation': False
-                }
-            )
+
         if not (cluster_info.api_vip and cluster_info.ingress_vip):
             utils.wait_till_hosts_with_macs_are_in_status(
                 client=client,
@@ -445,7 +438,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 ],
             )
 
-            if args.vip_dhcp_allocation:
+            if not args.none_platform and args.vip_dhcp_allocation:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:
                 set_cluster_vips(client, cluster.id, machine_net)
@@ -462,6 +455,14 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             update_hostnames = True
 
         update_hosts(client, cluster.id, libvirt_nodes, update_hostnames)
+        if args.none_platform:
+            client.client.update_cluster(
+                cluster_id=cluster.id,
+                cluster_update_params={
+                    'user_managed_networking': True,
+                    'vip_dhcp_allocation': False
+                }
+            )
         utils.wait_till_hosts_with_macs_are_in_status(
             client=client,
             cluster_id=cluster.id,
