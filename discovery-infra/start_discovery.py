@@ -438,7 +438,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 ],
             )
 
-            if not args.none_platform and args.vip_dhcp_allocation:
+            if args.vip_dhcp_allocation:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:
                 set_cluster_vips(client, cluster.id, machine_net)
@@ -458,10 +458,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
         if args.none_platform:
             client.client.update_cluster(
                 cluster_id=cluster.id,
-                cluster_update_params={
-                    'user_managed_networking': True,
-                    'vip_dhcp_allocation': False
-                }
+                cluster_update_params={'user_managed_networking': True}
             )
         utils.wait_till_hosts_with_macs_are_in_status(
             client=client,
