@@ -1,6 +1,10 @@
 import logging
 import pytest
 import json
+import os
+import tarfile
+import shutil
+import time
 from contextlib import suppress
 from typing import Optional
 
@@ -92,3 +96,65 @@ class BaseTest:
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
             download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed)
+
+    @staticmethod
+    def verify_no_logs_uploaded(cluster, cluster_tar_path):
+        with pytest.raises(ApiException) as ex:
+            cluster.download_installation_logs(cluster_tar_path)
+        assert "No log files" in str(ex.value)
+
+    @staticmethod
+    def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success):
+
+        # verify that logs were collected from all expected sources
+        assert (os.path.exists(cluster_tar_path))
+        dir_path = cluster_tar_path.split(".")[0]
+        try:
+            with tarfile.open(cluster_tar_path) as tar:
+                logging.info(f'downloaded logs: {tar.getnames()}')
+                assert len(tar.getnames()) >= expected_min_log_num
+                tar.extractall(dir_path)
+                for gz in os.listdir(dir_path):
+                    if "bootstrap" in gz:
+                        BaseTest._verify_node_logs_uploaded(dir_path, gz)
+                        BaseTest._verify_bootstrap_logs_uploaded(dir_path, gz, installation_success)
+                    elif "master" in gz or "worker" in gz:
+                        BaseTest._verify_node_logs_uploaded(dir_path, gz)
+        finally:
+            # clean up
+            cluster_tar_path = os.path.abspath(cluster_tar_path)
+            os.remove(cluster_tar_path)
+            shutil.rmtree(dir_path)
+
+    @staticmethod
+    def _verify_node_logs_uploaded(dir_path, file_path):
+        gz = tarfile.open(os.path.join(dir_path, file_path))
+        logs = gz.getnames()
+        for logs_type in ["agent.logs", "installer.logs", "mount.logs"]:
+            assert any(logs_type in s for s in logs)
+        gz.close()
+
+    @staticmethod
+    def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success):
+        gz = tarfile.open(os.path.join(dir_path, file_path))
+        logs = gz.getnames()
+        assert any("bootkube.logs" in s for s in logs)
+        if not installation_success:
+            for logs_type in ["dmesg.logs", "log-bundle"]:
+                assert any(logs_type in s for s in logs)
+            # test that installer-gather gathered logs from all masters
+            lb_path = [s for s in logs if "log-bundle" in s][0]
+            gz.extract(lb_path, dir_path)
+            lb = tarfile.open(os.path.join(dir_path, lb_path))
+            lb.extractall(dir_path)
+            cp_path = [s for s in lb.getnames() if "control-plane" in s][0]
+            assert len(os.listdir(os.path.join(dir_path, cp_path))) == env_variables["num_masters"]-1
+            lb.close()
+        gz.close()
+
+    @staticmethod
+    def verify_logs_are_current(started_cluster_install_at, logs_collected_at):
+        for collected_at in logs_collected_at:
+            # if host timestamp is set at all- check that the timestamp is from the last installation
+            if collected_at > time.time() - 86400000:
+                assert collected_at > started_cluster_install_at

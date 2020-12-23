@@ -5,6 +5,7 @@ import yaml
 import time
 from collections import Counter
 
+from collections import Counter
 from tests.conftest import env_variables
 from test_infra import consts, utils
 
@@ -407,8 +408,8 @@ class Cluster:
         ):
         self.api_client.download_kubeconfig(self.id, kubeconfig_path)
 
-    def download_installation_logs(self, path):
-        self.api_client.download_cluster_logs(self.id, path)
+    def download_installation_logs(self, cluster_tar_path):
+        self.api_client.download_cluster_logs(self.id, cluster_tar_path)
 
     def get_install_config(self):
         return yaml.load(self.api_client.get_cluster_install_config(self.id), Loader=yaml.SafeLoader)
@@ -533,3 +534,14 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLING]
         )
+
+    def reset_cluster_and_wait_for_ready(self, cluster, nodes):
+        # Reset cluster install
+        cluster.reset_install()
+        assert cluster.is_in_insufficient_status()
+        # Reboot required nodes into ISO
+        cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
+        # Wait for hosts to be rediscovered
+        cluster.wait_until_hosts_are_discovered()
+        cluster.wait_for_ready_to_install()
+
