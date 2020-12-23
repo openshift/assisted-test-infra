@@ -2,6 +2,7 @@ import logging
 import waiting
 import random
 import yaml
+import time
 from collections import Counter
 
 from tests.conftest import env_variables
@@ -298,6 +299,14 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.READY]
         )
+        # This code added due to BZ:1909997, temporarily checking if help to prevent unexpected failure
+        time.sleep(90)
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.READY]
+        )
+
 
     def is_in_cancelled_status(self):
         return utils.is_cluster_in_status(
