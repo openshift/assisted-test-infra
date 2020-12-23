@@ -18,7 +18,7 @@ function install_libvirt() {
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
-    minimum_version="5.6.0"
+    minimum_version="5.5.100"
 
     echo "Setting libvirt values"
     sudo sed -i -e 's/#listen_tls/listen_tls/g' /etc/libvirt/libvirtd.conf
@@ -28,8 +28,7 @@ function install_libvirt() {
     sudo sed -i -e 's/#security_driver = "selinux"/security_driver = "none"/g' /etc/libvirt/qemu.conf
 
     if ! version_is_greater "$current_version" "$minimum_version"; then
-        echo "Minimal supported version of libvirt is $minimum_version"
-        exit 1
+        add_libvirt_listen_flag
     else
         if ! rpm -qa | grep libgcrypt-1.8.5-4; then
             mkdir -p build
