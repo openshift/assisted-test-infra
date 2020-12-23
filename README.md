@@ -88,7 +88,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OC_SERVER                   | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443                        |
 | OC_TOKEN                    | token for oc login (an alternative for oc-user & oc-pass)                                                                       |
 | OFFLINE_TOKEN               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)              |
-| OPENSHIFT_VERSION           | OpenShift version to install, default: "4.5"                                                                                    |
+| OPENSHIFT_VERSION           | OpenShift version to install, default: "4.6"                                                                                    |
 | PULL_SECRET                 | pull secret to use for cluster installation command, no option to install cluster without it.                                   |
 | REMOTE_SERVICE_URL          | URL to remote assisted-service - run infra on existing deployment                                                               |
 | ROUTE53_SECRET              | Amazon Route 53 secret to use for DNS domains registration.                                                                     |
