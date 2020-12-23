@@ -4,6 +4,7 @@ import json
 from contextlib import suppress
 from typing import Optional
 
+from test_infra import consts
 import test_infra.utils as infra_utils
 from test_infra.tools.assets import NetworkAssets
 from assisted_service_client.rest import ApiException
@@ -36,11 +37,14 @@ class BaseTest:
     def cluster(self, api_client, request):
         clusters = []
 
-        def get_cluster_func(cluster_name: Optional[str] = None):
+        def get_cluster_func(cluster_name: Optional[str] = None,
+                             additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE):
             if not cluster_name:
                 cluster_name = infra_utils.get_random_name(length=10)
 
-            res = Cluster(api_client=api_client, cluster_name=cluster_name)
+            res = Cluster(api_client=api_client,
+                          cluster_name=cluster_name,
+                          additional_ntp_source=additional_ntp_source)
             clusters.append(res)
             return res
 
