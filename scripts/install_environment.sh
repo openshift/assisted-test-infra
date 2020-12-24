@@ -150,6 +150,15 @@ EOF
   sudo chmod +x $fname
 }
 
+function config_chronyd() {
+  echo "Config chronyd"
+  sudo dnf install -y chrony
+  sudo sed -i -e '/^[ \t]*server[ \t]/d' -e '/allow[ \t]*$/d' -e '/^[ \t]*local stratum/d' -e '/^[ \t]*manual[ \t]*$/d' /etc/chrony.conf
+  sudo sed -i -e '$a allow' -e '$a manual' -e  '$a local stratum 10' /etc/chrony.conf
+  systemctl restart chronyd.service || systemctl status --no-pager chronyd.service
+  sudo firewall-cmd --zone=libvirt --add-port=123/udp
+}
+
 function additional_configs() {
     if [ "${ADD_USER_TO_SUDO}" != "n" ]; then
         current_user=$(whoami)
@@ -182,4 +191,5 @@ install_skipper
 config_firewalld
 config_squid
 fix_ipv6_routing
+config_chronyd
 additional_configs
