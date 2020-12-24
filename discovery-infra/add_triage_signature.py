@@ -152,6 +152,7 @@ class HostsExtraDetailSignature(Signature):
                 installation_disk=host.get('installation_disk_path', ""),
                 product_name=inventory['system_vendor']['product_name'],
                 manufacturer=inventory['system_vendor']['manufacturer'],
+                virtual_host=inventory['system_vendor'].get('virtual', False),
                 disks_count=len(inventory['disks'])
             ))
 
