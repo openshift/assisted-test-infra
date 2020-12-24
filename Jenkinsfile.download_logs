@@ -5,7 +5,7 @@ pipeline {
         string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
     }
 
-    triggers { cron('H/10 * * * *') }
+    triggers { cron('H/30 * * * *') }
 
     environment {
         SKIPPER_PARAMS = " "
@@ -16,7 +16,7 @@ pipeline {
 
     }
     options {
-      timeout(time: 10, unit: 'MINUTES')
+      timeout(time: 30, unit: 'MINUTES')
     }
 
     stages {
