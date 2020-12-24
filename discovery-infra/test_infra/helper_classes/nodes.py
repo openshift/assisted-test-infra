@@ -58,6 +58,12 @@ class Nodes(object):
     def start_all(self):
         self.run_for_all_nodes("start")
 
+    def start_given(self, nodes):
+        self.run_for_given_nodes(nodes, "start")
+
+    def shutdown_given(self, nodes):
+        self.run_for_given_nodes(nodes, "shutdown")
+
     def format_all_disks(self):
         self.run_for_all_nodes("format_disk")
 
