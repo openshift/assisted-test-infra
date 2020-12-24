@@ -2,22 +2,29 @@
 
 import json
 import os
+import shutil
 import subprocess
+import time
 from argparse import ArgumentParser
 from collections import Counter
 from contextlib import suppress
 from datetime import datetime
 
 import assisted_service_client
+import urllib3
 from dateutil.parser import isoparse
-import shutil
 
+from logger import log
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus
-from logger import log
+from test_infra.logs_utils import verify_logs_uploaded
 from test_infra.utils import config_etc_hosts, recreate_folder, run_command
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
+MAX_RETRIES = 3
+RETRY_INTERVAL = 60 * 5
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def main():
@@ -45,7 +52,7 @@ def should_download_logs(cluster: dict):
     return cluster['status'] in [ClusterStatus.ERROR]
 
 
-def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool):
+def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, retry_interval: int = RETRY_INTERVAL):
     output_folder = get_logs_output_folder(dest, cluster)
 
     if os.path.isdir(output_folder):
@@ -62,10 +69,29 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
-        shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)),"events.html"), output_folder)
+        shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
     with suppress(assisted_service_client.rest.ApiException):
-        client.download_cluster_logs(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar"))
+        for i in range(MAX_RETRIES):
+            cluster_logs_tar = os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar")
+
+            with suppress(FileNotFoundError):
+                os.remove(cluster_logs_tar)
+
+            client.download_cluster_logs(cluster['id'], cluster_logs_tar)
+
+            min_number_of_logs = len(cluster['hosts']) + 1 if cluster['status'] == ClusterStatus.INSTALLED else len(cluster['hosts'])
+
+            try:
+                verify_logs_uploaded(cluster_logs_tar, min_number_of_logs, cluster['status'] == ClusterStatus.INSTALLED)
+                break
+            except AssertionError as ex:
+                log.warn(f"Cluster logs verification failed: {ex}")
+
+                # Skip sleeping on last retry
+                if i < MAX_RETRIES - 1:
+                    log.info(f"Going to retry in {retry_interval} seconds")
+                    time.sleep(retry_interval)
 
     kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
 
