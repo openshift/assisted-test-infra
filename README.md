@@ -326,7 +326,7 @@ ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "
 
 Optionally, you can also provide OPENSHIFT_INSTALL_RELEASE_IMAGE and PUBLIC_CONTAINER_REGISTRIES:
 ```
-export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.6.4-x86_64
+export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.6.8-x86_64
 export PUBLIC_CONTAINER_REGISTRIES=quay.io
 ```
 
