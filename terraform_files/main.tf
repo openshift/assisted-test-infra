@@ -78,11 +78,13 @@ resource "libvirt_domain" "master" {
     network_name = libvirt_network.net.name
     hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
     addresses  = var.libvirt_master_ips[count.index]
+    mac = var.libvirt_master_macs[count.index]
   }
 
   network_interface {
     network_name = libvirt_network.secondary_net.name
     addresses  = var.libvirt_secondary_master_ips[count.index]
+    mac = var.libvirt_secondary_master_macs[count.index]
   }
 
   boot_device{
@@ -121,11 +123,13 @@ resource "libvirt_domain" "worker" {
     network_name = libvirt_network.net.name
     hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
     addresses  = var.libvirt_worker_ips[count.index]
+    mac = var.libvirt_worker_macs[count.index]
   }
 
   network_interface {
     network_name = libvirt_network.secondary_net.name
     addresses  = var.libvirt_secondary_worker_ips[count.index]
+    mac = var.libvirt_secondary_worker_macs[count.index]
   }
 
   boot_device{
