@@ -13,6 +13,8 @@ volumes:
   - $HOME/.cache/libvirt/:$HOME/.cache/libvirt/
   - $HOME/.ssh/:$HOME/.ssh/
   - /usr/local/bin/oc:/usr/local/bin/oc
+  - /var/log:/var/log
+  - /run/log/journal:/run/log/journal
 env:
   PULL_SECRET: $PULL_SECRET
   SECOND_PULL_SECRET: $SECOND_PULL_SECRET

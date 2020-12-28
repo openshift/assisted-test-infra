@@ -19,3 +19,6 @@ class QeVmController(LibvirtController):
         self.destroy_all_nodes()
         for node in self.list_nodes():
             self.set_boot_order(node.name(), False)
+
+    def get_cluster_network(self):
+        return "baremetal-0"

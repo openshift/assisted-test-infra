@@ -177,6 +177,7 @@ class TerraformController(LibvirtController):
         """ Runs terraform destroy and then cleans it with virsh cleanup to delete
             everything relevant.
         """
+
         logging.info("Deleting all nodes")
         if os.path.exists(self.tf_folder):
             self._try_to_delete_nodes()
@@ -208,3 +209,8 @@ class TerraformController(LibvirtController):
             utils.touch(self.image_path)
         self.params.running = False
         self._create_nodes()
+
+    def get_cluster_network(self):
+        logging.info(f'Cluster network name: {self.network_name}')
+        return self.network_name
+

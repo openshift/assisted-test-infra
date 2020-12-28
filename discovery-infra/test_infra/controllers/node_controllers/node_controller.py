@@ -39,6 +39,12 @@ class NodeController:
     def destroy_all_nodes(self) -> None:
         raise NotImplementedError
 
+    def get_cluster_network(self) -> str:
+        raise NotImplementedError
+
+    def setup_time(self) -> str:
+        raise NotImplementedError
+
     def prepare_nodes(self):
         pass
 

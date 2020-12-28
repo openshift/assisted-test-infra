@@ -2,9 +2,6 @@ import logging
 import pytest
 import json
 import os
-import tarfile
-import shutil
-import time
 from contextlib import suppress
 from typing import Optional
 
@@ -38,7 +35,7 @@ class BaseTest:
                 net_asset.release_all()
 
     @pytest.fixture()
-    def cluster(self, api_client, request):
+    def cluster(self, api_client, request, nodes):
         clusters = []
 
         def get_cluster_func(cluster_name: Optional[str] = None,
@@ -56,7 +53,7 @@ class BaseTest:
 
         for cluster in clusters:
             logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
-            self.collect_test_logs(cluster, api_client, request.node)
+            self.collect_test_logs(cluster, api_client, request.node, nodes)
             logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
             if cluster.is_installing() or cluster.is_finalizing():
                 cluster.cancel_install()
@@ -90,12 +87,43 @@ class BaseTest:
         assert len(string) == expected_len, "Expected len string of: " + str(expected_len) + \
                                             " rather than: " + str(len(string)) + " String value: " + string
 
-    @staticmethod
-    def collect_test_logs(cluster, api_client, test):
+    def collect_test_logs(self, cluster, api_client, test, nodes):
         log_dir_name = f"{env_variables['log_folder']}/{test.name}"
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
             download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed)
+        if test.result_call.failed:
+            self._collect_virsh_logs(nodes, log_dir_name)
+
+    def _collect_virsh_logs(self, nodes, log_dir_name):
+        logging.info('Collecting virsh logs\n')
+        os.makedirs(log_dir_name, exist_ok=True)
+        virsh_log_path = os.path.join(log_dir_name, "libvirt_logs")
+        os.makedirs(virsh_log_path, exist_ok=False)
+
+        libvirt_list_path = os.path.join(virsh_log_path, "virsh_list")
+        infra_utils.run_command(f"virsh list --all >> {libvirt_list_path}", shell=True)
+
+        libvirt_net_list_path = os.path.join(virsh_log_path, "virsh_net_list")
+        infra_utils.run_command(f"virsh net-list --all >> {libvirt_net_list_path}", shell=True)
+
+        network_name = nodes.get_cluster_network()
+        virsh_leases_path = os.path.join(virsh_log_path, "net_dhcp_leases")
+        infra_utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
+
+        messages_log_path = os.path.join(virsh_log_path, "messages.log")
+        infra_utils.run_command(f"cp -p /var/log/messages {messages_log_path}", shell=True)
+
+        qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
+        os.makedirs(qemu_libvirt_path, exist_ok=False)
+        for node in nodes:
+            infra_utils.run_command(f"cp -p /var/log/libvirt/qemu/{node.name}.log "
+                                    f"{qemu_libvirt_path}/{node.name}.log",
+                                    shell=True)
+
+        libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
+        infra_utils.run_command(f"journalctl --since \"{nodes.setup_time}\" "
+                                f"-u libvirtd -D /run/log/journal >> {libvird_log_path}", shell=True)
 
     @staticmethod
     def verify_no_logs_uploaded(cluster, cluster_tar_path):

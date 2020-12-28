@@ -15,10 +15,15 @@ class LibvirtController(NodeController):
     def __init__(self, **kwargs):
         self.libvirt_connection = libvirt.open('qemu:///system')
         self.private_ssh_key_path = kwargs.get("private_ssh_key_path")
+        self._setup_timestamp = utils.run_command("date +\"%Y-%m-%d %T\"")[0]
 
     def __del__(self):
         with suppress(Exception):
             self.libvirt_connection.close()
+
+    @property
+    def setup_time(self):
+        return self._setup_timestamp
 
     def list_nodes(self):
         return self.list_nodes_with_name_filter(None)
