@@ -144,3 +144,4 @@ variable "running" {
 variable "cluster_inventory_id" {
   type      = string
 }
+

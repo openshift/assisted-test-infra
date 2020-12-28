@@ -293,10 +293,17 @@ def _get_vips_ips(machine_net):
     return ips[0], ips[1]
 
 
+def _get_host_ip_from_cidr(cidr):
+    return str(IPNetwork(cidr).ip + 1)
+
+
 # TODO add config file
 # Converts params from args to assisted-service cluster params
 def _cluster_create_params():
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
+    ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
+    ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
+
     params = {
         "openshift_version": utils.get_openshift_version(),
         "base_dns_domain": args.base_dns_domain,
@@ -308,7 +315,7 @@ def _cluster_create_params():
         "https_proxy": args.https_proxy,
         "no_proxy": args.no_proxy,
         "vip_dhcp_allocation": bool(args.vip_dhcp_allocation),
-        "additional_ntp_source": consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
+        "additional_ntp_source": ntp_source,
     }
     return params
 
