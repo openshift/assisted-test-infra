@@ -221,33 +221,6 @@ def create_nodes_and_wait_till_registered(
         ])
 
 
-# Set nodes roles by vm name
-# If master in name -> role will be master, same for worker
-# Optionally, update hostanames
-def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False):
-    added_hosts = []
-    hostnames = []
-    inventory_hosts = client.get_cluster_hosts(cluster_id)
-
-    for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
-        for host in inventory_hosts:
-            inventory = json.loads(host["inventory"])
-
-            if libvirt_mac.lower() in map(
-                    lambda interface: interface["mac_address"].lower(),
-                    inventory["interfaces"],
-            ):
-                added_hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
-                hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
-
-    assert len(libvirt_nodes) == len(
-        added_hosts
-    ), "All nodes should have matching inventory hosts"
-
-    if not update_hostnames:
-        hostnames = None
-
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=added_hosts, hosts_names=hostnames)
 
 
 def set_cluster_vips(client, cluster_id, machine_net):
@@ -436,10 +409,10 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             update_hostnames = False
         else:
             log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
-            libvirt_nodes = _get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
+            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_names, tf.get_state())
             update_hostnames = True
 
-        update_hosts(client, cluster.id, libvirt_nodes, update_hostnames)
+        utils.update_hosts(client, cluster.id, libvirt_nodes, update_hostnames)
         utils.wait_till_hosts_with_macs_are_in_status(
             client=client,
             cluster_id=cluster.id,
@@ -463,27 +436,6 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 log.info("Start waiting till CVO status is available")
                 config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, cluster_info.api_vip)
                 utils.wait_for_cvo_available()
-
-
-def _get_libvirt_nodes_from_tf_state(networks_names, tf_state):
-    nodes = _extract_nodes_from_tf_state(tf_state, networks_names, consts.NodeRoles.MASTER)
-    nodes.update(_extract_nodes_from_tf_state(tf_state, networks_names, consts.NodeRoles.WORKER))
-    return nodes
-
-
-def _extract_nodes_from_tf_state(tf_state, networks_names, role):
-    domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
-    data = {}
-    for d in domains:
-        for nic in d["attributes"]["network_interface"]:
-
-            if nic["network_name"] not in networks_names:
-                continue
-
-            data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
-
-    return data
-
 
 def execute_day1_flow(cluster_name):
     client = None

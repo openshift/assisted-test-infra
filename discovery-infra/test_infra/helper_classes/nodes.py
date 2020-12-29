@@ -6,6 +6,8 @@ import random
 import waiting
 from munch import Munch
 from test_infra.controllers.node_controllers.node_controller import NodeController
+from test_infra import utils
+from tests.conftest import env_variables
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.tools.concurrently import run_concurrently
 
@@ -148,4 +150,15 @@ class Nodes:
     def get_cluster_hostname(self, cluster_host_object):
         inventory = json.loads(cluster_host_object["inventory"])
         return inventory["hostname"]
+
+    def set_hostnames(self, cluster):
+        ipv6 = env_variables.get('ipv6')
+        if ipv6:
+            # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
+            # the hostnames using terraform's tfstate file
+            network_name = self.controller.params.libvirt_network_name
+            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
+            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True)
+
+
 

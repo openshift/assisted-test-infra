@@ -46,7 +46,10 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "cluster_name": utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}'),
                  "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default),
                  "kubeconfig_path": utils.get_env('KUBECONFIG', ''),
-                 "log_folder": utils.get_env('LOG_FOLDER', consts.LOG_FOLDER)}
+                 "log_folder": utils.get_env('LOG_FOLDER', consts.LOG_FOLDER),
+                 "service_cidr": utils.get_env('SERVICE_CIDR', '172.30.0.0/16'),
+                 "cluster_cidr": utils.get_env('CLUSTER_CIDR', '10.128.0.0/14'),
+                 "host_prefix": int(utils.get_env('HOST_PREFIX', '23'))}
 
 cluster_mid_name = infra_utils.get_random_name()
 

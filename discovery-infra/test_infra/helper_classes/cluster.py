@@ -127,7 +127,12 @@ class Cluster:
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
         cluster_machine_cidr=env_variables['machine_cidr']
     ):
-        self.api_client.update_cluster(self.id, {"vip_dhcp_allocation": vip_dhcp_allocation})
+        self.api_client.update_cluster(self.id, {
+            "vip_dhcp_allocation": vip_dhcp_allocation,
+            "service_network_cidr": env_variables['service_cidr'],
+            "cluster_network_cidr": env_variables['cluster_cidr'],
+            "cluster_network_host_prefix": env_variables['host_prefix'],
+        })
 
         if vip_dhcp_allocation:
             self.set_machine_cidr(cluster_machine_cidr)
@@ -428,6 +433,7 @@ class Cluster:
             )
         nodes.start_all()
         self.wait_until_hosts_are_discovered(nodes_count=nodes_count)
+        nodes.set_hostnames(self)
         self.set_host_roles()
         self.set_network_params(
             controller=nodes.controller,
