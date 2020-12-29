@@ -231,6 +231,15 @@ class InventoryClient(object):
             with open(os.path.join(destination, ignition_file), "wb") as _file:
                 _file.write(response.data)
 
+    def download_host_ignition(self, cluster_id, host_id, destination):
+        log.info("Downloading host %s cluster %s ignition files to %s", host_id, cluster_id, destination)
+
+        response = self.client.download_host_ignition(
+            cluster_id=cluster_id, host_id=host_id, _preload_content=False
+        )
+        with open(os.path.join(destination, f"host_{host_id}.ign"), "wb") as _file:
+            _file.write(response.data)
+
     def download_kubeconfig(self, cluster_id, kubeconfig_path):
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
         response = self.client.download_cluster_kubeconfig(
