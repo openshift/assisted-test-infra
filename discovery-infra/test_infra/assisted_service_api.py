@@ -10,6 +10,7 @@ import shutil
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
 from logger import log
+from retry import retry
 
 
 class InventoryClient(object):
@@ -114,9 +115,17 @@ class InventoryClient(object):
         log.info("Getting cluster with id %s", cluster_id)
         return self.client.get_cluster(cluster_id=cluster_id)
 
-    def _download(self, response, file_path):
+    def _download(self, response, file_path, verify_file_size=False):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(response, f)
+        if verify_file_size:
+            content_length = int(response.headers['content-length'])
+            actual_file_size = os.path.getsize(file_path)
+            if actual_file_size < content_length:
+                raise RuntimeError(
+                    f'Could not complete ISO download {file_path}. '\
+                    f'Actual size: {actual_file_size}. Expected size: {content_length}'
+                    )
 
     def generate_image(self, cluster_id, ssh_key):
         log.info("Generating image for cluster %s", cluster_id)
@@ -126,12 +135,14 @@ class InventoryClient(object):
             cluster_id=cluster_id, image_create_params=image_create_params
         )
 
+    @retry(exceptions=RuntimeError, tries=2, delay=3)
     def download_image(self, cluster_id, image_path):
         log.info("Downloading image for cluster %s to %s", cluster_id, image_path)
-        response = self.client.download_cluster_iso(
+        response = self.client.download_cluster_iso_with_http_info(
             cluster_id=cluster_id, _preload_content=False
         )
-        self._download(response=response, file_path=image_path)
+        response_obj = response[0]
+        self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
     def generate_and_download_image(self, cluster_id, ssh_key, image_path):
         self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key)
