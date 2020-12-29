@@ -30,7 +30,7 @@ class TerraformController(LibvirtController):
         tf_folder = utils.get_tf_folder(self.cluster_name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        copy_tree(consts.TF_TEMPLATE, tf_folder)
+        utils.copy_template_tree(tf_folder)
         return tf_folder
 
     def _get_random_name(self):

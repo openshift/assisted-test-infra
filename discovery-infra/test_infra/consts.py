@@ -10,7 +10,8 @@ NODES_REGISTERED_TIMEOUT = 600
 CLUSTER_INSTALLATION_TIMEOUT = 60 * 60   # 60 minutes
 START_CLUSTER_INSTALLATION_TIMEOUT = 360
 VALIDATION_TIMEOUT = 6 * 60
-TF_TEMPLATE = "terraform_files"
+TF_TEMPLATE_BARE_METAL_FLOW = "terraform_files/baremetal"
+TF_TEMPLATE_NONE_PLATFORM_FLOW = "terraform_files/none"
 TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
 NUMBER_OF_MASTERS = 3
 TEST_INFRA = "test-infra"
@@ -104,6 +105,9 @@ class Events:
     FINALIZING = "to finalizing"
     SUCCESSFULLY_INSTALLED = "Successfully finished installing cluster"
     ERROR = "error"
-
     DAY2_INSTALLED = "added-to-existing-cluster"
 
+
+class Platforms:
+    BARE_METAL = 'baremetal'
+    NONE = 'none'
