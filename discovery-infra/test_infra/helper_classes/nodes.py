@@ -49,6 +49,10 @@ class Nodes(object):
         nodes = self.controller.list_nodes()
         return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes]
 
+    @property
+    def setup_time(self):
+        return self.controller.setup_time
+
     def get_random_node(self):
         return random.choice(self.nodes)
 
@@ -75,6 +79,9 @@ class Nodes(object):
 
     def reboot_given(self, nodes):
         self.run_for_given_nodes(nodes, "restart")
+
+    def get_cluster_network(self):
+        return self.controller.get_cluster_network()
 
     def set_correct_boot_order(self, nodes=None, start_nodes=False):
         nodes = nodes or self.nodes
