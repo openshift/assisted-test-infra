@@ -418,12 +418,14 @@ class Cluster:
         ssh_key=env_variables['ssh_public_key'],
         nodes_count=env_variables['num_nodes'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr']
+        cluster_machine_cidr=env_variables['machine_cidr'],
+        download_image=True
         ):
-        self.generate_and_download_image(
-            iso_download_path=iso_download_path,
-            ssh_key=ssh_key,
-        )
+        if download_image:
+            self.generate_and_download_image(
+                iso_download_path=iso_download_path,
+                ssh_key=ssh_key,
+            )
         nodes.start_all()
         self.wait_until_hosts_are_discovered(nodes_count=nodes_count)
         self.set_host_roles()

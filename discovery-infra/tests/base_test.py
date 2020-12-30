@@ -61,6 +61,45 @@ class BaseTest:
             with suppress(ApiException):
                 cluster.delete()
 
+    @pytest.fixture()
+    def iptables(self):
+        rules = []
+
+        def set_iptables_rules_for_nodes(
+            cluster, 
+            nodes,
+            given_nodes,
+            iptables_rules,  
+            download_image=True,
+            iso_download_path=env_variables['iso_download_path'],
+            ssh_key=env_variables['ssh_public_key']
+            ):
+            given_node_ips=[]
+            if download_image:
+                cluster.generate_and_download_image(
+                    iso_download_path=iso_download_path,
+                    ssh_key=ssh_key
+                )
+                nodes.start_given(given_nodes)
+                for node in given_nodes:
+                    given_node_ips.append(node.ips[0])
+                nodes.shutdown_given(given_nodes)
+            else:
+                for node in given_nodes:
+                    given_node_ips.append(node.ips[0])
+
+            logging.info(f'Given node ips: {given_node_ips}')
+
+            for rule in iptables_rules:
+                rule.add_sources(given_node_ips)
+                rules.append(rule)
+                rule.insert()
+
+        yield set_iptables_rules_for_nodes
+        logging.info('---TEARDOWN iptables ---')
+        for rule in rules:
+            rule.delete()
+
     @staticmethod
     def get_cluster_by_name(api_client, cluster_name):
         clusters = api_client.clusters_list()

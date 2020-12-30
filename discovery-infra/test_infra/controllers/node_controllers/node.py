@@ -2,7 +2,6 @@ import logging
 from test_infra.controllers.node_controllers import ssh
 from test_infra import consts
 
-
 class Node(object):
 
     def __init__(self, name, node_controller, private_ssh_key_path=None, username="core"):
