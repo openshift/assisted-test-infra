@@ -67,6 +67,10 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     with suppress(assisted_service_client.rest.ApiException):
         client.download_ignition_files(cluster['id'], os.path.join(output_folder, "cluster_files"))
 
+    for host_id in map(lambda host: host['id'], cluster['hosts']):
+        with suppress(assisted_service_client.rest.ApiException):
+            client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
+
     with suppress(assisted_service_client.rest.ApiException):
         client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
         shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
