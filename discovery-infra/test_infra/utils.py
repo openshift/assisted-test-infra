@@ -26,6 +26,7 @@ import oc_utils
 from logger import log
 from retry import retry
 from pprint import pformat
+from distutils.dir_util import copy_tree
 
 conn = libvirt.open("qemu:///system")
 
@@ -719,3 +720,12 @@ def get_openshift_version():
         return stdout
 
     return get_env('OPENSHIFT_VERSION', consts.DEFAULT_OPENSHIFT_VERSION)
+
+
+def copy_template_tree(dst, none_platform_mode=False):
+    copy_tree(
+        src=consts.TF_TEMPLATE_NONE_PLATFORM_FLOW
+        if none_platform_mode else
+        consts.TF_TEMPLATE_BARE_METAL_FLOW,
+        dst=dst
+    )

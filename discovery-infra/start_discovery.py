@@ -7,18 +7,14 @@ import ipaddress
 import json
 import os
 import time
-import uuid
-from functools import partial
 from distutils.dir_util import copy_tree
 import distutils.util
-from pathlib import Path
 from netaddr import IPNetwork
 
 from test_infra import assisted_service_api, consts, utils
 import install_cluster
 import oc_utils
 import day2
-import waiting
 from logger import log
 from test_infra.utils import config_etc_hosts
 from test_infra.tools import terraform_utils
@@ -303,7 +299,7 @@ def _cluster_create_params():
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
-
+    user_managed_networking = is_none_platform_mode()
     params = {
         "openshift_version": utils.get_openshift_version(),
         "base_dns_domain": args.base_dns_domain,
@@ -314,8 +310,9 @@ def _cluster_create_params():
         "http_proxy": args.http_proxy,
         "https_proxy": args.https_proxy,
         "no_proxy": args.no_proxy,
-        "vip_dhcp_allocation": bool(args.vip_dhcp_allocation),
+        "vip_dhcp_allocation": bool(args.vip_dhcp_allocation) and not user_managed_networking,
         "additional_ntp_source": ntp_source,
+        "user_managed_networking": user_managed_networking
     }
     return params
 
@@ -390,7 +387,9 @@ def nodes_flow(client, cluster_name, cluster, image_path):
 
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     utils.recreate_folder(tf_folder)
-    copy_tree(consts.TF_TEMPLATE, tf_folder)
+
+    utils.copy_template_tree(tf_folder, is_none_platform_mode())
+
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
 
@@ -428,13 +427,17 @@ def nodes_flow(client, cluster_name, cluster, image_path):
         else:
             log.info("VIPs already configured")
 
-        network_name = nodes_details["libvirt_network_name"]
+        networks_names = (
+            nodes_details["libvirt_network_name"],
+            nodes_details["libvirt_secondary_network_name"]
+        )
         if machine_net.has_ip_v4:
-            libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(network_name)
+            libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
+            libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
             update_hostnames = False
         else:
             log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
-            libvirt_nodes = _get_libvirt_nodes_from_tf_state(network_name, tf.get_state())
+            libvirt_nodes = _get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
             update_hostnames = True
 
         update_hosts(client, cluster.id, libvirt_nodes, update_hostnames)
@@ -462,18 +465,18 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, cluster_info.api_vip)
                 utils.wait_for_cvo_available()
 
-def _get_libvirt_nodes_from_tf_state(network_name, tf_state):
-    nodes = _extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.MASTER)
-    nodes.update(_extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.WORKER))
+def _get_libvirt_nodes_from_tf_state(networks_names, tf_state):
+    nodes = _extract_nodes_from_tf_state(tf_state, networks_names, consts.NodeRoles.MASTER)
+    nodes.update(_extract_nodes_from_tf_state(tf_state, networks_names, consts.NodeRoles.WORKER))
     return nodes
 
-def _extract_nodes_from_tf_state(tf_state, network_name, role):
+def _extract_nodes_from_tf_state(tf_state, networks_names, role):
     domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
     data = {}
     for d in domains:
         for nic in d["attributes"]["network_interface"]:
 
-            if nic["network_name"] != network_name:
+            if nic["network_name"] not in networks_names:
                 continue
 
             data[nic["mac"]] =  {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
@@ -537,6 +540,10 @@ def execute_day1_flow(cluster_name):
     return cluster.id
 
 
+def is_none_platform_mode():
+    return args.platform.lower() == consts.Platforms.NONE
+
+
 def main():
     cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
     log.info('Cluster name: %s', cluster_name)
@@ -544,10 +551,16 @@ def main():
     cluster_id = args.cluster_id
     if args.day1_cluster:
         cluster_id = execute_day1_flow(cluster_name)
+
+    # None platform currently not supporting day2
+    if is_none_platform_mode():
+        return
+
     if args.day2_cloud_cluster:
         day2.execute_day2_cloud_flow(cluster_id, args)
     if args.day2_ocp_cluster:
         day2.execute_day2_ocp_flow(cluster_id, args)
+
 
 
 if __name__ == "__main__":
@@ -812,6 +825,12 @@ if __name__ == "__main__":
         help='Should IPv6 be installed',
         type=str,
         default=''
+    )
+    parser.add_argument(
+        '--platform',
+        help='VMs platform mode (\'baremetal\' or \'none\')',
+        type=str,
+        default='baremetal'
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

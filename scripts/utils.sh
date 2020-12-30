@@ -167,4 +167,28 @@ function get_profile_url() {
     echo https://$(minikube ip --profile $profile):8443
 }
 
+function local_setup_before_deployment() {
+    platform=$1
+    ns=$2
+    oc_flag=${3:-}
+    if [[ $platform == "none" ]]; then
+        configure_none_platform_iptables_rules $ns $oc_flag
+    fi
+}
+
+function configure_none_platform_iptables_rules() {
+    ns=$1
+    oc_flag=${2:-}
+    ns_index=$(get_namespace_index $ns $oc_flag)
+    network=192.168.$(( 126 + $ns_index )).0/24
+    sec_network=192.168.$(( 126 + $ns_index + 15 )).0/24
+    echo "Configuring routing rules for $network and $sec_network"
+    iptables -I FORWARD -i virbr141 -o virbr126 -j ACCEPT
+    iptables -I FORWARD -i virbr126 -o virbr141 -j ACCEPT
+    ip=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
+    iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT --source $network --to-source $ip
+    iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT --source $sec_network --to-source $ip
+}
+
+
 "$@"
