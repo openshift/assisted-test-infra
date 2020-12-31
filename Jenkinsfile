@@ -28,9 +28,9 @@ pipeline {
         SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
-        RUN_ID = UUID.randomUUID().toString().take(8)
-        PROFILE = "${RUN_ID}"
-        NAMESPACE = "${RUN_ID}"
+        RUN_ID    = UUID.randomUUID().toString().take(8)
+        PROFILE   = "profile-${RUN_ID}"
+        NAMESPACE = "ns-${RUN_ID}"
     }
     options {
       timeout(time: 2, unit: 'HOURS')
