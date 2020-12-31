@@ -659,6 +659,24 @@ def create_ip_address_nested_list(node_count, starting_ip_addr):
 def create_empty_nested_list(node_count):
     return [[] for i in range(node_count)]
 
+def get_libvirt_nodes_from_tf_state(network_names, tf_state):
+    nodes = extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
+    nodes.update(extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
+    return nodes
+
+def extract_nodes_from_tf_state(tf_state, network_names, role):
+    domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
+    data = {}
+    for d in domains:
+        for nic in d["attributes"]["network_interface"]:
+
+            if nic["network_name"] not in network_names:
+                continue
+
+            data[nic["mac"]] =  {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
+
+    return data
+
 
 def set_hosts_roles_based_on_requested_name(client, cluster_id):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
@@ -749,3 +767,32 @@ def copy_template_tree(dst, none_platform_mode=False):
 def extract_installer(release_image, dest):
     logging.info("Extracting installer from %s to %s", release_image, dest)
     run_command(f"oc adm release extract --command=openshift-install --to={dest} {release_image}")
+
+
+# Set nodes roles by vm name
+# If master in name -> role will be master, same for worker
+# Optionally, update hostanames
+def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False):
+    added_hosts = []
+    hostnames = []
+    inventory_hosts = client.get_cluster_hosts(cluster_id)
+
+    for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
+        for host in inventory_hosts:
+            inventory = json.loads(host["inventory"])
+
+            if libvirt_mac.lower() in map(
+                    lambda interface: interface["mac_address"].lower(),
+                    inventory["interfaces"],
+            ):
+                added_hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
+                hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
+
+    assert len(libvirt_nodes) == len(
+        added_hosts
+    ), "All nodes should have matching inventory hosts"
+
+    if not update_hostnames:
+        hostnames = None
+
+    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=added_hosts, hosts_names=hostnames)
