@@ -2,8 +2,8 @@ import logging
 from test_infra.controllers.node_controllers import ssh
 from test_infra import consts
 
-class Node(object):
 
+class Node:
     def __init__(self, name, node_controller, private_ssh_key_path=None, username="core"):
         self.name = name
         self.private_ssh_key_path = private_ssh_key_path
@@ -136,3 +136,9 @@ class Node(object):
 
     def reset_ram_kib(self):
         self.set_ram_kib(self.original_ram_kib)
+
+    def attach_test_disk(self, disk_size):
+        return self.node_controller.attach_test_disk(self.name, disk_size)
+
+    def detach_all_test_disks(self):
+        self.node_controller.detach_all_test_disks(self.name)

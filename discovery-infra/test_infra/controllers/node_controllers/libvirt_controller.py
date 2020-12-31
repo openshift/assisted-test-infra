@@ -1,5 +1,12 @@
 import os
+import re
+import string
+import uuid
 import logging
+import tempfile
+from abc import ABC
+from typing import List
+
 import libvirt
 import waiting
 from xml.dom import minidom
@@ -10,7 +17,8 @@ from test_infra import consts
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
-class LibvirtController(NodeController):
+class LibvirtController(NodeController, ABC):
+    TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
     def __init__(self, **kwargs):
         self.libvirt_connection = libvirt.open('qemu:///system')
@@ -20,15 +28,15 @@ class LibvirtController(NodeController):
     def __del__(self):
         with suppress(Exception):
             self.libvirt_connection.close()
-
+            
     @property
     def setup_time(self):
         return self._setup_timestamp
 
-    def list_nodes(self):
+    def list_nodes(self) -> List[libvirt.virDomain]:
         return self.list_nodes_with_name_filter(None)
 
-    def list_nodes_with_name_filter(self, name_filter):
+    def list_nodes_with_name_filter(self, name_filter) -> List[libvirt.virDomain]:
         logging.info("Listing current hosts with name filter %s", name_filter)
         nodes = []
         domains = self.libvirt_connection.listAllDomains()
@@ -84,7 +92,12 @@ class LibvirtController(NodeController):
         return nodes
 
     @staticmethod
-    def format_disk(disk_path):
+    def create_disk(disk_path, disk_size):
+        command = f'qemu-img create -f qcow2 {disk_path} {disk_size}'
+        utils.run_command(command, shell=True)
+
+    @classmethod
+    def format_disk(cls, disk_path):
         logging.info("Formatting disk %s", disk_path)
         if not os.path.exists(disk_path):
             logging.info("Path to %s disk not exists. Skipping", disk_path)
@@ -96,8 +109,124 @@ class LibvirtController(NodeController):
         # Fix for libvirt 6.0.0
         if image_size.isdigit():
             image_size += "G"
-        command = f'qemu-img create -f qcow2 {disk_path} {image_size}'
-        utils.run_command(command, shell=True)
+
+        cls.create_disk(disk_path, image_size)
+
+    @staticmethod
+    def _get_all_scsi_disks(node):
+        """
+        :return: All node disks that use an SCSI bus (/dev/sd*)
+        """
+        def is_scsi_disk(disk):
+            return any(target.getAttribute('bus') == 'scsi' for target in
+                       disk.getElementsByTagName('target'))
+
+        all_disks = minidom.parseString(node.XMLDesc()).getElementsByTagName('disk')
+
+        return [disk for disk in all_disks if is_scsi_disk(disk)]
+
+    @staticmethod
+    def _get_disk_source_file(disk):
+        sources = disk.getElementsByTagName('source')
+
+        assert len(sources) in (0, 1), f"A disk must have either 0 or 1 sources, {sources}"
+
+        if len(sources) == 0:
+            return None
+
+        return sources[0].getAttribute('file')
+
+    @staticmethod
+    def _get_disk_alias(disk):
+        aliases = disk.getElementsByTagName('alias')
+
+        assert len(aliases) in (0, 1), f"A disk must have either 0 or 1 aliases, {aliases}"
+
+        if len(aliases) == 0:
+            return None
+
+        return aliases[0].getAttribute('name')
+
+    @classmethod
+    def _get_attached_test_disks(cls, node):
+        """
+        :return: Returns all disks created by `self.attach_test_disk` by examining the alias of all SCSI disks
+        """
+        def is_test_disk(disk):
+            return any(alias.getAttribute('name').startswith(cls.TEST_DISKS_PREFIX) for alias in
+                       disk.getElementsByTagName('alias'))
+
+        all_scsi_disks = cls._get_all_scsi_disks(node)
+
+        return [disk for disk in all_scsi_disks if is_test_disk(disk)]
+
+    @staticmethod
+    def _get_disk_scsi_identifier(disk):
+        """
+        :return: Returns `b` if, for example, the disks' target.dev is `sdb`
+        """
+        target_elements = disk.getElementsByTagName('target')
+        assert len(target_elements) == 1, f"Disks shouldn't have multiple targets, {target_elements}"
+        target_element = target_elements[0]
+
+        return re.findall(r"^sd(.*)$", target_element.getAttribute('dev'))[0]
+
+    def _get_available_scsi_identifier(self, node):
+        """
+        :return: Returns, for example, `d` if `sda`, `sdb`, `sdc`, `sde` are all already in use
+        """
+        identifiers_in_use = [self._get_disk_scsi_identifier(disk) for disk in self._get_all_scsi_disks(node)]
+
+        try:
+            result = next(candidate for candidate in string.ascii_lowercase if candidate not in identifiers_in_use)
+        except StopIteration:
+            raise ValueError(f"Couldn't find available scsi disk letter, all are taken: {identifiers_in_use}")
+
+        return result
+
+    def attach_test_disk(self, node_name, disk_size):
+        """
+        Attaches a disk with the given size to the given node. All tests disks can later
+        be detached with detach_all_test_disks
+        """
+        node = self.libvirt_connection.lookupByName(node_name)
+
+        # Prefixing the disk's target element's dev attribute with `sd` makes libvirt create an SCSI disk.
+        # We don't use `vd` virtio disks because libvirt overwrites our aliases if we do so, coming up with
+        # its own `virtio-<num>` aliases instead. Those aliases allow us to identify disks created by this
+        # function when we perform `detach_all_test_disks` for cleanup.
+        target_dev = f"sd{self._get_available_scsi_identifier(node)}"
+        disk_alias = f"{self.TEST_DISKS_PREFIX}-{target_dev}"
+
+        with tempfile.NamedTemporaryFile() as f:
+            tmp_disk = f.name
+
+        self.create_disk(tmp_disk, disk_size)
+
+        node.attachDevice(f"""
+            <disk type='file' device='disk'>
+                <alias name='{disk_alias}'/>
+                <driver name='qemu' type='qcow2'/>
+                <source file='{tmp_disk}'/>
+                <target dev='{target_dev}'/>
+            </disk>
+        """)
+
+        return tmp_disk
+
+    def detach_all_test_disks(self, node_name):
+        node = self.libvirt_connection.lookupByName(node_name)
+
+        for test_disk in self._get_attached_test_disks(node):
+            alias = self._get_disk_alias(test_disk)
+            assert alias is not None, "A test disk has no alias. This should never happen"
+            node.detachDeviceAlias(alias)
+
+            source_file = self._get_disk_source_file(test_disk)
+            assert source_file is not None, "A test disk has no source file. This should never happen"
+            assert source_file.startswith(
+                tempfile.gettempdir()), "File unexpectedly not in tmp, avoiding deletion to be on the safe side"
+            os.remove(source_file)
 
     def restart_node(self, node_name):
         logging.info("Restarting %s", node_name)
@@ -127,7 +256,8 @@ class LibvirtController(NodeController):
         node = self.libvirt_connection.lookupByName(node_name)
         return self._get_domain_ips_and_macs(node)
 
-    def _get_domain_ips_and_macs(self, domain):
+    @staticmethod
+    def _get_domain_ips_and_macs(domain):
         interfaces = domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
         ips = []
         macs = []

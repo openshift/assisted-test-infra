@@ -1,30 +1,31 @@
 import logging
 import json
-from typing import Dict
+from typing import Dict, Iterator, List
 import random
+
+import waiting
 from munch import Munch
+from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.tools.concurrently import run_concurrently
 
 
-class NodeMapping(object):
-
+class NodeMapping:
     def __init__(self, node, cluster_host):
         self.name = node.name
         self.node = node
         self.cluster_host = cluster_host
 
 
-class Nodes(object):
-
-    def __init__(self, node_controller, private_ssh_key_path):
+class Nodes:
+    def __init__(self, node_controller: NodeController, private_ssh_key_path):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
         self._nodes = None
         self._nodes_as_dict = None
 
     @property
-    def nodes(self):
+    def nodes(self) -> List[Node]:
         if not self._nodes:
             self._nodes = self._list()
         return self._nodes
@@ -35,7 +36,7 @@ class Nodes(object):
     def __len__(self):
         return len(self.nodes)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Node]:
         for n in self.nodes:
             yield n
 
