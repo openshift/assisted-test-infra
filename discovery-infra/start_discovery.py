@@ -409,7 +409,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
             update_hostnames = False
         else:
             log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
-            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_names, tf.get_state())
+            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
             update_hostnames = True
 
         utils.update_hosts(client, cluster.id, libvirt_nodes, update_hostnames)
