@@ -15,6 +15,8 @@ volumes:
   - /usr/local/bin/oc:/usr/local/bin/oc
   - /var/log:/var/log
   - /run/log/journal:/run/log/journal
+  - /dev/:/dev
+  - /run/udev:/run/udev
 env:
   PULL_SECRET: $PULL_SECRET
   SECOND_PULL_SECRET: $SECOND_PULL_SECRET

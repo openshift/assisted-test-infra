@@ -60,7 +60,7 @@ def run_command(command, shell=False, raise_errors=True):
 
 def run_command_with_output(command):
     with subprocess.Popen(
-        command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
+            command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
     ) as p:
         for line in p.stdout:
             print(line, end="")  # process line here
@@ -108,6 +108,7 @@ def get_libvirt_nodes_mac_role_ip_and_name(network_name):
         )
         raise
 
+
 def wait_for_cvo_available():
     waiting.wait(
         lambda: is_cvo_available(),
@@ -122,7 +123,8 @@ def is_cvo_available():
         res = subprocess.check_output("kubectl --kubeconfig=build/kubeconfig get clusterversion -o json", shell=True)
         conditions = json.loads(res)['items'][0]['status']['conditions']
         for condition in conditions:
-            log.info(f"CVO condition <{condition['type']}> status is <{condition['status']}>, because: {condition['message']}")
+            log.info(
+                f"CVO condition <{condition['type']}> status is <{condition['status']}>, because: {condition['message']}")
 
             if condition['type'] == 'Available' and condition['status'] == 'True':
                 return True
@@ -155,6 +157,7 @@ def get_cluster_hosts_macs(client, cluster_id):
 
 def get_cluster_hosts_with_mac(client, cluster_id, macs):
     return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
+
 
 def to_utc(timestr):
     return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
@@ -198,9 +201,9 @@ def are_hosts_in_status(
     if len(hosts_in_status) >= nodes_count:
         return True
     elif (
-        fall_on_error_status
-        and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR])
-        > 0
+            fall_on_error_status
+            and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR])
+            > 0
     ):
         hosts_in_error = [
             host for host in hosts if host["status"] == consts.NodesStatus.ERROR
@@ -220,13 +223,13 @@ def are_hosts_in_status(
 
 
 def wait_till_hosts_with_macs_are_in_status(
-    client,
-    cluster_id,
-    macs,
-    statuses,
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
+        client,
+        cluster_id,
+        macs,
+        statuses,
+        timeout=consts.NODES_REGISTERED_TIMEOUT,
+        fall_on_error_status=True,
+        interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
 
@@ -249,13 +252,13 @@ def wait_till_hosts_with_macs_are_in_status(
 
 
 def wait_till_all_hosts_are_in_status(
-    client,
-    cluster_id,
-    nodes_count,
-    statuses,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
+        client,
+        cluster_id,
+        nodes_count,
+        statuses,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True,
+        interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
@@ -278,13 +281,13 @@ def wait_till_all_hosts_are_in_status(
 
 
 def wait_till_at_least_one_host_is_in_status(
-    client,
-    cluster_id,
-    statuses,
-    nodes_count=1,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
+        client,
+        cluster_id,
+        statuses,
+        nodes_count=1,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True,
+        interval=5,
 ):
     log.info("Wait till 1 node is in one of the statuses %s", statuses)
 
@@ -307,14 +310,14 @@ def wait_till_at_least_one_host_is_in_status(
 
 
 def wait_till_specific_host_is_in_status(
-    client,
-    cluster_id,
-    host_name,
-    nodes_count,
-    statuses,
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
+        client,
+        cluster_id,
+        host_name,
+        nodes_count,
+        statuses,
+        timeout=consts.NODES_REGISTERED_TIMEOUT,
+        fall_on_error_status=True,
+        interval=5,
 ):
     log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
 
@@ -337,12 +340,12 @@ def wait_till_specific_host_is_in_status(
 
 
 def wait_till_at_least_one_host_is_in_stage(
-    client,
-    cluster_id,
-    stages,
-    nodes_count=1,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT/2,
-    interval=5,
+        client,
+        cluster_id,
+        stages,
+        nodes_count=1,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+        interval=5,
 ):
     log.info(f"Wait till {nodes_count} node is in stage {stages}")
     try:
@@ -378,14 +381,14 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
 
 
 def wait_till_cluster_is_in_status(
-    client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
+        client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
 ):
     log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
     try:
         waiting.wait(
             lambda: is_cluster_in_status(
-                client=client, 
-                cluster_id=cluster_id, 
+                client=client,
+                cluster_id=cluster_id,
                 statuses=statuses
             ),
             timeout_seconds=timeout,
@@ -395,6 +398,7 @@ def wait_till_cluster_is_in_status(
     except:
         log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
+
 
 def is_cluster_in_status(client, cluster_id, statuses):
     log.info("Is cluster %s in status %s", cluster_id, statuses)
@@ -589,7 +593,9 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
                 if silent:
                     return
                 raise
+
         return wrapped
+
     return decorator
 
 
@@ -614,13 +620,19 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
     finally:
         lock.release()
 
+
 def _get_hosts_from_network(net):
     desc = md.parseString(net.XMLDesc())
     try:
-        hosts = desc.getElementsByTagName("network")[0].getElementsByTagName("ip")[0].getElementsByTagName("dhcp")[0].getElementsByTagName("host")
-        return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"), "hostname": host.getAttribute("name")}, hosts))
+        hosts = desc.getElementsByTagName("network")[0].\
+            getElementsByTagName("ip")[0].\
+            getElementsByTagName("dhcp")[0].\
+            getElementsByTagName("host")
+        return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"),
+                                      "hostname": host.getAttribute("name")}, hosts))
     except IndexError:
         return []
+
 
 def _merge(leases, hosts):
     lips = [l["ipaddr"] for l in leases]
@@ -631,7 +643,7 @@ def _merge(leases, hosts):
 def get_network_leases(network_name):
     with file_lock_context():
         net = conn.networkLookupByName(network_name)
-        leases =  net.DHCPLeases() # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
+        leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
         hosts = _get_hosts_from_network(net)
         return _merge(leases, hosts)
 
@@ -655,7 +667,7 @@ def set_hosts_roles_based_on_requested_name(client, cluster_id):
     for host in hosts:
         role = consts.NodeRoles.MASTER if "master" in host["requested_hostname"] else consts.NodeRoles.WORKER
         hosts_with_roles.append({"id": host["id"], "role": role})
-    
+
     client.update_hosts(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
 
 
@@ -688,14 +700,15 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
             logging.info("Updated /etc/hosts: %s", api_vip_dnsname)
 
 
-def run_container(container_name, image, flags=[]):
+def run_container(container_name, image, flags=None, command=""):
     logging.info(f'Running Container {container_name}')
     run_container_cmd = f'podman {consts.PODMAN_FLAGS} run --name {container_name}'
-    
+
+    flags = flags or []
     for flag in flags:
         run_container_cmd += f' {flag}'
 
-    run_container_cmd += f' {image}'
+    run_container_cmd += f' {image} {command}'
 
     run_command(run_container_cmd, shell=True)
 
@@ -714,7 +727,9 @@ def get_openshift_version():
         f.write(os.getenv('PULL_SECRET'))
         f.close()
         try:
-            stdout, _, _ = run_command(f"oc adm release info '{release_image}' --registry-config '{f.name}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'", shell=True)
+            stdout, _, _ = run_command(
+                f"oc adm release info '{release_image}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
+                shell=True)
         finally:
             os.unlink(f.name)
         return stdout
@@ -729,3 +744,8 @@ def copy_template_tree(dst, none_platform_mode=False):
         consts.TF_TEMPLATE_BARE_METAL_FLOW,
         dst=dst
     )
+
+
+def extract_installer(release_image, dest):
+    logging.info("Extracting installer from %s to %s", release_image, dest)
+    run_command(f"oc adm release extract --command=openshift-install --to={dest} {release_image}")

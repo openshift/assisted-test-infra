@@ -1,5 +1,6 @@
 import paramiko
 import time
+import scp
 import socket
 import logging
 
@@ -91,6 +92,14 @@ class SshConnection:
             e.output = output
             raise e
         return output
+
+    def upload_file(self, local_source_path, remote_target_path):
+        with scp.SCPClient(self._ssh_client.get_transport()) as scp_client:
+            scp_client.put(local_source_path, remote_target_path)
+
+    def download_file(self, remote_source_path, local_target_path):
+        with scp.SCPClient(self._ssh_client.get_transport()) as scp_client:
+            scp_client.get(remote_source_path, local_target_path)
 
     def background_script(self, bash_script, connect_timeout=10 * 60):
         command = "\n".join([

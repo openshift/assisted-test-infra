@@ -145,3 +145,7 @@ variable "cluster_inventory_id" {
   type      = string
 }
 
+variable "bootstrap_in_place" {
+  type    = bool
+  default = false
+}

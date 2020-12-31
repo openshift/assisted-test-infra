@@ -8,7 +8,7 @@ from test_infra import consts
 
 class Assets:
 
-    def __init__(self, assets_file=None, lock_file=None):
+    def __init__(self, assets_file, lock_file=None):
         self.assets_file = assets_file
         self.lock_file = lock_file or os.path.join("/tmp", os.path.basename(assets_file) + ".lock")
         self._took_assets = []

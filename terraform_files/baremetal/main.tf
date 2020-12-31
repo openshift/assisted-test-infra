@@ -32,9 +32,17 @@ resource "libvirt_network" "net" {
   autostart = true
 
   dns {
-    hosts  {
-      ip = var.api_vip
-      hostname = "api.${var.cluster_name}.${var.cluster_domain}"
+    dynamic "hosts" {
+      for_each = concat(
+        data.libvirt_network_dns_host_template.api.*.rendered,
+        data.libvirt_network_dns_host_template.api-int.*.rendered,
+        data.libvirt_network_dns_host_template.oauth.*.rendered,
+        data.libvirt_network_dns_host_template.console.*.rendered,
+      )
+      content {
+        hostname = hosts.value.hostname
+        ip       = hosts.value.ip
+      }
     }
   }
 }
@@ -131,4 +139,32 @@ resource "libvirt_domain" "worker" {
   boot_device{
     dev = ["hd", "cdrom"]
   }
+}
+
+# Define DNS entries
+# Terraform doesn't have ability for conditional blocks (if cond { block }) so we're using
+# the count directive to include/exclude elements
+
+data "libvirt_network_dns_host_template" "api" {
+  count    = 1
+  ip       = var.bootstrap_in_place ? var.libvirt_master_ips[count.index][0] : var.api_vip
+  hostname = "api.${var.cluster_name}.${var.cluster_domain}"
+}
+
+data "libvirt_network_dns_host_template" "api-int" {
+  count    = var.bootstrap_in_place ? 1 : 0
+  ip       = var.libvirt_master_ips[count.index][0]
+  hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
+}
+
+data "libvirt_network_dns_host_template" "oauth" {
+  count    = var.bootstrap_in_place ? 1 : 0
+  ip       = var.libvirt_master_ips[count.index][0]
+  hostname = "oauth-openshift.apps.${var.cluster_name}.${var.cluster_domain}"
+}
+
+data "libvirt_network_dns_host_template" "console" {
+  count    = var.bootstrap_in_place ? 1 : 0
+  ip       = var.libvirt_master_ips[count.index][0]
+  hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
 }

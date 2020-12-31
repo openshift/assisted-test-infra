@@ -287,6 +287,8 @@ destroy_all_nodes_from_namespaces:
 destroy_all_nodes:
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py --delete-all'
 
+deploy_ibip: _test_setup
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--bootstrap-in-place'" NUM_WORKERS=0 NUM_MASTERS=1 NAMESPACE_INDEX=0
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
