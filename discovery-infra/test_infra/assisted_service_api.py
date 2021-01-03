@@ -289,10 +289,6 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
-    def update_cluster_install_config(self, cluster_id, update_params):
-        log.info("Updating cluster install config with %s", update_params)
-        return self.client.update_cluster_install_config(cluster_id, json.dumps(update_params))
-
     def cancel_cluster_install(self, cluster_id):
         log.info("Canceling installation of cluster %s", cluster_id)
         return self.client.cancel_installation(cluster_id=cluster_id)

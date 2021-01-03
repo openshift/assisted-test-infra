@@ -76,7 +76,6 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
 def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
-    client.update_cluster_install_config(cluster_id, {"networking": {"networkType": "OpenShiftSDN"}})
     log.info("Verifying pull secret")
     verify_pull_secret(client=client, cluster=cluster, pull_secret=pull_secret)
     log.info("Wait till cluster is ready")
