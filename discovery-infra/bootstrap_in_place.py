@@ -27,13 +27,12 @@ SOSREPORT_SCRIPT = os.path.join(RESOURCES_DIR, "man_sosreport.sh")
 SSH_KEY = os.path.join("ssh_key", "key")
 
 
-def installer_generate():
-    logging.info("Installer generate manifests")
-    utils.run_command(f"{INSTALLER_BINARY} create manifests --dir={IBIP_DIR}")
+def installer_generate(openshift_release_image):
     logging.info("Installer generate ignitions")
-    # TODO delete
-    shutil.copy(f"{RESOURCES_DIR}/sno_manifest.yaml", os.path.join(IBIP_DIR, "openshift"))
-    utils.run_command(f"{INSTALLER_BINARY} create ignition-configs --dir={IBIP_DIR}")
+    bip_env={"OPENSHIFT_INSTALL_RELEASE_IMAGE": openshift_release_image,
+             "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE": "true",
+             "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE_COREOS_INSTALLER_ARGS": "/dev/vda"}
+    utils.run_command_with_output(f"{INSTALLER_BINARY} create ignition-configs --dir={IBIP_DIR}", env=bip_env)
 
 
 def download_live_image(download_path, rhcos_version=None):
@@ -160,10 +159,10 @@ def execute_ibip_flow(args):
     setup_files_and_folders(args, net_asset, controller.cluster_name)
 
     utils.extract_installer(openshift_release_image, BUILD_DIR)
-    installer_generate()
+    installer_generate(openshift_release_image)
 
     download_live_image(f"{BUILD_DIR}/installer-image.iso")
-    image_path = embed("installer-image.iso", "bootstrap.ign", EMBED_IMAGE_NAME)
+    image_path = embed("installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME)
 
     logging.info("Starting node...")
     controller.image_path = image_path
