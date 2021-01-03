@@ -58,9 +58,9 @@ def run_command(command, shell=False, raise_errors=True):
     return out, err, process.returncode
 
 
-def run_command_with_output(command):
+def run_command_with_output(command, env=None):
     with subprocess.Popen(
-            command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
+            command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, env=env,
     ) as p:
         for line in p.stdout:
             print(line, end="")  # process line here
