@@ -1,6 +1,8 @@
 import logging
 
-from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from test_infra import utils
+from test_infra.controllers.node_controllers.libvirt_controller import \
+    LibvirtController
 
 
 class QeVmController(LibvirtController):
@@ -22,3 +24,6 @@ class QeVmController(LibvirtController):
 
     def get_cluster_network(self):
         return "baremetal-0"
+
+    def get_machine_cidr(self):
+        return utils.get_env('NETWORK_CIDR', '192.168.123.0/24')

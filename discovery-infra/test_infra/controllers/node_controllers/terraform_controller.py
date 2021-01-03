@@ -50,7 +50,7 @@ class TerraformController(LibvirtController):
                   "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
                   "cluster_name": self.cluster_name,
                   "cluster_domain": self.cluster_domain,
-                  "machine_cidr": self.network_conf.machine_cidr,
+                  "machine_cidr": self.get_machine_cidr(),
                   "libvirt_network_name": self.network_name,
                   "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
                   # TODO change to namespace index
@@ -95,7 +95,7 @@ class TerraformController(LibvirtController):
         with open(tfvars_json_file) as _file:
             tfvars = json.load(_file)
 
-        machine_cidr = self._get_machine_cidr()
+        machine_cidr = self.get_machine_cidr()
         provisioning_cidr = self._get_provisioning_cidr()
 
         logging.info("Machine cidr is: %s", machine_cidr)
@@ -172,7 +172,7 @@ class TerraformController(LibvirtController):
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.ip_network(self._get_machine_cidr()).network_address
+                ipaddress.ip_network(self.get_machine_cidr()).network_address
             )
             + 100
         )
@@ -189,7 +189,7 @@ class TerraformController(LibvirtController):
     def _create_address_list(self, num, starting_ip_addr):
         return utils.create_empty_nested_list(num) if self.ipv6 else utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
-    def _get_machine_cidr(self):
+    def get_machine_cidr(self):
         return self.network_conf.machine_cidr6 if self.ipv6 else self.network_conf.machine_cidr
 
     def _get_provisioning_cidr(self):

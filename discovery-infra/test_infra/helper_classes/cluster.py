@@ -125,7 +125,6 @@ class Cluster:
         self, 
         controller,
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr']
     ):
         self.api_client.update_cluster(self.id, {
             "vip_dhcp_allocation": vip_dhcp_allocation,
@@ -135,7 +134,7 @@ class Cluster:
         })
 
         if vip_dhcp_allocation:
-            self.set_machine_cidr(cluster_machine_cidr)
+            self.set_machine_cidr(controller.get_machine_cidr())
         else:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
@@ -423,7 +422,6 @@ class Cluster:
         ssh_key=env_variables['ssh_public_key'],
         nodes_count=env_variables['num_nodes'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr'],
         download_image=True
         ):
         if download_image:
@@ -438,7 +436,6 @@ class Cluster:
         self.set_network_params(
             controller=nodes.controller,
             vip_dhcp_allocation=vip_dhcp_allocation,
-            cluster_machine_cidr=cluster_machine_cidr
         )
         self.wait_for_ready_to_install()
 

@@ -112,3 +112,7 @@ class NodeController(ABC):
     @abstractmethod
     def set_ram_kib(self, node_name: str, ram_kib: int) -> None:
         pass
+
+    @abstractmethod
+    def get_machine_cidr(self) -> str:
+        pass
