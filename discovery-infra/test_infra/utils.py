@@ -746,7 +746,7 @@ def get_openshift_version():
         f.close()
         try:
             stdout, _, _ = run_command(
-                f"oc adm release info '{release_image}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
+                f"oc adm release info '{release_image}' --registry-config '{f.name}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
                 shell=True)
         finally:
             os.unlink(f.name)
