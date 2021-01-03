@@ -1,0 +1,45 @@
+pipeline {
+    agent { label 'download_all_logs' }
+
+    parameters {
+        string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
+    }
+
+    triggers { cron('0 */2 * * *') }
+
+    environment {
+        SKIPPER_PARAMS = " "
+        OFFLINE_TOKEN = credentials('admin_offline_token')
+        JIRA_CREDS = credentials('Ronnie-jira')
+        LOGS_DEST = "build"
+        SLACK_TOKEN = credentials('slack-token')
+
+    }
+    options {
+      timeout(time: 4, unit: 'HOURS')
+    }
+
+    stages {
+        stage('Init') {
+            steps {
+                sh "make image_build"
+            }
+        }
+
+        stage('Run') {
+            steps {
+                sh "make download_all_logs"
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
+                writeJSON(file: 'data.txt', json: data, pretty: 4)
+            }
+            sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
+        }
+    }
+}
