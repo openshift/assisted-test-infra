@@ -102,6 +102,20 @@ class BaseTest:
         for rule in rules:
             rule.delete()
 
+    @pytest.fixture(scope="function")
+    def attach_disk(self):
+        modified_node = None
+
+        def attach(node, disk_size):
+            nonlocal modified_node
+            node.attach_test_disk(disk_size)
+            modified_node = node
+
+        yield attach
+
+        if modified_node is not None:
+            modified_node.detach_all_test_disks()
+
     @staticmethod
     def get_cluster_by_name(api_client, cluster_name):
         clusters = api_client.clusters_list()
