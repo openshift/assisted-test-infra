@@ -20,6 +20,12 @@ pipeline {
     }
 
     stages {
+        stage('Init') {
+            steps {
+                sh "make image_build"
+            }
+        }
+
         stage('Run') {
             steps {
                 sh "make download_logs"

@@ -62,52 +62,53 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     recreate_folder(output_folder)
     recreate_folder(os.path.join(output_folder, "cluster_files"))
 
-    write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
+    try:
+        write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
 
-    with suppress(assisted_service_client.rest.ApiException):
-        client.download_ignition_files(cluster['id'], os.path.join(output_folder, "cluster_files"))
-
-    for host_id in map(lambda host: host['id'], cluster['hosts']):
         with suppress(assisted_service_client.rest.ApiException):
-            client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
+            client.download_ignition_files(cluster['id'], os.path.join(output_folder, "cluster_files"))
 
-    with suppress(assisted_service_client.rest.ApiException):
-        client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
-        shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
+        for host_id in map(lambda host: host['id'], cluster['hosts']):
+            with suppress(assisted_service_client.rest.ApiException):
+                client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
 
-    with suppress(assisted_service_client.rest.ApiException):
-        for i in range(MAX_RETRIES):
-            cluster_logs_tar = os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar")
+        with suppress(assisted_service_client.rest.ApiException):
+            client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
+            shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
-            with suppress(FileNotFoundError):
-                os.remove(cluster_logs_tar)
+        with suppress(assisted_service_client.rest.ApiException):
+            for i in range(MAX_RETRIES):
+                cluster_logs_tar = os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar")
 
-            client.download_cluster_logs(cluster['id'], cluster_logs_tar)
+                with suppress(FileNotFoundError):
+                    os.remove(cluster_logs_tar)
 
-            min_number_of_logs = len(cluster['hosts']) + 1 if cluster['status'] == ClusterStatus.INSTALLED else len(cluster['hosts'])
+                client.download_cluster_logs(cluster['id'], cluster_logs_tar)
 
-            try:
-                verify_logs_uploaded(cluster_logs_tar, min_number_of_logs, cluster['status'] == ClusterStatus.INSTALLED)
-                break
-            except AssertionError as ex:
-                log.warn(f"Cluster logs verification failed: {ex}")
+                min_number_of_logs = len(cluster['hosts']) + 1 if cluster['status'] == ClusterStatus.INSTALLED else len(cluster['hosts'])
 
-                # Skip sleeping on last retry
-                if i < MAX_RETRIES - 1:
-                    log.info(f"Going to retry in {retry_interval} seconds")
-                    time.sleep(retry_interval)
+                try:
+                    verify_logs_uploaded(cluster_logs_tar, min_number_of_logs, cluster['status'] == ClusterStatus.INSTALLED)
+                    break
+                except AssertionError as ex:
+                    log.warn(f"Cluster logs verification failed: {ex}")
 
-    kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
+                    # Skip sleeping on last retry
+                    if i < MAX_RETRIES - 1:
+                        log.info(f"Going to retry in {retry_interval} seconds")
+                        time.sleep(retry_interval)
 
-    with suppress(assisted_service_client.rest.ApiException):
-        client.download_kubeconfig_no_ingress(cluster['id'], kubeconfig_path)
+        kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
 
-        if must_gather:
-            recreate_folder(os.path.join(output_folder, "must-gather"))
-            config_etc_hosts(cluster['name'], cluster['base_dns_domain'], cluster['api_vip'])
-            download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
+        with suppress(assisted_service_client.rest.ApiException):
+            client.download_kubeconfig_no_ingress(cluster['id'], kubeconfig_path)
 
-    run_command("chmod -R ugo+rx '%s'" % output_folder)
+            if must_gather:
+                recreate_folder(os.path.join(output_folder, "must-gather"))
+                config_etc_hosts(cluster['name'], cluster['base_dns_domain'], cluster['api_vip'])
+                download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
+    finally:
+        run_command(f"chmod -R ugo+rx '{output_folder}'")
 
 
 def get_logs_output_folder(dest: str, cluster: dict):
