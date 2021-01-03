@@ -12,20 +12,20 @@ from test_infra import consts, utils
 
 class Cluster:
 
-    def __init__(self, api_client, cluster_name, additional_ntp_source, cluster_id=None):
+    def __init__(self, api_client, cluster_name, additional_ntp_source, openshift_version, cluster_id=None):
         self.api_client = api_client
 
         if cluster_id:
             self.id = cluster_id
         else:
-            self.id = self._create(cluster_name, additional_ntp_source).id
+            self.id = self._create(cluster_name, additional_ntp_source, openshift_version).id
             self.name = cluster_name
     
-    def _create(self, cluster_name, additional_ntp_source):
+    def _create(self, cluster_name, additional_ntp_source, openshift_version):
         return self.api_client.create_cluster(
             cluster_name,
             ssh_public_key=env_variables['ssh_public_key'],
-            openshift_version=env_variables['openshift_version'],
+            openshift_version=openshift_version,
             pull_secret=env_variables['pull_secret'],
             base_dns_domain=env_variables['base_domain'],
             vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
@@ -125,7 +125,6 @@ class Cluster:
         self, 
         controller,
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr']
     ):
         self.api_client.update_cluster(self.id, {
             "vip_dhcp_allocation": vip_dhcp_allocation,
@@ -135,7 +134,7 @@ class Cluster:
         })
 
         if vip_dhcp_allocation:
-            self.set_machine_cidr(cluster_machine_cidr)
+            self.set_machine_cidr(controller.get_machine_cidr())
         else:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
@@ -423,7 +422,6 @@ class Cluster:
         ssh_key=env_variables['ssh_public_key'],
         nodes_count=env_variables['num_nodes'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        cluster_machine_cidr=env_variables['machine_cidr'],
         download_image=True
         ):
         if download_image:
@@ -438,7 +436,6 @@ class Cluster:
         self.set_network_params(
             controller=nodes.controller,
             vip_dhcp_allocation=vip_dhcp_allocation,
-            cluster_machine_cidr=cluster_machine_cidr
         )
         self.wait_for_ready_to_install()
 

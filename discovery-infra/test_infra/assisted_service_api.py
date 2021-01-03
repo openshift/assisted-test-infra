@@ -366,6 +366,9 @@ class InventoryClient(object):
         response = self.versions.list_component_versions()
         return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
 
+    def get_openshift_versions(self):
+        return self.versions.list_supported_openshift_versions()
+
 
 def create_client(
     url,

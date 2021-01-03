@@ -28,7 +28,7 @@ class BaseTest:
             nodes = Nodes(controller, env_variables["private_ssh_key_path"])
             nodes.prepare_nodes()
             yield nodes
-            logging.info(f'--- TEARDOWN --- node controller\n')
+            logging.info('--- TEARDOWN --- node controller\n')
             nodes.destroy_all_nodes()
         finally:
             if not qe_env:
@@ -39,13 +39,15 @@ class BaseTest:
         clusters = []
 
         def get_cluster_func(cluster_name: Optional[str] = None,
-                             additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE):
+                             additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
+                             openshift_version: Optional[str] = env_variables['openshift_version']):
             if not cluster_name:
                 cluster_name = infra_utils.get_random_name(length=10)
 
             res = Cluster(api_client=api_client,
                           cluster_name=cluster_name,
-                          additional_ntp_source=additional_ntp_source)
+                          additional_ntp_source=additional_ntp_source,
+                          openshift_version=openshift_version)
             clusters.append(res)
             return res
 
