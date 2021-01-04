@@ -32,7 +32,9 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
     - [Test installer image or controller image](#test-installer-image-or-controller-image)
   - [Test installer, controller, `assisted-service` and agent images in the same flow](#test-installer-controller-assisted-service-and-agent-images-in-the-same-flow)
     - [Test infra image](#test-infra-image)
-- [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
+  - [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
+  - [Test with Authentication](#test-with-authentication)
+  - [On-prem](#on-prem)
 
 ## Prerequisites
 
@@ -55,7 +57,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | Variable                    | Description                                                                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | AGENT_DOCKER_IMAGE          | agent docker image to use, will update assisted-service config map with given value                                             |
-| ASSISTED_SERVICE_HOST       | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="podman-localhost".                           |
+| ASSISTED_SERVICE_HOST       | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="onprem".                           |
 | BASE_DNS_DOMAINS            | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type.                             |
 | BASE_DOMAIN                 | base domain, needed for DNS name, default: redhat.com                                                                           |
 | CLUSTER_ID                  | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
@@ -64,7 +66,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | DEPLOY_MANIFEST_PATH        | the location of a manifest file that defines image tags images to be used                                                       |
 | DEPLOY_MANIFEST_TAG         | the Git tag of a manifest file that defines image tags to be used                                                               |
 | DEPLOY_TAG                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
-| DEPLOY_TARGET               | Specifies where assisted-service will be deployed. Defaults to "minikube". "podman-localhost" will deploy assisted-service in a pod on the localhost. |
+| DEPLOY_TARGET               | Specifies where assisted-service will be deployed. Defaults to "minikube". "onprem" will deploy assisted-service in a pod on the localhost. |
 | ENABLE_AUTH                 | configure assisted-service to authenticate API requests, default: false                                                         |
 | HARDWARE_INFO_IMAGE         | hardware-info image to use, will update assisted-service config map with given value                                            |
 | HTTPS_PROXY_URL             | A proxy URL to use for creating HTTPS connections outside the cluster                                                           |
@@ -315,14 +317,14 @@ export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
 To test on-prem in the e2e flow, two additonal environment variables need to be set:
 
 ```
-export DEPLOY_TARGET=podman-localhost
+export DEPLOY_TARGET=onprem
 export ASSISTED_SERVICE_HOST=<fqdn-or-ip>
 ```
 
-Setting DEPLOY_TARGET to "podman-localhost" configures assisted-test-infra to deploy
+Setting DEPLOY_TARGET to "onprem" configures assisted-test-infra to deploy
 the assisted-service using a pod on your local host.
 
-ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "podman-localhost" deployments, set it to the FQDN or IP address of the host.
+ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "onprem" deployments, set it to the FQDN or IP address of the host.
 
 Optionally, you can also provide OPENSHIFT_INSTALL_RELEASE_IMAGE and PUBLIC_CONTAINER_REGISTRIES:
 ```
