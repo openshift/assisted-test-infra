@@ -8,6 +8,7 @@ from typing import Optional
 from test_infra import consts
 import test_infra.utils as infra_utils
 from test_infra.tools.assets import NetworkAssets
+from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from assisted_service_client.rest import ApiException
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.nodes import Nodes
@@ -115,6 +116,22 @@ class BaseTest:
 
         if modified_node is not None:
             modified_node.detach_all_test_disks()
+
+    @pytest.fixture()
+    def proxy_server(self):
+        logging.info('--- SETUP --- proxy controller')
+        proxy_servers = []
+
+        def start_proxy_server(**kwargs):
+            proxy_server = ProxyController(**kwargs)
+            proxy_servers.append(proxy_server)
+
+            return proxy_server
+
+        yield start_proxy_server
+        logging.info('--- TEARDOWN --- proxy controller')
+        for server in proxy_servers:
+            server.remove()
 
     @staticmethod
     def get_cluster_by_name(api_client, cluster_name):
