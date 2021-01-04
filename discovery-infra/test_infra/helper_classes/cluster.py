@@ -237,33 +237,12 @@ class Cluster:
             nodes_count=env_variables['num_masters']-1
         )
 
-    def wait_for_hosts_passed_reboot(self, nodes_count=env_variables['num_nodes']):
-        stages = [consts.HostsProgressStages.REBOOTING,
-                  consts.HostsProgressStages.CONFIGURING,
-                  consts.HostsProgressStages.JOINED,
-                  consts.HostsProgressStages.WAIT_FOR_IGNITION,
-                  consts.HostsProgressStages.DONE]
+    def wait_for_hosts_stage(self, stage: str, nodes_count: int = env_variables['num_nodes'], inclusive: bool = True):
+        index = consts.all_host_stages.index(stage)
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
-            stages=stages,
-            nodes_count=nodes_count
-        )
-
-    def wait_for_hosts_configuring(self, nodes_count=env_variables['num_nodes']):
-        stages = [consts.HostsProgressStages.CONFIGURING, consts.HostsProgressStages.DONE]
-        utils.wait_till_at_least_one_host_is_in_stage(
-            client=self.api_client,
-            cluster_id=self.id,
-            stages=stages,
-            nodes_count=nodes_count
-        )
-
-    def wait_for_hosts_done(self, nodes_count=env_variables['num_nodes']):
-        utils.wait_till_at_least_one_host_is_in_stage(
-            client=self.api_client,
-            cluster_id=self.id,
-            stages=[consts.HostsProgressStages.DONE],
+            stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1:],
             nodes_count=nodes_count
         )
 
@@ -337,7 +316,7 @@ class Cluster:
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.INSTALLING_PENDING_USER_ACTION],
+            statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
             nodes_count=nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status
