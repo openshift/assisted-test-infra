@@ -57,8 +57,8 @@ class Node:
 
     def run_command(self, bash_command, background=False):
         output = ""
-        if not self.node_controller.is_active:
-            raise Exception("%s is not active, can't run given command")
+        if not self.node_controller.is_active(self.name):
+            raise RuntimeError("%s is not active, can't run given command")
         with self.ssh_connection as ssh:
             if background:
                 ssh.background_script(bash_command)

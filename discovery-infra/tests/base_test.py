@@ -5,6 +5,7 @@ import os
 from contextlib import suppress
 from typing import Optional
 from pathlib import Path
+from paramiko import SSHException
 
 from test_infra import consts
 import test_infra.utils as infra_utils
@@ -202,15 +203,14 @@ class BaseTest:
     def _collect_journalctl(self, nodes, log_dir_name):
         logging.info('Collecting journalctl\n')
         infra_utils.recreate_folder(log_dir_name, with_chmod=False ,force_recreate=False)
-        journal_ctl_path = Path(log_dir_name)
+        journal_ctl_path = Path(log_dir_name) / 'nodes_journalctl'
         infra_utils.recreate_folder(journal_ctl_path, with_chmod=False)
         for node in nodes:
             try:
-                journal = node.run_command(f'sudo journalctl')
+                node.run_command(f'sudo journalctl >> /tmp/{node.name}-journalctl')
                 journal_path = journal_ctl_path / node.name
-                with open(journal_path, 'w') as _file:
-                    _file.write(journal)
-            except:
+                node.download_file(f'/tmp/{node.name}-journalctl', str(journal_path))
+            except (RuntimeError, TimeoutError, SSHException):
                 logging.info(f'Could not collect journalctl for {node.name}')
 
     @staticmethod
