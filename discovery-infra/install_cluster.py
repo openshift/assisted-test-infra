@@ -60,7 +60,8 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             client=client,
             cluster_id=cluster.id,
             statuses=[consts.ClusterStatus.INSTALLED],
-            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT if cluster.high_availability_mode == "Full"
+            else consts.CLUSTER_INSTALLATION_TIMEOUT * 2,
         )
     finally:
         output_folder = f'build/{cluster.id}'
