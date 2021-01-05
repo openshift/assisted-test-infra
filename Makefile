@@ -50,6 +50,7 @@ NO_PROXY_VALUES := $(or $(NO_PROXY_VALUES), "")
 VIP_DHCP_ALLOCATION := $(or $(VIP_DHCP_ALLOCATION),yes)
 IPv4 := $(or $(IPv4),yes)
 IPv6 := $(or $(IPv6), "")
+STATIC_IPS_CONFIG := $(or $(STATIC_IPS_CONFIG), "static_ips_config.json")
 
 #day2 params
 API_VIP_IP := $(or $(API_VIP_IP),"")
@@ -261,9 +262,16 @@ deploy_nodes_with_install:
 	$(bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG))
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" $(SKIPPER_PARAMS) DAY1_PARAMS=--day1-cluster
 
+
+deploy_static_ips_nodes_with_install:
+	make deploy_nodes_with_install ADDITIONAL_PARAMS="'--with-static-ips'"
+
 deploy_nodes:
 	$(bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG))
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) DAY1_PARAMS=--day1-cluster
+	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=$(ADDITIONAL_PARAMS) DAY1_PARAMS=--day1-cluster
+
+deploy_static_ips_nodes:
+	make deploy_nodes ADDITIONAL_PARAMS="'--with-static-ips'"
 
 deploy_day2_nodes:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster'"
