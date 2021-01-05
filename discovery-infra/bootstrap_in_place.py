@@ -29,9 +29,9 @@ SSH_KEY = os.path.join("ssh_key", "key")
 
 def installer_generate(openshift_release_image):
     logging.info("Installer generate ignitions")
-    bip_env={"OPENSHIFT_INSTALL_RELEASE_IMAGE": openshift_release_image,
-             "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE": "true",
-             "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE_COREOS_INSTALLER_ARGS": "/dev/vda"}
+    bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE": openshift_release_image,
+               "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE": "true",
+               "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE_COREOS_INSTALLER_ARGS": "/dev/vda"}
     utils.run_command_with_output(f"{INSTALLER_BINARY} create ignition-configs --dir={IBIP_DIR}", env=bip_env)
 
 
@@ -129,14 +129,14 @@ def waiting_for_installation_completion(controller):
     try:
         logging.info("Configuring /etc/hosts...")
         utils.config_etc_hosts(cluster_name=controller.cluster_name,
-                            base_dns_domain=controller.cluster_domain,
-                            api_vip=controller.master_ips[0][0])
+                               base_dns_domain=controller.cluster_domain,
+                               api_vip=controller.master_ips[0][0])
 
         logging.info("Waiting for installation to complete...")
         waiting.wait(all_operators_up,
-                    sleep_seconds=20,
-                    timeout_seconds=60 * 60,
-                    waiting_for="all operators to get up")
+                     sleep_seconds=20,
+                     timeout_seconds=60 * 60,
+                     waiting_for="all operators to get up")
         logging.info("Installation completed successfully!")
 
     finally:

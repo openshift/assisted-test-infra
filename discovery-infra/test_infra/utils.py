@@ -772,8 +772,13 @@ def extract_installer(release_image, dest):
 # Set nodes roles by vm name
 # If master in name -> role will be master, same for worker
 # Optionally, update hostanames
-def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False):
-    added_hosts = []
+def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
+
+    if not update_hostnames and not update_roles:
+        logging.info("Skipping update roles and hostnames")
+        return
+
+    roles = []
     hostnames = []
     inventory_hosts = client.get_cluster_hosts(cluster_id)
 
@@ -785,14 +790,13 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False):
                     lambda interface: interface["mac_address"].lower(),
                     inventory["interfaces"],
             ):
-                added_hosts.append({"id": host["id"], "role": libvirt_metadata["role"]})
+                roles.append({"id": host["id"], "role": libvirt_metadata["role"]})
                 hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
-
-    assert len(libvirt_nodes) == len(
-        added_hosts
-    ), "All nodes should have matching inventory hosts"
 
     if not update_hostnames:
         hostnames = None
 
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=added_hosts, hosts_names=hostnames)
+    if not update_roles:
+        roles = None
+
+    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
