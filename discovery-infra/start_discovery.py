@@ -7,7 +7,6 @@ import ipaddress
 import json
 import os
 import time
-from distutils.dir_util import copy_tree
 import distutils.util
 from netaddr import IPNetwork
 
@@ -221,8 +220,6 @@ def create_nodes_and_wait_till_registered(
         ])
 
 
-
-
 def set_cluster_vips(client, cluster_id, machine_net):
     cluster_info = client.cluster_get(cluster_id)
     api_vip, ingress_vip = _get_vips_ips(machine_net)
@@ -283,7 +280,8 @@ def _cluster_create_params():
         "no_proxy": args.no_proxy,
         "vip_dhcp_allocation": bool(args.vip_dhcp_allocation) and not user_managed_networking,
         "additional_ntp_source": ntp_source,
-        "user_managed_networking": user_managed_networking
+        "user_managed_networking": user_managed_networking,
+        "high_availability_mode": "None" if args.master_count == 1 else "Full"
     }
     return params
 
@@ -292,7 +290,7 @@ def _cluster_create_params():
 def _create_node_details(cluster_name):
     return {
         "libvirt_worker_memory": args.worker_memory,
-        "libvirt_master_memory": args.master_memory,
+        "libvirt_master_memory": args.master_memory if not args.master_count == 1 else args.master_memory * 2,
         "worker_count": args.number_of_workers,
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
@@ -302,7 +300,8 @@ def _create_node_details(cluster_name):
         "libvirt_worker_disk": args.worker_disk,
         "libvirt_master_disk": args.master_disk,
         'libvirt_secondary_network_name': consts.TEST_SECONDARY_NETWORK + args.namespace,
-        'libvirt_secondary_network_if': f's{args.network_bridge}'
+        'libvirt_secondary_network_if': f's{args.network_bridge}',
+        'bootstrap_in_place': args.master_count == 1,
     }
 
 
@@ -399,20 +398,8 @@ def nodes_flow(client, cluster_name, cluster, image_path):
         else:
             log.info("VIPs already configured")
 
-        networks_names = (
-            nodes_details["libvirt_network_name"],
-            nodes_details["libvirt_secondary_network_name"]
-        )
-        if machine_net.has_ip_v4:
-            libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
-            libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
-            update_hostnames = False
-        else:
-            log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
-            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
-            update_hostnames = True
+        set_hosts_roles(client, cluster, nodes_details, machine_net, tf, args.master_count)
 
-        utils.update_hosts(client, cluster.id, libvirt_nodes, update_hostnames)
         utils.wait_till_hosts_with_macs_are_in_status(
             client=client,
             cluster_id=cluster.id,
@@ -436,6 +423,28 @@ def nodes_flow(client, cluster_name, cluster, image_path):
                 log.info("Start waiting till CVO status is available")
                 config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, cluster_info.api_vip)
                 utils.wait_for_cvo_available()
+
+
+def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count):
+
+    networks_names = (
+        nodes_details["libvirt_network_name"],
+        nodes_details["libvirt_secondary_network_name"]
+    )
+
+    # don't set roles in bip role
+    if machine_net.has_ip_v4:
+        libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
+        libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
+        update_hostnames = False
+    else:
+        log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
+        libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
+        update_hostnames = True
+
+    utils.update_hosts(client, cluster.id, libvirt_nodes, update_hostnames=update_hostnames,
+                       update_roles=master_count > 1)
+
 
 def execute_day1_flow(cluster_name):
     client = None
@@ -466,6 +475,7 @@ def execute_day1_flow(cluster_name):
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
+
             cluster = client.create_cluster(
                 cluster_name,
                 ssh_public_key=args.ssh_key, **_cluster_create_params()
@@ -516,7 +526,6 @@ def main():
         day2.execute_day2_ocp_flow(cluster_id, args)
     if args.bootstrap_in_place:
         ibip.execute_ibip_flow(args)
-
 
 
 if __name__ == "__main__":
@@ -798,4 +807,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.pull_secret:
         raise Exception("Can't install cluster without pull secret, please provide one")
+
+    if args.master_count == 1:
+        log.info("Master count is 1, setting workers to 0")
+        args.number_of_workers = 0
+
     main()
