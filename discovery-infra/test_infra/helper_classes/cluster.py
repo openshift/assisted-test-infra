@@ -114,6 +114,11 @@ class Cluster:
     def select_installation_disk(self, hosts_with_disk_paths):
         self.api_client.select_installation_disk(self.id, hosts_with_disk_paths)
 
+    def set_ocs(self, ocs_enabled):
+        logging.info(f'Enabling Ocs to:{ocs_enabled} for cluster: {self.id}')
+        ocs_operator={"operators":[{"operator_type":"ocs","enabled":ocs_enabled}]}
+        self.api_client.update_cluster(self.id, ocs_operator)    
+
     def set_host_roles(
         self,
         requested_roles=Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
