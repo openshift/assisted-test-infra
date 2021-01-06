@@ -130,6 +130,7 @@ function config_squid() {
     sudo sed -i  -e '/^.*allowed_ips.*$/d' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8::/120' -e '/^http_access deny all/i http_access allow allowed_ips'  /etc/squid/squid.conf
     sudo systemctl restart squid
     sudo firewall-cmd --zone=libvirt --add-port=3128/tcp
+    sudo firewall-cmd --zone=libvirt --add-port=3129/tcp
 }
 
 function fix_ipv6_routing() {
