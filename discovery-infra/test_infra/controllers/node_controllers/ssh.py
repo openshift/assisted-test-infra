@@ -52,7 +52,7 @@ class SshConnection:
             if self._raw_tcp_connect((self._ip, self._port)):
                 return
             time.sleep(interval)
-        raise Exception("SSH TCP Server '%(hostname)s:%(port)s' did not respond within timeout" % dict(
+        raise TimeoutError("SSH TCP Server '%(hostname)s:%(port)s' did not respond within timeout" % dict(
             hostname=self._ip, port=self._port))
 
     def _raw_tcp_connect(self, tcp_endpoint):
@@ -69,7 +69,7 @@ class SshConnection:
         try:
             logging.info("Executing %s on %s", bash_script, self._ip)
             return self.execute(bash_script, timeout, verbose)
-        except Exception as e:
+        except RuntimeError as e:
             e.args += ('When running bash script "%s"' % bash_script),
             raise
 
@@ -87,7 +87,7 @@ class SshConnection:
         if verbose and output:
             self._logger.debug("SSH Execution output: %(output)s" % dict(output="\n" + output))
         if status != 0:
-            e = Exception("Failed executing, status '%s', output was:\n%s stderr \n%s" %
+            e = RuntimeError("Failed executing, status '%s', output was:\n%s stderr \n%s" %
                           (status, output, stderr.readlines()))
             e.output = output
             raise e
@@ -112,6 +112,6 @@ class SshConnection:
             chan.exec_command(command)
             status = chan.recv_exit_status()
             if status != 0:
-                raise Exception("Failed running '%s', status '%s'" % (bash_script, status))
+                raise RuntimeError("Failed running '%s', status '%s'" % (bash_script, status))
         finally:
             chan.close()

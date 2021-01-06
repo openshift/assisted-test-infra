@@ -4,6 +4,8 @@ import json
 import os
 from contextlib import suppress
 from typing import Optional
+from pathlib import Path
+from paramiko import SSHException
 
 from test_infra import consts
 import test_infra.utils as infra_utils
@@ -166,6 +168,7 @@ class BaseTest:
             download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed)
         if test.result_call.failed:
             self._collect_virsh_logs(nodes, log_dir_name)
+            self._collect_journalctl(nodes, log_dir_name)
 
     def _collect_virsh_logs(self, nodes, log_dir_name):
         logging.info('Collecting virsh logs\n')
@@ -196,6 +199,19 @@ class BaseTest:
         libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
         infra_utils.run_command(f"journalctl --since \"{nodes.setup_time}\" "
                                 f"-u libvirtd -D /run/log/journal >> {libvird_log_path}", shell=True)
+
+    def _collect_journalctl(self, nodes, log_dir_name):
+        logging.info('Collecting journalctl\n')
+        infra_utils.recreate_folder(log_dir_name, with_chmod=False ,force_recreate=False)
+        journal_ctl_path = Path(log_dir_name) / 'nodes_journalctl'
+        infra_utils.recreate_folder(journal_ctl_path, with_chmod=False)
+        for node in nodes:
+            try:
+                node.run_command(f'sudo journalctl >> /tmp/{node.name}-journalctl')
+                journal_path = journal_ctl_path / node.name
+                node.download_file(f'/tmp/{node.name}-journalctl', str(journal_path))
+            except (RuntimeError, TimeoutError, SSHException):
+                logging.info(f'Could not collect journalctl for {node.name}')
 
     @staticmethod
     def verify_no_logs_uploaded(cluster, cluster_tar_path):
