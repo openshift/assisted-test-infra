@@ -156,7 +156,7 @@ function config_chronyd() {
   sudo dnf install -y chrony
   sudo sed -i -e '/^[ \t]*server[ \t]/d' -e '/allow[ \t]*$/d' -e '/^[ \t]*local stratum/d' -e '/^[ \t]*manual[ \t]*$/d' /etc/chrony.conf
   sudo sed -i -e '$a allow' -e '$a manual' -e  '$a local stratum 10' /etc/chrony.conf
-  systemctl restart chronyd.service || systemctl status --no-pager chronyd.service
+  sudo systemctl restart chronyd.service || systemctl status --no-pager chronyd.service
   sudo firewall-cmd --zone=libvirt --add-port=123/udp
 }
 
