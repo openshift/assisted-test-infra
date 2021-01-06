@@ -5,7 +5,6 @@ import yaml
 import time
 from collections import Counter
 
-from collections import Counter
 from tests.conftest import env_variables
 from test_infra import consts, utils
 
@@ -71,12 +70,12 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             nodes_count=nodes_count,
-            statuses=statuses
+            statuses=statuses,
+            timeout=consts.DISCONNECTED_TIMEOUT
         )
 
     def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
-        allow_insufficient=False
-        ):
+                                        allow_insufficient=False):
         statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT)
@@ -84,7 +83,8 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             nodes_count=nodes_count,
-            statuses=statuses
+            statuses=statuses,
+            timeout=consts.NODES_REGISTERED_TIMEOUT
         )
 
     def _get_matching_hosts(self, host_type, count):
@@ -178,7 +178,8 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS],
-            nodes_count=nodes_count
+            nodes_count=nodes_count,
+            timeout=consts.INSTALLING_IN_PROGRESS_TIMEOUT
         )
 
     def wait_for_write_image_to_disk(self, nodes_count=1):
@@ -211,14 +212,16 @@ class Cluster:
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.ERROR]
+            statuses=[consts.ClusterStatus.ERROR],
+            timeout=consts.ERROR_TIMEOUT
         )
 
     def wait_for_pending_for_input_status(self):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.PENDING_FOR_INPUT]
+            statuses=[consts.ClusterStatus.PENDING_FOR_INPUT],
+            timeout=consts.PENDING_USER_ACTION_TIMEOUT
         )
 
     def wait_for_at_least_one_host_to_boot_during_install(self, nodes_count=1):
@@ -326,12 +329,13 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
             fall_on_error_status=fall_on_error_status,
+            timeout=consts.PENDING_USER_ACTION_TIMEOUT
         )
 
     def wait_for_hosts_to_be_in_wrong_boot_order(
             self,
             nodes_count=env_variables['num_nodes'],
-            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            timeout=consts.PENDING_USER_ACTION_TIMEOUT,
             fall_on_error_status=True
     ):
         utils.wait_till_all_hosts_are_in_status(
@@ -347,16 +351,17 @@ class Cluster:
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.READY]
+            statuses=[consts.ClusterStatus.READY],
+            timeout=consts.READY_TIMEOUT
         )
         # This code added due to BZ:1909997, temporarily checking if help to prevent unexpected failure
         time.sleep(90)
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.READY]
+            statuses=[consts.ClusterStatus.READY],
+            timeout=consts.READY_TIMEOUT
         )
-
 
     def is_in_cancelled_status(self):
         return utils.is_cluster_in_status(
@@ -566,14 +571,16 @@ class Cluster:
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.INSTALLING_PENDING_USER_ACTION]
+            statuses=[consts.ClusterStatus.INSTALLING_PENDING_USER_ACTION],
+            timeout=consts.PENDING_USER_ACTION_TIMEOUT
         )
 
     def wait_for_cluster_to_be_in_installing_status(self):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.INSTALLING]
+            statuses=[consts.ClusterStatus.INSTALLING],
+            timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT
         )
 
     def reset_cluster_and_wait_for_ready(self, cluster, nodes):
