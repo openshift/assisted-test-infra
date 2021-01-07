@@ -380,7 +380,7 @@ def nodes_flow(client, cluster_name, cluster, image_path):
         cluster_info = client.cluster_get(cluster.id)
         macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
 
-        if not (cluster_info.api_vip and cluster_info.ingress_vip):
+        if not (cluster_info.api_vip and cluster_info.ingress_vip) and args.master_count != 1:
             utils.wait_till_hosts_with_macs_are_in_status(
                 client=client,
                 cluster_id=cluster.id,
