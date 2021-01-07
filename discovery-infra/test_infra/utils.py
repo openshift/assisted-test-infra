@@ -800,3 +800,14 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
         roles = None
 
     client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
+
+def get_assisted_controller_status(kubeconfig):
+    log.info("Getting controller status")
+    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer get pods -l job-name=assisted-installer-controller"
+    response = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if response.returncode != 0:
+        log.error(f'failed to get controller status: {response.stderr}')
+        return b''
+
+    log.info(f'{response.stdout}')
+    return response.stdout

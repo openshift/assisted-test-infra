@@ -240,6 +240,14 @@ class Cluster:
             nodes_count=env_variables['num_masters']-1
         )
 
+    def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self):
+        utils.wait_till_at_least_one_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            stages=[consts.HostsProgressStages.JOINED],
+            nodes_count=env_variables['num_masters']-1
+        )
+
     def wait_for_hosts_stage(self, stage: str, nodes_count: int = env_variables['num_nodes'], inclusive: bool = True):
         index = consts.all_host_stages.index(stage)
         utils.wait_till_at_least_one_host_is_in_stage(
