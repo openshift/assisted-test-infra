@@ -76,6 +76,12 @@ class HostsProgressStages:
     DONE = "Done"
 
 
+all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,
+                   HostsProgressStages.WRITE_IMAGE_TO_DISK, HostsProgressStages.WAIT_FOR_CONTROL_PLANE,
+                   HostsProgressStages.REBOOTING, HostsProgressStages.WAIT_FOR_IGNITION,
+                   HostsProgressStages.CONFIGURING, HostsProgressStages.JOINED, HostsProgressStages.DONE]
+
+
 class Events:
     REGISTERED_CLUSTER = "Registered cluster"
     SUCCESSFULLY_REGISTERED_CLUSTER = "Successfully registered cluster"
