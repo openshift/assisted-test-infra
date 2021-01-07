@@ -127,9 +127,9 @@ class InventoryClient(object):
                     f'Actual size: {actual_file_size}. Expected size: {content_length}'
                     )
 
-    def generate_image(self, cluster_id, ssh_key):
+    def generate_image(self, cluster_id, ssh_key, static_ips):
         log.info("Generating image for cluster %s", cluster_id)
-        image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key)
+        image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key, static_ips_config=static_ips)
         log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(
             cluster_id=cluster_id, image_create_params=image_create_params
@@ -144,8 +144,8 @@ class InventoryClient(object):
         response_obj = response[0]
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
-    def generate_and_download_image(self, cluster_id, ssh_key, image_path):
-        self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key)
+    def generate_and_download_image(self, cluster_id, ssh_key, image_path, static_ips=None):
+        self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, static_ips=static_ips)
         self.download_image(cluster_id=cluster_id, image_path=image_path)
 
     def update_hosts(self, cluster_id, hosts_with_roles, hosts_names=None):

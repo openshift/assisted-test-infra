@@ -68,6 +68,16 @@ variable "libvirt_secondary_master_ips" {
   description = "the list of desired master second interface ips. Must match master_count"
 }
 
+variable "libvirt_master_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for master interface"
+}
+
+variable "libvirt_secondary_master_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for secondary master interface"
+}
+
 variable "libvirt_worker_ips" {
   type        = list(list(string))
   description = "the list of desired worker ips. Must match master_count"
@@ -76,6 +86,16 @@ variable "libvirt_worker_ips" {
 variable "libvirt_secondary_worker_ips" {
   type        = list(list(string))
   description = "the list of desired worker second interface ips. Must match master_count"
+}
+
+variable "libvirt_worker_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for worker interface"
+}
+
+variable "libvirt_secondary_worker_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for secondary worker interface"
 }
 
 variable "api_vip" {
@@ -148,4 +168,9 @@ variable "cluster_inventory_id" {
 variable "bootstrap_in_place" {
   type    = bool
   default = false
+}
+
+variable "static_macs" {
+  description = "If true, static macs are configured for the network interfaces"
+  type        = bool
 }
