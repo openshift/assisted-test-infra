@@ -24,7 +24,7 @@ class TerraformUtils:
             logging.error(message)
             raise Exception(message)
 
-    def change_variables(self, variables, refresh=False):
+    def change_variables(self, variables, refresh=True):
         with open(self.var_file_path, "r+") as _file:
             tfvars = json.load(_file)
             tfvars.update(variables)
