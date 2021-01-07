@@ -210,14 +210,18 @@ def create_nodes_and_wait_till_registered(
     # In case there is assisted service connection, registration to the cluster in the assisted service
     # is checked, and not relying on libvirt leases.  This overcomes bug in libvirt that does not report
     # all DHCP leases.
+    statuses = [
+        consts.NodesStatus.INSUFFICIENT,
+        consts.NodesStatus.PENDING_FOR_INPUT,
+    ]
+    if master_count == 1:
+        statuses.append(consts.NodesStatus.KNOWN)
+
     utils.wait_till_all_hosts_are_in_status(
         client=inventory_client,
         cluster_id=cluster.id,
         nodes_count=nodes_count,
-        statuses=[
-            consts.NodesStatus.INSUFFICIENT,
-            consts.NodesStatus.PENDING_FOR_INPUT,
-        ])
+        statuses=statuses)
 
 
 def set_cluster_vips(client, cluster_id, machine_net):
