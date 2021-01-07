@@ -24,7 +24,7 @@ class TerraformUtils:
             logging.error(message)
             raise Exception(message)
 
-    def change_variables(self, variables, refresh=False):
+    def change_variables(self, variables, refresh=True):
         with open(self.var_file_path, "r+") as _file:
             tfvars = json.load(_file)
             tfvars.update(variables)
@@ -37,7 +37,7 @@ class TerraformUtils:
         return self.tf.tfstate
 
     def set_new_vip(self, api_vip):
-        self.change_variables(variables={"api_vip": api_vip})
+        self.change_variables(variables={"api_vip": api_vip}, refresh=True)
 
     def destroy(self):
         self.tf.destroy(force=True, input=False, auto_approve=True)
