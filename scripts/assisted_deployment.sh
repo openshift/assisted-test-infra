@@ -19,6 +19,10 @@ function set_dns() {
     echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     sudo systemctl reload NetworkManager
 
+    echo "Updating vips via virsh..."
+    update_vips
+    echo "Finished updating vips"
+
     echo "Finished setting dns"
 }
 

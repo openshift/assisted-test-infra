@@ -628,7 +628,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-mD",
         "--managed-dns-domains",
-        help="DNS domains that are managaed by assisted-service, format: domain_name:domain_id/provider_type.",
+        help="DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type.",
         type=str,
         default="",
     )
