@@ -97,6 +97,9 @@ class Cluster:
         logging.info(f'Setting Cluster Name:{cluster_name} for cluster: {self.id}')
         self.api_client.update_cluster(self.id, {"name": cluster_name})
 
+    def select_installation_disk(self, hosts_with_disk_paths):
+        self.api_client.update_cluster(self.id, hosts_with_disk_paths)
+
     def set_host_roles(
         self, 
         requested_roles=Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
