@@ -144,7 +144,7 @@ function fix_ipv6_routing() {
   done
   sudo sysctl --load
   fname=/etc/NetworkManager/dispatcher.d/40-sysctl-load.sh
-  sudo cat <<EOF > $fname
+  sudo tee $fname <<EOF
 #! /bin/bash
 sysctl --load
 EOF
