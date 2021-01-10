@@ -117,6 +117,7 @@ class Events:
     SUCCESSFULLY_INSTALLED = "Successfully finished installing cluster"
     ERROR = "error"
     DAY2_INSTALLED = "added-to-existing-cluster"
+    PROXY_SETTINGS_CHANGED = "Proxy settings changed"
 
 
 class Platforms:
