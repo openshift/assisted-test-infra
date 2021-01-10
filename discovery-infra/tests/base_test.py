@@ -6,6 +6,7 @@ from contextlib import suppress
 from typing import Optional
 from pathlib import Path
 from paramiko import SSHException
+import shutil
 
 from test_infra import consts
 import test_infra.utils as infra_utils
@@ -187,14 +188,17 @@ class BaseTest:
         infra_utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
 
         messages_log_path = os.path.join(virsh_log_path, "messages.log")
-        infra_utils.run_command(f"cp -p /var/log/messages {messages_log_path}", shell=True)
+        shutil.copy(f'/var/log/messages', messages_log_path)
 
         qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
         os.makedirs(qemu_libvirt_path, exist_ok=False)
         for node in nodes:
-            infra_utils.run_command(f"cp -p /var/log/libvirt/qemu/{node.name}.log "
-                                    f"{qemu_libvirt_path}/{node.name}.log",
-                                    shell=True)
+            shutil.copy(f'/var/log/libvirt/qemu/{node.name}.log', f'{qemu_libvirt_path}/{node.name}-qemu.log')
+        
+        console_log_path = os.path.join(virsh_log_path, "console_logs")
+        os.makedirs(console_log_path, exist_ok=False)
+        for node in nodes:
+            shutil.copy(f'/var/log/libvirt/qemu/{node.name}-console.log', f'{console_log_path}/{node.name}-console.log')
 
         libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
         infra_utils.run_command(f"journalctl --since \"{nodes.setup_time}\" "
