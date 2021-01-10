@@ -218,3 +218,11 @@ class BaseTest:
         with pytest.raises(ApiException) as ex:
             cluster.download_installation_logs(cluster_tar_path)
         assert "No log files" in str(ex.value)
+
+    def update_oc_config(self, nodes, cluster):
+        os.environ["KUBECONFIG"] = env_variables['kubeconfig_path']
+        vips = nodes.controller.get_ingress_and_api_vips()
+        api_vip = vips['api_vip']
+        infra_utils.config_etc_hosts(cluster_name=cluster.name,
+                               base_dns_domain=env_variables["base_domain"],
+                               api_vip=api_vip)
