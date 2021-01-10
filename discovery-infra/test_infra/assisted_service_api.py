@@ -369,6 +369,8 @@ class InventoryClient(object):
     def get_openshift_versions(self):
         return self.versions.list_supported_openshift_versions()
 
+    def get_host_requirements(self):
+        return self.client.get_host_requirements()
 
 def create_client(
     url,
