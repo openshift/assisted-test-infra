@@ -32,6 +32,7 @@ resource "libvirt_network" "net" {
   autostart = true
 
   dns {
+    local_only = true
     dynamic "hosts" {
       for_each = concat(
         data.libvirt_network_dns_host_template.api.*.rendered,
