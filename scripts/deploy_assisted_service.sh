@@ -17,7 +17,7 @@ export PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES:-}
 
 mkdir -p build
 
-if [ "${DEPLOY_TARGET}" == "onprem" ] || [ "${DEPLOY_TARGET}" == "podman-localhost" ]; then
+if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "$OPENSHIFT_INSTALL_RELEASE_IMAGE" ]; then
         sed -i "s|OPENSHIFT_INSTALL_RELEASE_IMAGE=.*|OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE}|" assisted-service/onprem-environment
     fi
