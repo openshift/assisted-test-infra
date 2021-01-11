@@ -129,7 +129,7 @@ def is_cvo_available():
             if condition['type'] == 'Available' and condition['status'] == 'True':
                 return True
     except:
-        log.info("exception in access the cluster api server")
+        log.exception("exception in access the cluster api server")
     return False
 
 
