@@ -28,6 +28,7 @@ from retry import retry
 from pprint import pformat
 from distutils.dir_util import copy_tree
 
+
 conn = libvirt.open("qemu:///system")
 
 
@@ -124,7 +125,8 @@ def is_cvo_available():
         conditions = json.loads(res)['items'][0]['status']['conditions']
         for condition in conditions:
             log.info(
-                f"CVO condition <{condition['type']}> status is <{condition['status']}>, because: {condition['message']}")
+                f"CVO condition <{condition['type']}> status is <{condition['status']}>, "
+                f"because: {condition.get('message')}")
 
             if condition['type'] == 'Available' and condition['status'] == 'True':
                 return True
@@ -659,10 +661,12 @@ def create_ip_address_nested_list(node_count, starting_ip_addr):
 def create_empty_nested_list(node_count):
     return [[] for i in range(node_count)]
 
+
 def get_libvirt_nodes_from_tf_state(network_names, tf_state):
     nodes = extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
     nodes.update(extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
     return nodes
+
 
 def extract_nodes_from_tf_state(tf_state, network_names, role):
     domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
@@ -673,7 +677,7 @@ def extract_nodes_from_tf_state(tf_state, network_names, role):
             if nic["network_name"] not in network_names:
                 continue
 
-            data[nic["mac"]] =  {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
+            data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
 
     return data
 
@@ -801,9 +805,11 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
 
     client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
 
+
 def get_assisted_controller_status(kubeconfig):
     log.info("Getting controller status")
-    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer get pods -l job-name=assisted-installer-controller"
+    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer " \
+              f"get pods -l job-name=assisted-installer-controller"
     response = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     if response.returncode != 0:
         log.error(f'failed to get controller status: {response.stderr}')

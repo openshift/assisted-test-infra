@@ -390,6 +390,7 @@ class InventoryClient(object):
     def get_host_requirements(self):
         return self.client.get_host_requirements()
 
+
 def create_client(
     url,
     offline_token=utils.get_env('OFFLINE_TOKEN'),
