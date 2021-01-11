@@ -11,6 +11,7 @@ CLUSTER_INSTALLATION_TIMEOUT = 60 * 60   # 60 minutes
 START_CLUSTER_INSTALLATION_TIMEOUT = 360
 INSTALLING_IN_PROGRESS_TIMEOUT = 60 * 10
 VALIDATION_TIMEOUT = 6 * 60
+NTP_VALIDATION_TIMEOUT = 10 * 60
 READY_TIMEOUT = 60 * 15
 DISCONNECTED_TIMEOUT = 60 * 10
 PENDING_USER_ACTION_TIMEOUT = 60 * 30
@@ -89,7 +90,6 @@ class Events:
     GENERATED_IMAGE = "Generated image (SSH public key is set)"
     DOWNLOAD_IMAGE = "Started image download"
     HOST_REGISTERED_TO_CLUSTER = ": registered to cluster"
-    PENDING_FOR_INPUT = "pending-for-input"
     INSUFFICIENT = "insufficient"
     KNOWN = "to \"known\""
     READY = "to ready"
