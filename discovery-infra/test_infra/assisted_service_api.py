@@ -157,6 +157,20 @@ class InventoryClient(object):
             cluster_id=cluster_id, cluster_update_params=hosts
         )
 
+    def select_installation_disk(self, cluster_id, hosts_with_diskpaths):
+        log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
+        def role_to_selected_disk_config(host_id, path, role):
+            disk_config_params = models.DiskConfigParams(id=path, role=role)
+            return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
+        
+        disks_selected_config = [role_to_selected_disk_config(h["id"], h["path"], h["role"]) for h in hosts_with_diskpaths]
+        params = models.ClusterUpdateParams(disks_selected_config=disks_selected_config)
+        # Debug
+        log.info("updating cluster with params %s", params.to_str())
+        return self.client.update_cluster(
+            cluster_id=cluster_id, cluster_update_params=params
+        )
+
     def set_pull_secret(self, cluster_id, pull_secret):
         log.info(
             "Setting pull secret for cluster %s", cluster_id
