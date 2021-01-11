@@ -3,6 +3,7 @@ import waiting
 import random
 import yaml
 import time
+from typing import List
 from collections import Counter
 
 from tests.conftest import env_variables
@@ -166,11 +167,23 @@ class Cluster:
         host_data = {"hosts_names": [{"id": host_id, "hostname": requested_name}]}
         self.api_client.update_cluster(self.id, host_data)
 
+    def set_additional_ntp_source(self, ntp_source: List[str]):
+        logging.info(f"Setting Additional NTP source:{ntp_source}")
+        if isinstance(ntp_source, List):
+            ntp_source_string = ",".join(ntp_source)
+        elif isinstance(ntp_source, str):
+            ntp_source_string = ntp_source
+        else:
+            raise TypeError(f"ntp_source must be a string or a list of strings, got: {ntp_source},"
+                            f" type: {type(ntp_source)}")
+        self.api_client.update_cluster(self.id, {"additional_ntp_source": ntp_source_string})
+
     def patch_discovery_ignition(self, ignition):
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
         
     def set_proxy_values(self, http_proxy, https_proxy='', no_proxy=''):
-        logging.info(f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} for cluster: {self.id}")
+        logging.info(f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} "
+                     f"for cluster: {self.id}")
         self.api_client.set_cluster_proxy(self.id, http_proxy, https_proxy, no_proxy)
 
     def start_install(self):

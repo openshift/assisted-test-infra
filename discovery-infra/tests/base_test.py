@@ -79,20 +79,18 @@ class BaseTest:
             download_image=True,
             iso_download_path=env_variables['iso_download_path'],
             ssh_key=env_variables['ssh_public_key']
-            ):
-            given_node_ips=[]
+        ):
+
+            given_node_ips = []
             if download_image:
                 cluster.generate_and_download_image(
                     iso_download_path=iso_download_path,
                     ssh_key=ssh_key
                 )
-                nodes.start_given(given_nodes)
-                for node in given_nodes:
-                    given_node_ips.append(node.ips[0])
-                nodes.shutdown_given(given_nodes)
-            else:
-                for node in given_nodes:
-                    given_node_ips.append(node.ips[0])
+            nodes.start_given(given_nodes)
+            for node in given_nodes:
+                given_node_ips.append(node.ips[0])
+            nodes.shutdown_given(given_nodes)
 
             logging.info(f'Given node ips: {given_node_ips}')
 
