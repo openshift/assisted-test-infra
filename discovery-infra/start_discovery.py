@@ -260,6 +260,27 @@ def _get_vips_ips(machine_net):
 def _get_host_ip_from_cidr(cidr):
     return str(IPNetwork(cidr).ip + 1)
 
+def _get_proxy_ip(cidr):
+    return IPNetwork(cidr).ip + 1
+
+def _get_http_proxy_params(ipv4, ipv6):
+    if args.proxy:
+        ipv6Only = ipv6 and not ipv4
+        if ipv6Only:
+            proxy_ip = _get_proxy_ip(args.vm_network_cidr6)
+            proxy_url = f'http://[{proxy_ip}]:3128'
+            no_proxy = ','.join([args.vm_network_cidr6, args.service_network6, args.cluster_network6,
+                                 consts.DEFAULT_TEST_INFRA_DOMAIN])
+        else:
+            proxy_ip = _get_proxy_ip(args.vm_network_cidr)
+            proxy_url = f'http://{proxy_ip}:3128'
+            no_proxy = ','.join([args.vm_network_cidr, args.service_network, args.cluster_network,
+                                 consts.DEFAULT_TEST_INFRA_DOMAIN])
+        return proxy_url, proxy_url, no_proxy
+    else:
+        return args.http_proxy, args.https_proxy, args.no_proxy
+
+
 
 # TODO add config file
 # Converts params from args to assisted-service cluster params
@@ -268,6 +289,7 @@ def _cluster_create_params():
     ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
     user_managed_networking = is_none_platform_mode()
+    http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
     params = {
         "openshift_version": utils.get_openshift_version(),
         "base_dns_domain": args.base_dns_domain,
@@ -275,9 +297,9 @@ def _cluster_create_params():
         "cluster_network_host_prefix": args.host_prefix if ipv4 else args.host_prefix6,
         "service_network_cidr": args.service_network if ipv4 else args.service_network6,
         "pull_secret": args.pull_secret,
-        "http_proxy": args.http_proxy,
-        "https_proxy": args.https_proxy,
-        "no_proxy": args.no_proxy,
+        "http_proxy": http_proxy,
+        "https_proxy": https_proxy,
+        "no_proxy": no_proxy,
         "vip_dhcp_allocation": bool(args.vip_dhcp_allocation) and not user_managed_networking,
         "additional_ntp_source": ntp_source,
         "user_managed_networking": user_managed_networking,
@@ -813,6 +835,14 @@ if __name__ == "__main__":
         "--bootstrap-in-place",
         help="single node cluster with bootstrap in place flow",
         action="store_true",
+    )
+    parser.add_argument(
+        "--proxy",
+        help="use http proxy with default values",
+        type=distutils.util.strtobool,
+        nargs='?',
+        const=True,
+        default=False,
     )
 
     oc_utils.extend_parser_with_oc_arguments(parser)
