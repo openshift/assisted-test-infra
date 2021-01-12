@@ -54,6 +54,9 @@ class Cluster:
         hosts = self.get_hosts()
         return {h["id"]: h["role"] for h in hosts}
 
+    def generate_image(self, ssh_key=env_variables['ssh_public_key']):
+        self.api_client.generate_image(cluster_id=self.id, ssh_key=ssh_key)
+
     def generate_and_download_image(
         self,
         iso_download_path=env_variables['iso_download_path'],

@@ -127,7 +127,7 @@ class InventoryClient(object):
                     f'Actual size: {actual_file_size}. Expected size: {content_length}'
                     )
 
-    def generate_image(self, cluster_id, ssh_key, static_ips):
+    def generate_image(self, cluster_id, ssh_key, static_ips=None):
         log.info("Generating image for cluster %s", cluster_id)
         image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key, static_ips_config=static_ips)
         log.info("Generating image with params %s", image_create_params.__dict__)
