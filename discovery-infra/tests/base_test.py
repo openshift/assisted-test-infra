@@ -1,4 +1,5 @@
 import logging
+import waiting
 import pytest
 import json
 import os
@@ -242,3 +243,18 @@ class BaseTest:
         infra_utils.config_etc_hosts(cluster_name=cluster.name,
                                base_dns_domain=env_variables["base_domain"],
                                api_vip=api_vip)
+
+    def wait_for_controller(self, cluster, nodes):
+        cluster.download_kubeconfig_no_ingress()
+        self.update_oc_config(nodes, cluster)
+
+        def check_status():
+            res = infra_utils.get_assisted_controller_status(env_variables['kubeconfig_path'])
+            return "Running" in str(res, 'utf-8')
+
+        waiting.wait(
+            lambda: check_status(),
+            timeout_seconds=3000,
+            sleep_seconds=90,
+            waiting_for="controller to be running",
+        )

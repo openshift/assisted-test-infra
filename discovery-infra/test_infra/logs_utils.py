@@ -11,7 +11,7 @@ OC_DOWNLOAD_LOGS_INTERVAL = 10 * 60
 NUM_OF_RETRIES = 6
 
 
-def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success, check_oc=False):
+def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success, verify_control_plane=False, check_oc=False):
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
     with TemporaryDirectory() as tempdir:
@@ -22,7 +22,7 @@ def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_su
             for gz in os.listdir(tempdir):
                 if "bootstrap" in gz:
                     _verify_node_logs_uploaded(tempdir, gz)
-                    _verify_bootstrap_logs_uploaded(tempdir, gz, installation_success)
+                    _verify_bootstrap_logs_uploaded(tempdir, gz, installation_success, verify_control_plane)
                 elif "master" in gz or "worker" in gz:
                     _verify_node_logs_uploaded(tempdir, gz)
                 elif "controller" in gz:
@@ -70,7 +70,7 @@ def _verify_node_logs_uploaded(dir_path, file_path):
     gz.close()
 
 
-def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success):
+def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, verify_control_plane=False):
     gz = tarfile.open(os.path.join(dir_path, file_path))
     logs = gz.getnames()
     assert any("bootkube.logs" in s for s in logs), f"bootkube.logs isn't found in {logs}"
@@ -83,7 +83,15 @@ def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success):
         lb = tarfile.open(os.path.join(dir_path, lb_path))
         lb.extractall(dir_path)
         cp_path = [s for s in lb.getnames() if "control-plane" in s][0]
-        assert len(os.listdir(os.path.join(dir_path, cp_path))) == NUMBER_OF_MASTERS - 1, f"expecting {os.listdir(os.path.join(dir_path, cp_path))} to have {NUMBER_OF_MASTERS - 1} values"
+        # if bootstrap able to ssh to other masters, test that control-plane directory is not empty
+        if verify_control_plane:
+            cp_full_path = os.path.join(dir_path, cp_path)
+            master_dirs = os.listdir(cp_full_path)
+            assert len(master_dirs) == NUMBER_OF_MASTERS - 1, f"expecting {cp_full_path} to have {NUMBER_OF_MASTERS - 1} values"
+            logging.info(f"control-plane directory has sub-directory for each master: {master_dirs}")
+            for ip_dir in master_dirs:
+                logging.info(f"{ip_dir} content: {os.listdir(os.path.join(cp_full_path, ip_dir))}")
+                assert len(os.listdir(os.path.join(cp_full_path, ip_dir))) > 0, f"{cp_path}/{ip_dir} is empty"
         lb.close()
     gz.close()
 
