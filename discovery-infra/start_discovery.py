@@ -227,7 +227,7 @@ def create_nodes_and_wait_till_registered(
         consts.NodesStatus.INSUFFICIENT,
         consts.NodesStatus.PENDING_FOR_INPUT,
     ]
-    if master_count == 1:
+    if master_count == 1 or is_none_platform_mode():
         statuses.append(consts.NodesStatus.KNOWN)
 
     utils.wait_till_all_hosts_are_in_status(
@@ -407,6 +407,7 @@ def nodes_flow(client, cluster_name, cluster, image_path, static_macs):
                 statuses=[
                     consts.NodesStatus.INSUFFICIENT,
                     consts.NodesStatus.PENDING_FOR_INPUT,
+                    consts.NodesStatus.KNOWN
                 ],
             )
 
