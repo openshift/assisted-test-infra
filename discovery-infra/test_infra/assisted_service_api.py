@@ -165,8 +165,6 @@ class InventoryClient(object):
         
         disks_selected_config = [role_to_selected_disk_config(h["id"], h["path"], h["role"]) for h in hosts_with_diskpaths]
         params = models.ClusterUpdateParams(disks_selected_config=disks_selected_config)
-        # Debug
-        log.info("updating cluster with params %s", params.to_str())
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=params
         )
