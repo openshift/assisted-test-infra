@@ -294,6 +294,11 @@ class Cluster:
         logging.info(f"Going to disable host: {host_name} in cluster: {self.id}")
         self.api_client.disable_host(cluster_id=self.id, host_id=host["id"])
 
+    def enable_host(self, host):
+        host_name = host["requested_hostname"]
+        logging.info(f"Going to enable host: {host_name} in cluster: {self.id}")
+        self.api_client.enable_host(cluster_id=self.id, host_id=host["id"])
+
     def cancel_install(self):
         self.api_client.cancel_cluster_install(cluster_id=self.id)
 
