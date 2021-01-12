@@ -33,7 +33,7 @@ def main():
 
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
-        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.download_all)
+        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.must_gather)
     else:
         clusters = client.clusters_list()
 
@@ -43,7 +43,7 @@ def main():
 
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
-                download_logs(client, cluster, args.dest, args.download_all)
+                download_logs(client, cluster, args.dest, args.must_gather)
 
         print(Counter(map(lambda cluster: cluster['status'], clusters)))
 
@@ -160,6 +160,7 @@ def handle_arguments():
     parser.add_argument("dest", help="Destination to download logs", type=str)
     parser.add_argument("--cluster-id", help="Cluster id to download its logs", type=str, default=None, nargs='?')
     parser.add_argument("--download-all", help="Download logs from all clusters", action='store_true')
+    parser.add_argument("--must-gather", help="must-gather logs", action='store_true')
 
     return parser.parse_args()
 
