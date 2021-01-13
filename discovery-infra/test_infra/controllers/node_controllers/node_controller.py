@@ -25,7 +25,7 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
-    def start_node(self, node_name: str) -> None:
+    def start_node(self, node_name: str, check_ips: bool) -> None:
         pass
 
     @abstractmethod

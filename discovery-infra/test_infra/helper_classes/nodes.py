@@ -66,7 +66,12 @@ class Nodes:
         self.run_for_all_nodes("shutdown")
 
     def start_all(self):
-        self.run_for_all_nodes("start")
+        static_ips_config = env_variables.get('static_ips_config')
+        if static_ips_config:
+            skip_ips = False
+        else:
+            skip_ips = True
+        self.run_for_all_nodes("start", skip_ips)
 
     def start_given(self, nodes):
         self.run_for_given_nodes(nodes, "start")
@@ -153,9 +158,11 @@ class Nodes:
 
     def set_hostnames(self, cluster):
         ipv6 = env_variables.get('ipv6')
-        if ipv6:
+        static_ips_config = env_variables.get('static_ips_config')
+        if ipv6 or static_ips_config:
             # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
-            # the hostnames using terraform's tfstate file
+            # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be set
+            # to valid hostname
             network_name = self.controller.params.libvirt_network_name
             libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
             utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True)

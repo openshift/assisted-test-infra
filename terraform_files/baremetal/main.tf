@@ -83,42 +83,21 @@ resource "libvirt_domain" "master" {
     mode = "host-passthrough"
   }
 
-  dynamic "network_interface" {
-    for_each = var.static_macs ? [] : ["not_configure_mac"]
-    content {
-      network_name = libvirt_network.net.name
-      hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
-      addresses  = var.libvirt_master_ips[count.index]
-    }
+  network_interface {
+    network_name = libvirt_network.net.name
+    hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
+    addresses  = var.libvirt_master_ips[count.index]
+    mac = var.libvirt_master_macs[count.index]
   }
-
+   
   dynamic "network_interface" {
-    for_each = var.static_macs ? ["configure_mac"] : []
-    content {
-      network_name = libvirt_network.net.name
-      hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
-      addresses  = var.libvirt_master_ips[count.index]
-      mac = var.libvirt_master_macs[count.index]
-    }
-  }
-
-  dynamic "network_interface" {
-    for_each = !var.bootstrap_in_place && !var.static_macs ? ["not_configure_mac"] : []
+    for_each = var.bootstrap_in_place ? [] : ["secondary_net"]
     content {
       network_name = libvirt_network.secondary_net.name
-      addresses  = var.libvirt_secondary_master_ips[count.index]
-    }
-  }
-
-  dynamic "network_interface" {
-    for_each = !var.bootstrap_in_place && var.static_macs ? ["configure_mac"] : []
-    content {
-      network_name = libvirt_network.secondary_net.name
-      addresses  = var.libvirt_secondary_master_ips[count.index]
+      addresses = var.libvirt_secondary_master_ips[count.index]
       mac = var.libvirt_secondary_master_macs[count.index]
     }
   }
-
   boot_device{
     dev = ["hd", "cdrom"]
   }
@@ -159,11 +138,13 @@ resource "libvirt_domain" "worker" {
     network_name = libvirt_network.net.name
     hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
     addresses  = var.libvirt_worker_ips[count.index]
+    mac = var.libvirt_worker_macs[count.index]
   }
 
   network_interface {
     network_name = libvirt_network.secondary_net.name
     addresses  = var.libvirt_secondary_worker_ips[count.index]
+    mac = var.libvirt_secondary_worker_macs[count.index]
   }
 
   boot_device{

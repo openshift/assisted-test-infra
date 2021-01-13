@@ -10,6 +10,7 @@ from test_infra import utils
 from test_infra import virsh_cleanup
 from test_infra import consts
 from test_infra.tools import terraform_utils
+from test_infra.tools import static_ips
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 
 
@@ -125,6 +126,8 @@ class TerraformController(LibvirtController):
         tfvars['bootstrap_in_place'] = self.bootstrap_in_place
         tfvars['api_vip'] = self.get_ingress_and_api_vips()["api_vip"]
         tfvars['running'] = self.params.running
+        tfvars['libvirt_master_macs'] = static_ips.generate_macs(self.params.master_count)
+        tfvars['libvirt_worker_macs'] = static_ips.generate_macs(self.params.worker_count)
         tfvars.update(self.params)
         tfvars.update(self._secondary_tfvars())
 
@@ -154,7 +157,9 @@ class TerraformController(LibvirtController):
             'libvirt_secondary_master_ips': self._create_address_list(
                 self.params.master_count,
                 starting_ip_addr=secondary_master_starting_ip
-            )
+            ),
+            'libvirt_secondary_master_macs': static_ips.generate_macs(self.params.master_count),
+            'libvirt_secondary_worker_macs': static_ips.generate_macs(self.params.worker_count)
         }
 
     def start_all_nodes(self):

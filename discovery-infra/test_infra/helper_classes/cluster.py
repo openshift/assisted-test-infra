@@ -8,6 +8,7 @@ from collections import Counter
 
 from tests.conftest import env_variables
 from test_infra import consts, utils
+from test_infra.tools import static_ips
 
 
 class Cluster:
@@ -60,12 +61,14 @@ class Cluster:
     def generate_and_download_image(
         self,
         iso_download_path=env_variables['iso_download_path'],
-        ssh_key=env_variables['ssh_public_key']
+        ssh_key=env_variables['ssh_public_key'],
+        static_ips=None
         ):
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
             ssh_key=ssh_key,
-            image_path=iso_download_path
+            image_path=iso_download_path,
+            static_ips=static_ips
         )
 
     def wait_until_hosts_are_disconnected(self, nodes_count=env_variables['num_nodes']):
@@ -441,9 +444,15 @@ class Cluster:
         download_image=True
         ):
         if download_image:
+            if env_variables.get('static_ips_config'):
+                static_ips_config = static_ips.generate_static_ips_data_from_tf(nodes.controller.tf_folder)
+            else:
+                static_ips_config = None
+
             self.generate_and_download_image(
                 iso_download_path=iso_download_path,
                 ssh_key=ssh_key,
+                static_ips=static_ips_config
             )
         nodes.start_all()
         self.wait_until_hosts_are_discovered(nodes_count=nodes_count)

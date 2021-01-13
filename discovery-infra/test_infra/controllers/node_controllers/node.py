@@ -69,8 +69,8 @@ class Node:
     def shutdown(self):
         return self.node_controller.shutdown_node(self.name)
 
-    def start(self):
-        return self.node_controller.start_node(self.name)
+    def start(self, check_ips=True):
+        return self.node_controller.start_node(self.name, check_ips)
 
     def restart(self):
         self.shutdown()

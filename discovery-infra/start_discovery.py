@@ -36,6 +36,24 @@ class MachineNetwork(object):
         self.provisioning_cidr_v4 = _get_provisioning_cidr(machine_cidr_4, ns_index)
         self.provisioning_cidr_v6 = _get_provisioning_cidr6(machine_cidr_6, ns_index)
 
+def set_tf_config(cluster_name):
+    nodes_details = _create_node_details(cluster_name)
+    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+    utils.recreate_folder(tf_folder)
+
+    utils.copy_template_tree(tf_folder, is_none_platform_mode())
+
+    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
+    default_image_path = os.path.join(consts.IMAGE_FOLDER, f'{args.namespace}-installer-image.iso')
+    fill_tfvars(
+        image_path=args.image or default_image_path,
+        storage_path=args.storage_path,
+        master_count=args.master_count,
+        nodes_details=nodes_details,
+        tf_folder=tf_folder,
+        machine_net=machine_net
+    )
+
 
 # Filling tfvars json files with terraform needed variables to spawn vms
 def fill_tfvars(
@@ -44,8 +62,7 @@ def fill_tfvars(
         master_count,
         nodes_details,
         tf_folder,
-        machine_net,
-        static_macs
+        machine_net
 ):
     tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
@@ -94,14 +111,9 @@ def fill_tfvars(
     tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses
     tfvars['api_vip'] = _get_vips_ips(machine_net)[0]
     tfvars['libvirt_storage_pool_path'] = storage_path
+    tfvars['libvirt_master_macs'] = static_ips.generate_macs(master_count)
+    tfvars['libvirt_worker_macs'] = static_ips.generate_macs(worker_count)
     tfvars.update(nodes_details)
-
-    if static_macs:
-        tfvars['static_macs'] = True
-        tfvars['libvirt_master_macs'] = static_macs[0]
-        tfvars['libvirt_secondary_master_macs'] = static_macs[1]
-        tfvars['libvirt_worker_macs'] = static_macs[2]
-        tfvars['libvirt_secondary_worker_macs'] = static_macs[3]
 
     tfvars.update(_secondary_tfvars(master_count, nodes_details, machine_net))
 
@@ -110,6 +122,8 @@ def fill_tfvars(
 
 
 def _secondary_tfvars(master_count, nodes_details, machine_net):
+    vars_dict = {}
+    vars_dict['libvirt_secondary_master_macs'] = static_ips.generate_macs(master_count)
     if machine_net.has_ip_v4:
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
@@ -140,45 +154,26 @@ def _secondary_tfvars(master_count, nodes_details, machine_net):
         )
 
     worker_count = nodes_details['worker_count']
+    vars_dict['libvirt_secondary_worker_macs'] = static_ips.generate_macs(worker_count)
     if machine_net.has_ip_v4:
-        return {
-            'libvirt_secondary_worker_ips': utils.create_ip_address_nested_list(
-                worker_count,
-                starting_ip_addr=secondary_worker_starting_ip
-            ),
-            'libvirt_secondary_master_ips': utils.create_ip_address_nested_list(
+        vars_dict['libvirt_secondary_master_ips'] = utils.create_ip_address_nested_list(
                 master_count,
                 starting_ip_addr=secondary_master_starting_ip
-            )
-        }
+                )
+        vars_dict['libvirt_secondary_worker_ips'] = utils.create_ip_address_nested_list(
+                worker_count,
+                starting_ip_addr=secondary_worker_starting_ip
+                )
     else:
-        return {
-            'libvirt_secondary_worker_ips': utils.create_empty_nested_list(worker_count),
-            'libvirt_secondary_master_ips': utils.create_empty_nested_list(master_count)
-        }
+        vars_dict['libvirt_secondary_master_ips'] = utils.create_empty_nested_list(master_count)
+        vars_dict['libvirt_secondary_worker_ips'] = utils.create_empty_nested_list(worker_count)
+    return vars_dict
 
 
 # Run make run terraform -> creates vms
 def create_nodes(
-        cluster_name,
-        image_path,
-        storage_path,
-        master_count,
-        nodes_details,
-        tf,
-        machine_net,
-        static_macs
+        tf
 ):
-    log.info("Creating tfvars")
-    fill_tfvars(
-        image_path=image_path,
-        storage_path=storage_path,
-        master_count=master_count,
-        nodes_details=nodes_details,
-        tf_folder=tf.working_dir,
-        machine_net=machine_net,
-        static_macs=static_macs
-    )
     log.info('Start running terraform')
     with utils.file_lock_context():
         return tf.apply()
@@ -186,27 +181,14 @@ def create_nodes(
 
 # Starts terraform nodes creation, waits till all nodes will get ip and will move to known status
 def create_nodes_and_wait_till_registered(
-        cluster_name,
         inventory_client,
         cluster,
-        image_path,
-        storage_path,
-        master_count,
         nodes_details,
-        tf,
-        machine_net,
-        static_macs
+        tf
 ):
-    nodes_count = master_count + nodes_details["worker_count"]
+    nodes_count = nodes_details['master_count'] + nodes_details["worker_count"]
     create_nodes(
-        cluster_name=cluster_name,
-        image_path=image_path,
-        storage_path=storage_path,
-        master_count=master_count,
-        nodes_details=nodes_details,
-        tf=tf,
-        machine_net=machine_net,
-        static_macs=static_macs
+        tf=tf
     )
 
     # TODO: Check for only new nodes
@@ -227,7 +209,7 @@ def create_nodes_and_wait_till_registered(
         consts.NodesStatus.INSUFFICIENT,
         consts.NodesStatus.PENDING_FOR_INPUT,
     ]
-    if master_count == 1 or is_none_platform_mode():
+    if nodes_details['master_count'] == 1 or is_none_platform_mode():
         statuses.append(consts.NodesStatus.KNOWN)
 
     utils.wait_till_all_hosts_are_in_status(
@@ -316,10 +298,9 @@ def _create_node_details(cluster_name):
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": args.worker_disk,
         "libvirt_master_disk": args.master_disk,
-        'libvirt_secondary_network_name': consts.TEST_SECONDARY_NETWORK + args.namespace,
-        'libvirt_secondary_network_if': f's{args.network_bridge}',
-        'bootstrap_in_place': args.master_count == 1,
-        "static_ips_config": args.with_static_ips,
+        "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
+        "libvirt_secondary_network_if": f's{args.network_bridge}',
+        "bootstrap_in_place": args.master_count == 1,
     }
 
 
@@ -369,30 +350,21 @@ def validate_dns(client, cluster_id):
 
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
-def nodes_flow(client, cluster_name, cluster, image_path, static_macs):
-    nodes_details = _create_node_details(cluster_name)
+def nodes_flow(client, cluster_name, cluster):
+    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+    nodes_details = utils.get_tfvars(tf_folder)
     if cluster:
         nodes_details["cluster_inventory_id"] = cluster.id
-
-    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-    utils.recreate_folder(tf_folder)
-
-    utils.copy_template_tree(tf_folder, is_none_platform_mode())
+        utils.set_tfvars(tf_folder, nodes_details)
 
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
 
     create_nodes_and_wait_till_registered(
-        cluster_name=cluster_name,
         inventory_client=client,
         cluster=cluster,
-        image_path=image_path,
-        storage_path=args.storage_path,
-        master_count=args.master_count,
         nodes_details=nodes_details,
-        tf=tf,
-        machine_net=machine_net,
-        static_macs=static_macs
+        tf=tf
     )
 
     if client:
@@ -460,7 +432,7 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
             log.info("Setting hostnames when running in static ips mode")
             update_hostnames = True
         else:
-            update_hostnames = True
+            update_hostnames = False
     else:
         log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
         libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
@@ -489,9 +461,9 @@ def execute_day1_flow(cluster_name):
     if not args.network_bridge:
         args.network_bridge = f'tt{args.ns_index}'
 
+    set_tf_config(cluster_name)
     image_path = None
 
-    static_macs = None
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
         client = assisted_service_api.create_client(
@@ -512,11 +484,10 @@ def execute_day1_flow(cluster_name):
         )
 
         if args.with_static_ips:
-            machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
-            static_ips_config, static_macs = static_ips.generate_static_ips_data(args.master_count, args.number_of_workers, machine_net)
+            tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+            static_ips_config = static_ips.generate_static_ips_data_from_tf(tf_folder)
         else:
             static_ips_config = None
-            static_macs = None
 
         client.generate_and_download_image(
             cluster_id=cluster.id,
@@ -528,7 +499,7 @@ def execute_day1_flow(cluster_name):
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
         try:
-            nodes_flow(client, cluster_name, cluster, args.image or image_path, static_macs)
+            nodes_flow(client, cluster_name, cluster)
         finally:
             if not image_path or args.keep_iso:
                 return
