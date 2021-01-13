@@ -171,7 +171,7 @@ function local_setup_before_deployment() {
     platform=$1
     ns=$2
     oc_flag=${3:-}
-    if [[ $platform == "none" ]]; then
+    if [[ ${platform,,} == "none" ]]; then
         configure_none_platform_iptables_rules $ns $oc_flag
     fi
 }
