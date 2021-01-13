@@ -24,6 +24,9 @@ class Node:
     def is_master_in_name(self):
         return consts.NodeRoles.MASTER in self.name
 
+    def is_worker_in_name(self):
+        return consts.NodeRoles.WORKER in self.name
+
     def _set_ips_and_macs(self):
         self._ips, self._macs = self.node_controller.get_node_ips_and_macs(self.name)
 

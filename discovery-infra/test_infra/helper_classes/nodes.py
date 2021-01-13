@@ -45,6 +45,9 @@ class Nodes:
     def get_masters(self):
         return [node for node in self.nodes if node.is_master_in_name()]
 
+    def get_workers(self):
+        return [node for node in self.nodes if node.is_worker_in_name()]
+
     @property
     def nodes_as_dict(self):
         if not self._nodes_as_dict:

@@ -187,6 +187,10 @@ class InventoryClient(object):
         log.info("Deleting cluster %s", cluster_id)
         self.client.deregister_cluster(cluster_id=cluster_id)
 
+    def deregister_host(self, cluster_id, host_id):
+        log.info(f"Deleting host {host_id} in cluster {cluster_id}")
+        self.client.deregister_host(cluster_id=cluster_id, host_id=host_id)
+
     def get_hosts_id_with_macs(self, cluster_id):
         hosts = self.get_cluster_hosts(cluster_id)
         hosts_data = {}

@@ -36,6 +36,7 @@ DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 class NodeRoles:
     WORKER = "worker"
     MASTER = "master"
+    AUTO_ASSIGN = "auto-assign"
 
 
 class NodesStatus:
