@@ -102,7 +102,7 @@ class Cluster:
         self.api_client.update_cluster(self.id, {"name": cluster_name})
 
     def select_installation_disk(self, hosts_with_disk_paths):
-        self.api_client.update_cluster(self.id, hosts_with_disk_paths)
+        self.api_client.select_installation_disk(self.id, hosts_with_disk_paths)
 
     def set_host_roles(
         self, 
