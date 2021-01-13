@@ -690,9 +690,22 @@ class Cluster:
         if not api_vip and cluster.user_managed_networking:
             logging.info("API VIP is not set, searching for api ip on masters")
             masters = self.get_hosts_by_role(consts.NodeRoles.MASTER, hosts=cluster.to_dict()["hosts"])
-            api_vip = self.get_kube_api_ip(hosts=masters)
+            api_vip = self._wait_for_api_vip(masters)
 
         logging.info("api vip is %s", api_vip)
+        return api_vip
+
+    # There is cases where kube api is not reachable so some amount of time
+    # Better to wait and retry
+    def _wait_for_api_vip(self, hosts, timeout=180, interval=1):
+        api_vip = self.get_kube_api_ip(hosts=hosts)
+        start_time = time.time()
+        while not api_vip and time.time() - start_time < timeout:
+            api_vip = self.get_kube_api_ip(hosts=hosts)
+            time.sleep(1)
+
+        if not api_vip:
+            raise Exception("No running kube-api found")
         return api_vip
 
     # validate if kube-api is ready on given address
