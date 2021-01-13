@@ -11,6 +11,7 @@ import distutils.util
 from netaddr import IPNetwork
 
 from test_infra import assisted_service_api, consts, utils
+from test_infra.helper_classes import cluster as helper_cluster
 import install_cluster
 import oc_utils
 import day2
@@ -413,7 +414,8 @@ def nodes_flow(client, cluster_name, cluster):
             if args.wait_for_cvo:
                 cluster_info = client.cluster_get(cluster.id)
                 log.info("Start waiting till CVO status is available")
-                config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, cluster_info.api_vip)
+                api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)
+                config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, api_vip)
                 utils.wait_for_cvo_available()
 
 

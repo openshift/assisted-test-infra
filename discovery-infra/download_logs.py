@@ -16,6 +16,7 @@ from dateutil.parser import isoparse
 
 from logger import log
 from test_infra.assisted_service_api import InventoryClient, create_client
+from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.consts import ClusterStatus
 from test_infra.logs_utils import verify_logs_uploaded
 from test_infra.utils import config_etc_hosts, recreate_folder, run_command
@@ -52,7 +53,9 @@ def should_download_logs(cluster: dict):
     return cluster['status'] in [ClusterStatus.ERROR]
 
 
-def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, retry_interval: int = RETRY_INTERVAL):
+def download_logs(client: InventoryClient, cluster: dict, dest: str,
+                  must_gather: bool, retry_interval: int = RETRY_INTERVAL):
+
     output_folder = get_logs_output_folder(dest, cluster)
 
     if os.path.isdir(output_folder):
@@ -105,7 +108,8 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
             if must_gather:
                 recreate_folder(os.path.join(output_folder, "must-gather"))
-                config_etc_hosts(cluster['name'], cluster['base_dns_domain'], cluster['api_vip'])
+                config_etc_hosts(cluster['name'], cluster['base_dns_domain'],
+                                 helper_cluster.get_api_vip_from_cluster(client, cluster))
                 download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")

@@ -9,6 +9,7 @@ import oc_utils
 import waiting
 from logger import log
 from test_infra.tools import terraform_utils
+from test_infra.helper_classes import cluster as helper_cluster
 
 
 # Verify folder to download kubeconfig exists. If will be needed in other places move to utils
@@ -115,6 +116,9 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
     # set new vips
     if tf:
         cluster_info = client.cluster_get(cluster.id)
+        if not cluster_info.api_vip:
+            cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)
+
         tf.set_new_vip(cluster_info.api_vip)
 
 

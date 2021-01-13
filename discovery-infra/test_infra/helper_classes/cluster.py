@@ -2,9 +2,12 @@ import logging
 import waiting
 import random
 import yaml
+import json
 import time
 from typing import List
+import requests
 from collections import Counter
+from assisted_service_client import models
 
 from tests.conftest import env_variables
 from test_infra import consts, utils
@@ -13,13 +16,14 @@ from test_infra.tools import static_ips
 
 class Cluster:
 
-    def __init__(self, api_client, cluster_name, additional_ntp_source, openshift_version, cluster_id=None):
+    def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
+                 openshift_version="4.6", cluster_id=None):
         self.api_client = api_client
 
         if cluster_id:
             self.id = cluster_id
         else:
-            self.id = self._create(cluster_name, additional_ntp_source, openshift_version).id
+            self.id = self._create(cluster_name or "test-infra-cluster", additional_ntp_source, openshift_version).id
             self.name = cluster_name
     
     def _create(self, cluster_name, additional_ntp_source, openshift_version):
@@ -83,7 +87,7 @@ class Cluster:
 
     def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
                                         allow_insufficient=False):
-        statuses=[consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
+        statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT)
         utils.wait_till_all_hosts_are_in_status(
@@ -315,8 +319,8 @@ class Cluster:
                 logging.info("Bootstrap node is: %s", host["requested_hostname"])
                 return host["requested_hostname"]
 
-    def get_hosts_by_role(self, role):
-        hosts = self.api_client.get_cluster_hosts(self.id)
+    def get_hosts_by_role(self, role, hosts=None):
+        hosts = hosts or self.api_client.get_cluster_hosts(self.id)
         nodes_by_role = []
         for host in hosts:
             if host["role"] == role:
@@ -646,3 +650,63 @@ class Cluster:
         except waiting.exceptions.TimeoutExpired:
             logging.error(f"Event: {event_to_find} did't found")
             raise
+
+    @staticmethod
+    def get_inventory_host_nics_data(host: dict):
+
+        def get_network_interface_ip(interface):
+            if len(interface.ipv4_addresses) > 0:
+                return interface.ipv4_addresses[0].split("/")[0]
+            if len(interface.ipv6_addresses) > 0:
+                return interface.ipv6_addresses[0].split("/")[0]
+            return
+
+        inventory = models.Inventory(**json.loads(host["inventory"]))
+        interfaces_list = [models.Interface(**interface) for interface in inventory.interfaces]
+        return [{'name': interface.name, 'model': interface.product, 'mac': interface.mac_address,
+                 'ip': get_network_interface_ip(interface), 'speed': interface.speed_mbps} for interface in interfaces_list]
+
+    def get_inventory_host_ips_data(self, host: dict):
+        nics = self.get_inventory_host_nics_data(host)
+        return [nic["ip"] for nic in nics]
+
+    # needed for None platform and single node
+    # we need to get ip where api is running
+    def get_kube_api_ip(self, hosts):
+        for host in hosts:
+            for ip in self.get_inventory_host_ips_data(host):
+                if self.is_kubeapi_service_ready(ip):
+                    return ip
+
+    def get_api_vip(self, cluster):
+        cluster = cluster or self.get_details()
+        api_vip = cluster.api_vip
+
+        if not api_vip and cluster.user_managed_networking:
+            logging.info("API VIP is not set, searching for api ip on masters")
+            masters = self.get_hosts_by_role(consts.NodeRoles.MASTER, hosts=cluster.to_dict()["hosts"])
+            api_vip = self.get_kube_api_ip(hosts=masters)
+
+        logging.info("api vip is %s", api_vip)
+        return api_vip
+
+    # validate if kube-api is ready on given address
+    @staticmethod
+    def is_kubeapi_service_ready(ip_or_dns):
+        try:
+            response = requests.get(f'https://{ip_or_dns}:6443/readyz', verify=False)
+            if response.status_code == 200:
+                return True
+        except:
+            pass
+        return False
+
+
+def get_api_vip_from_cluster(api_client, cluster_info: models.cluster.Cluster):
+    if isinstance(cluster_info, dict):
+        # workaround for MGMT-3583
+        if "user-managed-networking" in cluster_info:
+            cluster_info["user_managed_networking"] = cluster_info.pop("user-managed-networking")
+        cluster_info = models.cluster.Cluster(**cluster_info)
+    cluster = Cluster(api_client=api_client, cluster_id=cluster_info.id)
+    return cluster.get_api_vip(cluster=cluster_info)
