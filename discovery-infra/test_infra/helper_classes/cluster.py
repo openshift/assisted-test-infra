@@ -67,13 +67,15 @@ class Cluster:
         self,
         iso_download_path=env_variables['iso_download_path'],
         ssh_key=env_variables['ssh_public_key'],
-        static_ips=None
+        static_ips=None,
+        iso_image_type=env_variables['iso_image_type']
         ):
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
             ssh_key=ssh_key,
             image_path=iso_download_path,
-            static_ips=static_ips
+            image_type=iso_image_type,
+            static_ips=static_ips,
         )
 
     def wait_until_hosts_are_disconnected(self, nodes_count=env_variables['num_nodes']):
@@ -465,6 +467,7 @@ class Cluster:
         self, 
         nodes,
         iso_download_path=env_variables['iso_download_path'],
+        iso_image_type=env_variables['iso_image_type'],
         ssh_key=env_variables['ssh_public_key'],
         nodes_count=env_variables['num_nodes'],
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
@@ -478,6 +481,7 @@ class Cluster:
 
             self.generate_and_download_image(
                 iso_download_path=iso_download_path,
+                iso_image_type=iso_image_type,
                 ssh_key=ssh_key,
                 static_ips=static_ips_config
             )
