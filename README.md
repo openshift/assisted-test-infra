@@ -312,6 +312,15 @@ export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
 - UI is not available when Authentication is enabled.
 - The PULL_SECRET variable should be taken from the same Red Hat cloud environment as defined in OCM_URL (integration, stage or production).
 
+## Single Node - Bootstrap in place with Assisted Service
+To test single node bootstrap in place flow with assisted service
+```
+export PULL_SECRET='<pull secret JSON>'
+export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
+export NUM_MASTERS=1
+make redeploy_all_with_install or if service is up  make redeploy_nodes_with_install
+```
+
 ## On-prem
 
 To test on-prem in the e2e flow, two additonal environment variables need to be set:
