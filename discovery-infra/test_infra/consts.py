@@ -31,6 +31,7 @@ PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=
 LOG_FOLDER = "/tmp/assisted_test_infra_logs"
 DEFAULT_OPENSHIFT_VERSION = "4.6"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
+DEFAULT_TEST_INFRA_DOMAIN = '.test-infra-cluster-assisted-installer.redhat.com'
 
 
 class NodeRoles:
