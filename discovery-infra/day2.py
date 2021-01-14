@@ -170,13 +170,21 @@ def get_network_nodes_from_terraform(tf_folder):
 
 
 def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_type):
-    master_end_ip = tfvars[master_ip_type][-1][0]
-    workers_ip_list = tfvars[worker_ip_type]
-    if not len(workers_ip_list):
-        worker_starting_ip = ipaddress.ip_address(master_end_ip)
+
+    old_worker_ips_list = tfvars[worker_ip_type]
+    last_master_addresses = tfvars[master_ip_type][-1]
+
+    if last_master_addresses:
+        if old_worker_ips_list:
+            worker_starting_ip = ipaddress.ip_address(old_worker_ips_list[-1][0])
+        else:
+            worker_starting_ip = ipaddress.ip_address(last_master_addresses[0])
+
+        worker_ips_list = old_worker_ips_list + utils.create_ip_address_nested_list(num_worker_nodes, worker_starting_ip + 1)
     else:
-        worker_starting_ip = ipaddress.ip_address(tfvars[worker_ip_type][-1][0])
-    worker_ips_list = workers_ip_list + utils.create_ip_address_nested_list(num_worker_nodes, worker_starting_ip + 1)
+        log.info("IPv6-only environment. IP addresses are left empty and will be allocated by libvirt DHCP because of a bug in Terraform plugin")
+        worker_ips_list = old_worker_ips_list + utils.create_empty_nested_list(num_worker_nodes)
+
     tfvars[worker_ip_type] = worker_ips_list
 
 
