@@ -23,10 +23,10 @@ def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_su
             tar.extractall(tempdir)
             for gz in os.listdir(tempdir):
                 if "bootstrap" in gz:
-                    _verify_node_logs_uploaded(tempdir, gz)
+                    _verify_node_logs_uploaded(tempdir, gz, installation_success)
                     _verify_bootstrap_logs_uploaded(tempdir, gz, installation_success, verify_control_plane)
                 elif "master" in gz or "worker" in gz:
-                    _verify_node_logs_uploaded(tempdir, gz)
+                    _verify_node_logs_uploaded(tempdir, gz, installation_success)
                 elif "controller" in gz:
                     if check_oc:
                         _verify_oc_logs_uploaded(os.path.join(tempdir, gz))
@@ -65,11 +65,14 @@ def _verify_oc_logs_uploaded(cluster_tar_path):
                                                                                  lambda inner: None))
 
 
-def _verify_node_logs_uploaded(dir_path, file_path):
+def _verify_node_logs_uploaded(dir_path, file_path, installation_success):
     gz = tarfile.open(os.path.join(dir_path, file_path))
     logs = gz.getnames()
     for logs_type in ["agent.logs", "installer.logs", "mount.logs"]:
         assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
+    if not installation_success:
+        for logs_type in ["dmesg.logs", "journal.logs"]:
+            assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
     gz.close()
 
 
@@ -78,7 +81,7 @@ def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, v
     logs = gz.getnames()
     assert any("bootkube.logs" in s for s in logs), f"bootkube.logs isn't found in {logs}"
     if not installation_success:
-        for logs_type in ["dmesg.logs", "log-bundle"]:
+        for logs_type in ["log-bundle"]:
             assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
         # test that installer-gather gathered logs from all masters
         lb_path = [s for s in logs if "log-bundle" in s][0]
