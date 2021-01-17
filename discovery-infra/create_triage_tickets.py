@@ -16,7 +16,7 @@ import add_triage_signature as ats
 
 
 DEFAULT_DAYS_TO_HANDLE = 30
-DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
+DEFAULT_WATCHERS = ["ronniela", "ealster", "sarahlav"]
 
 
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
