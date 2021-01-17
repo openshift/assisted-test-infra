@@ -638,7 +638,7 @@ class Cluster:
         else:
             return False
 
-    def wait_for_event(self, event_to_find, reference_time, params_list=[], host_id=''):
+    def wait_for_event(self, event_to_find, reference_time, params_list=[], host_id='', timeout=10):
         logging.info(f"Searching for event: {event_to_find}")
         try:
             waiting.wait(
@@ -648,7 +648,7 @@ class Cluster:
                     params_list,
                     host_id
                 ),
-                timeout_seconds=10,
+                timeout_seconds=timeout,
                 sleep_seconds=2,
                 waiting_for="Event: %s" % event_to_find,
             )
