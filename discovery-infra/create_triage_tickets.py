@@ -12,9 +12,12 @@ import sys
 from urllib.parse import urlparse
 import requests
 import jira
+import dateutil.parser
+from datetime import datetime
 import add_triage_signature
 
 
+DEFAULT_DAYS_TO_HANDLE = 30
 DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
 JIRA_SERVER = "https://issues.redhat.com/"
@@ -42,6 +45,12 @@ h2. Comments:
 """
 
 
+def days_ago(datestr):
+    try:
+        return (datetime.now() - dateutil.parser.isoparse(datestr)).days
+    except:
+        logger.debug("Cannot parse date: %s", datestr)
+        return 9999
 
 def get_credentials_from_netrc(server, netrc_file=DEFAULT_NETRC_FILE):
     cred = netrc.netrc(os.path.expanduser(netrc_file))
@@ -129,7 +138,10 @@ def main(arg):
     existing_tickets = get_all_triage_tickets(jclient)
 
     for failure in failed_clusters:
-        #print("cluster: {}".format(failure["name"]))
+        date = failure["name"].split("_")[0]
+        if not arg.all and days_ago(date) > DEFAULT_DAYS_TO_HANDLE:
+            continue
+
         res = requests.get("{}/files/{}/metdata.json".format(LOGS_COLLECTOR, failure['name']))
         res.raise_for_status()
         cluster = res.json()['cluster']
@@ -156,6 +168,7 @@ if __name__ == "__main__":
     loginArgs = loginGroup.add_mutually_exclusive_group()
     loginArgs.add_argument("--netrc", default="~/.netrc", required=False, help="netrc file")
     loginArgs.add_argument("-up", "--user-password", required=False, help="Username and password in the format of user:pass")
+    parser.add_argument("-a", "--all", action="store_true", help="Try creating Triage Tickets for all failures. Default is just for failures in the past 30 days")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
     args = parser.parse_args()
 
