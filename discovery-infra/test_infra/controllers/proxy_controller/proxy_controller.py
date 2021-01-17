@@ -18,7 +18,7 @@ class ProxyController:
             self.name = name
             self.port = port
             self.authenticated = authenticated
-            self.image = 'docker.io/sameersbn/squid'
+            self.image = 'quay.io/sameersbn/squid'
             self.dir = dir
             self._set_server_address()
             self._create_conf_from_template(denied_port=denied_port)
