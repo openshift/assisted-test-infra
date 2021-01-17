@@ -7,6 +7,8 @@ from typing import Optional
 from pathlib import Path
 from paramiko import SSHException
 import shutil
+from copy import deepcopy
+import math
 
 from test_infra import consts
 import test_infra.utils as infra_utils
@@ -18,18 +20,30 @@ from test_infra.helper_classes.nodes import Nodes
 from tests.conftest import env_variables, qe_env
 from download_logs import download_logs
 
-
 class BaseTest:
+    @staticmethod
+    def override_node_parameters(**kwargs):
+        vars = deepcopy(env_variables)
+        for key, value in kwargs.items():
+            vars[key] = value
 
+        vars['num_nodes'] = vars['num_workers'] + vars['num_masters'] 
+
+        return vars
+        
     @pytest.fixture(scope="function")
-    def nodes(self, setup_node_controller):
+    def nodes(self, setup_node_controller, request):
+        if hasattr(request, 'param'):
+            node_vars = self.override_node_parameters(**request.param)
+        else:
+            node_vars = env_variables
         net_asset = None
         try:
             if not qe_env:
                 net_asset = NetworkAssets()
-                env_variables["net_asset"] = net_asset.get()
-            controller = setup_node_controller(**env_variables)
-            nodes = Nodes(controller, env_variables["private_ssh_key_path"])
+                node_vars["net_asset"] = net_asset.get()
+            controller = setup_node_controller(**node_vars)
+            nodes = Nodes(controller, node_vars["private_ssh_key_path"])
             nodes.prepare_nodes()
             yield nodes
             logging.info('--- TEARDOWN --- node controller\n')
@@ -106,16 +120,16 @@ class BaseTest:
 
     @pytest.fixture(scope="function")
     def attach_disk(self):
-        modified_node = None
+        modified_nodes = []
 
         def attach(node, disk_size):
-            nonlocal modified_node
+            nonlocal modified_nodes
             node.attach_test_disk(disk_size)
-            modified_node = node
+            modified_nodes.append(node)
 
         yield attach
 
-        if modified_node is not None:
+        for modified_node in modified_nodes:
             modified_node.detach_all_test_disks()
 
     @pytest.fixture()
