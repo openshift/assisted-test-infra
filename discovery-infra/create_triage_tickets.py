@@ -12,8 +12,6 @@ import sys
 from urllib.parse import urlparse
 import requests
 import jira
-import dateutil.parser
-from datetime import datetime
 import add_triage_signature
 
 
@@ -44,13 +42,6 @@ h2. Comments:
 
 """
 
-
-def days_ago(datestr):
-    try:
-        return (datetime.now() - dateutil.parser.isoparse(datestr)).days
-    except:
-        logger.debug("Cannot parse date: %s", datestr)
-        return 9999
 
 def get_credentials_from_netrc(server, netrc_file=DEFAULT_NETRC_FILE):
     cred = netrc.netrc(os.path.expanduser(netrc_file))
@@ -139,7 +130,7 @@ def main(arg):
 
     for failure in failed_clusters:
         date = failure["name"].split("_")[0]
-        if not arg.all and days_ago(date) > DEFAULT_DAYS_TO_HANDLE:
+        if not arg.all and add_triage_signature.days_ago(date) > DEFAULT_DAYS_TO_HANDLE:
             continue
 
         res = requests.get("{}/files/{}/metdata.json".format(LOGS_COLLECTOR, failure['name']))

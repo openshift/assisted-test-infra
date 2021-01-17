@@ -14,10 +14,19 @@ import jira
 import requests
 from tabulate import tabulate
 import dateutil.parser
+from datetime import datetime
 
+DEFAULT_DAYS_TO_HANDLE = 30
 
 logger = logging.getLogger(__name__)
 
+
+def days_ago(datestr):
+    try:
+        return (datetime.now() - dateutil.parser.isoparse(datestr)).days
+    except:
+        logger.debug("Cannot parse date: %s", datestr)
+        return 9999
 
 ############################
 # Common functionality
@@ -307,8 +316,9 @@ def get_logs_url_from_issue(issue):
         return None
     return m.groups()[0]
 
-def get_all_triage_tickets(jclient):
-    query = 'component = "Assisted-Installer Triage"'
+def get_all_triage_tickets(jclient, only_recent=False):
+    recent_filter = "" if not only_recent else 'and created >= -31d'
+    query = 'project = MGMT AND component = "Assisted-installer Triage" {}'.format(recent_filter)
     idx = 0
     block_size = 100
     issues = []
@@ -336,8 +346,8 @@ def main(args):
     if args.dry_run:
         Signature.is_dry_run = True
 
-    if args.all_issues:
-        issues = get_all_triage_tickets(jclient)
+    if not args.issue:
+        issues = get_all_triage_tickets(jclient, only_recent=args.recent_issues)
     else:
         issues = [get_issue(jclient, args.issue)]
 
@@ -365,7 +375,8 @@ if __name__ == "__main__":
     loginArgs.add_argument("-up", "--user-password", required=False, help="Username and password in the format of user:pass")
     selectorsGroup = parser.add_argument_group(title="Issues selection")
     selectors = selectorsGroup.add_mutually_exclusive_group(required=True)
-    selectors.add_argument("-a", "--all_issues", action='store_true', help="Search query to use")
+    selectors.add_argument("-r", "--recent-issues", action='store_true', help="Handle recent (30 days) Triaging Tickets")
+    selectors.add_argument("-a", "--all-issues", action='store_true', help="Handle all Triaging Tickets")
     selectors.add_argument("-i", "--issue", required=False, help="Triage issue key")
     parser.add_argument("-u", "--update", action="store_true", help="Update ticket even if comment already exist")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
