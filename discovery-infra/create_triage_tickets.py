@@ -12,16 +12,14 @@ import sys
 from urllib.parse import urlparse
 import requests
 import jira
-import add_triage_signature
+import add_triage_signature as ats
 
 
 DEFAULT_DAYS_TO_HANDLE = 30
 DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
-import add_triage_signature as ats
 
 
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
-DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
 JIRA_SERVER = "https://issues.redhat.com/"
 DEFAULT_NETRC_FILE = "~/.netrc"
 JIRA_SUMMARY = "cloud.redhat.com failure: {failure_id}"
@@ -53,7 +51,8 @@ def get_all_triage_tickets(jclient):
     block_size = 100
     issues = []
     while True:
-        i = jclient.search_issues(query, maxResults=block_size, startAt=idx, fields=['summary', 'key'])
+        i = jclient.search_issues(query, maxResults=block_size,
+                                  startAt=idx, fields=['summary', 'key'])
         if len(i) == 0:
             break
         #for x in i:
@@ -64,8 +63,8 @@ def get_all_triage_tickets(jclient):
     return set(issues)
 
 def add_watchers(jclient, issue):
-    for w in DEFAULT_WATCHERS:
-        jclient.add_watcher(issue.key, w)
+    for watcher in DEFAULT_WATCHERS:
+        jclient.add_watcher(issue.key, watcher)
 
 def create_jira_ticket(jclient, existing_tickets, failure_id, cluster_md):
     summary = format_summary({"failure_id":failure_id})
@@ -102,7 +101,7 @@ def main(arg):
 
     try:
         res = requests.get("{}/files/".format(LOGS_COLLECTOR))
-    except Exception:
+    except:
         logger.exception("Error getting list of failed clusters")
         sys.exit(1)
 
@@ -113,7 +112,7 @@ def main(arg):
 
     for failure in failed_clusters:
         date = failure["name"].split("_")[0]
-        if not arg.all and add_triage_signature.days_ago(date) > DEFAULT_DAYS_TO_HANDLE:
+        if not arg.all and ats.days_ago(date) > DEFAULT_DAYS_TO_HANDLE:
             continue
 
         res = requests.get("{}/files/{}/metdata.json".format(LOGS_COLLECTOR, failure['name']))
@@ -132,8 +131,11 @@ if __name__ == "__main__":
     loginGroup = parser.add_argument_group(title="login options")
     loginArgs = loginGroup.add_mutually_exclusive_group()
     loginArgs.add_argument("--netrc", default="~/.netrc", required=False, help="netrc file")
-    loginArgs.add_argument("-up", "--user-password", required=False, help="Username and password in the format of user:pass")
-    parser.add_argument("-a", "--all", action="store_true", help="Try creating Triage Tickets for all failures. Default is just for failures in the past 30 days")
+    loginArgs.add_argument("-up", "--user-password", required=False,
+                           help="Username and password in the format of user:pass")
+    parser.add_argument("-a", "--all", action="store_true",
+                        help="Try creating Triage Tickets for all failures. " +
+                        "Default is just for failures in the past 30 days")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
     args = parser.parse_args()
 

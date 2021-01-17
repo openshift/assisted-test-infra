@@ -10,11 +10,11 @@ from urllib.parse import urlparse
 import re
 from collections import OrderedDict
 from collections import defaultdict
+from datetime import datetime
 import jira
 import requests
 from tabulate import tabulate
 import dateutil.parser
-from datetime import datetime
 
 DEFAULT_DAYS_TO_HANDLE = 30
 
@@ -181,7 +181,7 @@ class FailureDescription(Signature):
     def __init__(self, jira_client):
         super().__init__(jira_client, comment_identifying_string="")
 
-    def build_description(self, url, cluster_md, issue_key=None):
+    def build_description(self, url, cluster_md):
         cluster_data = {"cluster_id": cluster_md['id'],
                         "logs_url": self._logs_url_to_ui(url),
                         "openshift_version": cluster_md['openshift_version'],
@@ -209,7 +209,7 @@ class FailureDescription(Signature):
 
         cluster = md['cluster']
 
-        description = self.build_description(url, cluster, issue_key)
+        description = self.build_description(url, cluster)
 
         logger.info("Updating description of %s", issue_key)
         self._update_description(issue_key, description)
@@ -438,14 +438,15 @@ def main(args):
 
     for issue in issues:
         url = get_logs_url_from_issue(issue)
-        add_signatures(jclient, args.update_signature, url, issue.key, should_update=args.update)
+        add_signatures(jclient, url, issue.key, should_update=args.update,
+                       signatures=args.update_signature)
 
 
 def format_time(time_str):
     return  dateutil.parser.isoparse(time_str).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def add_signatures(jclient, signatures, url, issue_key, should_update=False):
+def add_signatures(jclient, url, issue_key, should_update=False, signatures=None):
     name_to_signature = {s.__name__: s for s in SIGNATURES}
     signatures_to_add = SIGNATURES
     if signatures:
