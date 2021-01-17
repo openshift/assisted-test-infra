@@ -360,6 +360,7 @@ class LibvirtRebootFlagSignature(Signature):
 ############################
 DEFAULT_NETRC_FILE = "~/.netrc"
 JIRA_SERVER = "https://issues.redhat.com/"
+SIGNATURES = [FailureDescription, ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, StorageDetailSignature, LibvirtRebootFlagSignature]
 
 def get_credentials_from_netrc(server, netrc_file=DEFAULT_NETRC_FILE):
     cred = netrc.netrc(os.path.expanduser(netrc_file))
@@ -437,21 +438,27 @@ def main(args):
 
     for issue in issues:
         url = get_logs_url_from_issue(issue)
-        add_signatures(jclient, url, issue.key, should_update=args.update)
+        add_signatures(jclient, args.update_signature, url, issue.key, should_update=args.update)
 
 
 def format_time(time_str):
     return  dateutil.parser.isoparse(time_str).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def add_signatures(jclient, url, issue_key, should_update=False):
-    signatures = [FailureDescription, ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, StorageDetailSignature, LibvirtRebootFlagSignature]
-    for sig in signatures:
+def add_signatures(jclient, signatures, url, issue_key, should_update=False):
+    name_to_signature = {s.__name__: s for s in SIGNATURES}
+    signatures_to_add = SIGNATURES
+    if signatures:
+        should_update = True
+        signatures_to_add = [v for k, v in name_to_signature.items() if k in signatures]
+
+    for sig in signatures_to_add:
         s = sig(jclient)
         s.update_ticket(url, issue_key, should_update=should_update)
 
 
 if __name__ == "__main__":
+    signature_names = [s.__name__ for s in SIGNATURES]
     parser = argparse.ArgumentParser()
     loginGroup = parser.add_argument_group(title="login options")
     loginArgs = loginGroup.add_mutually_exclusive_group()
@@ -462,9 +469,12 @@ if __name__ == "__main__":
     selectors.add_argument("-r", "--recent-issues", action='store_true', help="Handle recent (30 days) Triaging Tickets")
     selectors.add_argument("-a", "--all-issues", action='store_true', help="Handle all Triaging Tickets")
     selectors.add_argument("-i", "--issue", required=False, help="Triage issue key")
-    parser.add_argument("-u", "--update", action="store_true", help="Update ticket even if comment already exist")
+    parser.add_argument("-u", "--update", action="store_true", help="Update ticket even if signature already exist")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose logging")
     parser.add_argument("-d", "--dry-run", action="store_true", help="Dry run. Don't update tickets")
+    parser.add_argument("-us", "--update-signature", action='append', choices=signature_names,
+                          help="Update tickets with only the signatures specified")
+
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARN, format='%(levelname)-10s %(message)s')
