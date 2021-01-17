@@ -17,31 +17,14 @@ import add_triage_signature
 
 DEFAULT_DAYS_TO_HANDLE = 30
 DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
+import add_triage_signature as ats
+
+
 LOGS_COLLECTOR = "http://assisted-logs-collector.usersys.redhat.com"
+DEFAULT_WATCHERS = ["ronniela", "romfreiman", "ealster", "sarahlav"]
 JIRA_SERVER = "https://issues.redhat.com/"
 DEFAULT_NETRC_FILE = "~/.netrc"
 JIRA_SUMMARY = "cloud.redhat.com failure: {failure_id}"
-JIRA_DESCRIPTION = """
-h1. Cluster Info
-
-*Cluster ID:* [{cluster_id}|https://cloud.redhat.com/openshift/assisted-installer/clusters/{cluster_id}]
-*Username:* {username}
-*Created_at:* {created_at}
-*Installation started at:* {installation_started_at}
-*Failed on:* {failed_on}
-*status:* {status}
-*status_info:* {status_info}
-*OpenShift version:* {openshift_version}
-
-*logs:* [{logs_collector}/#/{failure_id}/]
-
-h1. Triage Results
-h2. Failure Reason:
-
-h2. Comments:
-
-"""
-
 
 def get_credentials_from_netrc(server, netrc_file=DEFAULT_NETRC_FILE):
     cred = netrc.netrc(os.path.expanduser(netrc_file))
@@ -53,9 +36,6 @@ def get_jira_client(username, password):
     logger.info("log-in with username: %s", username)
     return jira.JIRA(JIRA_SERVER, basic_auth=(username, password))
 
-
-def format_description(failure_data):
-    return JIRA_DESCRIPTION.format(logs_collector=LOGS_COLLECTOR, **failure_data)
 
 def format_summary(failure_data):
     return JIRA_SUMMARY.format(**failure_data)
@@ -87,19 +67,22 @@ def add_watchers(jclient, issue):
     for w in DEFAULT_WATCHERS:
         jclient.add_watcher(issue.key, w)
 
-def create_jira_ticket(jclient, existing_tickets, failure_data):
-    summary = format_summary(failure_data)
+def create_jira_ticket(jclient, existing_tickets, failure_id, cluster_md):
+    summary = format_summary({"failure_id":failure_id})
     if summary in existing_tickets:
         logger.debug("issue found: %s", summary)
         return None
 
+    url = "{}/files/{}".format(LOGS_COLLECTOR, failure_id)
     new_issue = jclient.create_issue(project="MGMT",
                                      summary=summary,
                                      components=[{'name': "Assisted-installer Triage"}],
                                      priority={'name': 'Blocker'},
                                      issuetype={'name': 'Bug'},
-                                     labels=format_labels(failure_data),
-                                     description=format_description(failure_data))
+                                     labels=format_labels({"username":cluster_md["user_name"],
+                                                           "cluster_id":cluster_md["id"]}),
+                                     description=ats.FailureDescription(jclient).build_description(url,
+                                                                                                   cluster_md))
 
     logger.info("issue created: %s", new_issue)
     add_watchers(jclient, new_issue)
@@ -138,19 +121,10 @@ def main(arg):
         cluster = res.json()['cluster']
 
         if cluster['status'] == "error":
-            cluster_data = {"cluster_id": cluster['id'],
-                            "failure_id": failure['name'],
-                            "openshift_version": cluster['openshift_version'],
-                            "created_at": add_triage_signature.format_time(cluster['created_at']),
-                            "installation_started_at": add_triage_signature.format_time(cluster['install_started_at']),
-                            "failed_on": add_triage_signature.format_time(cluster['status_updated_at']),
-                            "status": cluster['status'],
-                            "status_info": cluster['status_info'],
-                            "username": cluster['user_name']}
-            new_issue = create_jira_ticket(jclient, existing_tickets, cluster_data)
+            new_issue = create_jira_ticket(jclient, existing_tickets, failure['name'], cluster)
             if new_issue is not None:
                 logs_url = "{}/files/{}".format(LOGS_COLLECTOR, failure['name'])
-                add_triage_signature.add_signatures(jclient, logs_url, new_issue.key)
+                ats.add_signatures(jclient, logs_url, new_issue.key)
 
 
 if __name__ == "__main__":

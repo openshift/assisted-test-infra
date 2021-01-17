@@ -20,6 +20,33 @@ DEFAULT_DAYS_TO_HANDLE = 30
 
 logger = logging.getLogger(__name__)
 
+JIRA_DESCRIPTION = """
+h1. Cluster Info
+
+*Cluster ID:* [{cluster_id}|https://cloud.redhat.com/openshift/assisted-installer/clusters/{cluster_id}]
+*Username:* {username}
+*Created_at:* {created_at}
+*Installation started at:* {installation_started_at}
+*Failed on:* {failed_on}
+*status:* {status}
+*status_info:* {status_info}
+*OpenShift version:* {openshift_version}
+
+*links:*
+* [logs|{logs_url}]
+* [Metrics|https://grafana.app-sre.devshift.net/d/assisted-installer-cluster-overview/cluster-overview?orgId=1&from=now-1h&to=now&var-datasource=app-sre-prod-04-prometheus&var-clusterId={cluster_id}]
+* [Kibana|https://kibana-openshift-logging.apps.app-sre-prod-04.i5h0.p1.openshiftapps.com/app/kibana#/discover?_g=(refreshInterval:(pause:!t,value:0),time:(from:now-24h,mode:quick,to:now))&_a=(columns:!(_source),interval:auto,query:'{cluster_id}',sort:!('@timestamp',desc))]
+
+h1. Triage Results
+h2. Failure Reason:
+
+h2. Comments:
+
+"""
+
+
+def format_description(failure_data):
+    return JIRA_DESCRIPTION.format(**failure_data)
 
 def days_ago(datestr):
     try:
@@ -78,12 +105,16 @@ class Signature:
         else:
             logger.debug("Not updating existing '%s' comment of %s", signature_name, key)
 
+    def _update_description(self, key, new_description):
+        i = self._jclient.issue(key)
+        i.update(fields={"description": new_description})
+
     @staticmethod
     def _generate_table_for_report(hosts):
         return tabulate(hosts, headers="keys", tablefmt="jira") + "\n"
 
     @staticmethod
-    def _logs_url_fixup(url):
+    def _logs_url_to_api(url):
         '''
         the log server has two formats for the url
         - URL for the UI  - http://assisted-logs-collector.usersys.redhat.com/#/2020-10-15_19:10:06_347ce6e8-bb4d-4751-825f-5e92e24da0d9/
@@ -91,6 +122,16 @@ class Signature:
         This function will return an API URL, regardless of which URL is supplied
         '''
         return re.sub(r'(http://[^/]*/)#(/.*)', r'\1files\2', url)
+
+    @staticmethod
+    def _logs_url_to_ui(url):
+        '''
+        the log server has two formats for the url
+        - URL for the UI  - http://assisted-logs-collector.usersys.redhat.com/#/2020-10-15_19:10:06_347ce6e8-bb4d-4751-825f-5e92e24da0d9/
+        - URL for the API - http://assisted-logs-collector.usersys.redhat.com/files/2020-10-15_19:10:06_347ce6e8-bb4d-4751-825f-5e92e24da0d9/
+        This function will return an UI URL, regardless of which URL is supplied
+        '''
+        return re.sub(r'(http://[^/]*/)files(/.*)', r'\1#\2', url)
 
     @staticmethod
     def _get_hostname(host):
@@ -108,7 +149,7 @@ class HostsStatusSignature(Signature):
 
     def _update_ticket(self, url, issue_key, should_update=False):
 
-        url = self._logs_url_fixup(url)
+        url = self._logs_url_to_api(url)
         try:
             md = self._get_metadata_json(url)
         except:
@@ -135,13 +176,51 @@ class HostsStatusSignature(Signature):
         self._update_triaging_ticket(issue_key, report, should_update=should_update)
 
 
+class FailureDescription(Signature):
+    def __init__(self, jira_client):
+        super().__init__(jira_client, comment_identifying_string="")
+
+    def build_description(self, url, cluster_md, issue_key=None):
+        cluster_data = {"cluster_id": cluster_md['id'],
+                        "logs_url": self._logs_url_to_ui(url),
+                        "openshift_version": cluster_md['openshift_version'],
+                        "created_at": format_time(cluster_md['created_at']),
+                        "installation_started_at": format_time(cluster_md['install_started_at']),
+                        "failed_on": format_time(cluster_md['status_updated_at']),
+                        "status": cluster_md['status'],
+                        "status_info": cluster_md['status_info'],
+                        "username": cluster_md['user_name']}
+
+        return format_description(cluster_data)
+
+    def _update_ticket(self, url, issue_key, should_update=False):
+
+        if not should_update:
+            logger.debug("Not updating description of %s", issue_key)
+            return
+
+        url = self._logs_url_to_api(url)
+        try:
+            md = self._get_metadata_json(url)
+        except:
+            logger.exception("Error getting logs for %s at %s", issue_key, url)
+            return
+
+        cluster = md['cluster']
+
+        description = self.build_description(url, cluster, issue_key)
+
+        logger.info("Updating description of %s", issue_key)
+        self._update_description(issue_key, description)
+
+
 class HostsExtraDetailSignature(Signature):
     def __init__(self, jira_client):
         super().__init__(jira_client, comment_identifying_string="h1. Host extra details:\n")
 
     def _update_ticket(self, url, issue_key, should_update=False):
 
-        url = self._logs_url_fixup(url)
+        url = self._logs_url_to_api(url)
         try:
             md = self._get_metadata_json(url)
         except:
@@ -175,7 +254,7 @@ class StorageDetailSignature(Signature):
 
     def _update_ticket(self, url, issue_key, should_update=False):
 
-        url = self._logs_url_fixup(url)
+        url = self._logs_url_to_api(url)
         try:
             md = self._get_metadata_json(url)
         except:
@@ -215,7 +294,7 @@ class ComponentsVersionSignature(Signature):
 
     def _update_ticket(self, url, issue_key, should_update=False):
 
-        url = self._logs_url_fixup(url)
+        url = self._logs_url_to_api(url)
         try:
             md = self._get_metadata_json(url)
         except:
@@ -243,7 +322,7 @@ class LibvirtRebootFlagSignature(Signature):
 
     def _update_ticket(self, url, issue_key, should_update=False):
 
-        url = self._logs_url_fixup(url)
+        url = self._logs_url_to_api(url)
         try:
             md = self._get_metadata_json(url)
         except:
@@ -294,7 +373,8 @@ def get_jira_client(username, password):
 ############################
 # Signature runner functionality
 ############################
-LOGS_URL_FROM_DESCRIPTION = re.compile(r".*logs:\* \[(http.*)\]")
+LOGS_URL_FROM_DESCRIPTION_OLD = re.compile(r".*logs:\* \[(http.*)\]")
+LOGS_URL_FROM_DESCRIPTION_NEW = re.compile(r".*\* \[logs\|(http.*)\]")
 
 def get_issue(jclient, issue_key):
     issue = None
@@ -310,10 +390,13 @@ def get_issue(jclient, issue_key):
 
 
 def get_logs_url_from_issue(issue):
-    m = LOGS_URL_FROM_DESCRIPTION.search(issue.fields.description)
+    m = LOGS_URL_FROM_DESCRIPTION_NEW.search(issue.fields.description)
     if m is None:
-        logger.error("Cannot find URL for logs in %s", issue.key)
-        return None
+        logger.debug("Cannot find new format of URL for logs in %s", issue.key)
+        m = LOGS_URL_FROM_DESCRIPTION_OLD.search(issue.fields.description)
+        if m is None:
+            logger.debug("Cannot find old format of URL for logs in %s", issue.key)
+            return None
     return m.groups()[0]
 
 def get_all_triage_tickets(jclient, only_recent=False):
@@ -361,7 +444,7 @@ def format_time(time_str):
 
 
 def add_signatures(jclient, url, issue_key, should_update=False):
-    signatures = [ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, StorageDetailSignature, LibvirtRebootFlagSignature]
+    signatures = [FailureDescription, ComponentsVersionSignature, HostsStatusSignature, HostsExtraDetailSignature, StorageDetailSignature, LibvirtRebootFlagSignature]
     for sig in signatures:
         s = sig(jclient)
         s.update_ticket(url, issue_key, should_update=should_update)
