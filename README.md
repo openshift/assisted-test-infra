@@ -103,6 +103,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | SSO_URL                     | URL used to fetch JWT tokens for assisted-service authentication                                                                |
 | WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                           |
 | PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                     |
+| FIO_PERF_CHECK_IMAGE        | FIO performance check image to use, will update assisted-service config map with given value                                    |
+| CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                           |
 
 ## Instructions
 
