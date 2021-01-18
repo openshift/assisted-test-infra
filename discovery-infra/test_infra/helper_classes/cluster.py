@@ -7,6 +7,7 @@ import time
 from typing import List
 import requests
 from collections import Counter
+from netaddr import IPNetwork, IPAddress
 from assisted_service_client import models
 
 from tests.conftest import env_variables
@@ -657,19 +658,30 @@ class Cluster:
             raise
 
     @staticmethod
-    def get_inventory_host_nics_data(host: dict):
+    def get_inventory_host_nics_data(host: dict, ipv4_first=True):
 
         def get_network_interface_ip(interface):
-            if len(interface.ipv4_addresses) > 0:
-                return interface.ipv4_addresses[0].split("/")[0]
-            if len(interface.ipv6_addresses) > 0:
-                return interface.ipv6_addresses[0].split("/")[0]
-            return
+            addresses = interface.ipv4_addresses + interface.ipv6_addresses if ipv4_first else \
+                interface.ipv6_addresses + interface.ipv4_addresses
+            return addresses[0].split("/")[0] if len(addresses) > 0 else None
 
         inventory = models.Inventory(**json.loads(host["inventory"]))
         interfaces_list = [models.Interface(**interface) for interface in inventory.interfaces]
         return [{'name': interface.name, 'model': interface.product, 'mac': interface.mac_address,
                  'ip': get_network_interface_ip(interface), 'speed': interface.speed_mbps} for interface in interfaces_list]
+
+    @staticmethod
+    def get_ip_for_single_node_v6(client, cluster_id, machine_cidr):
+        cluster_info = client.cluster_get(cluster_id).to_dict()
+        if len(cluster_info["hosts"]) == 0:
+            raise Exception("No host found")
+        network = IPNetwork(machine_cidr)
+        interfaces = Cluster.get_inventory_host_nics_data(cluster_info["hosts"][0], ipv4_first=False)
+        for intf in interfaces:
+            ip = intf["ip"]
+            if IPAddress(ip) in network:
+                return ip
+        raise Exception("IP for single node IPv6 not found")
 
     def get_inventory_host_ips_data(self, host: dict):
         nics = self.get_inventory_host_nics_data(host)
