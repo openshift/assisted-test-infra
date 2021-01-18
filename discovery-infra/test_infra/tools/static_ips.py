@@ -1,4 +1,4 @@
-import ipaddress
+from ipaddress import ip_network, ip_address
 import random
 import json
 import os
@@ -7,55 +7,94 @@ from test_infra import utils
 from test_infra import consts
 
 
+class StaticIPEntry:
+    def __init__(self, ip=None, mask=None, gateway=None, dns=None):
+        self.ip = ip
+        self.mask = mask
+        self.gateway = gateway
+        self.dns = dns
+
+
 def generate_macs(count):
     return ["02:00:00:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for x in range(count)]
 
 
 def generate_static_ips_data_from_tf(tf_folder):
+
     tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+
     with open(tfvars_json_file) as _file:
         tfvars = json.load(_file)
-    return _generate_static_ips_data(tfvars['machine_cidr_addresses'][0],
-                                     tfvars['provisioning_cidr_addresses'][0],
+
+    return _generate_static_ips_data(tfvars['machine_cidr_addresses'],
+                                     tfvars['provisioning_cidr_addresses'],
                                      tfvars['libvirt_master_macs'],
                                      tfvars['libvirt_secondary_master_macs'],
                                      tfvars['libvirt_worker_macs'],
                                      tfvars['libvirt_secondary_worker_macs'])
 
 
-def _generate_static_ips_data(machine_cidr,
-                              provisioning_cidr,
+def _generate_static_ips_data(machine_cidrs,
+                              provisioning_cidrs,
                               masters_macs,
                               masters_secondary_macs,
                               workers_macs,
                               workers_secondary_macs):
+
     num_masters = len(masters_macs)
-    num_workers = len(workers_macs)
-
-    # set starting static ips
-    masters_static_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(machine_cidr).network_address) + 30)
-    masters_static_secondary_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(provisioning_cidr).network_address) + 30)
-    workers_static_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(machine_cidr).network_address) + 30 + num_masters)
-    workers_static_secondary_starting_ip = str(ipaddress.ip_address(ipaddress.IPv4Network(provisioning_cidr).network_address) + 30 + num_masters)
-
-    # set static ips lists
-    masters_static_ips = utils.create_ip_address_list(num_masters, masters_static_starting_ip)
-    masters_static_secondary_ips = utils.create_ip_address_list(num_masters, masters_static_secondary_starting_ip)
-    workers_static_ips = utils.create_ip_address_list(num_workers, workers_static_starting_ip)
-    workers_static_secondary_ips = utils.create_ip_address_list(num_workers, workers_static_secondary_starting_ip)
-
-    mask = str(ipaddress.IPv4Network(machine_cidr).prefixlen)
-    mask_secondary = str(ipaddress.IPv4Network(provisioning_cidr).prefixlen)
-    gw_dns = str(ipaddress.ip_address(ipaddress.IPv4Network(machine_cidr).network_address) + 1)
-    gw_dns_secondary = str(ipaddress.ip_address(ipaddress.IPv4Network(provisioning_cidr).network_address) + 1)
 
     static_ips = []
-    for netdata in [(masters_macs, masters_static_ips, mask, gw_dns, num_masters),
-                    (masters_secondary_macs, masters_static_secondary_ips, mask_secondary, gw_dns_secondary, num_masters),
-                    (workers_macs, workers_static_ips, mask, gw_dns, num_workers),
-                    (workers_secondary_macs, workers_static_secondary_ips, mask_secondary, gw_dns_secondary, num_workers)]:
-        data = [{'mac': netdata[0][i], 'ip': netdata[1][i], 'mask': netdata[2], 'gateway': netdata[3], 'dns': netdata[3]} for i in range(netdata[4])]
-        static_ips = static_ips + data
+
+    static_ips.extend(_genetate_ips(masters_macs, machine_cidrs, 0))
+
+    static_ips.extend(_genetate_ips(
+        masters_secondary_macs, provisioning_cidrs, 0))
+
+    static_ips.extend(_genetate_ips(workers_macs, machine_cidrs, num_masters))
+
+    static_ips.extend(_genetate_ips(workers_secondary_macs,
+                                    provisioning_cidrs, num_masters))
 
     return static_ips
 
+
+def _genetate_ips(mac_addresses, cidrs, address_offset):
+
+    num_nodes = len(mac_addresses)
+
+    first_net = ip_network(cidrs[0])
+    ipv4_gen = _static_conf_gen(num_nodes, first_net, address_offset) if first_net.version == 4 \
+        else _empty_conf_gen()
+
+    if first_net.version == 6:
+        ipv6_gen = _static_conf_gen(num_nodes, first_net, address_offset)
+    else:
+        ipv6_gen = _static_conf_gen(num_nodes, ip_network(cidrs[1]), address_offset) if len(cidrs) > 1 \
+            else _empty_conf_gen()
+
+    static_ips = []
+    for mac in mac_addresses:
+        ipv4_conf = next(ipv4_gen)
+        ipv6_conf = next(ipv6_gen)
+        static_ips.append({
+            'mac': mac,
+            'ip': ipv4_conf.ip, 'mask': ipv4_conf.mask, 'gateway': ipv4_conf.gateway, 'dns': ipv4_conf.dns,
+            'ip_v6': ipv6_conf.ip, 'mask_v6': ipv6_conf.mask, 'gateway_v6': ipv6_conf.gateway, 'dns_v6': ipv6_conf.dns
+        })
+
+    return static_ips
+
+
+def _static_conf_gen(num_nodes, network, address_offset=0):
+    starting_ip = str(ip_address(network.network_address)
+                      + 30 + address_offset)
+    ips = utils.create_ip_address_list(num_nodes, starting_ip)
+    mask = str(network.prefixlen)
+    gw_dns = str(ip_address(network.network_address) + 1)
+
+    for i in range(num_nodes):
+        yield StaticIPEntry(ip=ips[i], mask=mask, gateway=gw_dns, dns=gw_dns)
+
+
+def _empty_conf_gen():
+    return iter(lambda: StaticIPEntry(), 1)
