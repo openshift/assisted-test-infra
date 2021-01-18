@@ -29,7 +29,11 @@ pipeline {
         stage('Run') {
             steps {
                 sh "make download_logs"
-                sh "skipper run discovery-infra/create_triage_tickets.py -up ${JIRA_CREDS}"
+                dir ('deploymentRepo') {
+                    sh "rm -rf assisted-installer-deployment"
+                    sh "git clone 'https://github.com/eranco74/assisted-installer-deployment'"
+                }
+                sh "skipper run deploymentRepo/assisted-installer-deployment/tools/create_triage_tickets.py -up ${JIRA_CREDS} -v"
             }
         }
     }
