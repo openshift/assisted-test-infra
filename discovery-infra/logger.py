@@ -12,7 +12,6 @@ class SensitiveFormatter(logging.Formatter):
         s = re.sub(r"('_ssh_public_key':\s+)'(.*?)'", r"\g<1>'*** SSH_KEY ***'", s)
         return s
 
-
     def format(self, record):
         original = logging.Formatter.format(self, record)
         return self._filter(original)
@@ -23,12 +22,12 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 log = logging.getLogger("")
 log.setLevel(logging.DEBUG)
-format = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+format = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setFormatter(
     SensitiveFormatter(
-        "%(asctime)s %(levelname)-10s %(message)s \t" "(%(pathname)s:%(lineno)d)"
+        "%(asctime)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)"
     )
 )
 log.addHandler(ch)
