@@ -167,6 +167,23 @@ class Cluster:
     def set_base_dns_domain(self, base_dns_domain):
         logging.info(f"Setting base DNS domain:{base_dns_domain} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
+    
+    def set_advanced_networking(self, cluster_cidr, service_cidr, cluster_host_prefix):
+        logging.info(f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr}, Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr, "service_network_cidr": service_cidr,
+            "cluster_network_host_prefix": cluster_host_prefix})
+         
+    def set_advanced_cluster_cidr(self, cluster_cidr):
+        logging.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr})
+
+    def set_advanced_service_cidr(self, service_cidr):
+        logging.info(f"Setting Service CIDR: {service_cidr} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"service_network_cidr": service_cidr})
+    
+    def set_advanced_cluster_host_prefix(self, cluster_host_prefix):
+        logging.info(f"Setting Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"cluster_network_host_prefix": cluster_host_prefix})
 
     def set_pull_secret(self, pull_secret):
         logging.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
