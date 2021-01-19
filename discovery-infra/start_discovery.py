@@ -8,7 +8,7 @@ import json
 import os
 import time
 import distutils.util
-from netaddr import IPNetwork
+from netaddr import IPNetwork, IPAddress
 
 from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes import cluster as helper_cluster
@@ -229,12 +229,12 @@ def set_cluster_vips(client, cluster_id, machine_net):
     client.update_cluster(cluster_id, cluster_info)
 
 
-def set_cluster_machine_cidr(client, cluster_id, machine_net):
+def set_cluster_machine_cidr(client, cluster_id, machine_net, set_vip_dhcp_allocation=True):
     cluster_info = client.cluster_get(cluster_id)
-    cluster_info.vip_dhcp_allocation = True
-    cluster_info.machine_network_cidr = machine_net.cidr_v4
+    if set_vip_dhcp_allocation:
+        cluster_info.vip_dhcp_allocation = True
+    cluster_info.machine_network_cidr = machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4
     client.update_cluster(cluster_id, cluster_info)
-
 
 def _get_vips_ips(machine_net):
     if machine_net.has_ip_v4:
@@ -288,7 +288,7 @@ def _cluster_create_params():
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
-    user_managed_networking = is_none_platform_mode()
+    user_managed_networking = is_user_managed_networking()
     http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
     params = {
         "openshift_version": utils.get_openshift_version(),
@@ -394,7 +394,7 @@ def nodes_flow(client, cluster_name, cluster):
         cluster_info = client.cluster_get(cluster.id)
         macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
 
-        if not (cluster_info.api_vip and cluster_info.ingress_vip) and args.master_count != 1:
+        if not (cluster_info.api_vip and cluster_info.ingress_vip):
             utils.wait_till_hosts_with_macs_are_in_status(
                 client=client,
                 cluster_id=cluster.id,
@@ -406,7 +406,10 @@ def nodes_flow(client, cluster_name, cluster):
                 ],
             )
 
-            if args.vip_dhcp_allocation:
+            if args.master_count == 1 and machine_net.has_ip_v6 and not machine_net.has_ip_v4:
+                set_cluster_machine_cidr(client, cluster.id, machine_net, set_vip_dhcp_allocation=False)
+                tf.change_variables({"libvirt_master_ips": [[helper_cluster.Cluster.get_ip_for_single_node_v6(client, cluster.id, args.vm_network_cidr6)]]})
+            elif args.vip_dhcp_allocation:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:
                 set_cluster_vips(client, cluster.id, machine_net)
@@ -531,6 +534,10 @@ def execute_day1_flow(cluster_name):
             os.unlink(image_path)
 
     return cluster.id
+
+
+def is_user_managed_networking():
+    return is_none_platform_mode() or args.master_count == 1
 
 
 def is_none_platform_mode():
