@@ -26,6 +26,7 @@ class InventoryClient(object):
         self.client = api.InstallerApi(api_client=self.api)
         self.events = api.EventsApi(api_client=self.api)
         self.versions = api.VersionsApi(api_client=self.api)
+        self.domains = api.ManagedDomainsApi(api_client=self.api)
 
     def set_config_auth(self, c, offline_token):
         if not offline_token:
@@ -392,6 +393,8 @@ class InventoryClient(object):
     def get_host_requirements(self):
         return self.client.get_host_requirements()
 
+    def get_managed_domains(self):
+        return self.domains.list_managed_domains()
 
 def create_client(
     url,
