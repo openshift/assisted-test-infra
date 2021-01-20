@@ -10,7 +10,8 @@ from test_infra.consts import NUMBER_OF_MASTERS
 OC_DOWNLOAD_LOGS_INTERVAL = 10 * 60
 NUM_OF_RETRIES = 6
 
-def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success):
+
+def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success, check_oc=False):
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
     with TemporaryDirectory() as tempdir:
@@ -24,17 +25,18 @@ def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_su
                     _verify_bootstrap_logs_uploaded(tempdir, gz, installation_success)
                 elif "master" in gz or "worker" in gz:
                     _verify_node_logs_uploaded(tempdir, gz)
+                elif "controller" in gz:
+                    if check_oc:
+                        _verify_oc_logs_uploaded(os.path.join(tempdir, gz))
 
-def verify_oc_logs_uploaded(cluster):
-    cluster_tar_path = "/tmp/test_on-cluster-error-after-join.tar"
-    for retry in range(NUM_OF_RETRIES):
+
+def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path, num_retries=NUM_OF_RETRIES):
+    for retry in range(num_retries):
         try:
             time.sleep(OC_DOWNLOAD_LOGS_INTERVAL)
             cluster.download_installation_logs(cluster_tar_path)
             assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
-
-            _check_entry_from_extracted_tar("controller", cluster_tar_path,
-                lambda path : _check_entry_from_extracted_tar("must-gather", path, lambda inner : None))
+            _verify_oc_logs_uploaded(cluster_tar_path)
             return
         except AssertionError as err:
             logging.info(f'attempt {retry + 1} to download failed with error {str(err)}')
@@ -52,6 +54,12 @@ def _check_entry_from_extracted_tar(component, tarpath, verify):
             assert any(component in logfile for logfile in extractedfiles), f'can not find {component} in logs'
             component_tar = [logfile for logfile in extractedfiles if component in logfile][0]
             verify(os.path.join(tempdir, component_tar))
+
+
+def _verify_oc_logs_uploaded(cluster_tar_path):
+    _check_entry_from_extracted_tar("controller", cluster_tar_path,
+                                    lambda path: _check_entry_from_extracted_tar("must-gather", path,
+                                                                                 lambda inner: None))
 
 
 def _verify_node_logs_uploaded(dir_path, file_path):

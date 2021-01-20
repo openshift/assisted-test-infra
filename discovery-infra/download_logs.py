@@ -17,9 +17,10 @@ from dateutil.parser import isoparse
 from logger import log
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.consts import ClusterStatus
+from test_infra.consts import ClusterStatus, HostsProgressStages
 from test_infra.logs_utils import verify_logs_uploaded
-from test_infra.utils import config_etc_hosts, recreate_folder, run_command
+
+from test_infra.utils import config_etc_hosts, recreate_folder, run_command, are_host_progress_in_stage
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 MAX_RETRIES = 3
@@ -52,6 +53,11 @@ def main():
 def should_download_logs(cluster: dict):
     return cluster['status'] in [ClusterStatus.ERROR]
 
+def min_number_of_log_files(cluster, is_controller_expected):
+    if is_controller_expected:
+        return len(cluster['hosts']) + 1
+    else:
+        return  len(cluster['hosts'])
 
 def download_logs(client: InventoryClient, cluster: dict, dest: str,
                   must_gather: bool, retry_interval: int = RETRY_INTERVAL):
@@ -80,18 +86,25 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str,
             shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
         with suppress(assisted_service_client.rest.ApiException):
-            for i in range(MAX_RETRIES):
+            are_masters_in_configuring_state = are_host_progress_in_stage(
+                cluster['hosts'], [HostsProgressStages.CONFIGURING], 2)
+            are_masters_in_join_state = are_host_progress_in_stage(
+                cluster['hosts'], [HostsProgressStages.JOINED], 2)
+            max_retries = 2*MAX_RETRIES if are_masters_in_join_state else MAX_RETRIES
+            is_controller_expected = cluster['status'] == ClusterStatus.INSTALLED or are_masters_in_configuring_state
+            min_number_of_logs = min_number_of_log_files(cluster, is_controller_expected)
+
+            for i in range(max_retries):
                 cluster_logs_tar = os.path.join(output_folder, f"cluster_{cluster['id']}_logs.tar")
 
                 with suppress(FileNotFoundError):
                     os.remove(cluster_logs_tar)
 
                 client.download_cluster_logs(cluster['id'], cluster_logs_tar)
-
-                min_number_of_logs = len(cluster['hosts']) + 1 if cluster['status'] == ClusterStatus.INSTALLED else len(cluster['hosts'])
-
                 try:
-                    verify_logs_uploaded(cluster_logs_tar, min_number_of_logs, cluster['status'] == ClusterStatus.INSTALLED)
+                    verify_logs_uploaded(cluster_logs_tar, min_number_of_logs,
+                                         cluster['status'] == ClusterStatus.INSTALLED,
+                                         are_masters_in_join_state)
                     break
                 except AssertionError as ex:
                     log.warn(f"Cluster logs verification failed: {ex}")
