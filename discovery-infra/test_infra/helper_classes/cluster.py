@@ -688,12 +688,12 @@ class Cluster:
                  'ip': get_network_interface_ip(interface), 'speed': interface.speed_mbps} for interface in interfaces_list]
 
     @staticmethod
-    def get_ip_for_single_node_v6(client, cluster_id, machine_cidr):
+    def get_ip_for_single_node(client, cluster_id, machine_cidr, ipv4_first=True):
         cluster_info = client.cluster_get(cluster_id).to_dict()
         if len(cluster_info["hosts"]) == 0:
             raise Exception("No host found")
         network = IPNetwork(machine_cidr)
-        interfaces = Cluster.get_inventory_host_nics_data(cluster_info["hosts"][0], ipv4_first=False)
+        interfaces = Cluster.get_inventory_host_nics_data(cluster_info["hosts"][0], ipv4_first=ipv4_first)
         for intf in interfaces:
             ip = intf["ip"]
             if IPAddress(ip) in network:
