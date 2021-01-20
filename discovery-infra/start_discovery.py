@@ -406,9 +406,11 @@ def nodes_flow(client, cluster_name, cluster):
                 ],
             )
 
-            if args.master_count == 1 and machine_net.has_ip_v6 and not machine_net.has_ip_v4:
+            if args.master_count == 1:
+                is_ip4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
                 set_cluster_machine_cidr(client, cluster.id, machine_net, set_vip_dhcp_allocation=False)
-                tf.change_variables({"libvirt_master_ips": [[helper_cluster.Cluster.get_ip_for_single_node_v6(client, cluster.id, args.vm_network_cidr6)]]})
+                cidr = args.vm_network_cidr if is_ip4 else args.vm_network_cidr6
+                tf.change_variables({"single_node_ip": helper_cluster.Cluster.get_ip_for_single_node(client, cluster.id, cidr, ipv4_first=is_ip4)})
             elif args.vip_dhcp_allocation:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:

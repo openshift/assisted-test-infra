@@ -161,25 +161,25 @@ resource "libvirt_domain" "worker" {
 # the count directive to include/exclude elements
 
 data "libvirt_network_dns_host_template" "api" {
-  count    = !var.bootstrap_in_place || length(var.libvirt_master_ips[0]) > 0 ? 1 : 0
-  ip       = var.bootstrap_in_place ? var.libvirt_master_ips[count.index][0] : var.api_vip
+  count    = !var.bootstrap_in_place || var.single_node_ip != "" ? 1 : 0
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip
   hostname = "api.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "api-int" {
-  count    = var.bootstrap_in_place && length(var.libvirt_master_ips[0]) > 0 ? 1 : 0
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.bootstrap_in_place && var.single_node_ip != "" ? 1 : 0
+  ip       = var.single_node_ip
   hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "oauth" {
-  count    = var.bootstrap_in_place && length(var.libvirt_master_ips[0]) > 0 ? 1 : 0
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.bootstrap_in_place  && var.single_node_ip != "" ? 1 : 0
+  ip       = var.single_node_ip
   hostname = "oauth-openshift.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "console" {
-  count    = var.bootstrap_in_place && length(var.libvirt_master_ips[0]) > 0 ? 1 : 0
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.bootstrap_in_place && var.single_node_ip != "" ? 1 : 0
+  ip       = var.single_node_ip
   hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
 }
