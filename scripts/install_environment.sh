@@ -183,6 +183,10 @@ function additional_configs() {
     sudo setenforce 0 || true
     sudo chmod 600 ssh_key/key
     sudo firewall-cmd --zone=libvirt --add-port=59151-59154/tcp
+
+    echo "enabling ipv6"
+    sudo sed -ir 's/net.ipv6.conf.all.disable_ipv6[[:blank:]]*=[[:blank:]]*1/net.ipv6.conf.all.disable_ipv6 = 0/g' /etc/sysctl.conf
+    sudo sysctl --load
 }
 
 install_packages
