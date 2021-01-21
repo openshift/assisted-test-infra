@@ -11,6 +11,13 @@ function set_dns() {
         exit 0
     fi
     NAMESERVER_IP=$(ip route show dev tt$NAMESPACE_INDEX | cut -d\  -f7)
+    if [ -z "${NAMESERVER_IP}" ] ; then
+      NAMESERVER_IP=$(ip -o -6 address show dev tt$NAMESPACE_INDEX | awk '!/ fe80/ {e=index($4,"/"); print substr($4, 0, e-1);}')
+    fi
+    if [ -z "${NAMESERVER_IP}" ] ; then
+      echo IP for interface tt$NAMESPACE_INDEX was not found
+      exit 1
+    fi
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
     if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
