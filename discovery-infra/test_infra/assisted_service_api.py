@@ -112,6 +112,9 @@ class InventoryClient(object):
     def clusters_list(self):
         return self.client.list_clusters()
 
+    def get_all_clusters(self):
+        return self.client.list_clusters(get_unregistered_clusters=True)
+
     def cluster_get(self, cluster_id):
         log.info("Getting cluster with id %s", cluster_id)
         return self.client.get_cluster(cluster_id=cluster_id)

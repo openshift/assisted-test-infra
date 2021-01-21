@@ -5,7 +5,7 @@ pipeline {
         string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
     }
 
-    triggers { cron('0 */2 * * *') }
+    triggers { cron('* * * * *') }
 
     environment {
         SKIPPER_PARAMS = " "
@@ -33,13 +33,13 @@ pipeline {
         }
     }
 
-    post {
-        failure {
-            script {
-                def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
-                writeJSON(file: 'data.txt', json: data, pretty: 4)
-            }
-            sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
-        }
-    }
+    //post {
+    //    failure {
+    //        script {
+    //            def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
+    //            writeJSON(file: 'data.txt', json: data, pretty: 4)
+    //        }
+    //        sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
+    //    }
+    //}
 }
