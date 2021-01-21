@@ -32,7 +32,7 @@ def installer_generate(openshift_release_image):
     bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE": openshift_release_image,
                "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE": "true",
                "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE_COREOS_INSTALLER_ARGS": "/dev/vda"}
-    utils.run_command_with_output(f"{INSTALLER_BINARY} create ignition-configs --dir={IBIP_DIR}", env=bip_env)
+    utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}", env=bip_env)
 
 
 def download_live_image(download_path, rhcos_version=None):
