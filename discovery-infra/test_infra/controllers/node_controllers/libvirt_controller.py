@@ -98,6 +98,13 @@ class LibvirtController(NodeController, ABC):
         command = f'qemu-img create -f qcow2 {disk_path} {disk_size}'
         utils.run_command(command, shell=True)
 
+    @staticmethod
+    def create_bootable_disk(disk_path, disk_size):
+        create_disk_image = f'qemu-img create -f qcow2 {disk_path} {disk_size}'
+        utils.run_command(create_disk_image, shell=True)
+        create_mbr_partition = f'virt-format -a {disk_path} --partition=mbr'
+        utils.run_command(create_mbr_partition, shell=True)
+
     @classmethod
     def format_disk(cls, disk_path):
         logging.info("Formatting disk %s", disk_path)
@@ -186,7 +193,7 @@ class LibvirtController(NodeController, ABC):
 
         return result
 
-    def attach_test_disk(self, node_name, disk_size):
+    def attach_test_disk(self, node_name, disk_size, bootable=False):
         """
         Attaches a disk with the given size to the given node. All tests disks can later
         be detached with detach_all_test_disks
@@ -203,7 +210,10 @@ class LibvirtController(NodeController, ABC):
         with tempfile.NamedTemporaryFile() as f:
             tmp_disk = f.name
 
-        self.create_disk(tmp_disk, disk_size)
+        if bootable:
+            self.create_bootable_disk(tmp_disk, disk_size)
+        else:
+            self.create_disk(tmp_disk, disk_size)
 
         node.attachDevice(f"""
             <disk type='file' device='disk'>
