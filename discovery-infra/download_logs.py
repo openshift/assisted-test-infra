@@ -38,7 +38,7 @@ def main():
         cluster = client.cluster_get(args.cluster_id)
         download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.must_gather, args.update_by_events)
     else:
-        clusters = client.clusters_list()
+        clusters = get_clusters(client, args.download_all)
 
         if not clusters:
             log.info('No clusters were found')
@@ -49,6 +49,13 @@ def main():
                 download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events)
 
         print(Counter(map(lambda cluster: cluster['status'], clusters)))
+
+
+def get_clusters(client, all_cluster):
+    if all_cluster:
+        return client.get_all_clusters()
+    else:
+        return client.clusters_list()
 
 
 def should_download_logs(cluster: dict):
@@ -83,7 +90,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
             need_update = True
     return need_update
 
-def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool, retry_interval: int = RETRY_INTERVAL):
+def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL):
     output_folder = get_logs_output_folder(dest, cluster)
     if not is_update_needed(output_folder, update_by_events, client, cluster):
         log.info(f"Skipping, no need to update {output_folder}.")
