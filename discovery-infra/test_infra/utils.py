@@ -32,13 +32,14 @@ from distutils.dir_util import copy_tree
 conn = libvirt.open("qemu:///system")
 
 
-def run_command(command, shell=False, raise_errors=True):
+def run_command(command, shell=False, raise_errors=True, env=None):
     command = command if shell else shlex.split(command)
     process = subprocess.run(
         command,
         shell=shell,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=env,
         universal_newlines=True
     )
 
