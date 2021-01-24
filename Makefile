@@ -270,6 +270,14 @@ deploy_nodes_with_install:
 	bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG)
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" $(SKIPPER_PARAMS) DAY1_PARAMS=--day1-cluster
 
+deploy_single_node_ipv6_with_install:
+	make deploy_nodes_with_install NUM_MASTERS=1 IPv6=yes
+
+deploy_single_node_static_ip_with_install:
+	make deploy_nodes_with_install NUM_MASTERS=1 ADDITIONAL_PARAMS="'--with-static-ips'"
+
+openshift_4.8_milestone_one:
+	make deploy_nodes_with_install NUM_MASTERS=1 IPv6=yes ADDITIONAL_PARAMS="'--with-static-ips' --wait-for-cvo"
 
 deploy_static_ips_nodes_with_install:
 	make deploy_nodes_with_install ADDITIONAL_PARAMS="'--with-static-ips'"
