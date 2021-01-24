@@ -767,9 +767,6 @@ class Cluster:
 
 def get_api_vip_from_cluster(api_client, cluster_info: models.cluster.Cluster):
     if isinstance(cluster_info, dict):
-        # workaround for MGMT-3583
-        if "user-managed-networking" in cluster_info:
-            cluster_info["user_managed_networking"] = cluster_info.pop("user-managed-networking")
         cluster_info = models.cluster.Cluster(**cluster_info)
     cluster = Cluster(api_client=api_client, cluster_id=cluster_info.id)
     return cluster.get_api_vip(cluster=cluster_info)

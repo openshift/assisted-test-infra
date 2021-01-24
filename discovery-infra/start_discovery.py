@@ -4,6 +4,7 @@
 import argparse
 import dns.resolver
 import ipaddress
+import socket
 import json
 import os
 import time
@@ -21,6 +22,18 @@ from test_infra.tools import terraform_utils
 from test_infra.tools import static_ips
 import bootstrap_in_place as ibip
 
+
+# Any change here should be reflected in scripts/haproxy.cfg as well
+IMAGE_REGISTRIES = [
+    "quay.io",
+    "cdn02.quay.io",
+    "mirror.openshift.com",
+    "registry.ci.openshift.org",
+    "ci-dv2np-image-registry-us-east-1-aunteqmixxpqypvdqwbmjbiloeix.s3.dualstack.us-east-1.amazonaws.com",
+    "registry.build02.ci.openshift.org",
+]
+
+REVERSE_PROXY_IP = "1001:db8::1"
 
 class MachineNetwork(object):
     YES_VALUES = ['yes', 'true', 'y']
@@ -46,13 +59,17 @@ def set_tf_config(cluster_name):
 
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
     default_image_path = os.path.join(consts.IMAGE_FOLDER, f'{args.namespace}-installer-image.iso')
+    reverse_proxy_hosts = IMAGE_REGISTRIES if args.reverse_proxy else []
     fill_tfvars(
         image_path=args.image or default_image_path,
         storage_path=args.storage_path,
         master_count=args.master_count,
         nodes_details=nodes_details,
         tf_folder=tf_folder,
-        machine_net=machine_net
+        machine_net=machine_net,
+        reverse_proxy_hosts=reverse_proxy_hosts,
+        reverse_proxy_ip=REVERSE_PROXY_IP,
+        assisted_service_domain=socket.gethostname(),
     )
 
 
@@ -63,7 +80,10 @@ def fill_tfvars(
         master_count,
         nodes_details,
         tf_folder,
-        machine_net
+        machine_net,
+        reverse_proxy_hosts,
+        reverse_proxy_ip,
+        assisted_service_domain,
 ):
     tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
@@ -99,14 +119,17 @@ def fill_tfvars(
 
     machine_cidr_addresses = []
     provisioning_cidr_addresses = []
+    assisted_service_ips = []
 
     if machine_net.has_ip_v4:
         machine_cidr_addresses += [machine_net.cidr_v4]
         provisioning_cidr_addresses += [machine_net.provisioning_cidr_v4]
+        assisted_service_ips.append(socket.gethostbyname(assisted_service_domain))
 
     if machine_net.has_ip_v6:
         machine_cidr_addresses += [machine_net.cidr_v6]
         provisioning_cidr_addresses += [machine_net.provisioning_cidr_v6]
+        assisted_service_ips.append(REVERSE_PROXY_IP)
 
     tfvars['machine_cidr_addresses'] = machine_cidr_addresses
     tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses
@@ -114,6 +137,10 @@ def fill_tfvars(
     tfvars['libvirt_storage_pool_path'] = storage_path
     tfvars['libvirt_master_macs'] = static_ips.generate_macs(master_count)
     tfvars['libvirt_worker_macs'] = static_ips.generate_macs(worker_count)
+    tfvars['reverse_proxy_hosts'] = reverse_proxy_hosts
+    tfvars['reverse_proxy_ip'] = reverse_proxy_ip
+    tfvars['assisted_service_domain'] = assisted_service_domain
+    tfvars['assisted_service_ips'] = assisted_service_ips
     tfvars.update(nodes_details)
 
     tfvars.update(_secondary_tfvars(master_count, nodes_details, machine_net))
@@ -856,6 +883,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--proxy",
         help="use http proxy with default values",
+        type=distutils.util.strtobool,
+        nargs='?',
+        const=True,
+        default=False,
+    )
+    parser.add_argument(
+        "--reverse-proxy",
+        help="use reverse proxy for interacting with image registries via IPv6",
         type=distutils.util.strtobool,
         nargs='?',
         const=True,

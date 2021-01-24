@@ -4,7 +4,7 @@ set -euo pipefail
 source scripts/utils.sh
 
 export SERVICE_NAME=assisted-service
-export SERVICE_URL=$(get_main_ip)
+export SERVICE_URL=$(hostname)
 export ENABLE_AUTH=${ENABLE_AUTH:-false}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))

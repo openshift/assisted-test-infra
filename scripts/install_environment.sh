@@ -160,6 +160,11 @@ function config_chronyd() {
   sudo firewall-cmd --zone=libvirt --add-port=123/udp
 }
 
+function deploy_reverse_proxy() {
+    echo "Starting HAproxy for accessing services which are not IPv6 compatible"
+    . ./scripts/deploy_reverse_proxy.sh
+}
+
 function additional_configs() {
     if [ "${ADD_USER_TO_SUDO}" != "n" ]; then
         current_user=$(whoami)
@@ -197,4 +202,5 @@ config_firewalld
 config_squid
 fix_ipv6_routing
 config_chronyd
+deploy_reverse_proxy
 additional_configs

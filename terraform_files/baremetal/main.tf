@@ -45,6 +45,22 @@ resource "libvirt_network" "net" {
         ip       = hosts.value.ip
       }
     }
+
+    dynamic "hosts" {
+      for_each = var.reverse_proxy_hosts
+      content {
+        hostname  = hosts.value
+        ip        = var.reverse_proxy_ip
+      }
+    }
+
+    dynamic "hosts" {
+      for_each = var.assisted_service_ips
+      content {
+        hostname  = var.assisted_service_domain
+        ip        = hosts.value
+      }
+    }
   }
 
   xml {
@@ -93,7 +109,7 @@ resource "libvirt_domain" "master" {
     addresses  = var.libvirt_master_ips[count.index]
     mac = var.libvirt_master_macs[count.index]
   }
-   
+
   network_interface {
     network_name = libvirt_network.secondary_net.name
     addresses = var.libvirt_secondary_master_ips[count.index]
