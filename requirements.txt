@@ -1,5 +1,5 @@
 
-boto3==1.16.56
+boto3==1.16.59
 dnspython==2.1.0
 ipython==7.11.1
 ipdb==0.13.4
