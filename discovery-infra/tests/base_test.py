@@ -73,8 +73,9 @@ class BaseTest:
         yield get_cluster_func
 
         for cluster in clusters:
-            logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
-            self.collect_test_logs(cluster, api_client, request.node, nodes)
+            if request.node.result_call.failed:
+                logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
+                self.collect_test_logs(cluster, api_client, request.node, nodes)
             logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
             if cluster.is_installing() or cluster.is_finalizing():
                 cluster.cancel_install()
@@ -180,9 +181,8 @@ class BaseTest:
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
             download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed)
-        if test.result_call.failed:
-            self._collect_virsh_logs(nodes, log_dir_name)
-            self._collect_journalctl(nodes, log_dir_name)
+        self._collect_virsh_logs(nodes, log_dir_name)
+        self._collect_journalctl(nodes, log_dir_name)
 
     def _collect_virsh_logs(self, nodes, log_dir_name):
         logging.info('Collecting virsh logs\n')
