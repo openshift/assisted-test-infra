@@ -95,6 +95,8 @@ class Events:
     SUCCESSFULLY_REGISTERED_CLUSTER = "Successfully registered cluster"
     PENDING_FOR_INPUT = "to pending-for-input"
     GENERATED_IMAGE = "Generated image (SSH public key is set)"
+    GENERATED_IMAGE_FULL = "Generated image (Image type is \"full-iso\", SSH public key is set)"
+    GENERATED_IMAGE_MINIMAL = "Generated image (Image type is \"minimal-iso\", SSH public key is set)"
     DOWNLOAD_IMAGE = "Started image download"
     HOST_REGISTERED_TO_CLUSTER = ": registered to cluster"
     INSUFFICIENT = "insufficient"
