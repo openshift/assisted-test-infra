@@ -99,6 +99,7 @@ def create_controller(net_asset):
         net_asset=net_asset,
         iso_download_path="<TBD>",  # will be set later on
         bootstrap_in_place=True,
+        single_node_ip=net_asset.machine_cidr.replace("0/24", "10"),
     )
 
 
