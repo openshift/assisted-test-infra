@@ -7,6 +7,7 @@ import waiting
 import uuid
 
 from test_infra import assisted_service_api, utils, consts
+from test_infra.tools import static_ips
 from logger import log
 
 
@@ -156,8 +157,8 @@ def configure_terraform(tf_folder, num_worker_nodes, api_vip_ip, api_vip_dnsname
 def configure_terraform_workers_nodes(tfvars, num_worker_nodes):
     num_workers = tfvars['worker_count'] + num_worker_nodes
     tfvars['worker_count'] = num_workers
-    set_workers_ips_by_type(tfvars, num_worker_nodes, 'libvirt_master_ips', 'libvirt_worker_ips')
-    set_workers_ips_by_type(tfvars, num_worker_nodes, 'libvirt_secondary_master_ips', 'libvirt_secondary_worker_ips')
+    set_workers_addresses_by_type(tfvars, num_worker_nodes, 'libvirt_master_ips', 'libvirt_worker_ips', 'libvirt_worker_macs')
+    set_workers_addresses_by_type(tfvars, num_worker_nodes, 'libvirt_secondary_master_ips', 'libvirt_secondary_worker_ips', 'libvirt_secondary_worker_macs')
 
 
 def configure_terraform_api_dns(tfvars, api_vip_ip, api_vip_dnsname):
@@ -169,7 +170,7 @@ def get_network_nodes_from_terraform(tf_folder):
     return tfvars['libvirt_network_name'], tfvars['master_count'] + tfvars['worker_count']
 
 
-def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_type):
+def set_workers_addresses_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_type, worker_mac_type):
 
     old_worker_ips_list = tfvars[worker_ip_type]
     last_master_addresses = tfvars[master_ip_type][-1]
@@ -186,6 +187,9 @@ def set_workers_ips_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_
         worker_ips_list = old_worker_ips_list + utils.create_empty_nested_list(num_worker_nodes)
 
     tfvars[worker_ip_type] = worker_ips_list
+
+    old_worker_mac_addresses = tfvars[worker_mac_type]
+    tfvars[worker_mac_type] = old_worker_mac_addresses + static_ips.generate_macs(num_worker_nodes)
 
 
 def wait_nodes_join_ocp_cluster(num_orig_nodes, num_new_nodes, day2_type_flag):
