@@ -7,7 +7,7 @@ import waiting
 import uuid
 
 from test_infra import assisted_service_api, utils, consts
-from test_infra.tools import static_ips
+from test_infra.tools import static_ips, terraform_utils
 from logger import log
 
 
@@ -15,14 +15,14 @@ def set_cluster_pull_secret(client, cluster_id, pull_secret):
     client.set_pull_secret(cluster_id, pull_secret)
 
 
-def execute_day2_cloud_flow(cluster_id, args):
-    execute_day2_flow(cluster_id, args, "cloud")
+def execute_day2_cloud_flow(cluster_id, args, has_ipv4):
+    execute_day2_flow(cluster_id, args, "cloud", has_ipv4)
 
 
-def execute_day2_ocp_flow(cluster_id, args):
-    execute_day2_flow(cluster_id, args, "ocp")
+def execute_day2_ocp_flow(cluster_id, args, has_ipv4):
+    execute_day2_flow(cluster_id, args, "ocp", has_ipv4)
 
-def execute_day2_flow(cluster_id, args, day2_type_flag):
+def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
     client = assisted_service_api.create_client(
             url=utils.get_assisted_service_url_by_args(args=args)
@@ -57,7 +57,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag):
         client,
         terraform_cluster_dir_prefix,
         cluster,
-        image_path,
+        has_ipv4,
         args.number_of_day2_workers,
         api_vip_ip,
         api_vip_dnsname,
@@ -70,7 +70,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag):
 def day2_nodes_flow(client,
                     terraform_cluster_dir_prefix,
                     cluster,
-                    image_path,
+                    has_ipv_4,
                     num_worker_nodes,
                     api_vip_ip,
                     api_vip_dnsname,
@@ -103,6 +103,11 @@ def day2_nodes_flow(client,
         sleep_seconds=10,
         waiting_for="Nodes to be registered in inventory service",
     )
+
+    if not has_ipv_4:
+        log.info("Set hostnames of day2 cluster %s to work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts", cluster.id)
+        tf_folder = utils.get_tf_folder(terraform_cluster_dir_prefix, namespace)
+        set_hostnames_from_tf(client=client, cluster_id=cluster.id, tf_folder=tf_folder, network_name=tf_network_name)
 
     utils.wait_till_all_hosts_are_in_status(
         client=client,
@@ -139,6 +144,11 @@ def day2_nodes_flow(client,
             waiting_for="Day2 nodes to be added to OCP cluster",
         )
         log.info("%d worker nodes were successfully added to OCP cluster", num_worker_nodes)
+
+def set_hostnames_from_tf(client, cluster_id, tf_folder, network_name):
+    tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
+    libvirt_nodes = utils.extract_nodes_from_tf_state(tf.get_state(), (network_name), consts.NodeRoles.WORKER)
+    utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
 
 
 def apply_day2_tf_configuration(cluster_name, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace):

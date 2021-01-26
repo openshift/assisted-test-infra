@@ -560,10 +560,11 @@ def main():
     if is_none_platform_mode():
         return
 
+    has_ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     if args.day2_cloud_cluster:
-        day2.execute_day2_cloud_flow(cluster_id, args)
+        day2.execute_day2_cloud_flow(cluster_id, args, has_ipv4)
     if args.day2_ocp_cluster:
-        day2.execute_day2_ocp_flow(cluster_id, args)
+        day2.execute_day2_ocp_flow(cluster_id, args, has_ipv4)
     if args.bootstrap_in_place:
         ibip.execute_ibip_flow(args)
 

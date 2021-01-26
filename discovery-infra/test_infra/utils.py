@@ -773,10 +773,21 @@ def extract_installer(release_image, dest):
     run_command(f"oc adm release extract --command=openshift-install --to={dest} {release_image}")
 
 
-# Set nodes roles by vm name
-# If master in name -> role will be master, same for worker
-# Optionally, update hostanames
 def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
+
+    """
+    Update names and/or roles of the hosts in a cluster from a dictionary of libvirt nodes.
+
+    An entry from the dictionary is matched to a host by the host's MAC address (of any NIC).
+    Entries that do not match any host in the cluster are ignored.
+
+    Arguments:
+        client -- An assisted service client
+        cluster_id -- ID of the cluster to update
+        libvirt_nodes -- A dictionary that may contain data about cluster hosts
+        update_hostnames -- Whether hostnames must be set (default False)
+        update_roles -- Whether host roles must be set (default True)
+    """
 
     if not update_hostnames and not update_roles:
         logging.info("Skipping update roles and hostnames")
