@@ -34,6 +34,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
     - [Test infra image](#test-infra-image)
   - [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
   - [Test with Authentication](#test-with-authentication)
+  - [Single Node - Bootstrap in place with Assisted Service](#single-node---bootstrap-in-place-with-assisted-service)
   - [On-prem](#on-prem)
 
 ## Prerequisites
@@ -62,18 +63,15 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | BASE_DOMAIN                 | base domain, needed for DNS name, default: redhat.com                                                                           |
 | CLUSTER_ID                  | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
 | CLUSTER_NAME                | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                   |
-| CONNECTIVITY_CHECK_IMAGE    | connectivity-check image to use, will update assisted-service config map with given value                                       |
 | DEPLOY_MANIFEST_PATH        | the location of a manifest file that defines image tags images to be used                                                       |
 | DEPLOY_MANIFEST_TAG         | the Git tag of a manifest file that defines image tags to be used                                                               |
 | DEPLOY_TAG                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
 | DEPLOY_TARGET               | Specifies where assisted-service will be deployed. Defaults to "minikube". "onprem" will deploy assisted-service in a pod on the localhost. |
 | ENABLE_AUTH                 | configure assisted-service to authenticate API requests, default: false                                                         |
-| HARDWARE_INFO_IMAGE         | hardware-info image to use, will update assisted-service config map with given value                                            |
 | HTTPS_PROXY_URL             | A proxy URL to use for creating HTTPS connections outside the cluster                                                           |
 | HTTP_PROXY_URL              | A proxy URL to use for creating HTTP connections outside the cluster                                                            |
 | IMAGE_BUILDER               | image-builder image to use, will update assisted-service config map with given value                                            |
 | INSTALLER_IMAGE             | assisted-installer image to use, will update assisted-service config map with given value                                       |
-| INVENTORY_IMAGE             | assisted-service image to be updated in assisted-service config map with given value                                            |
 | ISO                         | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
 | KUBECONFIG                  | kubeconfig file path, default: <home>/.kube/config                                                                              |
 | MASTER_MEMORY               | memory for master VM, default: 16984MB                                                                                          |
@@ -103,7 +101,6 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | SSO_URL                     | URL used to fetch JWT tokens for assisted-service authentication                                                                |
 | WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                           |
 | PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                     |
-| FIO_PERF_CHECK_IMAGE        | FIO performance check image to use, will update assisted-service config map with given value                                    |
 | CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                           |
 
 ## Instructions
