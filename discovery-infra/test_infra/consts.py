@@ -34,6 +34,11 @@ DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_TEST_INFRA_DOMAIN = '.test-infra-cluster-assisted-installer.redhat.com'
 
 
+class ImageType:
+    FULL_ISO = "full-iso"
+    MINIMAL_ISO = "minimal-iso"
+
+
 class NodeRoles:
     WORKER = "worker"
     MASTER = "master"

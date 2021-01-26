@@ -492,6 +492,7 @@ def execute_day1_flow(cluster_name):
 
     set_tf_config(cluster_name)
     image_path = None
+    image_type = args.iso_image_type
 
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
@@ -521,6 +522,7 @@ def execute_day1_flow(cluster_name):
         client.generate_and_download_image(
             cluster_id=cluster.id,
             image_path=image_path,
+            image_type=image_type,
             ssh_key=args.ssh_key,
             static_ips=static_ips_config,
         )
@@ -660,6 +662,12 @@ if __name__ == "__main__":
         "--with-static-ips",
         help="Static ips mode",
         action="store_true",
+    )
+    parser.add_argument(
+        "--iso-image-type",
+        help="ISO image type (full-iso/minimal-iso)",
+        type=str,
+        default=consts.ImageType.FULL_ISO,
     )
     parser.add_argument(
         "-bd",
