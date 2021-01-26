@@ -65,7 +65,8 @@ class TerraformController(LibvirtController):
                   # TODO change to namespace index
                   "libvirt_secondary_network_if": self.network_conf.libvirt_secondary_network_if,
                   "provisioning_cidr": self.network_conf.provisioning_cidr,
-                  "running": True
+                  "running": True,
+                  "single_node_ip": kwargs.get('single_node_ip', ''),
                   }
         for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips", "libvirt_secondary_worker_ips"]:
             value = kwargs.get(key)
