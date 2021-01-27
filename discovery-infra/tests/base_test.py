@@ -124,9 +124,9 @@ class BaseTest:
     def attach_disk(self):
         modified_nodes = []
 
-        def attach(node, disk_size):
+        def attach(node, disk_size, bootable=False):
             nonlocal modified_nodes
-            node.attach_test_disk(disk_size)
+            node.attach_test_disk(disk_size, bootable)
             modified_nodes.append(node)
 
         yield attach

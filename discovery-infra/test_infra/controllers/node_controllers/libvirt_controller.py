@@ -98,6 +98,13 @@ class LibvirtController(NodeController, ABC):
         command = f'qemu-img create -f qcow2 {disk_path} {disk_size}'
         utils.run_command(command, shell=True)
 
+    @staticmethod
+    # LIBGUESTFS_BACKEND set to mitigate errors with running libvirt as root
+    # https://libguestfs.org/guestfs-faq.1.html#permission-denied-when-running-libguestfs-as-root
+    def add_disk_bootflag(disk_path):
+        command = f'virt-format -a {disk_path} --partition=mbr'
+        utils.run_command(command, shell=True, env={**os.environ, "LIBGUESTFS_BACKEND": "direct"})
+
     @classmethod
     def format_disk(cls, disk_path):
         logging.info("Formatting disk %s", disk_path)
@@ -186,7 +193,7 @@ class LibvirtController(NodeController, ABC):
 
         return result
 
-    def attach_test_disk(self, node_name, disk_size):
+    def attach_test_disk(self, node_name, disk_size, bootable=False):
         """
         Attaches a disk with the given size to the given node. All tests disks can later
         be detached with detach_all_test_disks
@@ -204,6 +211,9 @@ class LibvirtController(NodeController, ABC):
             tmp_disk = f.name
 
         self.create_disk(tmp_disk, disk_size)
+
+        if bootable:
+            self.add_disk_bootflag(tmp_disk)
 
         node.attachDevice(f"""
             <disk type='file' device='disk'>
