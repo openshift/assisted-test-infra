@@ -1,8 +1,7 @@
-FROM quay.io/ocpmetal/assisted-service:latest AS service
-
 FROM quay.io/centos/centos:8.3.2011
 
 RUN yum -y install make gcc unzip wget curl git podman httpd-tools jq nss_wrapper \
+  java \
   python3 python3-devel \
   libvirt-client libvirt-devel libguestfs-tools && \
   yum clean all
@@ -17,10 +16,16 @@ RUN mkdir -p /root/.terraform.d/plugins
 RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.2/terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz | \
   tar -xz -C /root/.terraform.d/plugins
 
+RUN mkdir /opt/swagger-codegen-cli
+RUN wget -q https://repo1.maven.org/maven2/io/swagger/swagger-codegen-cli/2.4.15/swagger-codegen-cli-2.4.15.jar -O /opt/swagger-codegen-cli/swagger-codegen-cli.jar
+WORKDIR /tmp/
+RUN git clone https://github.com/openshift/assisted-service.git
+WORKDIR /tmp/assisted-service
+RUN chmod +x ./tools/generate_python_client.sh && SWAGGER_FILE=swagger.yaml OUTPUT=/build ./tools/generate_python_client.sh
 COPY requirements.txt /tmp/
-COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
-  pip3 install --upgrade /build/pip/*
+  pip3 install --upgrade /build/
 
 # setting pre-commit env
 ENV PRE_COMMIT_HOME build
+WORKDIR /

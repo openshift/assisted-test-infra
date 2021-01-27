@@ -125,8 +125,7 @@ create_full_environment:
 create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
-	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
-	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
+	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f Dockerfile.test-infra .
 
 clean:
 	-rm -rf build assisted-service test_infra.log
