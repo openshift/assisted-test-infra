@@ -32,7 +32,7 @@
         username: "{{ hostvars[item]['bmc_user'] }}"
         password: "{{ hostvars[item]['bmc_password'] }}"
         virtual_media:
-          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/{{ iso_name }}"
         resource_id: iDRAC.Embedded.1
       ignore_errors: yes
 
@@ -44,7 +44,7 @@
         username: "{{ hostvars[item]['bmc_user'] }}"
         password: "{{ hostvars[item]['bmc_password'] }}"
         virtual_media:
-          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/installer-image.iso"
+          image_url: "http://{{ groups['assisted_installer'][0] }}:8080/{{ iso_name }}"
           media_types:
           - CD
           - DVD
