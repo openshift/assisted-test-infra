@@ -1,0 +1,4 @@
+---
+# tasks file for disconnected_registry
+- include_tasks: disconnected_registry.yml
+  tags: create_registry
