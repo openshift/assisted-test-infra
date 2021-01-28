@@ -7,14 +7,6 @@ from test_infra import utils
 from test_infra import consts
 
 
-class StaticIPEntry:
-    def __init__(self, ip=None, mask=None, gateway=None, dns=None):
-        self.ip = ip
-        self.mask = mask
-        self.gateway = gateway
-        self.dns = dns
-
-
 def generate_macs(count):
     return ["02:00:00:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for x in range(count)]
 
@@ -74,12 +66,10 @@ def _genetate_ips(mac_addresses, cidrs, address_offset):
 
     static_ips = []
     for mac in mac_addresses:
-        ipv4_conf = next(ipv4_gen)
-        ipv6_conf = next(ipv6_gen)
         static_ips.append({
             'mac': mac,
-            'ip': ipv4_conf.ip, 'mask': ipv4_conf.mask, 'gateway': ipv4_conf.gateway, 'dns': ipv4_conf.dns,
-            'ip_v6': ipv6_conf.ip, 'mask_v6': ipv6_conf.mask, 'gateway_v6': ipv6_conf.gateway, 'dns_v6': ipv6_conf.dns
+            'ipv4_config': next(ipv4_gen),
+            'ipv6_config': next(ipv6_gen)
         })
 
     return static_ips
@@ -93,8 +83,8 @@ def _static_conf_gen(num_nodes, network, address_offset=0):
     gw_dns = str(ip_address(network.network_address) + 1)
 
     for i in range(num_nodes):
-        yield StaticIPEntry(ip=ips[i], mask=mask, gateway=gw_dns, dns=gw_dns)
+        yield {'ip': ips[i], 'gateway': gw_dns, 'dns': gw_dns, 'mask':mask}
 
 
 def _empty_conf_gen():
-    return iter(lambda: StaticIPEntry(), 1)
+    return iter(lambda: {}, 1)
