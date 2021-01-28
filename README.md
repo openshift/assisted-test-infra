@@ -112,9 +112,11 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 
 On the bare metal host:
 
+**Note**: don't do it from /root folder - it will breaks build image mounts and fail to run
+
 ```bash
 dnf install -y git make
-cd /home/test # don't do it on /root it will breaks build image mounts and fail to run
+cd /home/test
 git clone https://github.com/openshift/assisted-test-infra.git
 ```
 
