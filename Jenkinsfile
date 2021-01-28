@@ -11,6 +11,8 @@ pipeline {
         string(name: 'INSTALLER_IMAGE', defaultValue: '', description: 'Installer image to use')
         string(name: 'CONTROLLER_IMAGE', defaultValue: '', description: 'Controller image to use')
         string(name: 'OPENSHIFT_INSTALL_RELEASE_IMAGE', defaultValue: '', description: 'OCP Release Image from ocpmetal repository in Quay.io')
+        string(name: 'OPENSHIFT_VERSION', defaultValue: '', description: 'OCP version going to be installed')
+        string(name: 'OPENSHIFT_VERSIONS', defaultValue: '', description: 'Hashmap of all the supported OCP versions. Defaults in https://github.com/openshift/assisted-service/blob/master/default_ocp_versions.json')
         string(name: 'DEPLOY_TAG', defaultValue: '', description: 'Deploy tag')
         string(name: 'NUM_WORKERS', defaultValue: "2", description: 'Number of workers')
         string(name: 'JOB_NAME', defaultValue: "#${BUILD_NUMBER}", description: 'Job name')
