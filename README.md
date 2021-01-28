@@ -72,6 +72,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | HTTP_PROXY_URL              | A proxy URL to use for creating HTTP connections outside the cluster                                                            |
 | IMAGE_BUILDER               | image-builder image to use, will update assisted-service config map with given value                                            |
 | INSTALLER_IMAGE             | assisted-installer image to use, will update assisted-service config map with given value                                       |
+| IPv4                        | Boolean value indicating if IPv4 is enabled.  Default is yes                                                                    |
+| IPv6                        | Boolean value indicating if IPv6 is enabled.  Default is no                                                                    |
 | ISO                         | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
 | KUBECONFIG                  | kubeconfig file path, default: <home>/.kube/config                                                                              |
 | MASTER_MEMORY               | memory for master VM, default: 16984MB                                                                                          |
@@ -89,6 +91,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OC_TOKEN                    | token for oc login (an alternative for oc-user & oc-pass)                                                                       |
 | OFFLINE_TOKEN               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)              |
 | OPENSHIFT_VERSION           | OpenShift version to install, default: "4.6"                                                                                    |
+| PROXY                       | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR |
 | PULL_SECRET                 | pull secret to use for cluster installation command, no option to install cluster without it.                                   |
 | REMOTE_SERVICE_URL          | URL to remote assisted-service - run infra on existing deployment                                                               |
 | ROUTE53_SECRET              | Amazon Route 53 secret to use for DNS domains registration.                                                                     |
@@ -168,6 +171,17 @@ To run the flow without the installation stage:
 ```bash
 make run_full_flow
 ```
+
+### Run full flow with ipv6
+
+To run the flow with default IPv6 settings without install. It is identical to running 
+
+**make run_full_flow IPv4=no IPv6=yes PROXY=yes VIP_DHCP_ALLOCATION=no**
+
+```bash
+make run_full_flow_with_ipv6
+```
+
 
 ### Run only deploy nodes (without pre deploy of all assisted service)
 
@@ -318,6 +332,15 @@ export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
 make redeploy_all_with_install or if service is up  make redeploy_nodes_with_install
+```
+
+## Single Node - Bootstrap in place with Assisted Service and IPv6
+To test single node bootstrap in place flow with assisted service and ipv6
+```
+export PULL_SECRET='<pull secret JSON>'
+export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
+export NUM_MASTERS=1
+make run_full_flow IPv6=yes IPv4=no PROXY=yes VIP_DHCP_ALLOCATION=no
 ```
 
 ## On-prem
