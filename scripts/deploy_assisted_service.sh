@@ -21,6 +21,15 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "$OPENSHIFT_INSTALL_RELEASE_IMAGE" ]; then
         sed -i "s|OPENSHIFT_INSTALL_RELEASE_IMAGE=.*|OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE}|" assisted-service/onprem-environment
     fi
+    if [ -n "${INSTALLER_IMAGE:-}" ]; then
+        echo "INSTALLER_IMAGE=${INSTALLER_IMAGE}" >> assisted-service/onprem-environment
+    fi
+    if [ -n "${CONTROLLER_IMAGE:-}" ]; then
+        echo "CONTROLLER_IMAGE=${CONTROLLER_IMAGE}" >> assisted-service/onprem-environment
+    fi
+    if [ -n "${AGENT_DOCKER_IMAGE:-}" ]; then
+        echo "AGENT_DOCKER_IMAGE=${AGENT_DOCKER_IMAGE}" >> assisted-service/onprem-environment
+    fi
     if [ -n "$PUBLIC_CONTAINER_REGISTRIES" ]; then
         sed -i "s|PUBLIC_CONTAINER_REGISTRIES=.*|PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/onprem-environment
     fi
