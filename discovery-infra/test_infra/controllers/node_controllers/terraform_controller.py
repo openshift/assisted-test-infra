@@ -19,7 +19,7 @@ class TerraformController(LibvirtController):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cluster_suffix = self._get_random_name()
-        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}') + "-" + self.cluster_suffix
+        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}' + "-" + self.cluster_suffix)
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
         self.network_conf = kwargs.get('net_asset')
         self.cluster_domain = kwargs.get('base_domain', "redhat.com")

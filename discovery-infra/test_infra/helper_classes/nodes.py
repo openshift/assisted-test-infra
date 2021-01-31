@@ -168,7 +168,11 @@ class Nodes:
             # to valid hostname
             network_name = self.controller.params.libvirt_network_name
             libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
-            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True)
+            nodes_count = env_variables.get('num_nodes')
+            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True, update_roles=(nodes_count != 1))
+
+    def set_single_node_ip(self, cluster):
+        self.controller.tf.change_variables({"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client, cluster.id, env_variables['machine_cidr'])})
 
 
 

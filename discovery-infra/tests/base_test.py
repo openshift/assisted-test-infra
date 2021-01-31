@@ -59,14 +59,18 @@ class BaseTest:
 
         def get_cluster_func(cluster_name: Optional[str] = None,
                              additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
-                             openshift_version: Optional[str] = env_variables['openshift_version']):
+                             openshift_version: Optional[str] = env_variables['openshift_version'],
+                             user_managed_networking=False,
+                             high_availability_mode=consts.HighAvailabilityMode.FULL):
             if not cluster_name:
-                cluster_name = infra_utils.get_random_name(length=10)
+                cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
 
             res = Cluster(api_client=api_client,
                           cluster_name=cluster_name,
                           additional_ntp_source=additional_ntp_source,
-                          openshift_version=openshift_version)
+                          openshift_version=openshift_version,
+                          user_managed_networking=user_managed_networking,
+                          high_availability_mode=high_availability_mode)
             clusters.append(res)
             return res
 

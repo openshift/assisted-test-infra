@@ -132,3 +132,8 @@ class Events:
 class Platforms:
     BARE_METAL = 'baremetal'
     NONE = 'none'
+
+
+class HighAvailabilityMode:
+    FULL = 'Full'
+    NONE = 'None'
