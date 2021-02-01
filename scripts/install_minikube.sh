@@ -31,7 +31,11 @@ function install_kubectl() {
 function install_oc() {
     if ! [ -x "$(command -v oc)" ]; then
         echo "Installing oc..."
-        curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.6.0/openshift-client-linux-4.6.0.tar.gz | tar -xz -C /usr/local/bin
+        for i in {1..4}; do
+            curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.6.0/openshift-client-linux-4.6.0.tar.gz | tar -xz -C /usr/local/bin && break
+            echo "command failed. Retrying again in 5 seconds..."
+            sleep 5
+        done
     else
         echo "oc is already installed"
     fi
