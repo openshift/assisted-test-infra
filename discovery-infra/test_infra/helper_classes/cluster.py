@@ -26,7 +26,7 @@ class Cluster:
         else:
             self.id = self._create(cluster_name or "test-infra-cluster", additional_ntp_source, openshift_version).id
             self.name = cluster_name
-    
+
     def _create(self, cluster_name, additional_ntp_source, openshift_version):
         return self.api_client.create_cluster(
             cluster_name,
@@ -115,7 +115,7 @@ class Cluster:
         self.api_client.select_installation_disk(self.id, hosts_with_disk_paths)
 
     def set_host_roles(
-        self, 
+        self,
         requested_roles=Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
     ):
         assigned_roles = self._get_matching_hosts(
@@ -139,7 +139,7 @@ class Cluster:
             hosts_with_roles=assignment_role)
 
     def set_network_params(
-        self, 
+        self,
         controller,
         vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
     ):
@@ -170,12 +170,12 @@ class Cluster:
     def set_base_dns_domain(self, base_dns_domain):
         logging.info(f"Setting base DNS domain:{base_dns_domain} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
-    
+
     def set_advanced_networking(self, cluster_cidr, service_cidr, cluster_host_prefix):
         logging.info(f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr}, Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr, "service_network_cidr": service_cidr,
             "cluster_network_host_prefix": cluster_host_prefix})
-         
+
     def set_advanced_cluster_cidr(self, cluster_cidr):
         logging.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr})
@@ -183,7 +183,7 @@ class Cluster:
     def set_advanced_service_cidr(self, service_cidr):
         logging.info(f"Setting Service CIDR: {service_cidr} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"service_network_cidr": service_cidr})
-    
+
     def set_advanced_cluster_host_prefix(self, cluster_host_prefix):
         logging.info(f"Setting Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"cluster_network_host_prefix": cluster_host_prefix})
@@ -210,7 +210,7 @@ class Cluster:
 
     def patch_discovery_ignition(self, ignition):
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
-        
+
     def set_proxy_values(self, http_proxy, https_proxy='', no_proxy=''):
         logging.info(f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} "
                      f"for cluster: {self.id}")
@@ -436,9 +436,9 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSUFFICIENT]
         )
-    
+
     def wait_for_hosts_to_install(
-        self, 
+        self,
         nodes_count=env_variables['num_nodes'],
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
         fall_on_error_status=True
@@ -453,7 +453,7 @@ class Cluster:
         )
 
     def wait_for_install(
-        self,  
+        self,
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
     ):
         utils.wait_till_cluster_is_in_status(
@@ -464,7 +464,7 @@ class Cluster:
         )
 
     def prepare_for_install(
-        self, 
+        self,
         nodes,
         iso_download_path=env_variables['iso_download_path'],
         iso_image_type=env_variables['iso_image_type'],
@@ -509,7 +509,7 @@ class Cluster:
         self.api_client.download_cluster_logs(self.id, cluster_tar_path)
 
     def get_install_config(self):
-        return yaml.load(self.api_client.get_cluster_install_config(self.id), Loader=yaml.SafeLoader)
+        return yaml.safe_load(self.api_client.get_cluster_install_config(self.id))
 
     def get_admin_credentials(self):
         return self.api_client.get_cluster_admin_credentials(self.id)
@@ -523,7 +523,7 @@ class Cluster:
 
     def host_post_step_result(self, host_id, step_type, step_id, exit_code, output):
         self.api_client.host_post_step_result(
-            self.id, 
+            self.id,
             host_id,
             step_type=step_type,
             step_id=step_id,

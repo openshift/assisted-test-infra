@@ -46,6 +46,10 @@ resource "libvirt_network" "net" {
       }
     }
   }
+
+  xml {
+    xslt = file("limit_ipv6_dhcp_range.xsl")
+  }
 }
 
 
