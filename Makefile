@@ -155,7 +155,7 @@ delete_minikube_profile:
 ####################
 
 delete_podman_localhost:
-	make -C assisted-service/ clean-onprem
+	make -C assisted-service/ clean-onprem || true
 
 #############
 # Terraform #
