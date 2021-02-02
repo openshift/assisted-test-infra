@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 import test_infra.utils as infra_utils
 from distutils import util
 from pathlib import Path
@@ -13,6 +14,11 @@ qe_env = False
 def is_qe_env():
     return os.environ.get('NODE_ENV') == 'QE_VM'
 
+def _get_cluster_name():
+    cluster_name = utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')
+    if cluster_name == consts.CLUSTER_PREFIX:
+        cluster_name = cluster_name + '-' + str(uuid.uuid4())[:8]
+    return cluster_name
 
 # TODO changes it
 if is_qe_env():
@@ -42,7 +48,7 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "worker_disk": int(utils.get_env('WORKER_DISK', '21474836480')),
                  "master_disk": int(utils.get_env('MASTER_DISK', '128849018880')),
                  "storage_pool_path": utils.get_env('STORAGE_POOL_PATH', os.path.join(os.getcwd(), "storage_pool")),
-                 "cluster_name": utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}'),
+                 "cluster_name": _get_cluster_name(),
                  "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default),
                  "kubeconfig_path": utils.get_env('KUBECONFIG', ''),
                  "log_folder": utils.get_env('LOG_FOLDER', consts.LOG_FOLDER),

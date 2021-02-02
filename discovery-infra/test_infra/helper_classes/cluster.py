@@ -18,16 +18,24 @@ from test_infra.tools import static_ips
 class Cluster:
 
     def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
-                 openshift_version="4.6", cluster_id=None):
+                 openshift_version="4.6", cluster_id=None, user_managed_networking=False, high_availability_mode=consts.HighAvailabilityMode.FULL):
         self.api_client = api_client
 
+        self._high_availability_mode = high_availability_mode
         if cluster_id:
             self.id = cluster_id
         else:
-            self.id = self._create(cluster_name or "test-infra-cluster", additional_ntp_source, openshift_version).id
+            cluster_name = cluster_name or env_variables.get('cluster_name', "test-infra-cluster")
+            self.id = self._create(cluster_name, additional_ntp_source, openshift_version,
+                                   user_managed_networking=user_managed_networking, high_availability_mode=high_availability_mode).id
             self.name = cluster_name
 
-    def _create(self, cluster_name, additional_ntp_source, openshift_version):
+    def _create(self,
+                cluster_name,
+                additional_ntp_source,
+                openshift_version,
+                user_managed_networking,
+                high_availability_mode):
         return self.api_client.create_cluster(
             cluster_name,
             ssh_public_key=env_variables['ssh_public_key'],
@@ -35,7 +43,9 @@ class Cluster:
             pull_secret=env_variables['pull_secret'],
             base_dns_domain=env_variables['base_domain'],
             vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-            additional_ntp_source=additional_ntp_source
+            additional_ntp_source=additional_ntp_source,
+            user_managed_networking=user_managed_networking,
+            high_availability_mode=high_availability_mode
         )
 
     def delete(self):
@@ -149,8 +159,7 @@ class Cluster:
             "cluster_network_cidr": env_variables['cluster_cidr'],
             "cluster_network_host_prefix": env_variables['host_prefix'],
         })
-
-        if vip_dhcp_allocation:
+        if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             self.set_machine_cidr(controller.get_machine_cidr())
         else:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
@@ -486,9 +495,12 @@ class Cluster:
                 static_ips=static_ips_config
             )
         nodes.start_all()
-        self.wait_until_hosts_are_discovered(nodes_count=nodes_count)
+        self.wait_until_hosts_are_discovered(nodes_count=nodes_count, allow_insufficient=True)
         nodes.set_hostnames(self)
-        self.set_host_roles()
+        if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
+            self.set_host_roles()
+        else:
+            nodes.set_single_node_ip(self)
         self.set_network_params(
             controller=nodes.controller,
             vip_dhcp_allocation=vip_dhcp_allocation,
