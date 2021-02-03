@@ -20,7 +20,7 @@ function init_minikube() {
         fi
     done
 
-    minikube start --driver=kvm2 --memory=8192 --cpus=4 --profile=${PROFILE} --force
+    minikube start --driver=kvm2 --memory=8192 --cpus=4 --profile=${PROFILE} --force --wait-timeout=15m0s
 }
 
 if [ "${DEPLOY_TARGET}" != "minikube" ]; then
