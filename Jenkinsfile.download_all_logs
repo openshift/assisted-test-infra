@@ -11,7 +11,7 @@ pipeline {
         SKIPPER_PARAMS = " "
         OFFLINE_TOKEN = credentials('admin_offline_token')
         JIRA_CREDS = credentials('Ronnie-jira')
-        LOGS_DEST = "build"
+        LOGS_DEST = "/var/ai-logs"
         SLACK_TOKEN = credentials('slack-token')
 
     }
