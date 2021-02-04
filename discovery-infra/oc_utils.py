@@ -173,16 +173,19 @@ def _load_resource_config_dict(resource):
     return json.loads(raw)
 
 
-def get_operators_status(kubeconfig):
+def oc(kubeconfig, *args):
     command = ["/usr/local/bin/oc",
-               "--kubeconfig", kubeconfig,
-               "get", "clusteroperators", "-o", "json"]
+            "--kubeconfig", kubeconfig] + args + ["-o", "json"]
 
     response = subprocess.run(command, stdout=subprocess.PIPE)
     if response.returncode != 0:
         return {}
 
-    output = json.loads(response.stdout)
+    return json.loads(response.stdout)
+
+
+def get_operators_status(kubeconfig):
+    output = oc(kubeconfig, "get", "clusteroperators")
     statuses = {}
 
     for item in output["items"]:
@@ -199,3 +202,27 @@ def get_operators_status(kubeconfig):
             statuses[name] = False
 
     return statuses
+
+
+def check_metal3(kubeconfig):
+    prov = oc(kubeconfig, "get", "Provisioning/provisioning-configuration")
+    if prov["spec"]["provisioningNetwork"] != "Disabled":
+        raise Exception("provisioningNetwork is %s, but should be Disabled", prov["spec"]["provisioningNetwork"])
+
+    for condition in oc(kubeconfig, "get", "co/baremetal")["status"]["conditions"]:
+        if condition["type"] == "Available" and condition["status"] == "False":
+            raise Exception("cbo is not available")
+        if condition["type"] == "Disabled" and condition["status"] == "True":
+            raise Exception("cbo is disabled")
+
+    for bmh in oc(kubeconfig, "get", "-n", "openshift-machine-api", "bmh")["items"]:
+        name = bmh["metadata"]["name"]
+        operationalStatus = bmh["status"].get("operationalStatus")
+        provisioningState = bmh["status"]["provisioning"].get("state")
+        consumerRef = bmh["spec"].get("consumerRef", {})
+        if operationalStatus != "discovered":
+            raise Exception("bmh %s is in operationalStatus %s not discovered", name, operationalStatus)
+        if provisioningState != "unmanaged":
+            raise Exception("bmh %s is in state %s not unmanaged", name, provisioningState)
+        if len(consumerRef) != 4:
+            raise Exception("bmh %s consumerRef is not set correctly %s", name, consumerRef)
