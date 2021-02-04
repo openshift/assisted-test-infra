@@ -23,17 +23,6 @@ from test_infra.tools import static_ips
 import bootstrap_in_place as ibip
 
 
-# Any change here should be reflected in scripts/haproxy.cfg as well
-IMAGE_REGISTRIES = [
-    "quay.io",
-    "cdn02.quay.io",
-    "mirror.openshift.com",
-    "registry.ci.openshift.org",
-    "ci-dv2np-image-registry-us-east-1-aunteqmixxpqypvdqwbmjbiloeix.s3.dualstack.us-east-1.amazonaws.com",
-    "registry.build02.ci.openshift.org",
-]
-
-REVERSE_PROXY_IP = "1001:db8::1"
 
 class MachineNetwork(object):
     YES_VALUES = ['yes', 'true', 'y']
@@ -49,6 +38,8 @@ class MachineNetwork(object):
         self.cidr_v6 = machine_cidr_6
         self.provisioning_cidr_v4 = _get_provisioning_cidr(machine_cidr_4, ns_index)
         self.provisioning_cidr_v6 = _get_provisioning_cidr6(machine_cidr_6, ns_index)
+        self.gateway_v4 = machine_cidr_4.split("/")[0] + "1"
+        self.gateway_v6 = machine_cidr_6.split("/")[0] + "1"
 
 def set_tf_config(cluster_name):
     nodes_details = _create_node_details(cluster_name)
@@ -59,7 +50,7 @@ def set_tf_config(cluster_name):
 
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
     default_image_path = os.path.join(consts.IMAGE_FOLDER, f'{args.namespace}-installer-image.iso')
-    reverse_proxy_hosts = IMAGE_REGISTRIES if args.reverse_proxy else []
+    reverse_proxy_hosts = list(utils.parse_domains_from_haproxy_config()) if args.reverse_proxy else []
     fill_tfvars(
         image_path=args.image or default_image_path,
         storage_path=args.storage_path,
@@ -68,7 +59,7 @@ def set_tf_config(cluster_name):
         tf_folder=tf_folder,
         machine_net=machine_net,
         reverse_proxy_hosts=reverse_proxy_hosts,
-        reverse_proxy_ip=REVERSE_PROXY_IP,
+        reverse_proxy_ip=machine_net.gateway_v6,
         assisted_service_domain=socket.gethostname(),
     )
 
@@ -124,12 +115,11 @@ def fill_tfvars(
     if machine_net.has_ip_v4:
         machine_cidr_addresses += [machine_net.cidr_v4]
         provisioning_cidr_addresses += [machine_net.provisioning_cidr_v4]
-        assisted_service_ips.append(socket.gethostbyname(assisted_service_domain))
 
     if machine_net.has_ip_v6:
         machine_cidr_addresses += [machine_net.cidr_v6]
         provisioning_cidr_addresses += [machine_net.provisioning_cidr_v6]
-        assisted_service_ips.append(REVERSE_PROXY_IP)
+        assisted_service_ips.append(machine_net.gateway_v6)
 
     tfvars['machine_cidr_addresses'] = machine_cidr_addresses
     tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses

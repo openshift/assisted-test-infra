@@ -193,7 +193,7 @@ _destroy_terraform:
 validate_namespace:
 	scripts/utils.sh validate_namespace $(NAMESPACE)
 
-run: validate_namespace deploy_assisted_service deploy_ui
+run: validate_namespace deploy_assisted_service deploy_ui deploy_haproxy
 
 run_full_flow: run deploy_nodes set_dns
 
@@ -208,6 +208,9 @@ set_dns:
 
 deploy_ui: start_minikube
 	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
+
+deploy_haproxy:
+	scripts/deploy_haproxy.sh
 
 deploy_prometheus_ui:
 	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_prometheus_ui.sh

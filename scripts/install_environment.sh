@@ -160,9 +160,10 @@ function config_chronyd() {
   sudo firewall-cmd --zone=libvirt --add-port=123/udp
 }
 
-function deploy_reverse_proxy() {
-    echo "Starting HAproxy for accessing services which are not IPv6 compatible"
-    . ./scripts/deploy_reverse_proxy.sh
+function install_haproxy() {
+    echo "Installing HAproxy for accessing services which are not IPv6 compatible"
+    sudo dnf install -y haproxy
+    sudo systemctl enable haproxy
 }
 
 function additional_configs() {
@@ -202,5 +203,5 @@ config_firewalld
 config_squid
 fix_ipv6_routing
 config_chronyd
-deploy_reverse_proxy
+install_haproxy
 additional_configs

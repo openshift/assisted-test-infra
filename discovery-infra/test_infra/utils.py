@@ -829,3 +829,12 @@ def get_assisted_controller_status(kubeconfig):
 
     log.info(f'{response.stdout}')
     return response.stdout
+
+
+def parse_domains_from_haproxy_config():
+    with open("/etc/haproxy/haproxy.cfg", "r") as config:
+        for line in config.readlines():
+            line = line.strip()
+            if line.startswith("server"):
+                _, domain, _ = line.split(" ")  # server, <domain>, <address>
+                yield domain
