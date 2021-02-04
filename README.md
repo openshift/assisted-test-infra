@@ -1,4 +1,4 @@
-# Test-Infra
+# Tst-Infra
 
 This project deploys the OpenShift Assisted Installer in Minikube and spawns libvirt VMs that represent bare metal hosts.
 
