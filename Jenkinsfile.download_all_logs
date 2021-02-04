@@ -28,7 +28,7 @@ pipeline {
 
         stage('Run') {
             steps {
-                sh "make download_all_logs"
+                sh '''make download_logs ADDITIONAL_PARAMS="--download-all"'''
             }
         }
     }

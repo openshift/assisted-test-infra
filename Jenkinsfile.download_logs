@@ -28,7 +28,7 @@ pipeline {
 
         stage('Run') {
             steps {
-                sh "make download_logs"
+                sh '''make download_logs ADDITIONAL_PARAMS="--download-all --must-gather"'''
                 dir ('deploymentRepo') {
                     sh "rm -rf assisted-installer-deployment"
                     sh "git clone 'https://github.com/eranco74/assisted-installer-deployment'"

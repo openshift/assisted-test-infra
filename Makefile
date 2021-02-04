@@ -337,16 +337,10 @@ delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forw
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
 
 _download_logs:
-	discovery-infra/download_logs.py $(REMOTE_SERVICE_URL) $(LOGS_DEST) --cluster-id $(CLUSTER_ID) --must-gather
+	discovery-infra/download_logs.py $(REMOTE_SERVICE_URL) $(LOGS_DEST) --cluster-id $(CLUSTER_ID) $(ADDITIONAL_PARAMS)
 
 download_logs:
-	skipper make $(SKIPPER_PARAMS) _download_logs
-
-_download_all_logs:
-	discovery-infra/download_logs.py $(REMOTE_SERVICE_URL) $(LOGS_DEST)  --download-all --update-by-events
-
-download_all_logs:
-	skipper make $(SKIPPER_PARAMS) _download_all_logs
+	skipper make $(SKIPPER_PARAMS) _download_logs $(ADDITIONAL_PARAMS)
 
 #######
 # ISO #
