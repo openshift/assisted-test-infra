@@ -131,8 +131,8 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
                 client.download_cluster_logs(cluster['id'], cluster_logs_tar)
                 try:
                     verify_logs_uploaded(cluster_logs_tar, min_number_of_logs,
-                                         cluster['status'] == ClusterStatus.INSTALLED,
-                                         are_masters_in_join_state)
+                                         installation_success=(cluster['status'] == ClusterStatus.INSTALLED),
+                                         check_oc=are_masters_in_join_state)
                     break
                 except AssertionError as ex:
                     log.warn(f"Cluster logs verification failed: {ex}")
