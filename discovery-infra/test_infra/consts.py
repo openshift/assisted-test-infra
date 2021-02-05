@@ -35,6 +35,7 @@ LOG_FOLDER = "/tmp/assisted_test_infra_logs"
 DEFAULT_OPENSHIFT_VERSION = "4.6"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_TEST_INFRA_DOMAIN = '.test-infra-cluster-assisted-installer.redhat.com'
+TEST_TARGET_INTERFACE = "vnet3"
 
 
 class ImageType:

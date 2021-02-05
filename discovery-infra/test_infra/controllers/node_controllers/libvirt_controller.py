@@ -1,7 +1,6 @@
 import os
 import re
 import string
-import uuid
 import logging
 import tempfile
 from abc import ABC
@@ -28,7 +27,7 @@ class LibvirtController(NodeController, ABC):
     def __del__(self):
         with suppress(Exception):
             self.libvirt_connection.close()
-            
+
     @property
     def setup_time(self):
         return self._setup_timestamp
@@ -239,6 +238,80 @@ class LibvirtController(NodeController, ABC):
             assert source_file.startswith(
                 tempfile.gettempdir()), "File unexpectedly not in tmp, avoiding deletion to be on the safe side"
             os.remove(source_file)
+
+    def attach_interface(self, node_name, network_xml, target_interface=consts.TEST_TARGET_INTERFACE):
+        """
+        Create network and Interface. New interface will be attached to a given node.
+        """
+        network = self.create_network(network_xml)
+        interface_mac = self.add_interface(node_name, network.bridgeName(), target_interface)
+        return network, interface_mac
+
+    def create_network(self, network_xml):
+        """
+        Create a network from a given xml and return libvirt.virNetwork object
+        """
+        logging.info(f"Creating new network: {network_xml}")
+        network = self.libvirt_connection.networkCreateXML(network_xml)
+        if network is None:
+            raise Exception(f"Failed to create network: {network_xml}")
+        active = network.isActive()
+        if active != 1:
+            self.destroy_network(network)
+            raise Exception(f"Failed to activate network: {network_xml}")
+        logging.info(f"Successfully created and activated network. name: {network.name()}")
+        return network
+
+    def get_network_by_name(self, network_name):
+        """
+        Get network name and return libvirt.virNetwork object
+        """
+        return self.libvirt_connection.networkLookupByName(network_name)
+
+    def destroy_network(self, network):
+        """
+        Destroy network of a given libvirt.virNetwork object
+        """
+        logging.info(f"Destroy network: {network.name()}")
+        network.destroy()
+
+    def add_interface(self, node_name, network_name, target_interface):
+        """
+        Create an interface using given network name, return created interface's mac address.
+        Note: Do not use the same network for different tests
+        """
+        logging.info(f"Creating new interface attached to network: {network_name}, for node: {node_name}")
+        net_leases = self.list_leases(network_name)
+        mac_addresses = []
+        for lease in net_leases:
+            mac_addresses.append(lease['mac'])
+        command = f"virsh attach-interface {node_name} network {network_name} --target {target_interface} --persistent"
+        utils.run_command(command)
+        try:
+            waiting.wait(
+                    lambda: len(self.list_leases(network_name)) > len(mac_addresses),
+                    timeout_seconds=30,
+                    sleep_seconds=2,
+                    waiting_for="Wait for network lease"
+            )
+        except waiting.exceptions.TimeoutExpired:
+            logging.error("Network lease wasnt found for added interface")
+            raise
+
+        new_net_leases = self.list_leases(network_name)
+        for lease in new_net_leases:
+            if not lease['mac'] in mac_addresses:
+                mac_address = lease['mac']
+                break
+        logging.info(f"Successfully attached interface, network: {network_name}, mac: {mac_address}, for node:"
+                     f" {node_name}")
+        return mac_address
+
+    def undefine_interface(self, node_name, mac):
+        logging.info(f"Undefining an interface mac: {mac}, for node: {node_name}")
+        command = f"virsh detach-interface {node_name} --type network --mac {mac}"
+        utils.run_command(command, True)
+        logging.info(f"Successfully removed interface.")
 
     def restart_node(self, node_name):
         logging.info("Restarting %s", node_name)

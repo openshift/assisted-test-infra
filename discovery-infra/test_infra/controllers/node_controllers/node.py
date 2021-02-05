@@ -145,3 +145,21 @@ class Node:
 
     def detach_all_test_disks(self):
         self.node_controller.detach_all_test_disks(self.name)
+
+    def attach_interface(self, network_xml, target_interface=consts.TEST_TARGET_INTERFACE):
+        return self.node_controller.attach_interface(self.name, network_xml, target_interface)
+
+    def add_interface(self, network_name, target_interface=consts.TEST_TARGET_INTERFACE):
+        return self.node_controller.add_interface(self.name, network_name, target_interface)
+
+    def create_network(self, network_xml):
+        return self.node_controller.create_network(network_xml)
+
+    def get_network_by_name(self, network_name):
+        return self.node_controller.get_network_by_name(network_name)
+
+    def destroy_network(self, network):
+        self.node_controller.destroy_network(network)
+
+    def undefine_interface(self, mac):
+        self.node_controller.undefine_interface(self.name, mac)

@@ -9,7 +9,6 @@ from pathlib import Path
 from paramiko import SSHException
 import shutil
 from copy import deepcopy
-import math
 
 from test_infra import consts
 import test_infra.utils as infra_utils
@@ -20,6 +19,7 @@ from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.nodes import Nodes
 from tests.conftest import env_variables, qe_env
 from download_logs import download_logs
+
 
 class BaseTest:
     @staticmethod
@@ -137,6 +137,26 @@ class BaseTest:
 
         for modified_node in modified_nodes:
             modified_node.detach_all_test_disks()
+
+    @pytest.fixture()
+    def attach_interface(self):
+        added_networks = []
+
+        def add(node, network_name=None, network_xml=None):
+            if network_xml:
+                network, interface_mac = node.attach_interface(network_xml)
+            elif network_name:
+                interface_mac = node.add_interface(network_name)
+                network = node.get_network_by_name(network_name)
+            added_networks.append({"node": node, "network": network, "mac": interface_mac})
+
+        yield add
+        for added_network in added_networks:
+            logging.info(f'Deleting custom networks:{added_networks}')
+            with suppress(Exception):
+                node_obj = added_network.get("node")
+                node_obj.undefine_interface(added_network.get("mac"))
+                node_obj.destroy_network(added_network.get("network"))
 
     @pytest.fixture()
     def proxy_server(self):

@@ -1,3 +1,4 @@
+import libvirt
 from typing import Dict, List, Any, Tuple
 from test_infra.controllers.node_controllers.node import Node
 from abc import ABC, abstractmethod
@@ -115,4 +116,28 @@ class NodeController(ABC):
 
     @abstractmethod
     def get_machine_cidr(self) -> str:
+        pass
+
+    @abstractmethod
+    def attach_interface(self, node_name, network_xml: str) -> Tuple[libvirt.virNetwork, str]:
+        pass
+
+    @abstractmethod
+    def add_interface(self, node_name, network_name, target_interface: str) -> str:
+        pass
+
+    @abstractmethod
+    def undefine_interface(self, node_name: str, mac: str):
+        pass
+
+    @abstractmethod
+    def create_network(self, network_xml: str) -> libvirt.virNetwork:
+        pass
+
+    @abstractmethod
+    def get_network_by_name(self, network_name: str) -> libvirt.virNetwork:
+        pass
+
+    @abstractmethod
+    def destroy_network(self, network: libvirt.virNetwork):
         pass
