@@ -56,10 +56,10 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "cluster_cidr": utils.get_env('CLUSTER_CIDR', '10.128.0.0/14'),
                  "host_prefix": int(utils.get_env('HOST_PREFIX', '23')),
                  "iso_image_type": utils.get_env('ISO_IMAGE_TYPE', consts.ImageType.FULL_ISO),
-                 "worker_vcpu": utils.get_env('WORKER_CPU',consts.WORKER_CPU),
-                 "master_vcpu": utils.get_env('MASTER_CPU', consts.MASTER_CPU)
+                 "worker_vcpu": utils.get_env('WORKER_CPU', consts.WORKER_CPU),
+                 "master_vcpu": utils.get_env('MASTER_CPU', consts.MASTER_CPU),
+                 "test_teardown": bool(util.strtobool(utils.get_env('TEST_TEARDOWN', 'true')))
                  }
-
 cluster_mid_name = infra_utils.get_random_name()
 
 # Tests running on terraform parallel must have unique ISO file
