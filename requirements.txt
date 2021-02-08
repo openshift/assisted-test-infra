@@ -22,4 +22,3 @@ scp==0.13.3
 openshift-client==1.0.12
 Jinja2===2.11.3
 pytest-xdist==2.2.0
-cryptography==3.3.2
