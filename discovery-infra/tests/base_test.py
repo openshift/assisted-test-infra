@@ -21,6 +21,7 @@ from test_infra.helper_classes.nodes import Nodes
 from tests.conftest import env_variables, qe_env
 from download_logs import download_logs
 
+
 class BaseTest:
     @staticmethod
     def override_node_parameters(**kwargs):
@@ -47,8 +48,9 @@ class BaseTest:
             nodes = Nodes(controller, node_vars["private_ssh_key_path"])
             nodes.prepare_nodes()
             yield nodes
-            logging.info('--- TEARDOWN --- node controller\n')
-            nodes.destroy_all_nodes()
+            if env_variables['test_teardown']:
+                logging.info('--- TEARDOWN --- node controller\n')
+                nodes.destroy_all_nodes()
         finally:
             if not qe_env:
                 net_asset.release_all()
@@ -64,7 +66,6 @@ class BaseTest:
                              high_availability_mode=consts.HighAvailabilityMode.FULL):
             if not cluster_name:
                 cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
-
             res = Cluster(api_client=api_client,
                           cluster_name=cluster_name,
                           additional_ntp_source=additional_ntp_source,
@@ -73,19 +74,17 @@ class BaseTest:
                           high_availability_mode=high_availability_mode)
             clusters.append(res)
             return res
-
         yield get_cluster_func
-
         for cluster in clusters:
             if request.node.result_call.failed:
                 logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
                 self.collect_test_logs(cluster, api_client, request.node, nodes)
-            logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
-            if cluster.is_installing() or cluster.is_finalizing():
-                cluster.cancel_install()
-
-            with suppress(ApiException):
-                cluster.delete()
+            if env_variables['test_teardown']:
+                if cluster.is_installing() or cluster.is_finalizing():
+                    cluster.cancel_install()
+                with suppress(ApiException):
+                    logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
+                    cluster.delete()
 
     @pytest.fixture()
     def iptables(self):
