@@ -5,7 +5,7 @@ FROM quay.io/centos/centos:8.3.2011
 RUN yum -y install make gcc unzip wget curl git podman httpd-tools jq nss_wrapper \
   python3 python3-devel \
   libvirt-client libvirt-devel libguestfs-tools && \
-  yum clean all
+  yum clean all && pip3 install --upgrade pip
 
 RUN wget -q https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform*.zip -d /usr/bin/ && rm -rf terraform*.zip
 
@@ -19,7 +19,7 @@ RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/do
 
 COPY requirements.txt /tmp/
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
+RUN pip3 install --no-cache-dir -I -r /tmp/requirements.txt && \
   pip3 install --upgrade /build/pip/*
 
 # setting pre-commit env
