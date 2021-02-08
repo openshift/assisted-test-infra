@@ -144,3 +144,15 @@ variable "running" {
 variable "cluster_inventory_id" {
   type      = string
 }
+
+variable "load_balancer_ip" {
+  type = string
+  description = "IP address for load balancer"
+  default = ""
+}
+
+variable "load_balancer_config_file" {
+  type = string
+  description = "Contents of load balancer configuration file"
+  default = ""
+}

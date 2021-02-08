@@ -4,6 +4,7 @@ import ipaddress
 import itertools
 import json
 import logging
+import re
 import os
 import random
 import shlex
@@ -669,15 +670,15 @@ def get_libvirt_nodes_from_tf_state(network_names, tf_state):
 
 
 def extract_nodes_from_tf_state(tf_state, network_names, role):
-    domains = next(r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and r["name"] == role)
     data = {}
-    for d in domains:
-        for nic in d["attributes"]["network_interface"]:
+    for domains in [r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and role in r["name"]]:
+        for d in domains:
+            for nic in d["attributes"]["network_interface"]:
 
-            if nic["network_name"] not in network_names:
-                continue
+                if nic["network_name"] not in network_names:
+                    continue
 
-            data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
+                data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
 
     return data
 

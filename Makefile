@@ -114,7 +114,7 @@ PLATFORM := $(or ${PLATFORM},baremetal)
 all: create_full_environment run_full_flow_with_install
 
 
-destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost
+destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost stop_load_balancer
 
 ###############
 # Environment #
@@ -156,6 +156,17 @@ delete_minikube_profile:
 
 delete_podman_localhost:
 	make -C assisted-service/ clean-onprem || true
+
+####################
+# Load balancer    #
+####################
+
+start_load_balancer:
+	# Start load balancer if it does not already exist.  Map the directory $(HOME)/.test-infra/etc/nginx/stream.d to be /etc/nginx/stream.d so it will be used by the python code to fill up load balancing definitions
+	if [ "$(PLATFORM)" = "none" ] ; then id=`podman ps --quiet --filter "name=load_balancer"` ; ( test -z "$$id" && podman run -d --rm --net=host --name=load_balancer -v $(HOME)/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d load_balancer:latest ) || ! test -z "$$id" ; fi
+
+stop_load_balancer:
+	id=`podman ps --quiet --filter "name=load_balancer"`; test ! -z "$$id"  && podman rm -f load_balancer ; rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
 
 #############
 # Terraform #
@@ -274,7 +285,7 @@ install_cluster:
 _deploy_nodes:
 	discovery-infra/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nM $(NETWORK_MTU) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --profile $(PROFILE) --ns-index $(NAMESPACE_INDEX) --deploy-target $(DEPLOY_TARGET) $(DAY1_PARAMS) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS) $(DAY2_PARAMS) -ndw $(NUM_DAY2_WORKERS) --ipv4 $(IPv4) --ipv6 $(IPv6) --platform $(PLATFORM) --proxy $(PROXY) --iso-image-type $(ISO_IMAGE_TYPE)
 
-deploy_nodes_with_install:
+deploy_nodes_with_install: start_load_balancer
 	bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG)
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" $(SKIPPER_PARAMS) DAY1_PARAMS=--day1-cluster
 
@@ -282,7 +293,7 @@ deploy_nodes_with_install:
 deploy_static_ips_nodes_with_install:
 	make deploy_nodes_with_install ADDITIONAL_PARAMS="'--with-static-ips'"
 
-deploy_nodes:
+deploy_nodes: start_load_balancer
 	bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG)
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=$(ADDITIONAL_PARAMS) DAY1_PARAMS=--day1-cluster
 
