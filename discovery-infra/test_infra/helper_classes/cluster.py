@@ -721,6 +721,15 @@ class Cluster:
                 return ip
         raise Exception("IP for single node IPv6 not found")
 
+    def get_host_disks(self, host, filter=None):
+        hosts = self.get_hosts()
+        selected_host = [h for h in hosts if h["id"] == host["id"]]
+        disks = json.loads(selected_host[0]["inventory"])["disks"]
+        if not filter:
+            return [disk for disk in disks]
+        else:
+            return [disk for disk in disks if filter(disk)]
+
     def get_inventory_host_ips_data(self, host: dict):
         nics = self.get_inventory_host_nics_data(host)
         return [nic["ip"] for nic in nics]
