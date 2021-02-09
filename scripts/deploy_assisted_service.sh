@@ -17,8 +17,10 @@ export PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES:-}
 
 mkdir -p build
 
-./assisted-service/tools/handle_ocp_versions.py --src ./assisted-service/default_ocp_versions.json \
-    --dest ./assisted-service/default_ocp_versions.json --ocp-override ${OPENSHIFT_INSTALL_RELEASE_IMAGE}
+if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
+    ./assisted-service/tools/handle_ocp_versions.py --src ./assisted-service/default_ocp_versions.json \
+        --dest ./assisted-service/default_ocp_versions.json --ocp-override ${OPENSHIFT_INSTALL_RELEASE_IMAGE}
+fi
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "${INSTALLER_IMAGE:-}" ]; then
