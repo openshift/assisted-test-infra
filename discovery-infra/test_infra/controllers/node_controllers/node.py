@@ -141,8 +141,8 @@ class Node:
     def reset_ram_kib(self):
         self.set_ram_kib(self.original_ram_kib)
 
-    def attach_test_disk(self, disk_size, bootable=False):
-        return self.node_controller.attach_test_disk(self.name, disk_size, bootable)
+    def attach_test_disk(self, disk_size, **kwargs):
+        return self.node_controller.attach_test_disk(self.name, disk_size, **kwargs)
 
     def detach_all_test_disks(self):
         self.node_controller.detach_all_test_disks(self.name)
