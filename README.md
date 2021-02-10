@@ -107,6 +107,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | SERVICE_REPO                | assisted-service repository to use, default: https://github.com/openshift/assisted-service                                                  |
 | SSH_PUB_KEY                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub                                            |
 | SSO_URL                     | URL used to fetch JWT tokens for assisted-service authentication                                                                            |
+| WITH_AMS_SUBSCRIPTIONS      | configure assisted-service to create AMS subscription for each registered cluster, default: false                                           |
 | WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                                       |
 | PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                                 |
 | CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                                       |
