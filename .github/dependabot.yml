@@ -13,3 +13,5 @@ updates:
       - "approved"
       - "ok-to-test"
       - "lgtm"
+      - "ok-to-test"
+      - "dependencies"
