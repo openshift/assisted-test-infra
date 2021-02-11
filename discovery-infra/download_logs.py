@@ -26,13 +26,14 @@ from test_infra.utils import config_etc_hosts, recreate_folder, run_command, are
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 MAX_RETRIES = 3
 RETRY_INTERVAL = 60 * 5
+CONNECTION_TIMEOUT = 30
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def main():
     args = handle_arguments()
-    client = create_client(url=args.inventory_url)
+    client = create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT)
 
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
@@ -101,6 +102,9 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
+
+        with suppress(AssertionError, ConnectionError):
+            client.download_metrics(os.path.join(output_folder, "metrics.txt"))
 
         with suppress(assisted_service_client.rest.ApiException):
             client.download_ignition_files(cluster['id'], os.path.join(output_folder, "cluster_files"))

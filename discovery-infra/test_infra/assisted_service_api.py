@@ -72,11 +72,11 @@ class InventoryClient(object):
         log.info("Setting X-Secret-Key")
         c.api_key['X-Secret-Key'] = json.loads(pull_secret)['auths']['cloud.openshift.com']['auth']
 
-    def wait_for_api_readiness(self):
+    def wait_for_api_readiness(self, timeout):
         log.info("Waiting for inventory api to be ready")
         waiting.wait(
             lambda: self.clusters_list() is not None,
-            timeout_seconds=consts.WAIT_FOR_BM_API,
+            timeout_seconds=timeout,
             sleep_seconds=5,
             waiting_for="Wait till inventory is ready",
             expected_exceptions=Exception,
@@ -268,6 +268,18 @@ class InventoryClient(object):
         with open(kubeconfig_path, "wb") as _file:
             _file.write(response.data)
 
+    def download_metrics(self, dest):
+        log.info("Downloading metrics to %s", dest)
+
+        url = self.inventory_url
+        if not url.startswith('http://'):
+            url = f'http://{url}'
+        response = requests.get(f"{url}/metrics")
+        assert response.status_code == 200
+
+        with open(dest, "w") as _file:
+            _file.write(response.text)
+
     def install_cluster(self, cluster_id):
         log.info("Installing cluster %s", cluster_id)
         return self.client.install_cluster(cluster_id=cluster_id)
@@ -403,10 +415,11 @@ def create_client(
     url,
     offline_token=utils.get_env('OFFLINE_TOKEN'),
     pull_secret="",
-    wait_for_api=True
+    wait_for_api=True,
+    timeout=consts.WAIT_FOR_BM_API
     ):
     log.info('Creating assisted-service client for url: %s', url)
     c = InventoryClient(url, offline_token, pull_secret)
     if wait_for_api:
-        c.wait_for_api_readiness()
+        c.wait_for_api_readiness(timeout)
     return c
