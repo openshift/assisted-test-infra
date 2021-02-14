@@ -37,10 +37,12 @@ resource "libvirt_network" "net" {
       data.libvirt_network_dns_host_template.masters.*.rendered,
       data.libvirt_network_dns_host_template.masters_int.*.rendered,
       data.libvirt_network_dns_host_template.masters_console.*.rendered,
+      data.libvirt_network_dns_host_template.masters_canary.*.rendered,
       data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec_int.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec_console.*.rendered,
+      data.libvirt_network_dns_host_template.masters_sec_canary.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec_oauth.*.rendered,
       )
       content {
@@ -64,10 +66,12 @@ resource "libvirt_network" "secondary_net" {
       data.libvirt_network_dns_host_template.masters.*.rendered,
       data.libvirt_network_dns_host_template.masters_int.*.rendered,
       data.libvirt_network_dns_host_template.masters_console.*.rendered,
+      data.libvirt_network_dns_host_template.masters_canary.*.rendered,
       data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec_int.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec_console.*.rendered,
+      data.libvirt_network_dns_host_template.masters_sec_canary.*.rendered,
       data.libvirt_network_dns_host_template.masters_sec_oauth.*.rendered,
       )
       content {
@@ -96,6 +100,12 @@ data "libvirt_network_dns_host_template" "masters_console" {
   hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
+data "libvirt_network_dns_host_template" "masters_canary" {
+  count    = var.master_count
+  ip       = var.libvirt_master_ips[count.index][0]
+  hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
+}
+
 data "libvirt_network_dns_host_template" "masters_oauth" {
   count    = var.master_count
   ip       = var.libvirt_master_ips[count.index][0]
@@ -118,6 +128,12 @@ data "libvirt_network_dns_host_template" "masters_sec_console" {
   count    = 1
   ip       = var.libvirt_secondary_master_ips[0][0]
   hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
+}
+
+data "libvirt_network_dns_host_template" "masters_sec_canary" {
+  count    = 1
+  ip       = var.libvirt_secondary_master_ips[0][0]
+  hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "masters_sec_oauth" {

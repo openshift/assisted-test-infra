@@ -39,6 +39,7 @@ resource "libvirt_network" "net" {
         data.libvirt_network_dns_host_template.api-int.*.rendered,
         data.libvirt_network_dns_host_template.oauth.*.rendered,
         data.libvirt_network_dns_host_template.console.*.rendered,
+        data.libvirt_network_dns_host_template.canary.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -190,4 +191,10 @@ data "libvirt_network_dns_host_template" "console" {
   count    = var.bootstrap_in_place && var.single_node_ip != "" ? 1 : 0
   ip       = var.single_node_ip
   hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
+}
+
+data "libvirt_network_dns_host_template" "canary" {
+  count    = var.bootstrap_in_place && var.single_node_ip != "" ? 1 : 0
+  ip       = var.single_node_ip
+  hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
 }
