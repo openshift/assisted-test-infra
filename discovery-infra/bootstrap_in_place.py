@@ -29,9 +29,7 @@ SSH_KEY = os.path.join("ssh_key", "key")
 
 def installer_generate(openshift_release_image):
     logging.info("Installer generate ignitions")
-    bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE": openshift_release_image,
-               "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE": "true",
-               "OPENSHIFT_INSTALL_EXPERIMENTAL_BOOTSTRAP_IN_PLACE_COREOS_INSTALLER_ARGS": "/dev/vda"}
+    bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
     utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}", env=bip_env)
 
 
@@ -66,6 +64,7 @@ def fill_install_config(pull_secret, ssh_pub_key, net_asset, cluster_name):
     with open(INSTALL_CONFIG, "r") as _file:
         config = yaml.safe_load(_file)
 
+    config["BootstrapInPlace"] = {"InstallationDisk": "/dev/vda"}
     config["pullSecret"] = pull_secret
     config["sshKey"] = ssh_pub_key
     config["metadata"]["name"] = cluster_name
