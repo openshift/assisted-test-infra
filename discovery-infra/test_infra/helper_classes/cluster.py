@@ -1,12 +1,15 @@
 import logging
-import waiting
 import random
 import yaml
 import json
 import time
+import ipaddress
+import contextlib
 from typing import List
 import requests
 from collections import Counter
+
+import waiting
 from netaddr import IPNetwork, IPAddress
 from assisted_service_client import models
 
@@ -127,7 +130,7 @@ class Cluster:
     def set_ocs(self, ocs_enabled):
         logging.info(f'Enabling Ocs to:{ocs_enabled} for cluster: {self.id}')
         ocs_operator={"operators":[{"operator_type":"ocs","enabled":ocs_enabled}]}
-        self.api_client.update_cluster(self.id, ocs_operator)    
+        self.api_client.update_cluster(self.id, ocs_operator)
 
     def set_host_roles(
         self,
@@ -697,7 +700,6 @@ class Cluster:
 
     @staticmethod
     def get_inventory_host_nics_data(host: dict, ipv4_first=True):
-
         def get_network_interface_ip(interface):
             addresses = interface.ipv4_addresses + interface.ipv6_addresses if ipv4_first else \
                 interface.ipv6_addresses + interface.ipv4_addresses
@@ -754,36 +756,33 @@ class Cluster:
         logging.info("api vip is %s", api_vip)
         return api_vip
 
-    # There is cases where kube api is not reachable so some amount of time
-    # Better to wait and retry
-    def _wait_for_api_vip(self, hosts, timeout=180, interval=1):
-        api_vip = self.get_kube_api_ip(hosts=hosts)
-        start_time = time.time()
-        while not api_vip and time.time() - start_time < timeout:
-            api_vip = self.get_kube_api_ip(hosts=hosts)
-            time.sleep(1)
+    def _wait_for_api_vip(self, hosts, timeout=180):
+        """Enable some grace time for waiting for API's availability."""
+        return waiting.wait(lambda: self.get_kube_api_ip(hosts=hosts),
+                            timeout_seconds=timeout,
+                            sleep_seconds=5,
+                            waiting_for="API's IP")
 
-        if not api_vip:
-            raise Exception("No running kube-api found")
-        return api_vip
-
-    # validate if kube-api is ready on given address
     @staticmethod
     def is_kubeapi_service_ready(ip_or_dns):
+        """Validate if kube-api is ready on given address."""
+        with contextlib.suppress(ValueError):
+            # IPv6 addresses need to be surrounded with square-brackets
+            # to differentiate them from domain names
+            if ipaddress.ip_address(ip_or_dns).version == 6:
+                ip_or_dns = f"[{ip_or_dns}]"
+
         try:
-            response = requests.get(f'https://{ip_or_dns}:6443/readyz', verify=False)
-            if response.status_code == 200:
-                return True
+            response = requests.get(f'https://{ip_or_dns}:6443/readyz',
+                                    verify=False,
+                                    timeout=1)
+            return response.ok
         except:
-            pass
-        return False
+            return False
 
 
 def get_api_vip_from_cluster(api_client, cluster_info: models.cluster.Cluster):
     if isinstance(cluster_info, dict):
-        # workaround for MGMT-3583
-        if "user-managed-networking" in cluster_info:
-            cluster_info["user_managed_networking"] = cluster_info.pop("user-managed-networking")
         cluster_info = models.cluster.Cluster(**cluster_info)
     cluster = Cluster(api_client=api_client, cluster_id=cluster_info.id)
     return cluster.get_api_vip(cluster=cluster_info)
