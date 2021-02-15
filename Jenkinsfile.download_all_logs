@@ -9,11 +9,13 @@ pipeline {
 
     environment {
         SKIPPER_PARAMS = " "
-        OFFLINE_TOKEN = credentials('admin_offline_token')
-        JIRA_CREDS = credentials('Ronnie-jira')
-        LOGS_DEST = "/var/ai-logs"
-        SLACK_TOKEN = credentials('slack-token')
 
+        LOGS_DEST = "/var/ai-logs"
+        ADDITIONAL_PARAMS = "--download-all --update-by-events"
+
+        // Credentials
+        OFFLINE_TOKEN = credentials('admin_offline_token')
+        SLACK_TOKEN = credentials('slack-token')
     }
     options {
       timeout(time: 4, unit: 'HOURS')
@@ -28,7 +30,7 @@ pipeline {
 
         stage('Run') {
             steps {
-                sh "make download_all_logs"
+                sh "make download_cluster_logs"
             }
         }
     }

@@ -9,11 +9,14 @@ pipeline {
 
     environment {
         SKIPPER_PARAMS = " "
+
+        LOGS_DEST = "build"
+        ADDITIONAL_PARAMS = "--must-gather"
+
+        // Credentials
         OFFLINE_TOKEN = credentials('admin_offline_token')
         JIRA_CREDS = credentials('Ronnie-jira')
-        LOGS_DEST = "build"
         SLACK_TOKEN = credentials('slack-token')
-
     }
     options {
       timeout(time: 30, unit: 'MINUTES')
@@ -28,7 +31,7 @@ pipeline {
 
         stage('Run') {
             steps {
-                sh "make download_logs"
+                sh "make download_cluster_logs"
                 dir ('deploymentRepo') {
                     sh "rm -rf assisted-installer-deployment"
                     sh "git clone 'https://github.com/eranco74/assisted-installer-deployment'"
