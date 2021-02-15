@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
-import sys
 import re
+import sys
+from contextlib import suppress
 
 
 class SensitiveFormatter(logging.Formatter):
@@ -15,6 +16,16 @@ class SensitiveFormatter(logging.Formatter):
     def format(self, record):
         original = logging.Formatter.format(self, record)
         return self._filter(original)
+
+
+class suppressAndLog(suppress):
+    def __exit__(self, exctype, excinst, exctb):
+        res = super().__exit__(exctype, excinst, exctb)
+
+        if res:
+            log.exception(exctype)
+
+        return res
 
 
 logging.getLogger("requests").setLevel(logging.ERROR)

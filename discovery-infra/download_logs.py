@@ -1,27 +1,29 @@
 #!/usr/bin/env python3
 
+import filecmp
 import json
 import os
 import shutil
-import tempfile
 import subprocess
+import tempfile
 import time
-import filecmp
 from argparse import ArgumentParser
 from collections import Counter
 from contextlib import suppress
 from datetime import datetime
+
 import assisted_service_client
+import requests
 import urllib3
 from dateutil.parser import isoparse
 
-from logger import log
+from logger import log, suppressAndLog
 from test_infra.assisted_service_api import InventoryClient, create_client
-from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.consts import ClusterStatus, HostsProgressStages
+from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.logs_utils import verify_logs_uploaded
-
-from test_infra.utils import config_etc_hosts, recreate_folder, run_command, are_host_progress_in_stage
+from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
+                              recreate_folder, run_command)
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 MAX_RETRIES = 3
@@ -62,14 +64,15 @@ def get_clusters(client, all_cluster):
 def should_download_logs(cluster: dict):
     return cluster['status'] in [ClusterStatus.ERROR]
 
+
 def min_number_of_log_files(cluster, is_controller_expected):
     if is_controller_expected:
         return len(cluster['hosts']) + 1
     else:
         return  len(cluster['hosts'])
 
-def is_update_needed(output_folder: str, update_on_events_update: bool, client: InventoryClient, cluster: dict):
 
+def is_update_needed(output_folder: str, update_on_events_update: bool, client: InventoryClient, cluster: dict):
     if not os.path.isdir(output_folder):
         return True
     if not update_on_events_update:
@@ -77,7 +80,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
 
     destination_event_file_path = get_cluster_events_path(cluster, output_folder)
     with tempfile.NamedTemporaryFile() as latest_event_tp:
-        with suppress(assisted_service_client.rest.ApiException):
+        with suppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], latest_event_tp.name)
 
         if filecmp.cmp(destination_event_file_path, latest_event_tp.name):
@@ -91,6 +94,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
             need_update = True
     return need_update
 
+
 def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL):
     output_folder = get_logs_output_folder(dest, cluster)
     if not is_update_needed(output_folder, update_by_events, client, cluster):
@@ -103,21 +107,21 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
 
-        with suppress(AssertionError, ConnectionError):
+        with suppressAndLog(AssertionError, ConnectionError, requests.exceptions.ConnectionError):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
 
-        with suppress(assisted_service_client.rest.ApiException):
+        with suppressAndLog(assisted_service_client.rest.ApiException):
             client.download_ignition_files(cluster['id'], os.path.join(output_folder, "cluster_files"))
 
         for host_id in map(lambda host: host['id'], cluster['hosts']):
-            with suppress(assisted_service_client.rest.ApiException):
+            with suppressAndLog(assisted_service_client.rest.ApiException):
                 client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
 
-        with suppress(assisted_service_client.rest.ApiException):
+        with suppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], get_cluster_events_path(cluster, output_folder))
             shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
-        with suppress(assisted_service_client.rest.ApiException):
+        with suppressAndLog(assisted_service_client.rest.ApiException):
             are_masters_in_configuring_state = are_host_progress_in_stage(
                 cluster['hosts'], [HostsProgressStages.CONFIGURING], 2)
             are_masters_in_join_state = are_host_progress_in_stage(
@@ -148,7 +152,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
         kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
 
-        with suppress(assisted_service_client.rest.ApiException):
+        with suppressAndLog(assisted_service_client.rest.ApiException):
             client.download_kubeconfig_no_ingress(cluster['id'], kubeconfig_path)
 
             if must_gather:
@@ -159,8 +163,10 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")
 
+
 def get_cluster_events_path(cluster, output_folder):
     return os.path.join(output_folder, f"cluster_{cluster['id']}_events.json")
+
 
 def get_logs_output_folder(dest: str, cluster: dict):
     started_at = cluster['install_started_at']
