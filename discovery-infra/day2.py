@@ -37,10 +37,12 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
         terraform_cluster_dir_prefix = "test-infra-cluster-assisted-installer"
     else:
         cluster_id = str(uuid.uuid4())
+        copy_proxy_from_cluster = cluster
         cluster = client.create_day2_cluster(
             cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(openshift_version, api_vip_dnsname)
         )
         set_cluster_pull_secret(client, cluster_id, args.pull_secret)
+        set_cluster_proxy(client, cluster_id, copy_proxy_from_cluster, args)
 
     config_etc_hosts(api_vip_ip, api_vip_dnsname)
     image_path = os.path.join(
@@ -265,3 +267,13 @@ def _day2_cluster_create_params(openshift_version, api_vip_dnsname):
         "api_vip_dnsname": api_vip_dnsname,
     }
     return params
+
+def set_cluster_proxy(client, cluster_id, copy_proxy_from_cluster, args):
+    """
+    Set cluster proxy - copy proxy configuration from another (e.g. day 1) cluster,
+    or allow setting/overriding it via command arguments
+    """
+    http_proxy = args.http_proxy if args.http_proxy else copy_proxy_from_cluster.http_proxy
+    https_proxy = args.https_proxy if args.https_proxy else copy_proxy_from_cluster.https_proxy
+    no_proxy = args.no_proxy if args.no_proxy else copy_proxy_from_cluster.no_proxy
+    client.set_cluster_proxy(cluster_id, http_proxy, https_proxy, no_proxy)
