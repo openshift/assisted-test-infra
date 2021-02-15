@@ -37,31 +37,31 @@ def _generate_static_ips_data(machine_cidrs,
 
     static_ips = []
 
-    static_ips.extend(_genetate_ips(masters_macs, machine_cidrs, 0))
+    static_ips.extend(_generate_ips(masters_macs, machine_cidrs, 0, True))
 
-    static_ips.extend(_genetate_ips(
-        masters_secondary_macs, provisioning_cidrs, 0))
+    static_ips.extend(_generate_ips(
+        masters_secondary_macs, provisioning_cidrs, 0, False))
 
-    static_ips.extend(_genetate_ips(workers_macs, machine_cidrs, num_masters))
+    static_ips.extend(_generate_ips(workers_macs, machine_cidrs, num_masters, True))
 
-    static_ips.extend(_genetate_ips(workers_secondary_macs,
-                                    provisioning_cidrs, num_masters))
+    static_ips.extend(_generate_ips(workers_secondary_macs,
+                                    provisioning_cidrs, num_masters, False))
 
     return static_ips
 
 
-def _genetate_ips(mac_addresses, cidrs, address_offset):
+def _generate_ips(mac_addresses, cidrs, address_offset, is_primary_macs):
 
     num_nodes = len(mac_addresses)
 
     first_net = ip_network(cidrs[0])
-    ipv4_gen = _static_conf_gen(num_nodes, first_net, address_offset) if first_net.version == 4 \
+    ipv4_gen = _static_conf_gen(num_nodes, first_net, address_offset, is_primary_macs) if first_net.version == 4 \
         else _empty_conf_gen()
 
     if first_net.version == 6:
-        ipv6_gen = _static_conf_gen(num_nodes, first_net, address_offset)
+        ipv6_gen = _static_conf_gen(num_nodes, first_net, address_offset, is_primary_macs)
     else:
-        ipv6_gen = _static_conf_gen(num_nodes, ip_network(cidrs[1]), address_offset) if len(cidrs) > 1 \
+        ipv6_gen = _static_conf_gen(num_nodes, ip_network(cidrs[1]), address_offset, is_primary_macs) if len(cidrs) > 1 \
             else _empty_conf_gen()
 
     static_ips = []
@@ -75,7 +75,7 @@ def _genetate_ips(mac_addresses, cidrs, address_offset):
     return static_ips
 
 
-def _static_conf_gen(num_nodes, network, address_offset=0):
+def _static_conf_gen(num_nodes, network, address_offset=0, allocate_gw=False):
     starting_ip = str(ip_address(network.network_address)
                       + 30 + address_offset)
     ips = utils.create_ip_address_list(num_nodes, starting_ip)
@@ -83,7 +83,10 @@ def _static_conf_gen(num_nodes, network, address_offset=0):
     gw_dns = str(ip_address(network.network_address) + 1)
 
     for i in range(num_nodes):
-        yield {'ip': ips[i], 'gateway': gw_dns, 'dns': gw_dns, 'mask':mask}
+        if allocate_gw:
+            yield {'ip': ips[i], 'gateway': gw_dns, 'dns': gw_dns, 'mask':mask}
+        else:
+            yield {'ip': ips[i], 'gateway': '', 'dns': gw_dns, 'mask':mask}
 
 
 def _empty_conf_gen():
