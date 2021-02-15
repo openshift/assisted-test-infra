@@ -21,4 +21,4 @@ paramiko==2.7.2
 scp==0.13.3
 openshift-client==1.0.12
 Jinja2===2.11.3
-pytest-xdist==2.2.0
+pytest-xdist==2.2.1
