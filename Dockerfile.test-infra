@@ -22,5 +22,16 @@ COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
 RUN pip3 install --no-cache-dir -I -r /tmp/requirements.txt && \
   pip3 install --upgrade /build/pip/*
 
+FROM golang:1.15
+
+ENV GO111MODULE=on
+ENV GOFLAGS=""
+
+RUN go get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0
+
+RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | \
+    bash -s -- 3.8.8 && mv kustomize /usr/bin/
+
+
 # setting pre-commit env
 ENV PRE_COMMIT_HOME build
