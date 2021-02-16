@@ -30,14 +30,14 @@ function download_service_logs() {
 }
 
 function download_cluster_logs() {
-  if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
-    SERVICE_URL=http://localhost:8090
-  else
-    SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -p ${PROFILE} -n ${NAMESPACE} --url)
-  fi
-
   if [ "${REMOTE_SERVICE_URL:-}" != '""' ]; then
     SERVICE_URL=${REMOTE_SERVICE_URL}
+  else
+    if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
+      SERVICE_URL=http://localhost:8090
+    else
+      SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -p ${PROFILE} -n ${NAMESPACE} --url)
+    fi
   fi
 
   skipper run ./discovery-infra/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
