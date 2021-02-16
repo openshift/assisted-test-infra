@@ -24,14 +24,17 @@ pipeline {
 
     environment {
         SKIPPER_PARAMS = " "
-        PULL_SECRET = credentials('assisted-test-infra-pull-secret')
-        OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
-        SLACK_TOKEN = credentials('slack-token')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
         RUN_ID = UUID.randomUUID().toString().take(8)
         PROFILE = "test-infra-${RUN_ID}"
         NAMESPACE = "test-infra-${RUN_ID}"
+        LOGS_DEST = "${WORKSPACE}/cluster_logs"
+
+        // Credentials
+        PULL_SECRET = credentials('assisted-test-infra-pull-secret')
+        OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
+        SLACK_TOKEN = credentials('slack-token')
     }
     options {
       timeout(time: 2, unit: 'HOURS')
@@ -74,13 +77,8 @@ pipeline {
                     ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
                     minikube_url = "https://${ip}:8443"
 
-                    sh "kubectl --server=${minikube_url} get pods -A"
-
-                    sh '''make download_all_logs LOGS_DEST=$WORKSPACE/cluster_logs REMOTE_SERVICE_URL="$(minikube service assisted-service --url -p ${PROFILE} -n ${NAMESPACE})"'''
-
-                    for (service in ["assisted-service","postgres","scality","createimage"]) {
-                        sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
-                    }
+                    sh "make download_service_logs KUBECTL='kubectl --server=${minikube_url}'"
+                    sh "make download_cluster_logs ADDITIONAL_PARAMS='--download-all' KUBECTL='kubectl --server=${minikube_url}'"
                 } finally {
                     if (params.POST_DELETE) {
                         sh "make destroy"
