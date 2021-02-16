@@ -88,7 +88,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
         with suppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], latest_event_tp.name)
 
-        if filecmp.cmp(destination_event_file_path, latest_event_tp.name):
+        if new_events_available(destination_event_file_path, latest_event_tp.name):
             latest_event_tp.close()
             log.info("no new events found for {}".format(destination_event_file_path))
             need_update =  False
@@ -99,6 +99,12 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
             need_update = True
     return need_update
 
+def new_events_available(available_event_file: str, latest_event_file: str):
+    with open(available_event_file, 'r') as f:
+        available_event_file_count = len(json.load(f))
+    with open(latest_event_file, 'r') as f:
+        latest_event_file_count = len(json.load(f))
+    return latest_event_file_count > available_event_file_count
 
 def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL):
     output_folder = get_logs_output_folder(dest, cluster)
