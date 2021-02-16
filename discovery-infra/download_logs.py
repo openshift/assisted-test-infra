@@ -79,6 +79,11 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
         return False
 
     destination_event_file_path = get_cluster_events_path(cluster, output_folder)
+    if not os.path.isfile(destination_event_file_path):
+        log.warn(f"no event file {destination_event_file_path}")
+        shutil.rmtree(output_folder)
+        return True
+
     with tempfile.NamedTemporaryFile() as latest_event_tp:
         with suppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], latest_event_tp.name)
@@ -89,7 +94,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
             need_update =  False
         else:
             log.info("update needed, new events found, deleting {} ".format(destination_event_file_path))
-            os.remove(destination_event_file_path)
+            shutil.rmtree(output_folder)
             latest_event_tp.close()
             need_update = True
     return need_update
