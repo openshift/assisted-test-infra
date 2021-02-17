@@ -133,7 +133,7 @@ class InventoryClient(object):
 
     def generate_image(self, cluster_id, ssh_key, image_type=consts.ImageType.FULL_ISO, static_ips=None):
         log.info("Generating image for cluster %s", cluster_id)
-        image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key, static_ips_config=static_ips, image_type=image_type)
+        image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key, image_type=image_type)
         log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(
             cluster_id=cluster_id, image_create_params=image_create_params
