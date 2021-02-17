@@ -14,6 +14,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Full flow cases](#full-flow-cases)
     - [Run full flow with install](#run-full-flow-with-install)
     - [Run full flow without install](#run-full-flow-without-install)
+    - [Run full flow with ipv6](#run-full-flow-with-ipv6)
     - [Run only deploy nodes (without pre deploy of all assisted service)](#run-only-deploy-nodes-without-pre-deploy-of-all-assisted-service)
     - [Redeploy nodes](#redeploy-nodes)
     - [Redeploy with assisted services](#redeploy-with-assisted-services)
@@ -35,6 +36,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
   - [Test with Authentication](#test-with-authentication)
   - [Single Node - Bootstrap in place with Assisted Service](#single-node---bootstrap-in-place-with-assisted-service)
+  - [Single Node - Bootstrap in place with Assisted Service and IPv6](#single-node---bootstrap-in-place-with-assisted-service-and-ipv6)
   - [On-prem](#on-prem)
 
 ## Prerequisites
@@ -48,6 +50,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 
 ```bash
 export PULL_SECRET='<pull secret JSON>'
+# or alternatively, define PULL_SECRET_FILE="/path/to/pull/secret/file"
 ```
 
 ## Installation Guide
@@ -56,56 +59,57 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 
 ## OS parameters used for configuration
 
-| Variable                    | Description                                                                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| AGENT_DOCKER_IMAGE          | agent docker image to use, will update assisted-service config map with given value                                             |
-| ASSISTED_SERVICE_HOST       | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="onprem".                           |
-| BASE_DNS_DOMAINS            | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type.                             |
-| BASE_DOMAIN                 | base domain, needed for DNS name, default: redhat.com                                                                           |
-| CLUSTER_ID                  | cluster id , used for install_cluster command, default: the last spawned cluster                                                |
-| CLUSTER_NAME                | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                   |
-| DEPLOY_MANIFEST_PATH        | the location of a manifest file that defines image tags images to be used                                                       |
-| DEPLOY_MANIFEST_TAG         | the Git tag of a manifest file that defines image tags to be used                                                               |
-| DEPLOY_TAG                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
+| Variable                    | Description                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| AGENT_DOCKER_IMAGE          | agent docker image to use, will update assisted-service config map with given value                                                         |
+| ASSISTED_SERVICE_HOST       | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="onprem".                                                 |
+| BASE_DNS_DOMAINS            | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type.                                         |
+| BASE_DOMAIN                 | base domain, needed for DNS name, default: redhat.com                                                                                       |
+| CLUSTER_ID                  | cluster id , used for install_cluster command, default: the last spawned cluster                                                            |
+| CLUSTER_NAME                | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                               |
+| DEPLOY_MANIFEST_PATH        | the location of a manifest file that defines image tags images to be used                                                                   |
+| DEPLOY_MANIFEST_TAG         | the Git tag of a manifest file that defines image tags to be used                                                                           |
+| DEPLOY_TAG                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters             |
 | DEPLOY_TARGET               | Specifies where assisted-service will be deployed. Defaults to "minikube". "onprem" will deploy assisted-service in a pod on the localhost. |
-| ENABLE_AUTH                 | configure assisted-service to authenticate API requests, default: false                                                         |
-| HTTPS_PROXY_URL             | A proxy URL to use for creating HTTPS connections outside the cluster                                                           |
-| HTTP_PROXY_URL              | A proxy URL to use for creating HTTP connections outside the cluster                                                            |
-| IMAGE_BUILDER               | image-builder image to use, will update assisted-service config map with given value                                            |
-| INSTALLER_IMAGE             | assisted-installer image to use, will update assisted-service config map with given value                                       |
-| IPv4                        | Boolean value indicating if IPv4 is enabled.  Default is yes                                                                    |
-| IPv6                        | Boolean value indicating if IPv6 is enabled.  Default is no                                                                    |
-| ISO                         | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
-| KUBECONFIG                  | kubeconfig file path, default: <home>/.kube/config                                                                              |
-| MASTER_MEMORY               | memory for master VM, default: 16984MB                                                                                          |
-| NETWORK_CIDR                | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                           |
-| NETWORK_NAME                | virsh network name for VMs creation, default: test-infra-net                                                                    |
-| NO_PROXY_VALUES             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying           |
-| NUM_MASTERS                 | number of VMs to spawn as masters, default: 3                                                                                   |
-| NUM_WORKERS                 | number of VMs to spawn as workers, default: 0                                                                                   |
-| OCM_BASE_URL                | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com      |
-| OCM_CLIENT_ID               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                             |
-| OCM_CLIENT_SECRET           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                       |
-| OC_MODE                     | if set, use oc instead of minikube                                                                                              |
-| OC_SCHEME                   | Scheme for assisted-service url on oc, default: http                                                                            |
-| OC_SERVER                   | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443                        |
-| OC_TOKEN                    | token for oc login (an alternative for oc-user & oc-pass)                                                                       |
-| OFFLINE_TOKEN               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)              |
-| OPENSHIFT_VERSION           | OpenShift version to install, default: "4.6"                                                                                    |
-| PROXY                       | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR |
-| PULL_SECRET                 | pull secret to use for cluster installation command, no option to install cluster without it.                                   |
-| REMOTE_SERVICE_URL          | URL to remote assisted-service - run infra on existing deployment                                                               |
-| ROUTE53_SECRET              | Amazon Route 53 secret to use for DNS domains registration.                                                                     |
-| SERVICE                     | assisted-service image to use                                                                                                   |
-| SERVICE_BASE_URL            | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                       |
-| SERVICE_BRANCH              | assisted-service branch to use, default: master                                                                                 |
-| SERVICE_NAME                | assisted-service target service name, default: assisted-service                                                                 |
-| SERVICE_REPO                | assisted-service repository to use, default: https://github.com/openshift/assisted-service                                      |
-| SSH_PUB_KEY                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub                                |
-| SSO_URL                     | URL used to fetch JWT tokens for assisted-service authentication                                                                |
-| WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                           |
-| PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                     |
-| CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                           |
+| ENABLE_AUTH                 | configure assisted-service to authenticate API requests, default: false                                                                     |
+| HTTPS_PROXY_URL             | A proxy URL to use for creating HTTPS connections outside the cluster                                                                       |
+| HTTP_PROXY_URL              | A proxy URL to use for creating HTTP connections outside the cluster                                                                        |
+| IMAGE_BUILDER               | image-builder image to use, will update assisted-service config map with given value                                                        |
+| INSTALLER_IMAGE             | assisted-installer image to use, will update assisted-service config map with given value                                                   |
+| IPv4                        | Boolean value indicating if IPv4 is enabled. Default is yes                                                                                 |
+| IPv6                        | Boolean value indicating if IPv6 is enabled. Default is no                                                                                  |
+| ISO                         | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix             |
+| KUBECONFIG                  | kubeconfig file path, default: <home>/.kube/config                                                                                          |
+| MASTER_MEMORY               | memory for master VM, default: 16984MB                                                                                                      |
+| NETWORK_CIDR                | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                                       |
+| NETWORK_NAME                | virsh network name for VMs creation, default: test-infra-net                                                                                |
+| NO_PROXY_VALUES             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying                       |
+| NUM_MASTERS                 | number of VMs to spawn as masters, default: 3                                                                                               |
+| NUM_WORKERS                 | number of VMs to spawn as workers, default: 0                                                                                               |
+| OCM_BASE_URL                | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com                  |
+| OCM_CLIENT_ID               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                                         |
+| OCM_CLIENT_SECRET           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                                   |
+| OC_MODE                     | if set, use oc instead of minikube                                                                                                          |
+| OC_SCHEME                   | Scheme for assisted-service url on oc, default: http                                                                                        |
+| OC_SERVER                   | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443                                    |
+| OC_TOKEN                    | token for oc login (an alternative for oc-user & oc-pass)                                                                                   |
+| OFFLINE_TOKEN               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)                          |
+| OPENSHIFT_VERSION           | OpenShift version to install, default: "4.6"                                                                                                |
+| PROXY                       | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR       |
+| PULL_SECRET                 | pull secret to use for cluster installation command, no option to install cluster without it.                                               |
+| PULL_SECRET_FILE            | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it.      |
+| REMOTE_SERVICE_URL          | URL to remote assisted-service - run infra on existing deployment                                                                           |
+| ROUTE53_SECRET              | Amazon Route 53 secret to use for DNS domains registration.                                                                                 |
+| SERVICE                     | assisted-service image to use                                                                                                               |
+| SERVICE_BASE_URL            | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                                   |
+| SERVICE_BRANCH              | assisted-service branch to use, default: master                                                                                             |
+| SERVICE_NAME                | assisted-service target service name, default: assisted-service                                                                             |
+| SERVICE_REPO                | assisted-service repository to use, default: https://github.com/openshift/assisted-service                                                  |
+| SSH_PUB_KEY                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub                                            |
+| SSO_URL                     | URL used to fetch JWT tokens for assisted-service authentication                                                                            |
+| WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                                       |
+| PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                                 |
+| CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                                       |
 
 ## Instructions
 
@@ -177,14 +181,13 @@ make run_full_flow
 
 ### Run full flow with ipv6
 
-To run the flow with default IPv6 settings without install. It is identical to running 
+To run the flow with default IPv6 settings without install. It is identical to running
 
 **make run_full_flow IPv4=no IPv6=yes PROXY=yes VIP_DHCP_ALLOCATION=no**
 
 ```bash
 make run_full_flow_with_ipv6
 ```
-
 
 ### Run only deploy nodes (without pre deploy of all assisted service)
 
@@ -329,7 +332,9 @@ export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
 - The PULL_SECRET variable should be taken from the same Red Hat cloud environment as defined in OCM_URL (integration, stage or production).
 
 ## Single Node - Bootstrap in place with Assisted Service
+
 To test single node bootstrap in place flow with assisted service
+
 ```
 export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
@@ -338,7 +343,9 @@ make redeploy_all_with_install or if service is up  make redeploy_nodes_with_ins
 ```
 
 ## Single Node - Bootstrap in place with Assisted Service and IPv6
+
 To test single node bootstrap in place flow with assisted service and ipv6
+
 ```
 export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
@@ -361,6 +368,7 @@ the assisted-service using a pod on your local host.
 ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "onprem" deployments, set it to the FQDN or IP address of the host.
 
 Optionally, you can also provide OPENSHIFT_INSTALL_RELEASE_IMAGE and PUBLIC_CONTAINER_REGISTRIES:
+
 ```
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.6.8-x86_64
 export PUBLIC_CONTAINER_REGISTRIES=quay.io
@@ -373,7 +381,7 @@ Then run the same commands described in the instructions above to execute the te
 To run the full flow:
 
 ```
-make all 
+make all
 ```
 
 To cleanup after the full flow:
@@ -381,4 +389,3 @@ To cleanup after the full flow:
 ```
 make destroy
 ```
-
