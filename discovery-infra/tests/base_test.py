@@ -17,6 +17,7 @@ from test_infra.controllers.proxy_controller.proxy_controller import ProxyContro
 from assisted_service_client.rest import ApiException
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.nodes import Nodes
+from test_infra.helper_classes.kube_helpers import create_kube_api_client, cluster_deployment_context
 from tests.conftest import env_variables, qe_env
 from download_logs import download_logs
 
@@ -280,3 +281,11 @@ class BaseTest:
             sleep_seconds=90,
             waiting_for="controller to be running",
         )
+
+    @pytest.fixture(scope='session')
+    def kube_api_client(self):
+        yield create_kube_api_client()
+
+    @pytest.fixture()
+    def cluster_deployment_context(self):
+        yield cluster_deployment_context
