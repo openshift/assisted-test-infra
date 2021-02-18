@@ -58,7 +58,8 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "iso_image_type": utils.get_env('ISO_IMAGE_TYPE', consts.ImageType.FULL_ISO),
                  "worker_vcpu": utils.get_env('WORKER_CPU', consts.WORKER_CPU),
                  "master_vcpu": utils.get_env('MASTER_CPU', consts.MASTER_CPU),
-                 "test_teardown": bool(util.strtobool(utils.get_env('TEST_TEARDOWN', 'true')))
+                 "test_teardown": bool(util.strtobool(utils.get_env('TEST_TEARDOWN', 'true'))),
+                 "namespace": utils.get_env('NAMESPACE', consts.DEFAULT_NAMESPACE),
                  }
 cluster_mid_name = infra_utils.get_random_name()
 
@@ -88,7 +89,7 @@ def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
 
     if not url:
         url = utils.get_local_assisted_service_url(
-            utils.get_env('PROFILE'), utils.get_env('NAMESPACE'), 'assisted-service', utils.get_env('DEPLOY_TARGET'))
+            utils.get_env('PROFILE'), env_variables['namespace'], 'assisted-service', utils.get_env('DEPLOY_TARGET'))
     
     return assisted_service_api.create_client(url, offline_token, **kwargs)
 
