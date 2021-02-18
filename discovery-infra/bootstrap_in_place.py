@@ -33,15 +33,14 @@ def installer_generate(openshift_release_image):
     utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}", env=bip_env)
 
 
-def download_live_image(download_path, rhcos_version=None):
+def download_live_image(download_path):
     if os.path.exists(download_path):
         logging.info("Image %s already exists, skipping download", download_path)
         return
 
     logging.info("Downloading iso to %s", download_path)
-    rhcos_version = rhcos_version or os.getenv('RHCOS_VERSION', "46.82.202009222340-0")
-    utils.run_command(f"curl https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.6/"
-                      f"{rhcos_version}/x86_64/rhcos-{rhcos_version}-live.x86_64.iso --retry 5 -o {download_path}")
+    # TODO: enable fetching the appropriate rhcos image
+    utils.run_command(f"curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/4.7.0-rc.2/rhcos-4.7.0-rc.2-x86_64-live.x86_64.iso --retry 5 -o {download_path}")
 
 
 def embed(image_name, ignition_file, embed_image_name):
