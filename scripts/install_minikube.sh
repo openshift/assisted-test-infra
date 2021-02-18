@@ -9,7 +9,7 @@ function install_minikube() {
 
     if ! [ -x "$(command -v minikube)" ]; then
         echo "Installing minikube..."
-        curl --retry 3 -Lo minikube https://storage.googleapis.com/minikube/releases/v1.8.2/minikube-linux-amd64
+        curl --retry 3 -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
         chmod +x minikube
         ${SUDO} cp minikube /usr/bin/
     else
@@ -20,7 +20,7 @@ function install_minikube() {
 function install_kubectl() {
     if ! [ -x "$(command -v kubectl)" ]; then
         echo "Installing kubectl..."
-        curl --retry 3 -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl
+        curl --retry 3 -Lo kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
         chmod +x kubectl
         ${SUDO} mv kubectl /usr/bin/
     else
