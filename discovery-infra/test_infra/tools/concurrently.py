@@ -7,7 +7,7 @@ def _safe_run(job, job_id, done_handler):
     try:
         call, call_args = job[0], job[1:]
         return call(*call_args)
-    except:
+    except BaseException:
         logging.debug("When concurrently running '%(call)s'", dict(call=str(call)))
         raise
     finally:

@@ -1,7 +1,8 @@
-import libvirt
-from typing import Dict, List, Any, Tuple
-from test_infra.controllers.node_controllers.node import Node
 from abc import ABC, abstractmethod
+from typing import Dict, List, Any, Tuple
+
+import libvirt
+from test_infra.controllers.node_controllers.node import Node
 
 
 class NodeController(ABC):

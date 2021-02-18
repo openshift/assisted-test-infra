@@ -1,27 +1,27 @@
+import contextlib
+import ipaddress
+import json
 import logging
 import random
-import yaml
-import json
 import time
-import ipaddress
-import contextlib
-from typing import List
-import requests
 from collections import Counter
+from typing import List
 
+import requests
 import waiting
-from netaddr import IPNetwork, IPAddress
+import yaml
 from assisted_service_client import models
-
-from tests.conftest import env_variables
+from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
 from test_infra.tools import static_ips
+from tests.conftest import env_variables
 
 
 class Cluster:
 
     def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
-                 openshift_version="4.6", cluster_id=None, user_managed_networking=False, high_availability_mode=consts.HighAvailabilityMode.FULL):
+                 openshift_version="4.6", cluster_id=None, user_managed_networking=False,
+                 high_availability_mode=consts.HighAvailabilityMode.FULL):
         self.api_client = api_client
 
         self._high_availability_mode = high_availability_mode
@@ -30,7 +30,8 @@ class Cluster:
         else:
             cluster_name = cluster_name or env_variables.get('cluster_name', "test-infra-cluster")
             self.id = self._create(cluster_name, additional_ntp_source, openshift_version,
-                                   user_managed_networking=user_managed_networking, high_availability_mode=high_availability_mode).id
+                                   user_managed_networking=user_managed_networking,
+                                   high_availability_mode=high_availability_mode).id
             self.name = cluster_name
 
     def _create(self,
@@ -77,12 +78,12 @@ class Cluster:
         self.api_client.generate_image(cluster_id=self.id, ssh_key=ssh_key)
 
     def generate_and_download_image(
-        self,
-        iso_download_path=env_variables['iso_download_path'],
-        ssh_key=env_variables['ssh_public_key'],
-        static_ips=None,
-        iso_image_type=env_variables['iso_image_type']
-        ):
+            self,
+            iso_download_path=env_variables['iso_download_path'],
+            ssh_key=env_variables['ssh_public_key'],
+            static_ips=None,
+            iso_image_type=env_variables['iso_image_type']
+    ):
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
             ssh_key=ssh_key,
@@ -129,13 +130,12 @@ class Cluster:
 
     def set_ocs(self, ocs_enabled):
         logging.info(f'Enabling Ocs to:{ocs_enabled} for cluster: {self.id}')
-        ocs_operator={"operators":[{"operator_type":"ocs","enabled":ocs_enabled}]}
+        ocs_operator = {"operators": [{"operator_type": "ocs", "enabled": ocs_enabled}]}
         self.api_client.update_cluster(self.id, ocs_operator)
 
-    def set_host_roles(
-        self,
-        requested_roles=Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
-    ):
+    def set_host_roles(self, requested_roles=None):
+        if requested_roles is None:
+            requested_roles = Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
         assigned_roles = self._get_matching_hosts(
             host_type=consts.NodeRoles.MASTER,
             count=requested_roles["master"])
@@ -157,9 +157,9 @@ class Cluster:
             hosts_with_roles=assignment_role)
 
     def set_network_params(
-        self,
-        controller,
-        vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+            self,
+            controller,
+            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
     ):
         self.api_client.update_cluster(self.id, {
             "vip_dhcp_allocation": vip_dhcp_allocation,
@@ -189,9 +189,12 @@ class Cluster:
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
 
     def set_advanced_networking(self, cluster_cidr, service_cidr, cluster_host_prefix):
-        logging.info(f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr}, Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
-        self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr, "service_network_cidr": service_cidr,
-            "cluster_network_host_prefix": cluster_host_prefix})
+        logging.info(
+            f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr},"
+            f" Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id,
+                                       {"cluster_network_cidr": cluster_cidr, "service_network_cidr": service_cidr,
+                                        "cluster_network_host_prefix": cluster_host_prefix})
 
     def set_advanced_cluster_cidr(self, cluster_cidr):
         logging.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
@@ -300,7 +303,7 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.CONFIGURING],
-            nodes_count=env_variables['num_masters']-1
+            nodes_count=env_variables['num_masters'] - 1
         )
 
     def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self):
@@ -308,7 +311,7 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.JOINED],
-            nodes_count=env_variables['num_masters']-1
+            nodes_count=env_variables['num_masters'] - 1
         )
 
     def wait_for_hosts_stage(self, stage: str, nodes_count: int = env_variables['num_nodes'], inclusive: bool = True):
@@ -455,10 +458,10 @@ class Cluster:
         )
 
     def wait_for_hosts_to_install(
-        self,
-        nodes_count=env_variables['num_nodes'],
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True
+            self,
+            nodes_count=env_variables['num_nodes'],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            fall_on_error_status=True
     ):
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -470,8 +473,8 @@ class Cluster:
         )
 
     def wait_for_install(
-        self,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
+            self,
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
     ):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
@@ -481,15 +484,15 @@ class Cluster:
         )
 
     def prepare_for_install(
-        self,
-        nodes,
-        iso_download_path=env_variables['iso_download_path'],
-        iso_image_type=env_variables['iso_image_type'],
-        ssh_key=env_variables['ssh_public_key'],
-        nodes_count=env_variables['num_nodes'],
-        vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-        download_image=True
-        ):
+            self,
+            nodes,
+            iso_download_path=env_variables['iso_download_path'],
+            iso_image_type=env_variables['iso_image_type'],
+            ssh_key=env_variables['ssh_public_key'],
+            nodes_count=env_variables['num_nodes'],
+            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+            download_image=True
+    ):
         if download_image:
             if env_variables.get('static_ips_config'):
                 static_ips_config = static_ips.generate_static_ips_data_from_tf(nodes.controller.tf_folder)
@@ -516,13 +519,13 @@ class Cluster:
         self.wait_for_ready_to_install()
 
     def download_kubeconfig_no_ingress(
-        self, kubeconfig_path=env_variables['kubeconfig_path']
-        ):
+            self, kubeconfig_path=env_variables['kubeconfig_path']
+    ):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
 
     def download_kubeconfig(
-        self, kubeconfig_path=env_variables['kubeconfig_path']
-        ):
+            self, kubeconfig_path=env_variables['kubeconfig_path']
+    ):
         self.api_client.download_kubeconfig(self.id, kubeconfig_path)
 
     def download_installation_logs(self, cluster_tar_path):
@@ -569,11 +572,11 @@ class Cluster:
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 
     def wait_for_cluster_validation(
-        self, validation_section, validation_id, statuses,
-        timeout=consts.VALIDATION_TIMEOUT, interval=2
+            self, validation_section, validation_id, statuses,
+            timeout=consts.VALIDATION_TIMEOUT, interval=2
     ):
-        logging.info(f"Wait until cluster %s validation %s is in status %s",
-            self.id, validation_id, statuses)
+        logging.info("Wait until cluster %s validation %s is in status %s",
+                     self.id, validation_id, statuses)
         try:
             waiting.wait(
                 lambda: self.is_cluster_validation_in_status(
@@ -585,31 +588,31 @@ class Cluster:
                 sleep_seconds=interval,
                 waiting_for="Cluster validation to be in status %s" % statuses,
             )
-        except:
+        except BaseException:
             logging.error("Cluster validation status is: %s",
-                utils.get_cluster_validation_value(
-                    self.api_client.cluster_get(self.id), validation_section,
-                        validation_id))
+                          utils.get_cluster_validation_value(
+                              self.api_client.cluster_get(self.id), validation_section,
+                              validation_id))
             raise
 
     def is_cluster_validation_in_status(
-        self, validation_section, validation_id, statuses
+            self, validation_section, validation_id, statuses
     ):
         logging.info("Is cluster %s validation %s in status %s",
-            self.id, validation_id, statuses)
+                     self.id, validation_id, statuses)
         try:
             return utils.get_cluster_validation_value(
                 self.api_client.cluster_get(self.id),
                 validation_section, validation_id) in statuses
-        except:
+        except BaseException:
             logging.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_host_validation(
-        self, host_id, validation_section, validation_id, statuses,
-        timeout=consts.VALIDATION_TIMEOUT, interval=2
+            self, host_id, validation_section, validation_id, statuses,
+            timeout=consts.VALIDATION_TIMEOUT, interval=2
     ):
         logging.info("Wait until host %s validation %s is in status %s", host_id,
-            validation_id, statuses)
+                     validation_id, statuses)
         try:
             waiting.wait(
                 lambda: self.is_host_validation_in_status(
@@ -622,10 +625,10 @@ class Cluster:
                 sleep_seconds=interval,
                 waiting_for="Host validation to be in status %s" % statuses,
             )
-        except:
+        except BaseException:
             logging.error("Host validation status is: %s",
-                utils.get_host_validation_value(self.api_client.cluster_get(self.id),
-                host_id, validation_section, validation_id))
+                          utils.get_host_validation_value(self.api_client.cluster_get(self.id),
+                                                          host_id, validation_section, validation_id))
             raise
 
     def is_host_validation_in_status(
@@ -634,8 +637,8 @@ class Cluster:
         logging.info("Is host %s validation %s in status %s", host_id, validation_id, statuses)
         try:
             return utils.get_host_validation_value(self.api_client.cluster_get(self.id),
-                host_id, validation_section, validation_id) in statuses
-        except:
+                                                   host_id, validation_section, validation_id) in statuses
+        except BaseException:
             logging.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_cluster_to_be_in_installing_pending_user_action_status(self):
@@ -654,7 +657,8 @@ class Cluster:
             timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT
         )
 
-    def reset_cluster_and_wait_for_ready(self, cluster, nodes):
+    @classmethod
+    def reset_cluster_and_wait_for_ready(cls, cluster, nodes):
         # Reset cluster install
         cluster.reset_install()
         assert cluster.is_in_insufficient_status()
@@ -672,16 +676,18 @@ class Cluster:
         for event in events_list:
             if event_to_find in event['message']:
                 # Adding a 2 sec buffer to account for a small time diff between the machine and the time on staging
-                if utils.to_utc(event['event_time']) >= reference_time-2:
+                if utils.to_utc(event['event_time']) >= reference_time - 2:
                     if all(param in event['message'] for param in params_list):
-                        event_exist = True
+                        # event_exist = True
                         logging.info(f"Event to find: {event_to_find} exists with its params")
                         return True
         else:
             return False
 
-    def wait_for_event(self, event_to_find, reference_time, params_list=[], host_id='', timeout=10):
+    def wait_for_event(self, event_to_find, reference_time, params_list=None, host_id='', timeout=10):
         logging.info(f"Searching for event: {event_to_find}")
+        if params_list is None:
+            params_list = list()
         try:
             waiting.wait(
                 lambda: self._find_event(
@@ -708,7 +714,8 @@ class Cluster:
         inventory = models.Inventory(**json.loads(host["inventory"]))
         interfaces_list = [models.Interface(**interface) for interface in inventory.interfaces]
         return [{'name': interface.name, 'model': interface.product, 'mac': interface.mac_address,
-                 'ip': get_network_interface_ip(interface), 'speed': interface.speed_mbps} for interface in interfaces_list]
+                 'ip': get_network_interface_ip(interface), 'speed': interface.speed_mbps} for interface in
+                interfaces_list]
 
     @staticmethod
     def get_ip_for_single_node(client, cluster_id, machine_cidr, ipv4_first=True):
@@ -777,7 +784,7 @@ class Cluster:
                                     verify=False,
                                     timeout=1)
             return response.ok
-        except:
+        except BaseException:
             return False
 
 

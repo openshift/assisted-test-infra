@@ -1,18 +1,17 @@
-import os
-import shutil
-import shlex
 import logging
-import yaml
+import os
+import shlex
+import shutil
 
 import waiting
-
-from oc_utils import get_operators_status
-from download_logs import download_must_gather
+import yaml
 from test_infra import utils, consts
-from test_infra.tools.assets import NetworkAssets
-from test_infra.helper_classes.nodes import Nodes
-from test_infra.controllers.node_controllers.ssh import SshConnection
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
+from test_infra.helper_classes.nodes import Nodes
+from test_infra.tools.assets import NetworkAssets
+
+from download_logs import download_must_gather
+from oc_utils import get_operators_status
 
 BUILD_DIR = "build"
 INSTALL_CONFIG_FILE_NAME = "install-config.yaml"
@@ -30,7 +29,8 @@ SSH_KEY = os.path.join("ssh_key", "key")
 def installer_generate(openshift_release_image):
     logging.info("Installer generate ignitions")
     bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
-    utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}", env=bip_env)
+    utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}",
+                                  env=bip_env)
 
 
 def download_live_image(download_path):
@@ -48,7 +48,7 @@ def embed(image_name, ignition_file, embed_image_name):
     embedded_image = os.path.join(BUILD_DIR, embed_image_name)
     os.remove(embedded_image) if os.path.exists(embedded_image) else None
 
-    flags = shlex.split(f"--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v .:/data -w /data")
+    flags = shlex.split("--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v .:/data -w /data")
     utils.run_container("coreos-installer", "quay.io/coreos/coreos-installer:release", flags,
                         f"iso ignition embed {BUILD_DIR}/{image_name} "
                         f"-f --ignition-file /data/{IBIP_DIR}/{ignition_file} -o /data/{embedded_image}")

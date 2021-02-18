@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
+import base64
 import json
 import os
-import base64
-import requests
+import shutil
 import time
 
-from test_infra import consts, utils
-import shutil
+import requests
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
 from logger import log
 from retry import retry
+from test_infra import consts, utils
 
 
 class InventoryClient(object):
@@ -28,7 +28,8 @@ class InventoryClient(object):
         self.versions = api.VersionsApi(api_client=self.api)
         self.domains = api.ManagedDomainsApi(api_client=self.api)
 
-    def set_config_auth(self, c, offline_token):
+    @classmethod
+    def set_config_auth(cls, c, offline_token):
         if not offline_token:
             log.info("OFFLINE_TOKEN not set, skipping authentication headers")
             return
@@ -36,7 +37,7 @@ class InventoryClient(object):
         def refresh_api_key(config):
             # Get the properly padded key segment
             auth = config.api_key.get('Authorization', None)
-            if auth != None:
+            if auth is not None:
                 segment = auth.split('.')[1]
                 padding = len(segment) % 4
                 segment = segment + padding * '='
@@ -64,7 +65,8 @@ class InventoryClient(object):
         c.api_key_prefix['Authorization'] = 'Bearer'
         c.refresh_api_key_hook = refresh_api_key
 
-    def _set_x_secret_key(self, c, pull_secret):
+    @classmethod
+    def _set_x_secret_key(cls, c, pull_secret):
         if not pull_secret:
             log.info("pull secret not set, skipping agent authentication headers")
             return
@@ -119,7 +121,8 @@ class InventoryClient(object):
         log.info("Getting cluster with id %s", cluster_id)
         return self.client.get_cluster(cluster_id=cluster_id)
 
-    def _download(self, response, file_path, verify_file_size=False):
+    @classmethod
+    def _download(cls, response, file_path, verify_file_size=False):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(response, f)
         if verify_file_size:
@@ -127,9 +130,9 @@ class InventoryClient(object):
             actual_file_size = os.path.getsize(file_path)
             if actual_file_size < content_length:
                 raise RuntimeError(
-                    f'Could not complete ISO download {file_path}. '\
+                    f'Could not complete ISO download {file_path}. '
                     f'Actual size: {actual_file_size}. Expected size: {content_length}'
-                    )
+                )
 
     def generate_image(self, cluster_id, ssh_key, image_type=consts.ImageType.FULL_ISO, static_ips=None):
         log.info("Generating image for cluster %s", cluster_id)
@@ -148,7 +151,8 @@ class InventoryClient(object):
         response_obj = response[0]
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
-    def generate_and_download_image(self, cluster_id, ssh_key, image_path, image_type=consts.ImageType.FULL_ISO, static_ips=None):
+    def generate_and_download_image(self, cluster_id, ssh_key, image_path, image_type=consts.ImageType.FULL_ISO,
+                                    static_ips=None):
         self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_ips=static_ips)
         self.download_image(cluster_id=cluster_id, image_path=image_path)
 
@@ -163,11 +167,13 @@ class InventoryClient(object):
 
     def select_installation_disk(self, cluster_id, hosts_with_diskpaths):
         log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
+
         def role_to_selected_disk_config(host_id, path, role):
             disk_config_params = models.DiskConfigParams(id=path, role=role)
             return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
-        
-        disks_selected_config = [role_to_selected_disk_config(h["id"], h["path"], h["role"]) for h in hosts_with_diskpaths]
+
+        disks_selected_config = [role_to_selected_disk_config(h["id"], h["path"], h["role"]) for h in
+                                 hosts_with_diskpaths]
         params = models.ClusterUpdateParams(disks_selected_config=disks_selected_config)
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=params
@@ -362,7 +368,7 @@ class InventoryClient(object):
     def host_get_next_step(self, cluster_id, host_id):
         log.info(f"Getting next step for host: {host_id} in cluster: {cluster_id}")
         return self.client.get_next_steps(
-            cluster_id=cluster_id, 
+            cluster_id=cluster_id,
             host_id=host_id
         )
 
@@ -373,15 +379,15 @@ class InventoryClient(object):
     def host_update_progress(self, cluster_id, host_id, current_stage, progress_info=None):
         host_progress = models.HostProgress(current_stage=current_stage, progress_info=progress_info)
         self.client.update_host_install_progress(
-            cluster_id=cluster_id, 
-            host_id=host_id, 
+            cluster_id=cluster_id,
+            host_id=host_id,
             host_progress=host_progress
         )
 
     def complete_cluster_installation(self, cluster_id, is_success, error_info=None):
-        completion_params=models.CompletionParams(is_success=is_success, error_info=error_info)
+        completion_params = models.CompletionParams(is_success=is_success, error_info=error_info)
         self.client.complete_installation(
-            cluster_id=cluster_id, 
+            cluster_id=cluster_id,
             completion_params=completion_params
         )
 
@@ -401,13 +407,14 @@ class InventoryClient(object):
     def get_managed_domains(self):
         return self.domains.list_managed_domains()
 
+
 def create_client(
-    url,
-    offline_token=utils.get_env('OFFLINE_TOKEN'),
-    pull_secret="",
-    wait_for_api=True,
-    timeout=consts.WAIT_FOR_BM_API
-    ):
+        url,
+        offline_token=utils.get_env('OFFLINE_TOKEN'),
+        pull_secret="",
+        wait_for_api=True,
+        timeout=consts.WAIT_FOR_BM_API
+):
     log.info('Creating assisted-service client for url: %s', url)
     c = InventoryClient(url, offline_token, pull_secret)
     if wait_for_api:

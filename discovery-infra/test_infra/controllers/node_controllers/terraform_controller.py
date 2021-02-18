@@ -1,17 +1,14 @@
 import ipaddress
+import json
+import logging
 import os
 import shutil
-import json
 import uuid
+
 from munch import Munch
-from distutils.dir_util import copy_tree
-import logging
-from test_infra import utils
-from test_infra import virsh_cleanup
-from test_infra import consts
-from test_infra.tools import terraform_utils
-from test_infra.tools import static_ips
+from test_infra import consts, utils, virsh_cleanup
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from test_infra.tools import static_ips, terraform_utils
 
 
 class TerraformController(LibvirtController):
@@ -38,7 +35,8 @@ class TerraformController(LibvirtController):
         utils.copy_template_tree(tf_folder)
         return tf_folder
 
-    def _get_random_name(self):
+    @classmethod
+    def _get_random_name(cls):
         return uuid.uuid4().hex[:8].lower()
 
     # TODO move all those to conftest and pass it as kwargs
@@ -68,7 +66,8 @@ class TerraformController(LibvirtController):
                   "running": True,
                   "single_node_ip": kwargs.get('single_node_ip', ''),
                   }
-        for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips", "libvirt_secondary_worker_ips"]:
+        for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
+                    "libvirt_secondary_worker_ips"]:
             value = kwargs.get(key)
             if value is not None:
                 params[key] = value
@@ -191,9 +190,9 @@ class TerraformController(LibvirtController):
         message='Failed to run terraform delete',
         silent=True
     )
-
     def _create_address_list(self, num, starting_ip_addr):
-        return utils.create_empty_nested_list(num) if self.ipv6 else utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
+        return utils.create_empty_nested_list(num) if self.ipv6 \
+            else utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
     def get_machine_cidr(self):
         return self.network_conf.machine_cidr6 if self.ipv6 else self.network_conf.machine_cidr
@@ -223,7 +222,8 @@ class TerraformController(LibvirtController):
             logging.info('Deleting %s', self.tf_folder)
             shutil.rmtree(self.tf_folder)
 
-    def _delete_virsh_resources(self, *filters):
+    @classmethod
+    def _delete_virsh_resources(cls, *filters):
         logging.info('Deleting virsh resources (filters: %s)', filters)
         skip_list = virsh_cleanup.DEFAULT_SKIP_LIST
         skip_list.extend(["minikube", "minikube-net"])
@@ -245,4 +245,3 @@ class TerraformController(LibvirtController):
     def get_cluster_network(self):
         logging.info(f'Cluster network name: {self.network_name}')
         return self.network_name
-

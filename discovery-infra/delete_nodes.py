@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os
-import json
 import argparse
+import os
 import shutil
-from functools import partial
 
 from test_infra import assisted_service_api, utils, consts
+
 import oc_utils
 import virsh_cleanup
 from logger import log
@@ -60,8 +59,8 @@ def _try_to_delete_nodes(tf_folder):
             'terraform destroy '
             '-auto-approve '
             '-input=false '
-            '-state=terraform.tfstate ' 
-            '-state-out=terraform.tfstate ' 
+            '-state=terraform.tfstate '
+            '-state-out=terraform.tfstate '
             '-var-file=terraform.tfvars.json'
         )
 
@@ -84,7 +83,7 @@ def delete_clusters_from_all_namespaces():
         try:
             args.profile = 'minikube'
             delete_cluster(name, namespace)
-        except:
+        except BaseException:
             args.profile = namespace
             delete_cluster(name, namespace)
 

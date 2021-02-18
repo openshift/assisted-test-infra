@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os
 import argparse
+import os
 
-from test_infra import assisted_service_api, consts, utils
-import oc_utils
 import waiting
-from logger import log
-from test_infra.tools import terraform_utils
+from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes import cluster as helper_cluster
+from test_infra.tools import terraform_utils
+
+import oc_utils
+from logger import log
 
 
 # Verify folder to download kubeconfig exists. If will be needed in other places move to utils
@@ -105,8 +106,7 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
     waiting.wait(
         lambda: client.download_kubeconfig(
             cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
-        )
-        is None,
+        ) is None,
         timeout_seconds=240,
         sleep_seconds=20,
         expected_exceptions=Exception,
