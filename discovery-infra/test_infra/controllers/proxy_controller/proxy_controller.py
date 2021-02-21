@@ -1,9 +1,9 @@
+import logging
 import os
 import shutil
 import socket
-import logging
-from jinja2 import Environment, PackageLoader
 
+from jinja2 import Environment, PackageLoader
 from test_infra import utils
 
 PROXY_USER = 'assisted'
@@ -39,7 +39,8 @@ class ProxyController:
 
     def _run_proxy_server(self):
         logging.info(f'Running Proxy Server {self.name}')
-        run_flags = ['-d', '--restart=always', '--network=host',f'--volume {self.config_dir_path}:/etc/squid/', f'--publish {self.port}:{self.port}']
+        run_flags = ['-d', '--restart=always', '--network=host', f'--volume {self.config_dir_path}:/etc/squid/',
+                     f'--publish {self.port}:{self.port}']
         utils.run_container(container_name=self.dir, image=self.image, flags=run_flags)
 
     def _create_conf_from_template(self, denied_port):

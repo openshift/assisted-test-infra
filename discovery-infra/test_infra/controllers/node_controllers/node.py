@@ -1,6 +1,7 @@
 import logging
-from test_infra.controllers.node_controllers import ssh
+
 from test_infra import consts
+from test_infra.controllers.node_controllers import ssh
 
 
 class Node:
@@ -51,22 +52,22 @@ class Node:
                                  username=self.username)
 
     def upload_file(self, local_source_path, remote_target_path):
-        with self.ssh_connection as ssh:
-            return ssh.upload_file(local_source_path, remote_target_path)
+        with self.ssh_connection as _ssh:
+            return _ssh.upload_file(local_source_path, remote_target_path)
 
     def download_file(self, remote_source_path, local_target_path):
-        with self.ssh_connection as ssh:
-            return ssh.download_file(remote_source_path, local_target_path)
+        with self.ssh_connection as _ssh:
+            return _ssh.download_file(remote_source_path, local_target_path)
 
     def run_command(self, bash_command, background=False):
         output = ""
         if not self.node_controller.is_active(self.name):
             raise RuntimeError("%s is not active, can't run given command")
-        with self.ssh_connection as ssh:
+        with self.ssh_connection as _ssh:
             if background:
-                ssh.background_script(bash_command)
+                _ssh.background_script(bash_command)
             else:
-                output = ssh.script(bash_command, verbose=False)
+                output = _ssh.script(bash_command, verbose=False)
         return output
 
     def shutdown(self):

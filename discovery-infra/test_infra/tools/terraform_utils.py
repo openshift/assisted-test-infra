@@ -1,9 +1,11 @@
-from python_terraform import *
+import json
 import logging
+import os
+
+from python_terraform import Terraform, IsFlagged
 
 
 class TerraformUtils:
-
     VAR_FILE = "terraform.tfvars.json"
 
     def __init__(self, working_dir):

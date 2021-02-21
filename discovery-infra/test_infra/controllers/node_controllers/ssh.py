@@ -1,8 +1,9 @@
-import paramiko
-import time
-import scp
-import socket
 import logging
+import socket
+import time
+
+import paramiko
+import scp
 
 logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 
@@ -55,12 +56,13 @@ class SshConnection:
         raise TimeoutError("SSH TCP Server '%(hostname)s:%(port)s' did not respond within timeout" % dict(
             hostname=self._ip, port=self._port))
 
-    def _raw_tcp_connect(self, tcp_endpoint):
+    @classmethod
+    def _raw_tcp_connect(cls, tcp_endpoint):
         s = socket.socket()
         try:
             s.connect(tcp_endpoint)
             return True
-        except:
+        except BaseException:
             return False
         finally:
             s.close()
@@ -88,7 +90,7 @@ class SshConnection:
             self._logger.debug("SSH Execution output: %(output)s" % dict(output="\n" + output))
         if status != 0:
             e = RuntimeError("Failed executing, status '%s', output was:\n%s stderr \n%s" %
-                          (status, output, stderr.readlines()))
+                             (status, output, stderr.readlines()))
             e.output = output
             raise e
         return output

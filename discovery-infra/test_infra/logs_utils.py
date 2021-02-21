@@ -1,6 +1,5 @@
 import logging
 import os
-import shutil
 import tarfile
 import time
 from tempfile import TemporaryDirectory
@@ -11,13 +10,16 @@ OC_DOWNLOAD_LOGS_INTERVAL = 10 * 60
 NUM_OF_RETRIES = 6
 
 
-def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success, verify_control_plane=False, check_oc=False):
+def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success, verify_control_plane=False,
+                         check_oc=False):
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
     with TemporaryDirectory() as tempdir:
         with tarfile.open(cluster_tar_path) as tar:
             logging.info(f'downloaded logs: {tar.getnames()}')
-            assert len(tar.getnames()) >= expected_min_log_num, f"{tar.getnames()} logs are less than minimum of {expected_min_log_num}"
+            assert len(
+                tar.getnames()) >= expected_min_log_num, f"{tar.getnames()} " \
+                                                         f"logs are less than minimum of {expected_min_log_num}"
             tar.extractall(tempdir)
             for gz in os.listdir(tempdir):
                 if "bootstrap" in gz:
@@ -87,7 +89,9 @@ def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, v
         if verify_control_plane:
             cp_full_path = os.path.join(dir_path, cp_path)
             master_dirs = os.listdir(cp_full_path)
-            assert len(master_dirs) == NUMBER_OF_MASTERS - 1, f"expecting {cp_full_path} to have {NUMBER_OF_MASTERS - 1} values"
+            assert len(
+                master_dirs) == NUMBER_OF_MASTERS - 1, f"expecting {cp_full_path} to have " \
+                                                       f"{NUMBER_OF_MASTERS - 1} values"
             logging.info(f"control-plane directory has sub-directory for each master: {master_dirs}")
             for ip_dir in master_dirs:
                 logging.info(f"{ip_dir} content: {os.listdir(os.path.join(cp_full_path, ip_dir))}")
@@ -100,4 +104,5 @@ def verify_logs_are_current(started_cluster_install_at, logs_collected_at):
     for collected_at in logs_collected_at:
         # if host timestamp is set at all- check that the timestamp is from the last installation
         if collected_at > time.time() - 86400000:
-            assert collected_at > started_cluster_install_at, f"logs collected at {collected_at} before start time {started_cluster_install_at}"
+            assert collected_at > started_cluster_install_at, f"logs collected at {collected_at}" \
+                                                              f" before start time {started_cluster_install_at}"

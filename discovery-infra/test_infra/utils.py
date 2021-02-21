@@ -1,33 +1,32 @@
 # -*- coding: utf-8 -*-
-import logging
-import itertools
+import datetime
 import ipaddress
+import itertools
 import json
+import logging
 import os
+import random
 import shlex
 import shutil
 import subprocess
-import time
 import tempfile
-import datetime
-import random
-from string import ascii_lowercase
-from pathlib import Path
-from functools import wraps
-from contextlib import contextmanager
+import time
 import xml.dom.minidom as md
+from contextlib import contextmanager
+from distutils.dir_util import copy_tree
+from functools import wraps
+from pathlib import Path
+from pprint import pformat
+from string import ascii_lowercase
 
-import libvirt
-import waiting
-import requests
 import filelock
-from test_infra import consts
+import libvirt
 import oc_utils
+import requests
+import waiting
 from logger import log
 from retry import retry
-from pprint import pformat
-from distutils.dir_util import copy_tree
-
+from test_infra import consts
 
 conn = libvirt.open("qemu:///system")
 
@@ -81,7 +80,7 @@ def wait_till_nodes_are_ready(nodes_count, network_name):
             waiting_for="Nodes to have ips",
         )
         log.info("All nodes have booted and got ips")
-    except:
+    except BaseException:
         log.error(
             "Not all nodes are ready. Current dhcp leases are %s",
             get_network_leases(network_name),
@@ -103,7 +102,7 @@ def get_libvirt_nodes_mac_role_ip_and_name(network_name):
                 else consts.NodeRoles.MASTER,
             }
         return nodes_data
-    except:
+    except BaseException:
         log.error(
             "Failed to get nodes macs from libvirt. Output is %s",
             get_network_leases(network_name),
@@ -131,7 +130,7 @@ def is_cvo_available():
 
             if condition['type'] == 'Available' and condition['status'] == 'True':
                 return True
-    except:
+    except BaseException:
         log.exception("exception in access the cluster api server")
     return False
 
@@ -194,7 +193,7 @@ def get_tf_main(tf_folder):
 def set_tf_main(tf_folder, main_str):
     tf_file = os.path.join(tf_folder, consts.TF_MAIN_JSON_NAME)
     with open(tf_file, "w") as _file:
-        main_str = _file.write(main_str)
+        _main_str = _file.write(main_str)
 
 
 def are_hosts_in_status(
@@ -248,7 +247,7 @@ def wait_till_hosts_with_macs_are_in_status(
             sleep_seconds=interval,
             waiting_for="Nodes to be in of the statuses %s" % statuses,
         )
-    except:
+    except BaseException:
         hosts = get_cluster_hosts_with_mac(client, cluster_id, macs)
         log.info("All nodes: %s", hosts)
         raise
@@ -277,7 +276,7 @@ def wait_till_all_hosts_are_in_status(
             sleep_seconds=interval,
             waiting_for="Nodes to be in of the statuses %s" % statuses,
         )
-    except:
+    except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
         log.info("All nodes: %s", hosts)
         raise
@@ -306,7 +305,7 @@ def wait_till_at_least_one_host_is_in_status(
             sleep_seconds=interval,
             waiting_for="Node to be in of the statuses %s" % statuses,
         )
-    except:
+    except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
         log.info("All nodes: %s", hosts)
         raise
@@ -336,7 +335,7 @@ def wait_till_specific_host_is_in_status(
             sleep_seconds=interval,
             waiting_for="Node to be in of the statuses %s" % statuses,
         )
-    except:
+    except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
         log.info("All nodes: %s", hosts)
         raise
@@ -362,7 +361,7 @@ def wait_till_at_least_one_host_is_in_stage(
             sleep_seconds=interval,
             waiting_for="Node to be in of the stage %s" % stages,
         )
-    except:
+    except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
         log.error(f"All nodes stages: "
                   f"{[host['progress']['current_stage'] for host in hosts]} "
@@ -398,7 +397,7 @@ def wait_till_cluster_is_in_status(
             sleep_seconds=interval,
             waiting_for="Cluster to be in status %s" % statuses,
         )
-    except:
+    except BaseException:
         log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
 
@@ -413,7 +412,7 @@ def is_cluster_in_status(client, cluster_id, statuses):
             log.info(f"Cluster not yet in its required status. "
                      f"Current status: {cluster_status}")
             return False
-    except:
+    except BaseException:
         log.exception("Failed to get cluster %s info", cluster_id)
 
 
@@ -442,7 +441,7 @@ def get_host_validation_value(cluster_info, host_id, validation_section, validat
 
 
 def get_random_name(length=8):
-    return ''.join(random.choice(ascii_lowercase) for i in range(length))
+    return ''.join(random.choice(ascii_lowercase) for _ in range(length))
 
 
 def folder_exists(file_path):
@@ -627,9 +626,9 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
 def _get_hosts_from_network(net):
     desc = md.parseString(net.XMLDesc())
     try:
-        hosts = desc.getElementsByTagName("network")[0].\
-            getElementsByTagName("ip")[0].\
-            getElementsByTagName("dhcp")[0].\
+        hosts = desc.getElementsByTagName("network")[0]. \
+            getElementsByTagName("ip")[0]. \
+            getElementsByTagName("dhcp")[0]. \
             getElementsByTagName("host")
         return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"),
                                       "hostname": host.getAttribute("name")}, hosts))
@@ -638,7 +637,7 @@ def _get_hosts_from_network(net):
 
 
 def _merge(leases, hosts):
-    lips = [l["ipaddr"] for l in leases]
+    lips = [ls["ipaddr"] for ls in leases]
     ret = leases + [h for h in hosts if h["ipaddr"] not in lips]
     return ret
 
@@ -660,7 +659,7 @@ def create_ip_address_nested_list(node_count, starting_ip_addr):
 
 
 def create_empty_nested_list(node_count):
-    return [[] for i in range(node_count)]
+    return [[] for _ in range(node_count)]
 
 
 def get_libvirt_nodes_from_tf_state(network_names, tf_state):
@@ -738,7 +737,8 @@ def run_container(container_name, image, flags=None, command=""):
 
 def remove_running_container(container_name):
     logging.info(f'Removing Container {container_name}')
-    container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman {consts.PODMAN_FLAGS} rm {container_name}'
+    container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman' \
+                       f' {consts.PODMAN_FLAGS} rm {container_name}'
     run_command(container_rm_cmd, shell=True)
 
 
@@ -751,7 +751,8 @@ def get_openshift_version():
         f.close()
         try:
             stdout, _, _ = run_command(
-                f"oc adm release info '{release_image}' --registry-config '{f.name}' -o json | jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
+                f"oc adm release info '{release_image}' --registry-config '{f.name}' -o json |"
+                f" jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
                 shell=True)
         finally:
             os.unlink(f.name)
@@ -775,7 +776,6 @@ def extract_installer(release_image, dest):
 
 
 def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
-
     """
     Update names and/or roles of the hosts in a cluster from a dictionary of libvirt nodes.
 

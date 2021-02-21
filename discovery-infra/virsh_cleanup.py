@@ -4,8 +4,8 @@
 import argparse
 import subprocess
 
-
 from test_infra import utils
+
 from logger import log
 
 DEFAULT_SKIP_LIST = ["default"]

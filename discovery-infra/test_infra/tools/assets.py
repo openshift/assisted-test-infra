@@ -1,9 +1,9 @@
-import os
 import json
 import logging
+import os
+
 from munch import Munch
-from test_infra import utils
-from test_infra import consts
+from test_infra import consts, utils
 
 
 class Assets:

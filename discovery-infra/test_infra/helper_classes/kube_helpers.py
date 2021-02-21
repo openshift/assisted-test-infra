@@ -15,26 +15,22 @@ When a ClusterDeployment has sufficient data, installation will be started
 automatically.
 """
 
-import logging
-import os
 import abc
 import contextlib
 import json
-import yaml
-
-import waiting
-
+import logging
+import os
 from pprint import pformat
 from typing import Optional, Union, Dict, Tuple, ContextManager
 
-from kubernetes.config import load_kube_config
-from kubernetes.config.kube_config import Configuration
+import waiting
+import yaml
 from kubernetes.client import ApiClient, CoreV1Api, CustomObjectsApi
 from kubernetes.client.rest import ApiException
-
-from tests.conftest import env_variables
+from kubernetes.config import load_kube_config
+from kubernetes.config.kube_config import Configuration
 from test_infra.utils import get_random_name
-
+from tests.conftest import env_variables
 
 # silence kubernetes debug messages.
 logging.getLogger('kubernetes').setLevel(logging.INFO)
@@ -59,6 +55,7 @@ class ObjectReference:
     A class that contains the information required to to let you locate a
     referenced Kube API resource.
     """
+
     def __init__(self, name: str, namespace: str):
         self.name = name
         self.namespace = namespace
@@ -75,6 +72,7 @@ class Secret:
     A Kube API secret resource that consists of the pull secret data, used
     by a ClusterDeployment CRD.
     """
+
     def __init__(
             self,
             kube_api_client: ApiClient,
@@ -115,7 +113,8 @@ class BaseCustomResource(abc.ABC):
     Base class for all CRDs, enforces basic methods that every resource must
     have e.g create, path, get, delete and status.
     """
-    def __init__(self,  name: str, namespace: str):
+
+    def __init__(self, name: str, namespace: str):
         self._reference = ObjectReference(name=name, namespace=namespace)
 
     @property
@@ -153,6 +152,7 @@ class Platform:
     A class that represents the configuration for the specific platform upon
     which to perform the installation.
     """
+
     def __init__(
             self,
             api_vip: str = DEFAULT_API_VIP,
@@ -194,6 +194,7 @@ class InstallStrategy:
     A class that provides platform agnostic configuration for the use of
     alternate install strategies.
     """
+
     def __init__(
             self,
             host_prefix: int = env_variables['host_prefix'],
@@ -389,6 +390,7 @@ class ClusterDeployment(BaseCustomResource):
         Since the status key is created only after resource is processed by the
         controller in the service, it might take a few seconds before appears.
         """
+
         def _attempt_to_get_status() -> dict:
             return self.get()['status']
 
@@ -474,7 +476,6 @@ def deploy_default_cluster_deployment(
         secret: Optional[Secret] = None,
         **kwargs
 ) -> ClusterDeployment:
-
     cluster_deployment = ClusterDeployment(kube_api_client, name)
     try:
         if 'filepath' in kwargs:

@@ -1,38 +1,38 @@
-import logging
-import waiting
-import pytest
 import json
+import logging
 import os
-from contextlib import suppress
-from typing import Optional
-from pathlib import Path
-from paramiko import SSHException
 import shutil
+from contextlib import suppress
 from copy import deepcopy
+from pathlib import Path
+from typing import Optional
 
-from test_infra import consts
+import pytest
 import test_infra.utils as infra_utils
-from test_infra.tools.assets import NetworkAssets
-from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
+import waiting
 from assisted_service_client.rest import ApiException
-from test_infra.helper_classes.cluster import Cluster
-from test_infra.helper_classes.nodes import Nodes
-from test_infra.helper_classes.kube_helpers import create_kube_api_client, cluster_deployment_context
-from tests.conftest import env_variables, qe_env
 from download_logs import download_logs
+from paramiko import SSHException
+from test_infra import consts
+from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
+from test_infra.helper_classes.cluster import Cluster
+from test_infra.helper_classes.kube_helpers import create_kube_api_client, cluster_deployment_context
+from test_infra.helper_classes.nodes import Nodes
+from test_infra.tools.assets import NetworkAssets
+from tests.conftest import env_variables, qe_env
 
 
 class BaseTest:
     @staticmethod
     def override_node_parameters(**kwargs):
-        vars = deepcopy(env_variables)
+        _vars = deepcopy(env_variables)
         for key, value in kwargs.items():
-            vars[key] = value
+            _vars[key] = value
 
-        vars['num_nodes'] = vars['num_workers'] + vars['num_masters'] 
+        _vars['num_nodes'] = _vars['num_workers'] + _vars['num_masters']
 
-        return vars
-        
+        return _vars
+
     @pytest.fixture(scope="function")
     def nodes(self, setup_node_controller, request):
         if hasattr(request, 'param'):
@@ -74,6 +74,7 @@ class BaseTest:
                           high_availability_mode=high_availability_mode)
             clusters.append(res)
             return res
+
         yield get_cluster_func
         for cluster in clusters:
             if request.node.result_call.failed:
@@ -91,13 +92,13 @@ class BaseTest:
         rules = []
 
         def set_iptables_rules_for_nodes(
-            cluster, 
-            nodes,
-            given_nodes,
-            iptables_rules,  
-            download_image=True,
-            iso_download_path=env_variables['iso_download_path'],
-            ssh_key=env_variables['ssh_public_key']
+                cluster,
+                nodes,
+                given_nodes,
+                iptables_rules,
+                download_image=True,
+                iso_download_path=env_variables['iso_download_path'],
+                ssh_key=env_variables['ssh_public_key']
         ):
 
             given_node_ips = []
@@ -113,10 +114,10 @@ class BaseTest:
 
             logging.info(f'Given node ips: {given_node_ips}')
 
-            for rule in iptables_rules:
-                rule.add_sources(given_node_ips)
-                rules.append(rule)
-                rule.insert()
+            for _rule in iptables_rules:
+                _rule.add_sources(given_node_ips)
+                rules.append(_rule)
+                _rule.insert()
 
         yield set_iptables_rules_for_nodes
         logging.info('---TEARDOWN iptables ---')
@@ -142,6 +143,8 @@ class BaseTest:
         added_networks = []
 
         def add(node, network_name=None, network_xml=None):
+            interface_mac = ""
+            network = ""
             if network_xml:
                 network, interface_mac = node.attach_interface(network_xml)
             elif network_name:
@@ -191,7 +194,7 @@ class BaseTest:
     @staticmethod
     def assert_cluster_validation(cluster_info, validation_section, validation_id, expected_status):
         found_status = infra_utils.get_cluster_validation_value(cluster_info, validation_section, validation_id)
-        assert found_status == expected_status, "Found validation status " + found_status + " rather than " +\
+        assert found_status == expected_status, "Found validation status " + found_status + " rather than " + \
                                                 expected_status + " for validation " + validation_id
 
     @staticmethod
@@ -207,7 +210,8 @@ class BaseTest:
         self._collect_virsh_logs(nodes, log_dir_name)
         self._collect_journalctl(nodes, log_dir_name)
 
-    def _collect_virsh_logs(self, nodes, log_dir_name):
+    @classmethod
+    def _collect_virsh_logs(cls, nodes, log_dir_name):
         logging.info('Collecting virsh logs\n')
         os.makedirs(log_dir_name, exist_ok=True)
         virsh_log_path = os.path.join(log_dir_name, "libvirt_logs")
@@ -224,13 +228,13 @@ class BaseTest:
         infra_utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
 
         messages_log_path = os.path.join(virsh_log_path, "messages.log")
-        shutil.copy(f'/var/log/messages', messages_log_path)
+        shutil.copy('/var/log/messages', messages_log_path)
 
         qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
         os.makedirs(qemu_libvirt_path, exist_ok=False)
         for node in nodes:
             shutil.copy(f'/var/log/libvirt/qemu/{node.name}.log', f'{qemu_libvirt_path}/{node.name}-qemu.log')
-        
+
         console_log_path = os.path.join(virsh_log_path, "console_logs")
         os.makedirs(console_log_path, exist_ok=False)
         for node in nodes:
@@ -240,9 +244,10 @@ class BaseTest:
         infra_utils.run_command(f"journalctl --since \"{nodes.setup_time}\" "
                                 f"-u libvirtd -D /run/log/journal >> {libvird_log_path}", shell=True)
 
-    def _collect_journalctl(self, nodes, log_dir_name):
+    @staticmethod
+    def _collect_journalctl(nodes, log_dir_name):
         logging.info('Collecting journalctl\n')
-        infra_utils.recreate_folder(log_dir_name, with_chmod=False ,force_recreate=False)
+        infra_utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
         journal_ctl_path = Path(log_dir_name) / 'nodes_journalctl'
         infra_utils.recreate_folder(journal_ctl_path, with_chmod=False)
         for node in nodes:
@@ -259,13 +264,14 @@ class BaseTest:
             cluster.download_installation_logs(cluster_tar_path)
         assert "No log files" in str(ex.value)
 
-    def update_oc_config(self, nodes, cluster):
+    @staticmethod
+    def update_oc_config(nodes, cluster):
         os.environ["KUBECONFIG"] = env_variables['kubeconfig_path']
         vips = nodes.controller.get_ingress_and_api_vips()
         api_vip = vips['api_vip']
         infra_utils.config_etc_hosts(cluster_name=cluster.name,
-                               base_dns_domain=env_variables["base_domain"],
-                               api_vip=api_vip)
+                                     base_dns_domain=env_variables["base_domain"],
+                                     api_vip=api_vip)
 
     def wait_for_controller(self, cluster, nodes):
         cluster.download_kubeconfig_no_ingress()

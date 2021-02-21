@@ -7,6 +7,7 @@ from contextlib import suppress
 
 class SensitiveFormatter(logging.Formatter):
     """Formatter that removes sensitive info."""
+
     @staticmethod
     def _filter(s):
         s = re.sub(r"('_pull_secret':\s+)'(.*?)'", r"\g<1>'*** PULL_SECRET ***'", s)
@@ -33,7 +34,7 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 log = logging.getLogger("")
 log.setLevel(logging.DEBUG)
-format = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
+fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setFormatter(
@@ -44,5 +45,5 @@ ch.setFormatter(
 log.addHandler(ch)
 
 fh = logging.FileHandler(filename="test_infra.log")
-fh.setFormatter(format)
+fh.setFormatter(fmt)
 log.addHandler(fh)
