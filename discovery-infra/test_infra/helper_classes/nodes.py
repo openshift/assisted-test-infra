@@ -1,15 +1,14 @@
-import logging
 import json
-from typing import Dict, Iterator, List
+import logging
 import random
+from typing import Dict, Iterator, List
 
-import waiting
 from munch import Munch
-from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra import utils
-from tests.conftest import env_variables
 from test_infra.controllers.node_controllers.node import Node
+from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
+from tests.conftest import env_variables
 
 
 class NodeMapping:
@@ -56,7 +55,7 @@ class Nodes:
 
     def _list(self):
         nodes = self.controller.list_nodes()
-        return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes]
+        return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes.values()]
 
     @property
     def setup_time(self):
@@ -141,7 +140,7 @@ class Nodes:
         for cluster_host_object in cluster.get_hosts():
             name = self.get_cluster_hostname(cluster_host_object)
             node_mapping_dict[name] = NodeMapping(self.nodes_as_dict[name],
-                                                                             Munch.fromDict(cluster_host_object))
+                                                  Munch.fromDict(cluster_host_object))
         return node_mapping_dict
 
     def get_node_from_cluster_host(self, cluster_host_object):
@@ -164,12 +163,14 @@ class Nodes:
         static_ips_config = env_variables.get('static_ips_config')
         if ipv6 or static_ips_config:
             # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
-            # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be set
-            # to valid hostname
+            # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be
+            # set to valid hostname
+            # TODO - NodeController has no `params` and `tf` attributes
             network_name = self.controller.params.libvirt_network_name
             libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
             nodes_count = env_variables.get('num_nodes')
-            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True, update_roles=(nodes_count != 1))
+            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True,
+                               update_roles=(nodes_count != 1))
 
     def set_single_node_ip(self, cluster):
         self.controller.tf.change_variables({"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client,
