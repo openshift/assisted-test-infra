@@ -54,8 +54,9 @@ class Nodes:
         return self._nodes_as_dict
 
     def _list(self):
+        # TODO list_nodes return type is Dict[str, Node] but returns list
         nodes = self.controller.list_nodes()
-        return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes.values()]
+        return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes]
 
     @property
     def setup_time(self):
