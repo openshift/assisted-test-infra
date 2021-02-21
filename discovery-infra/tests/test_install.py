@@ -1,8 +1,6 @@
-
 import pytest
-
-from tests.conftest import get_api_client
 from tests.base_test import BaseTest
+from tests.conftest import get_api_client
 
 
 class TestInstall(BaseTest):

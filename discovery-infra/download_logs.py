@@ -16,14 +16,14 @@ import assisted_service_client
 import requests
 import urllib3
 from dateutil.parser import isoparse
-
-from logger import log, suppressAndLog
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus, HostsProgressStages
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.logs_utils import verify_logs_uploaded
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
                               recreate_folder, run_command)
+
+from logger import log, suppressAndLog
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 MAX_RETRIES = 3
@@ -39,7 +39,8 @@ def main():
 
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
-        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.must_gather, args.update_by_events)
+        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
+                      args.must_gather, args.update_by_events)
     else:
         clusters = get_clusters(client, args.download_all)
 
@@ -69,7 +70,7 @@ def min_number_of_log_files(cluster, is_controller_expected):
     if is_controller_expected:
         return len(cluster['hosts']) + 1
     else:
-        return  len(cluster['hosts'])
+        return len(cluster['hosts'])
 
 
 def is_update_needed(output_folder: str, update_on_events_update: bool, client: InventoryClient, cluster: dict):
@@ -86,7 +87,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
         if filecmp.cmp(destination_event_file_path, latest_event_tp.name):
             latest_event_tp.close()
             log.info("no new events found for {}".format(destination_event_file_path))
-            need_update =  False
+            need_update = False
         else:
             log.info("update needed, new events found, deleting {} ".format(destination_event_file_path))
             os.remove(destination_event_file_path)
@@ -95,7 +96,8 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
     return need_update
 
 
-def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL):
+def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool = False,
+                  retry_interval: int = RETRY_INTERVAL):
     output_folder = get_logs_output_folder(dest, cluster)
     if not is_update_needed(output_folder, update_by_events, client, cluster):
         log.info(f"Skipping, no need to update {output_folder}.")
@@ -112,7 +114,8 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
         for ignition_file in ("bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml"):
             with suppress(assisted_service_client.rest.ApiException):
-                client.download_and_save_file(cluster['id'], ignition_file, os.path.join(output_folder, "cluster_files", ignition_file))
+                client.download_and_save_file(cluster['id'], ignition_file,
+                                              os.path.join(output_folder, "cluster_files", ignition_file))
 
         for host_id in map(lambda host: host['id'], cluster['hosts']):
             with suppressAndLog(assisted_service_client.rest.ApiException):
@@ -127,7 +130,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
                 cluster['hosts'], [HostsProgressStages.CONFIGURING], 2)
             are_masters_in_join_state = are_host_progress_in_stage(
                 cluster['hosts'], [HostsProgressStages.JOINED], 2)
-            max_retries = 2*MAX_RETRIES if are_masters_in_join_state else MAX_RETRIES
+            max_retries = 2 * MAX_RETRIES if are_masters_in_join_state else MAX_RETRIES
             is_controller_expected = cluster['status'] == ClusterStatus.INSTALLED or are_masters_in_configuring_state
             min_number_of_logs = min_number_of_log_files(cluster, is_controller_expected)
 
@@ -207,7 +210,8 @@ def get_ui_url_from_api_url(api_url: str):
 
 def download_must_gather(kubeconfig: str, dest_dir: str):
     log.info(f"Downloading must-gather to {dest_dir}")
-    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
+    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather" \
+              f" --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
     subprocess.run(command, shell=True)
 
 

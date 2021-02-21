@@ -1,11 +1,11 @@
 import logging
 import os
 import uuid
-import test_infra.utils as infra_utils
 from distutils import util
 from pathlib import Path
 
 import pytest
+import test_infra.utils as infra_utils
 from test_infra import assisted_service_api, consts, utils
 
 qe_env = False
@@ -14,21 +14,23 @@ qe_env = False
 def is_qe_env():
     return os.environ.get('NODE_ENV') == 'QE_VM'
 
+
 def _get_cluster_name():
     cluster_name = utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')
     if cluster_name == consts.CLUSTER_PREFIX:
         cluster_name = cluster_name + '-' + str(uuid.uuid4())[:8]
     return cluster_name
 
+
 # TODO changes it
 if is_qe_env():
     from test_infra.controllers.node_controllers.qe_vm_controler import \
         QeVmController as nodeController
+
     qe_env = True
 else:
     from test_infra.controllers.node_controllers.terraform_controller import \
         TerraformController as nodeController
-
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key") if not qe_env else \
     os.path.join(str(Path.home()), ".ssh/id_rsa")
@@ -71,7 +73,7 @@ if not qe_env:
     env_variables["kubeconfig_path"] = f'/tmp/test_kubeconfig_{cluster_mid_name}'
 else:
     image = utils.get_env('ISO',
-                          os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-installer-image.iso')).\
+                          os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-installer-image.iso')). \
         strip()
 
 env_variables["iso_download_path"] = image
@@ -80,7 +82,7 @@ env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_m
 
 @pytest.fixture(scope="session")
 def api_client():
-    logging.info(f'--- SETUP --- api_client\n')
+    logging.info('--- SETUP --- api_client\n')
     yield get_api_client()
 
 
@@ -90,15 +92,15 @@ def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
     if not url:
         url = utils.get_local_assisted_service_url(
             utils.get_env('PROFILE'), env_variables['namespace'], 'assisted-service', utils.get_env('DEPLOY_TARGET'))
-    
+
     return assisted_service_api.create_client(url, offline_token, **kwargs)
 
 
 @pytest.fixture(scope="session")
 def setup_node_controller():
-    logging.info(f'--- SETUP --- node controller\n')
+    logging.info('--- SETUP --- node controller\n')
     yield nodeController
-    logging.info(f'--- TEARDOWN --- node controller\n')
+    logging.info('--- TEARDOWN --- node controller\n')
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
