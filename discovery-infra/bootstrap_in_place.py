@@ -11,7 +11,6 @@ from download_logs import download_must_gather
 from test_infra import utils, consts
 from test_infra.tools.assets import NetworkAssets
 from test_infra.helper_classes.nodes import Nodes
-from test_infra.controllers.node_controllers.ssh import SshConnection
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
 
 BUILD_DIR = "build"
@@ -102,19 +101,23 @@ def create_controller(net_asset):
 
 
 def all_operators_up():
-    statuses = get_operators_status(KUBE_CONFIG)
-    if not statuses:
-        logging.debug("No operator has been found currently...")
+    try:
+        statuses = get_operators_status(KUBE_CONFIG)
+        if not statuses:
+            logging.debug("No operator has been found currently...")
+            return False
+
+        invalid_operators = [operator for operator, up in statuses.items() if not up]
+
+        all_operators_are_valid = len(invalid_operators) == 0
+
+        if not all_operators_are_valid:
+            logging.debug("Following operators are still down: %s", ", ".join(invalid_operators))
+
+        return all_operators_are_valid
+    except Exception as e:
+        print("got exception while validating operators: %s", e)
         return False
-
-    invalid_operators = [operator for operator, up in statuses.items() if not up]
-
-    all_operators_are_valid = len(invalid_operators) == 0
-
-    if not all_operators_are_valid:
-        logging.debug("Following operators are still down: %s", ", ".join(invalid_operators))
-
-    return all_operators_are_valid
 
 
 def gather_sosreport_data(node):

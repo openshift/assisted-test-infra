@@ -3,7 +3,6 @@ import json
 from typing import Dict, Iterator, List
 import random
 
-import waiting
 from munch import Munch
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra import utils
@@ -173,6 +172,3 @@ class Nodes:
 
     def set_single_node_ip(self, cluster):
         self.controller.tf.change_variables({"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client, cluster.id, env_variables['machine_cidr'])})
-
-
-
