@@ -33,6 +33,7 @@ class InventoryClient(object):
             log.info("OFFLINE_TOKEN not set, skipping authentication headers")
             return
 
+        @retry(exceptions=requests.HTTPError, tries=5, delay=5)
         def refresh_api_key(config):
             # Get the properly padded key segment
             auth = config.api_key.get('Authorization', None)
