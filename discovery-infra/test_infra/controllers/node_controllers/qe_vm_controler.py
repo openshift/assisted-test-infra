@@ -1,8 +1,7 @@
 import logging
 
 from test_infra import utils
-from test_infra.controllers.node_controllers.libvirt_controller import \
-    LibvirtController
+from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 
 
 class QeVmController(LibvirtController):

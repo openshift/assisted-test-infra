@@ -4,9 +4,10 @@
 import argparse
 import sys
 
+from test_infra import assisted_service_api, utils, consts
+
 import day2
 import oc_utils
-from test_infra import assisted_service_api, utils, consts
 
 
 def get_ocp_cluster(args):
@@ -15,9 +16,10 @@ def get_ocp_cluster(args):
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
         args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
     client = assisted_service_api.create_client(
-            url=utils.get_assisted_service_url_by_args(args=args)
+        url=utils.get_assisted_service_url_by_args(args=args)
     )
     return client.cluster_get(cluster_id=args.cluster_id)
+
 
 def main(args):
     if args.config_etc_hosts:

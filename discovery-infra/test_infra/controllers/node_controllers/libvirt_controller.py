@@ -1,18 +1,16 @@
+import logging
 import os
 import re
 import string
-import logging
 import tempfile
 from abc import ABC
+from contextlib import suppress
 from typing import List
+from xml.dom import minidom
 
 import libvirt
 import waiting
-from xml.dom import minidom
-from contextlib import suppress
-
-from test_infra import utils
-from test_infra import consts
+from test_infra import consts, utils
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
@@ -89,6 +87,7 @@ class LibvirtController(NodeController, ABC):
         nodes = self.list_nodes()
 
         for node in nodes:
+            # TODO - Parameter 'check_ips' unfilled
             self.start_node(node.name())
         return nodes
 
@@ -125,6 +124,7 @@ class LibvirtController(NodeController, ABC):
         """
         :return: All node disks that use an SCSI bus (/dev/sd*)
         """
+
         def is_scsi_disk(disk):
             return any(target.getAttribute('bus') == 'scsi' for target in
                        disk.getElementsByTagName('target'))
@@ -160,6 +160,7 @@ class LibvirtController(NodeController, ABC):
         """
         :return: Returns all disks created by `self.attach_test_disk` by examining the alias of all SCSI disks
         """
+
         def is_test_disk(disk):
             return any(alias.getAttribute('name').startswith(cls.TEST_DISKS_PREFIX) for alias in
                        disk.getElementsByTagName('alias'))
@@ -289,15 +290,16 @@ class LibvirtController(NodeController, ABC):
         utils.run_command(command)
         try:
             waiting.wait(
-                    lambda: len(self.list_leases(network_name)) > len(mac_addresses),
-                    timeout_seconds=30,
-                    sleep_seconds=2,
-                    waiting_for="Wait for network lease"
+                lambda: len(self.list_leases(network_name)) > len(mac_addresses),
+                timeout_seconds=30,
+                sleep_seconds=2,
+                waiting_for="Wait for network lease"
             )
         except waiting.exceptions.TimeoutExpired:
             logging.error("Network lease wasnt found for added interface")
             raise
 
+        mac_address = ""
         new_net_leases = self.list_leases(network_name)
         for lease in new_net_leases:
             if not lease['mac'] in mac_addresses:
@@ -311,11 +313,12 @@ class LibvirtController(NodeController, ABC):
         logging.info(f"Undefining an interface mac: {mac}, for node: {node_name}")
         command = f"virsh detach-interface {node_name} --type network --mac {mac}"
         utils.run_command(command, True)
-        logging.info(f"Successfully removed interface.")
+        logging.info("Successfully removed interface.")
 
     def restart_node(self, node_name):
         logging.info("Restarting %s", node_name)
         self.shutdown_node(node_name=node_name)
+        # TODO - Parameter 'check_ips' unfilled
         self.start_node(node_name=node_name)
 
     def format_all_node_disks(self):

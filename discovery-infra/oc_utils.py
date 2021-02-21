@@ -1,11 +1,11 @@
-import os
 import json
-import urllib3
+import os
 import subprocess
 
-from kubernetes.config.kube_config import load_kube_config
-from kubernetes.config.kube_config import Configuration
+import urllib3
 from kubernetes.client import ApiClient
+from kubernetes.config.kube_config import Configuration
+from kubernetes.config.kube_config import load_kube_config
 
 
 def extend_parser_with_oc_arguments(parser):
@@ -95,7 +95,8 @@ class OCApiClient(ApiClient):
             _return_http_data_only=None,
             collection_formats=None,
             _preload_content=True,
-            _request_timeout=None
+            _request_timeout=None,
+            _host=None
     ):
         if auth_settings == ['BearerToken']:
             auth_settings = self.configuration.auth_settings()
@@ -116,7 +117,8 @@ class OCApiClient(ApiClient):
             _return_http_data_only,
             collection_formats,
             _preload_content,
-            _request_timeout
+            _request_timeout,
+            _host=_host
         )
 
 
@@ -143,7 +145,7 @@ def get_namespaced_service_urls_list(
         namespace,
         service=None,
         scheme='http'
-        ):
+):
     urls = []
     routes = get_namespaced_service_routes_list(client, namespace, service)
     for route in routes.items:

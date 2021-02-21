@@ -2,24 +2,25 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import dns.resolver
+import distutils.util
 import ipaddress
 import json
 import os
 import time
-import distutils.util
-from netaddr import IPNetwork, IPAddress
 
+import dns.resolver
+from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes import cluster as helper_cluster
+from test_infra.tools import static_ips
+from test_infra.tools import terraform_utils
+from test_infra.utils import config_etc_hosts
+
+import bootstrap_in_place as ibip
+import day2
 import install_cluster
 import oc_utils
-import day2
 from logger import log
-from test_infra.utils import config_etc_hosts
-from test_infra.tools import terraform_utils
-from test_infra.tools import static_ips
-import bootstrap_in_place as ibip
 
 
 class MachineNetwork(object):
@@ -36,6 +37,7 @@ class MachineNetwork(object):
         self.cidr_v6 = machine_cidr_6
         self.provisioning_cidr_v4 = _get_provisioning_cidr(machine_cidr_4, ns_index)
         self.provisioning_cidr_v6 = _get_provisioning_cidr6(machine_cidr_6, ns_index)
+
 
 def set_tf_config(cluster_name):
     nodes_details = _create_node_details(cluster_name)
@@ -123,8 +125,7 @@ def fill_tfvars(
 
 
 def _secondary_tfvars(master_count, nodes_details, machine_net):
-    vars_dict = {}
-    vars_dict['libvirt_secondary_master_macs'] = static_ips.generate_macs(master_count)
+    vars_dict = {'libvirt_secondary_master_macs': static_ips.generate_macs(master_count)}
     if machine_net.has_ip_v4:
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
@@ -158,13 +159,13 @@ def _secondary_tfvars(master_count, nodes_details, machine_net):
     vars_dict['libvirt_secondary_worker_macs'] = static_ips.generate_macs(worker_count)
     if machine_net.has_ip_v4:
         vars_dict['libvirt_secondary_master_ips'] = utils.create_ip_address_nested_list(
-                master_count,
-                starting_ip_addr=secondary_master_starting_ip
-                )
+            master_count,
+            starting_ip_addr=secondary_master_starting_ip
+        )
         vars_dict['libvirt_secondary_worker_ips'] = utils.create_ip_address_nested_list(
-                worker_count,
-                starting_ip_addr=secondary_worker_starting_ip
-                )
+            worker_count,
+            starting_ip_addr=secondary_worker_starting_ip
+        )
     else:
         vars_dict['libvirt_secondary_master_ips'] = utils.create_empty_nested_list(master_count)
         vars_dict['libvirt_secondary_worker_ips'] = utils.create_empty_nested_list(worker_count)
@@ -233,8 +234,10 @@ def set_cluster_machine_cidr(client, cluster_id, machine_net, set_vip_dhcp_alloc
     cluster_info = client.cluster_get(cluster_id)
     if set_vip_dhcp_allocation:
         cluster_info.vip_dhcp_allocation = True
-    cluster_info.machine_network_cidr = machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4
+    cluster_info.machine_network_cidr = machine_net.cidr_v6 \
+        if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4
     client.update_cluster(cluster_id, cluster_info)
+
 
 def _get_vips_ips(machine_net):
     if machine_net.has_ip_v4:
@@ -260,13 +263,15 @@ def _get_vips_ips(machine_net):
 def _get_host_ip_from_cidr(cidr):
     return str(IPNetwork(cidr).ip + 1)
 
+
 def _get_proxy_ip(cidr):
     return IPNetwork(cidr).ip + 1
 
+
 def _get_http_proxy_params(ipv4, ipv6):
     if args.proxy:
-        ipv6Only = ipv6 and not ipv4
-        if ipv6Only:
+        ipv6_only = ipv6 and not ipv4
+        if ipv6_only:
             proxy_ip = _get_proxy_ip(args.vm_network_cidr6)
             proxy_url = f'http://[{proxy_ip}]:3128'
             no_proxy = ','.join([args.vm_network_cidr6, args.service_network6, args.cluster_network6,
@@ -279,7 +284,6 @@ def _get_http_proxy_params(ipv4, ipv6):
         return proxy_url, proxy_url, no_proxy
     else:
         return args.http_proxy, args.https_proxy, args.no_proxy
-
 
 
 # TODO add config file
@@ -357,8 +361,8 @@ def validate_dns(client, cluster_id):
         cluster.ingress_vip,
     )
     try:
-        api_answers = dns.resolver.query(api_address, "A")
-        ingress_answers = dns.resolver.query(ingress_address, "A")
+        api_answers = dns.resolver.resolve(api_address, "A")
+        ingress_answers = dns.resolver.resolve(ingress_address, "A")
         api_vip = str(api_answers[0])
         ingress_vip = str(ingress_answers[0])
 
@@ -407,9 +411,10 @@ def nodes_flow(client, cluster_name, cluster):
             )
 
             if args.master_count == 1:
-                is_ip4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
+                is_ip4 = machine_net.has_ip_v4 or not machine_net.has_ip_v6
                 cidr = args.vm_network_cidr if is_ip4 else args.vm_network_cidr6
-                tf.change_variables({"single_node_ip": helper_cluster.Cluster.get_ip_for_single_node(client, cluster.id, cidr, ipv4_first=is_ip4)})
+                tf.change_variables({"single_node_ip": helper_cluster.Cluster.get_ip_for_single_node(
+                    client, cluster.id, cidr, ipv4_first=is_ip4)})
             elif args.vip_dhcp_allocation:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:
@@ -446,7 +451,6 @@ def nodes_flow(client, cluster_name, cluster):
 
 
 def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_ip_mode):
-
     networks_names = (
         nodes_details["libvirt_network_name"],
         nodes_details["libvirt_secondary_network_name"]
