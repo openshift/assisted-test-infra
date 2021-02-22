@@ -16,6 +16,7 @@ RUN curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v
 RUN mkdir -p /root/.terraform.d/plugins
 RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.2/terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz | \
   tar -xz -C /root/.terraform.d/plugins
+RUN curl -SL https://releases.hashicorp.com/terraform-provider-local/2.0.0/terraform-provider-local_2.0.0_linux_amd64.zip > /tmp/tpl.zip && unzip -d /root/.terraform.d/plugins /tmp/tpl.zip && rm -f /tmp/tpl.zip
 
 COPY requirements.txt /tmp/
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/

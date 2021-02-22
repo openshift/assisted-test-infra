@@ -718,6 +718,10 @@ class Cluster:
                 interfaces_list]
 
     @staticmethod
+    def get_hosts_nics_data(hosts: list, ipv4_first=True):
+        return [Cluster.get_inventory_host_nics_data(h, ipv4_first=ipv4_first) for h in hosts]
+
+    @staticmethod
     def get_ip_for_single_node(client, cluster_id, machine_cidr, ipv4_first=True):
         cluster_info = client.cluster_get(cluster_id).to_dict()
         if len(cluster_info["hosts"]) == 0:
@@ -728,7 +732,20 @@ class Cluster:
             ip = intf["ip"]
             if IPAddress(ip) in network:
                 return ip
-        raise Exception("IP for single node IPv6 not found")
+        raise Exception("IP for single node not found")
+
+    @staticmethod
+    def get_master_ips(client, cluster_id, network):
+        cluster_info = client.cluster_get(cluster_id).to_dict()
+        ret = []
+        net = IPNetwork(network)
+        hosts_interfaces = Cluster.get_hosts_nics_data([h for h in cluster_info["hosts"] if h["role"] == consts.NodeRoles.MASTER])
+        for host_interfaces in hosts_interfaces:
+            for intf in host_interfaces:
+                ip = IPAddress(intf["ip"])
+                if ip in net:
+                    ret = ret + [intf["ip"]]
+        return ret
 
     def get_host_disks(self, host, filter=None):
         hosts = self.get_hosts()

@@ -24,8 +24,8 @@ resource "libvirt_volume" "worker" {
 
 resource "libvirt_network" "net" {
   name = var.libvirt_network_name
-  mode   = "route"
-  bridge = "virbr126"
+  mode   = length(var.machine_cidr_addresses) == 1 && replace(var.machine_cidr_addresses[0], ":", "") != var.machine_cidr_addresses[0] ? "nat" : "route"
+  bridge = var.libvirt_network_if
   mtu = var.libvirt_network_mtu
   domain = var.cluster_domain
   addresses = var.machine_cidr_addresses
@@ -39,11 +39,6 @@ resource "libvirt_network" "net" {
       data.libvirt_network_dns_host_template.masters_console.*.rendered,
       data.libvirt_network_dns_host_template.masters_canary.*.rendered,
       data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_int.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_console.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_canary.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_oauth.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -55,8 +50,8 @@ resource "libvirt_network" "net" {
 
 resource "libvirt_network" "secondary_net" {
   name = var.libvirt_secondary_network_name
-  mode   = "route"
-  bridge = "virbr141"
+  mode   = length(var.provisioning_cidr_addresses) == 1 && replace(var.provisioning_cidr_addresses[0], ":", "") != var.provisioning_cidr_addresses[0] ? "nat" : "route"
+  bridge = var.libvirt_secondary_network_if
   addresses = var.provisioning_cidr_addresses
   mtu = var.libvirt_network_mtu
   autostart = true
@@ -68,11 +63,6 @@ resource "libvirt_network" "secondary_net" {
       data.libvirt_network_dns_host_template.masters_console.*.rendered,
       data.libvirt_network_dns_host_template.masters_canary.*.rendered,
       data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_int.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_console.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_canary.*.rendered,
-      data.libvirt_network_dns_host_template.masters_sec_oauth.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -83,63 +73,39 @@ resource "libvirt_network" "secondary_net" {
 }
 
 data "libvirt_network_dns_host_template" "masters" {
-  count    = var.master_count
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.load_balancer_ip != "" ? 1 : 0
+  ip       = var.load_balancer_ip
   hostname = "api.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "masters_int" {
-  count    = var.master_count
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.load_balancer_ip != "" ? 1 : 0
+  ip       = var.load_balancer_ip
   hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "masters_console" {
-  count    = var.master_count
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.load_balancer_ip != "" ? 1 : 0
+  ip       = var.load_balancer_ip
   hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "masters_canary" {
-  count    = var.master_count
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.load_balancer_ip != "" ? 1 : 0
+  ip       = var.load_balancer_ip
   hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "masters_oauth" {
-  count    = var.master_count
-  ip       = var.libvirt_master_ips[count.index][0]
+  count    = var.load_balancer_ip != "" ? 1 : 0
+  ip       = var.load_balancer_ip
   hostname = "oauth-openshift.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
-data "libvirt_network_dns_host_template" "masters_sec" {
-  count    = 1
-  ip       = var.libvirt_secondary_master_ips[0][0]
-  hostname = "api.${var.cluster_name}.${var.cluster_domain}"
-}
-
-data "libvirt_network_dns_host_template" "masters_sec_int" {
-  count    = 1
-  ip       = var.libvirt_secondary_master_ips[0][0]
-  hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
-}
-
-data "libvirt_network_dns_host_template" "masters_sec_console" {
-  count    = 1
-  ip       = var.libvirt_secondary_master_ips[0][0]
-  hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
-}
-
-data "libvirt_network_dns_host_template" "masters_sec_canary" {
-  count    = 1
-  ip       = var.libvirt_secondary_master_ips[0][0]
-  hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
-}
-
-data "libvirt_network_dns_host_template" "masters_sec_oauth" {
-  count    = 1
-  ip       = var.libvirt_secondary_master_ips[0][0]
-  hostname = "oauth-openshift.apps.${var.cluster_name}.${var.cluster_domain}"
+resource "local_file" "load_balancer_config" {
+  count    = var.load_balancer_ip != "" && var.load_balancer_config_file != "" ? 1 : 0
+  content  = var.load_balancer_config_file
+  filename = format("/etc/nginx/stream.d/%s.conf", replace(var.load_balancer_ip,"/[:.]/" , "_"))
 }
 
 resource "libvirt_domain" "master" {
@@ -209,7 +175,7 @@ resource "libvirt_domain" "master-sec" {
   network_interface {
     network_name = libvirt_network.secondary_net.name
     hostname   = "${var.cluster_name}-master-${count.index}-secondary.${var.cluster_domain}"
-    addresses  = [var.libvirt_secondary_master_ips[0][0]]
+    addresses  = var.libvirt_secondary_master_ips[0]
   }
 
   boot_device{
