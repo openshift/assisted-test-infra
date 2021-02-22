@@ -93,7 +93,7 @@ endif
 PROXY := $(or $(PROXY),no)
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
-OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api-integration.6943.hive-integration.openshiftapps.com)
+OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api.integration.openshift.com/)
 # minikube profile is used to manage multiple minikube instances
 PROFILE := $(or $(PROFILE),minikube)
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)

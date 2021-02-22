@@ -86,7 +86,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | NO_PROXY_VALUES             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying                       |
 | NUM_MASTERS                 | number of VMs to spawn as masters, default: 3                                                                                               |
 | NUM_WORKERS                 | number of VMs to spawn as workers, default: 0                                                                                               |
-| OCM_BASE_URL                | OCM API URL used to communicate with OCM and AMS, default: https://api-integration.6943.hive-integration.openshiftapps.com                  |
+| OCM_BASE_URL                | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/                  |
 | OCM_CLIENT_ID               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                                         |
 | OCM_CLIENT_SECRET           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                                   |
 | OC_MODE                     | if set, use oc instead of minikube                                                                                                          |
