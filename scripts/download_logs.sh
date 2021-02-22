@@ -13,6 +13,8 @@ KUBECTL=${KUBECTL:-kubectl}
 LOGS_DEST=${LOGS_DEST:-build}
 
 function download_service_logs() {
+  mkdir -p ${LOGS_DEST} || true
+
   if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
     podman ps -a || true
 
