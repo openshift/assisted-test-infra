@@ -129,8 +129,7 @@ function config_squid() {
     sudo dnf install -y squid
     sudo sed -i  -e '/^.*allowed_ips.*$/d' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8::/120' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8:0:200::/120' -e '/^http_access deny all/i http_access allow allowed_ips'  /etc/squid/squid.conf
     sudo systemctl restart squid
-    sudo firewall-cmd --zone=libvirt --add-port=3128/tcp
-    sudo firewall-cmd --zone=libvirt --add-port=3129/tcp
+    sudo firewall-cmd --zone=libvirt --permanent --add-service=squid
 }
 
 function fix_ipv6_routing() {
@@ -157,7 +156,7 @@ function config_chronyd() {
   sudo sed -i -e '/^[ \t]*server[ \t]/d' -e '/allow[ \t]*$/d' -e '/^[ \t]*local stratum/d' -e '/^[ \t]*manual[ \t]*$/d' /etc/chrony.conf
   sudo sed -i -e '$a allow' -e '$a manual' -e  '$a local stratum 10' /etc/chrony.conf
   sudo systemctl restart chronyd.service || systemctl status --no-pager chronyd.service
-  sudo firewall-cmd --zone=libvirt --add-port=123/udp
+  sudo firewall-cmd --zone=libvirt --permanent --add-service=ntp
 }
 
 function config_nginx() {
@@ -174,8 +173,8 @@ CMD ["bash", "-c", "while /bin/true ; do (ps -ef | grep -v grep | grep -q nginx 
 EOF
   sudo podman rm -f load_balancer || /bin/true
   sudo mkdir -p $HOME/.test-infra/etc/nginx/stream.d
-  sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
-  sudo firewall-cmd --zone=libvirt --add-port=22623/tcp
+  sudo firewall-cmd --zone=libvirt --permanent --add-service=kube-apiserver
+  sudo firewall-cmd --zone=libvirt --permanent --add-port=22623/tcp
 }
 
 function additional_configs() {
@@ -200,12 +199,14 @@ function additional_configs() {
     echo "disabling selinux by setenforce 0"
     sudo setenforce 0 || true
     sudo chmod 600 ssh_key/key
-    sudo firewall-cmd --zone=libvirt --add-port=59151-59154/tcp
+    sudo firewall-cmd --zone=libvirt --permanent --add-port=59151-59154/tcp
 
     echo "enabling ipv6"
     sudo sed -ir 's/net.ipv6.conf.all.disable_ipv6[[:blank:]]*=[[:blank:]]*1/net.ipv6.conf.all.disable_ipv6 = 0/g' /etc/sysctl.conf
     sudo sed -i -e '/net.core.somaxconn/d' -e '$a net.core.somaxconn = 2000' /etc/sysctl.conf
     sudo sysctl --load
+    echo "Reloading firewalld to pick up all the permanent changes"
+    sudo firewall-cmd --reload
 }
 
 install_packages

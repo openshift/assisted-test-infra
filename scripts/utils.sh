@@ -114,18 +114,20 @@ function wait_for_url_and_run() {
 function close_external_ports() {
     ports=$1
     for p in $ports; do
-        sudo firewall-cmd --zone=public --remove-port=$p/tcp
+        sudo firewall-cmd --zone=public --permanent --remove-port=$p/tcp
     done
+    sudo firewall-cmd --reload
 }
 
 function add_firewalld_port() {
     port=$1
     if [ "${EXTERNAL_PORT}" = "y" ]; then
         echo "configuring external ports"
-        sudo firewall-cmd --zone=public --add-port=$port/tcp
+        sudo firewall-cmd --zone=public --permanent --add-port=$port/tcp
     fi
     echo "configuring libvirt zone ports ports"
-    sudo firewall-cmd --zone=libvirt --add-port=$port/tcp
+    sudo firewall-cmd --zone=libvirt --permanent --add-port=$port/tcp
+    sudo firewall-cmd --reload
 }
 
 function as_singleton() {
