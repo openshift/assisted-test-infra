@@ -16,6 +16,11 @@ export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
 export PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES:-}
 
+export ENABLE_KUBE_API_CMD=""
+if [ ! -z ${ENABLE_KUBE_API:-} ]; then
+  ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=true"
+fi
+
 mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
@@ -62,8 +67,8 @@ elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
     print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL}"
 else
     print_log "Updating assisted_service params"
-    skipper run discovery-infra/update_assisted_service_cm.py ENABLE_AUTH=${ENABLE_AUTH} WITH_AMS_SUBSCRIPTIONS=${WITH_AMS_SUBSCRIPTIONS}
-    skipper run "make -C assisted-service/ deploy-all" ${SKIPPER_PARAMS} DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} ENABLE_AUTH=${ENABLE_AUTH} WITH_AMS_SUBSCRIPTIONS=${WITH_AMS_SUBSCRIPTIONS} PROFILE=${PROFILE}
+    skipper run discovery-infra/update_assisted_service_cm.py ENABLE_AUTH=${ENABLE_AUTH}
+    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} ENABLE_AUTH=${ENABLE_AUTH} PROFILE=${PROFILE})
 
     print_log "Wait till ${SERVICE_NAME} api is ready"
     wait_for_url_and_run "$(minikube service ${SERVICE_NAME} --url -p $PROFILE -n ${NAMESPACE})" "echo \"waiting for ${SERVICE_NAME}\""
