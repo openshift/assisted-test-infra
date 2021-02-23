@@ -12,7 +12,7 @@ pipeline {
         E2E_TESTS_MODE="true"
 
         /* Credentials */
-        PULL_SECRET = credentials('assisted-test-infra-pull-secret')
+        PULL_SECRET = credentials('assisted-test-infra-pull-secret-no-svc')
         OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')

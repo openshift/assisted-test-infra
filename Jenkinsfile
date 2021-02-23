@@ -32,7 +32,7 @@ pipeline {
         LOGS_DEST = "${WORKSPACE}/cluster_logs"
 
         // Credentials
-        PULL_SECRET = credentials('assisted-test-infra-pull-secret')
+        PULL_SECRET = credentials('assisted-test-infra-pull-secret-no-svc')
         OCPMETAL_CREDS = credentials('docker_ocpmetal_cred')
         SLACK_TOKEN = credentials('slack-token')
     }
