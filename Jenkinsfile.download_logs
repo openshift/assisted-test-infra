@@ -10,7 +10,7 @@ pipeline {
     environment {
         SKIPPER_PARAMS = " "
 
-        LOGS_DEST = /var/ai-logs/triage_logs"
+        LOGS_DEST = "/var/ai-logs/triage_logs"
         ADDITIONAL_PARAMS = "--must-gather"
 
         // Credentials
