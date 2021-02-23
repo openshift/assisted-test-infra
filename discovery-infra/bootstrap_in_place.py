@@ -3,6 +3,8 @@ import os
 import re
 import shlex
 import shutil
+import sys
+import traceback
 
 import waiting
 import yaml
@@ -151,6 +153,37 @@ def gather_sosreport_data(node):
     node.download_file("/tmp/sosreport.tar.bz2", IBIP_DIR)
 
 
+# noinspection PyBroadException
+def log_collection(controller, vm_ip):
+    etype, _value, _tb = sys.exc_info()
+
+    logging.info(f"Collecting logs after a {('failed', 'successful')[etype is None]} installation")
+
+    try:
+        logging.info("Gathering sosreport data from host...")
+        node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
+        gather_sosreport_data(node)
+    except Exception:
+        logging.error("sosreport gathering failed!")
+        traceback.print_exc()
+
+    try:
+        logging.info("Gathering information via installer-gather...")
+        utils.recreate_folder(INSTALLER_GATHER_DIR, force_recreate=True)
+        installer_gather(ip=vm_ip, ssh_key=SSH_KEY, out_dir=INSTALLER_GATHER_DIR)
+    except Exception:
+        logging.error("installer-gather failed!")
+        traceback.print_exc()
+
+    try:
+        logging.info("Gathering information via must-gather...")
+        utils.recreate_folder(MUST_GATHER_DIR)
+        download_must_gather(KUBE_CONFIG, MUST_GATHER_DIR)
+    except Exception:
+        logging.error("must-gather failed!")
+        traceback.print_exc()
+
+
 def waiting_for_installation_completion(controller):
     vm_ip = controller.master_ips[0][0]
 
@@ -166,19 +199,8 @@ def waiting_for_installation_completion(controller):
                      timeout_seconds=60 * 60,
                      waiting_for="all operators to get up")
         logging.info("Installation completed successfully!")
-
     finally:
-        logging.info("Gathering sosreport data from host...")
-        node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
-        gather_sosreport_data(node)
-
-        logging.info("Gathering information via installer-gather...")
-        utils.recreate_folder(INSTALLER_GATHER_DIR, force_recreate=True)
-        installer_gather(ip=vm_ip, ssh_key=SSH_KEY, out_dir=INSTALLER_GATHER_DIR)
-
-        logging.info("Gathering information via must-gather...")
-        utils.recreate_folder(MUST_GATHER_DIR)
-        download_must_gather(KUBE_CONFIG, MUST_GATHER_DIR)
+        log_collection(controller, vm_ip)
 
 
 def execute_ibip_flow(args):
