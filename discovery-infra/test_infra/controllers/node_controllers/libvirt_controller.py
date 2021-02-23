@@ -66,7 +66,7 @@ class LibvirtController(NodeController, ABC):
         for node in nodes:
             self.shutdown_node(node.name())
 
-    def start_node(self, node_name, check_ips):
+    def start_node(self, node_name, check_ips=True):
         logging.info("Going to power-on %s, check ips flag %s", node_name, check_ips)
         node = self.libvirt_connection.lookupByName(node_name)
 

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shlex
 import shutil
 
@@ -22,6 +23,7 @@ INSTALLER_BINARY = os.path.join(BUILD_DIR, "openshift-install")
 EMBED_IMAGE_NAME = "installer-SNO-image.iso"
 KUBE_CONFIG = os.path.join(IBIP_DIR, "auth", "kubeconfig")
 MUST_GATHER_DIR = os.path.join(IBIP_DIR, "must-gather")
+INSTALLER_GATHER_DIR = os.path.join(IBIP_DIR, "installer-gather")
 SOSREPORT_SCRIPT = os.path.join(RESOURCES_DIR, "man_sosreport.sh")
 SSH_KEY = os.path.join("ssh_key", "key")
 
@@ -31,6 +33,25 @@ def installer_generate(openshift_release_image):
     bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
     utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}",
                                   env=bip_env)
+
+
+def installer_gather(ip, ssh_key, out_dir):
+    _stdout, stderr, _ret = utils.run_command(
+        f"{INSTALLER_BINARY} gather bootstrap --bootstrap {ip} --master {ip} --key {ssh_key}"
+    )
+
+    matches = re.compile(r'.*logs captured here "(.*)".*').findall(stderr)
+
+    if len(matches) == 0:
+        logging.warning(f"It seems like installer-gather didn't generate any bundles, stderr: {stderr}")
+        return
+
+    bundle_file_path, *_ = matches
+
+    logging.info(f"Found installer-gather bundle at path {bundle_file_path}")
+
+    utils.run_command_with_output(f"tar -xzf {bundle_file_path} -C {out_dir}")
+    os.remove(bundle_file_path) if os.path.exists(bundle_file_path) else None
 
 
 def download_live_image(download_path):
@@ -131,11 +152,13 @@ def gather_sosreport_data(node):
 
 
 def waiting_for_installation_completion(controller):
+    vm_ip = controller.master_ips[0][0]
+
     try:
         logging.info("Configuring /etc/hosts...")
         utils.config_etc_hosts(cluster_name=controller.cluster_name,
                                base_dns_domain=controller.cluster_domain,
-                               api_vip=controller.master_ips[0][0])
+                               api_vip=vm_ip)
 
         logging.info("Waiting for installation to complete...")
         waiting.wait(all_operators_up,
@@ -148,6 +171,10 @@ def waiting_for_installation_completion(controller):
         logging.info("Gathering sosreport data from host...")
         node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
         gather_sosreport_data(node)
+
+        logging.info("Gathering information via installer-gather...")
+        utils.recreate_folder(INSTALLER_GATHER_DIR, force_recreate=True)
+        installer_gather(ip=vm_ip, ssh_key=SSH_KEY, out_dir=INSTALLER_GATHER_DIR)
 
         logging.info("Gathering information via must-gather...")
         utils.recreate_folder(MUST_GATHER_DIR)
