@@ -268,6 +268,15 @@ class Cluster:
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
 
+    def wait_for_logs_complete(self, timeout, interval=60, check_host_logs_only=False):
+        utils.wait_for_logs_complete(
+            client=self.api_client,
+            cluster_id=self.id,
+            timeout=timeout,
+            interval=interval,
+            check_host_logs_only=check_host_logs_only,
+        )
+
     def wait_for_installing_in_progress(self, nodes_count=1):
         utils.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
