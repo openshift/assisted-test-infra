@@ -12,7 +12,7 @@ import dns.resolver
 from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.tools import static_ips
+from test_infra.tools import static_network
 from test_infra.tools import terraform_utils
 from test_infra.utils import config_etc_hosts
 
@@ -115,8 +115,8 @@ def fill_tfvars(
     tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses
     tfvars['api_vip'] = _get_vips_ips(machine_net)[0]
     tfvars['libvirt_storage_pool_path'] = storage_path
-    tfvars['libvirt_master_macs'] = static_ips.generate_macs(master_count)
-    tfvars['libvirt_worker_macs'] = static_ips.generate_macs(worker_count)
+    tfvars['libvirt_master_macs'] = static_network.generate_macs(master_count)
+    tfvars['libvirt_worker_macs'] = static_network.generate_macs(worker_count)
     tfvars.update(nodes_details)
 
     tfvars.update(_secondary_tfvars(master_count, nodes_details, machine_net))
@@ -126,7 +126,7 @@ def fill_tfvars(
 
 
 def _secondary_tfvars(master_count, nodes_details, machine_net):
-    vars_dict = {'libvirt_secondary_master_macs': static_ips.generate_macs(master_count)}
+    vars_dict = {'libvirt_secondary_master_macs': static_network.generate_macs(master_count)}
     if machine_net.has_ip_v4:
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
@@ -157,7 +157,7 @@ def _secondary_tfvars(master_count, nodes_details, machine_net):
         )
 
     worker_count = nodes_details['worker_count']
-    vars_dict['libvirt_secondary_worker_macs'] = static_ips.generate_macs(worker_count)
+    vars_dict['libvirt_secondary_worker_macs'] = static_network.generate_macs(worker_count)
     if machine_net.has_ip_v4:
         vars_dict['libvirt_secondary_master_ips'] = utils.create_ip_address_nested_list(
             master_count,
@@ -430,7 +430,7 @@ def nodes_flow(client, cluster_name, cluster):
         else:
             log.info("VIPs already configured")
 
-        set_hosts_roles(client, cluster, nodes_details, machine_net, tf, args.master_count, args.with_static_ips)
+        set_hosts_roles(client, cluster, nodes_details, machine_net, tf, args.master_count, args.with_static_network_config)
 
         if is_none_platform_mode() and args.master_count > 1:
             master_ips = helper_cluster.Cluster.get_master_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_master_ips(client, cluster.id, secondary_cidr)
@@ -464,7 +464,7 @@ def nodes_flow(client, cluster_name, cluster):
                 utils.wait_for_cvo_available()
 
 
-def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_ip_mode):
+def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_network_mode):
     networks_names = (
         nodes_details["libvirt_network_name"],
         nodes_details["libvirt_secondary_network_name"]
@@ -474,8 +474,8 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
     if machine_net.has_ip_v4:
         libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
         libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
-        if static_ip_mode:
-            log.info("Setting hostnames when running in static ips mode")
+        if static_network_mode:
+            log.info("Setting hostnames when running in static network config mode")
             update_hostnames = True
         else:
             update_hostnames = False
@@ -530,18 +530,18 @@ def execute_day1_flow(cluster_name):
             f'{args.namespace}-installer-image.iso'
         )
 
-        if args.with_static_ips:
+        if args.with_static_network_config:
             tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-            static_ips_config = static_ips.generate_static_ips_data_from_tf(tf_folder)
+            static_network_config = static_network.generate_static_network_data_from_tf(tf_folder)
         else:
-            static_ips_config = None
+            static_network_config = None
 
         client.generate_and_download_image(
             cluster_id=cluster.id,
             image_path=image_path,
             image_type=image_type,
             ssh_key=args.ssh_key,
-            static_ips=static_ips_config,
+            static_network_config=static_network_config,
         )
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
@@ -677,8 +677,8 @@ if __name__ == "__main__":
         "-ps", "--pull-secret", help="Pull secret", type=str, default=""
     )
     parser.add_argument(
-        "--with-static-ips",
-        help="Static ips mode",
+        "--with-static-network-config",
+        help="Static network configuration mode",
         action="store_true",
     )
     parser.add_argument(

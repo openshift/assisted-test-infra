@@ -7,7 +7,7 @@ import uuid
 
 import waiting
 from test_infra import assisted_service_api, utils, consts
-from test_infra.tools import static_ips, terraform_utils
+from test_infra.tools import static_network, terraform_utils
 
 from logger import log
 
@@ -214,7 +214,7 @@ def set_workers_addresses_by_type(tfvars, num_worker_nodes, master_ip_type, work
     tfvars[worker_ip_type] = worker_ips_list
 
     old_worker_mac_addresses = tfvars[worker_mac_type]
-    tfvars[worker_mac_type] = old_worker_mac_addresses + static_ips.generate_macs(num_worker_nodes)
+    tfvars[worker_mac_type] = old_worker_mac_addresses + static_network.generate_macs(num_worker_nodes)
 
 
 def wait_nodes_join_ocp_cluster(num_orig_nodes, num_new_nodes, day2_type_flag):
