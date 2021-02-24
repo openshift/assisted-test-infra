@@ -4,7 +4,6 @@ import re
 import shlex
 import shutil
 import sys
-import traceback
 
 import waiting
 import yaml
@@ -37,6 +36,7 @@ def installer_generate(openshift_release_image):
                                   env=bip_env)
 
 
+@utils.retry(exceptions=Exception, tries=5, delay=30)
 def installer_gather(ip, ssh_key, out_dir):
     _stdout, stderr, _ret = utils.run_command(
         f"{INSTALLER_BINARY} gather bootstrap --bootstrap {ip} --master {ip} --key {ssh_key}"
@@ -164,24 +164,22 @@ def log_collection(controller, vm_ip):
         node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
         gather_sosreport_data(node)
     except Exception:
-        logging.error("sosreport gathering failed!")
-        traceback.print_exc()
+        logging.exception("sosreport gathering failed!")
 
+    utils.retry()
     try:
         logging.info("Gathering information via installer-gather...")
         utils.recreate_folder(INSTALLER_GATHER_DIR, force_recreate=True)
         installer_gather(ip=vm_ip, ssh_key=SSH_KEY, out_dir=INSTALLER_GATHER_DIR)
     except Exception:
-        logging.error("installer-gather failed!")
-        traceback.print_exc()
+        logging.exception("installer-gather failed!")
 
     try:
         logging.info("Gathering information via must-gather...")
         utils.recreate_folder(MUST_GATHER_DIR)
         download_must_gather(KUBE_CONFIG, MUST_GATHER_DIR)
     except Exception:
-        logging.error("must-gather failed!")
-        traceback.print_exc()
+        logging.exception("must-gather failed!")
 
 
 def waiting_for_installation_completion(controller):
