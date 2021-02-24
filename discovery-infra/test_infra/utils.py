@@ -747,16 +747,11 @@ def get_openshift_version():
     release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
 
     if release_image:
-        f = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        f.write(os.getenv('PULL_SECRET'))
-        f.close()
-        try:
+        with pull_secret_file() as pull_secret:
             stdout, _, _ = run_command(
-                f"oc adm release info '{release_image}' --registry-config '{f.name}' -o json |"
+                f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"
                 f" jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
                 shell=True)
-        finally:
-            os.unlink(f.name)
         return stdout
 
     return get_env('OPENSHIFT_VERSION', consts.DEFAULT_OPENSHIFT_VERSION)
@@ -771,9 +766,26 @@ def copy_template_tree(dst, none_platform_mode=False):
     )
 
 
+@contextmanager
+def pull_secret_file():
+    pull_secret = os.environ.get("PULL_SECRET")
+
+    try:
+        json.loads(pull_secret)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Value of PULL_SECRET environment variable "
+                         f"is not a valid JSON payload") from e
+
+    with tempfile.NamedTemporaryFile(mode='w') as f:
+        f.write(pull_secret)
+        f.flush()
+        yield f.name
+
+
 def extract_installer(release_image, dest):
     logging.info("Extracting installer from %s to %s", release_image, dest)
-    run_command(f"oc adm release extract --command=openshift-install --to={dest} {release_image}")
+    with pull_secret_file() as pull_secret:
+        run_command(f"oc adm release extract --registry-config '{pull_secret}' --command=openshift-install --to={dest} {release_image}")
 
 
 def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
