@@ -12,12 +12,12 @@ import virsh_cleanup
 from logger import log
 
 
-@utils.on_exception(message='Failed to delete cluster', silent=True)
+@utils.on_exception(message="Failed to delete cluster", silent=True)
 def try_to_delete_cluster(namespace, tfvars):
     """ Try to delete cluster if assisted-service is up and such cluster
         exists.
     """
-    cluster_id = tfvars.get('cluster_inventory_id')
+    cluster_id = tfvars.get("cluster_inventory_id")
     if not cluster_id:
         return
 
@@ -38,62 +38,52 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     default_network_name = consts.TEST_NETWORK + namespace
     default_sec_network_name = consts.TEST_SECONDARY_NETWORK + namespace
     _delete_virsh_resources(
-        tfvars.get('cluster_name', cluster_name),
-        tfvars.get('libvirt_network_name', default_network_name),
-        tfvars.get('libvirt_secondary_network_name', default_sec_network_name),
+        tfvars.get("cluster_name", cluster_name),
+        tfvars.get("libvirt_network_name", default_network_name),
+        tfvars.get("libvirt_secondary_network_name", default_sec_network_name),
     )
     if os.path.exists(tf_folder):
-        log.info('Deleting %s', tf_folder)
+        log.info("Deleting %s", tf_folder)
         shutil.rmtree(tf_folder)
 
 
-@utils.on_exception(
-    message='Failed to run terraform delete',
-    silent=True
-)
+@utils.on_exception(message="Failed to run terraform delete", silent=True)
 def _try_to_delete_nodes(tf_folder):
-    log.info('Start running terraform delete')
+    log.info("Start running terraform delete")
     with utils.file_lock_context():
         utils.run_command_with_output(
-            f'cd {tf_folder} && '
-            'terraform destroy '
-            '-auto-approve '
-            '-input=false '
-            '-state=terraform.tfstate '
-            '-state-out=terraform.tfstate '
-            '-var-file=terraform.tfvars.json'
+            f"cd {tf_folder} && "
+            "terraform destroy "
+            "-auto-approve "
+            "-input=false "
+            "-state=terraform.tfstate "
+            "-state-out=terraform.tfstate "
+            "-var-file=terraform.tfvars.json"
         )
 
 
 def _delete_virsh_resources(*filters):
-    log.info('Deleting virsh resources (filters: %s)', filters)
+    log.info("Deleting virsh resources (filters: %s)", filters)
     virsh_cleanup.clean_virsh_resources(
-        skip_list=virsh_cleanup.DEFAULT_SKIP_LIST,
-        resource_filter=filters
+        skip_list=virsh_cleanup.DEFAULT_SKIP_LIST, resource_filter=filters
     )
 
 
-@utils.on_exception(
-    message='Failed to delete clusters from namespaces',
-    silent=True
-)
+@utils.on_exception(message="Failed to delete clusters from namespaces", silent=True)
 def delete_clusters_from_all_namespaces():
     for name, namespace in utils.get_all_namespaced_clusters():
         args.profile = namespace
         try:
-            args.profile = 'minikube'
+            args.profile = "minikube"
             delete_cluster(name, namespace)
         except BaseException:
             args.profile = namespace
             delete_cluster(name, namespace)
 
 
-@utils.on_exception(message='Failed to delete cluster', silent=True)
+@utils.on_exception(message="Failed to delete cluster", silent=True)
 def delete_cluster(cluster_name, namespace):
-    log.info(
-        'Deleting cluster: %s in namespace: %s',
-        cluster_name, namespace
-    )
+    log.info("Deleting cluster: %s in namespace: %s", cluster_name, namespace)
 
     tfvars = {}
     tf_folder = utils.get_tf_folder(cluster_name, namespace)
@@ -106,20 +96,18 @@ def delete_cluster(cluster_name, namespace):
 
 
 @utils.on_exception(
-    message='Failed to delete nodes',
-    silent=True,
-    errors=(FileNotFoundError,)
+    message="Failed to delete nodes", silent=True, errors=(FileNotFoundError,)
 )
 def main():
     if args.delete_all:
         _delete_virsh_resources()
         return
 
-    if args.namespace == 'all':
+    if args.namespace == "all":
         delete_clusters_from_all_namespaces()
         return
 
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    cluster_name = f"{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}"
     delete_cluster(cluster_name, args.namespace)
 
 
@@ -155,28 +143,23 @@ if __name__ == "__main__":
         default="assisted-installer",
     )
     parser.add_argument(
-        '--service-name',
-        help='Override assisted-service target service name',
+        "--service-name",
+        help="Override assisted-service target service name",
         type=str,
-        default='assisted-service'
+        default="assisted-service",
+    )
+    parser.add_argument("-cn", "--cluster-name", help="Cluster name", required=False)
+    parser.add_argument(
+        "--profile",
+        help="Minikube profile for assisted-installer deployment",
+        type=str,
+        default="assisted-installer",
     )
     parser.add_argument(
-        '-cn',
-        '--cluster-name',
-        help='Cluster name',
-        required=False
-    )
-    parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
+        "--deploy-target",
+        help="Where assisted-service is deployed",
         type=str,
-        default='assisted-installer'
-    )
-    parser.add_argument(
-        '--deploy-target',
-        help='Where assisted-service is deployed',
-        type=str,
-        default='minikube'
+        default="minikube",
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

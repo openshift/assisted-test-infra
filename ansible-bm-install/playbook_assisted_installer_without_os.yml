@@ -30,7 +30,7 @@
   tags:
   - host_iso
   - all
- 
+
 - name: Booting Assisted Installer Discovery ISO
   hosts: assisted_installer
   roles:

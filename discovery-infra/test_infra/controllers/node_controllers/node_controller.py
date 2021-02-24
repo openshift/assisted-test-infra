@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Tuple
 
@@ -120,7 +121,9 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
-    def attach_interface(self, node_name, network_xml: str) -> Tuple[libvirt.virNetwork, str]:
+    def attach_interface(
+        self, node_name, network_xml: str
+    ) -> Tuple[libvirt.virNetwork, str]:
         pass
 
     @abstractmethod

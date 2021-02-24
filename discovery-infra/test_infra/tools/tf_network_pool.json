@@ -1,26 +1,26 @@
 [
-   {
-      "machine_cidr":"192.168.126.0/24",
-      "machine_cidr6": "1001:db8::/120",
-      "libvirt_network_if":"tt0",
-      "libvirt_secondary_network_if":"stt0",
-      "provisioning_cidr":"192.168.144.0/24",
-      "provisioning_cidr6" : "3001:db8::/120"
-   },
-   {
-      "machine_cidr":"192.168.128.0/24",
-      "machine_cidr6": "1001:db9::/120",
-      "libvirt_network_if":"tt1",
-      "libvirt_secondary_network_if":"stt1",
-      "provisioning_cidr":"192.168.146.0/24",
-      "provisioning_cidr6" : "3001:db9::/120"
-   },
-      {
-      "machine_cidr":"192.168.124.0/24",
-      "machine_cidr6": "1001:dba::/120",
-      "libvirt_network_if":"tt2",
-      "libvirt_secondary_network_if":"stt2",
-      "provisioning_cidr":"192.168.142.0/24",
-      "provisioning_cidr6" : "3001:dba::/120"
-   }
+  {
+    "machine_cidr": "192.168.126.0/24",
+    "machine_cidr6": "1001:db8::/120",
+    "libvirt_network_if": "tt0",
+    "libvirt_secondary_network_if": "stt0",
+    "provisioning_cidr": "192.168.144.0/24",
+    "provisioning_cidr6": "3001:db8::/120"
+  },
+  {
+    "machine_cidr": "192.168.128.0/24",
+    "machine_cidr6": "1001:db9::/120",
+    "libvirt_network_if": "tt1",
+    "libvirt_secondary_network_if": "stt1",
+    "provisioning_cidr": "192.168.146.0/24",
+    "provisioning_cidr6": "3001:db9::/120"
+  },
+  {
+    "machine_cidr": "192.168.124.0/24",
+    "machine_cidr6": "1001:dba::/120",
+    "libvirt_network_if": "tt2",
+    "libvirt_secondary_network_if": "stt2",
+    "provisioning_cidr": "192.168.142.0/24",
+    "provisioning_cidr6": "3001:dba::/120"
+  }
 ]

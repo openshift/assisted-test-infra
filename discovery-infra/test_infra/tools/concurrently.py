@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
@@ -20,8 +21,10 @@ def run_concurrently(jobs, done_handler=None, max_workers=5, timeout=2 ** 31):
     if isinstance(jobs, (list, tuple)):
         jobs = dict(enumerate(jobs))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [(job_id, executor.submit(_safe_run, *(job, job_id, done_handler)))
-                   for job_id, job in jobs.items()]
+        futures = [
+            (job_id, executor.submit(_safe_run, *(job, job_id, done_handler)))
+            for job_id, job in jobs.items()
+        ]
         for job_id, future in futures:
             result[job_id] = future.result(timeout=timeout)
 

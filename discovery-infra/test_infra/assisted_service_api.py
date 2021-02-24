@@ -37,13 +37,13 @@ class InventoryClient(object):
         @retry(exceptions=requests.HTTPError, tries=5, delay=5)
         def refresh_api_key(config):
             # Get the properly padded key segment
-            auth = config.api_key.get('Authorization', None)
+            auth = config.api_key.get("Authorization", None)
             if auth is not None:
-                segment = auth.split('.')[1]
+                segment = auth.split(".")[1]
                 padding = len(segment) % 4
-                segment = segment + padding * '='
+                segment = segment + padding * "="
 
-                expires_on = json.loads(base64.b64decode(segment))['exp']
+                expires_on = json.loads(base64.b64decode(segment))["exp"]
 
                 # if this key doesn't expire or if it has more than 10 minutes left, don't refresh
                 remaining = expires_on - time.time()
@@ -61,9 +61,9 @@ class InventoryClient(object):
             response = requests.post(os.environ.get("SSO_URL"), data=params)
             response.raise_for_status()
 
-            config.api_key['Authorization'] = response.json()['access_token']
+            config.api_key["Authorization"] = response.json()["access_token"]
 
-        c.api_key_prefix['Authorization'] = 'Bearer'
+        c.api_key_prefix["Authorization"] = "Bearer"
         c.refresh_api_key_hook = refresh_api_key
 
     @classmethod
@@ -73,7 +73,9 @@ class InventoryClient(object):
             return
 
         log.info("Setting X-Secret-Key")
-        c.api_key['X-Secret-Key'] = json.loads(pull_secret)['auths']['cloud.openshift.com']['auth']
+        c.api_key["X-Secret-Key"] = json.loads(pull_secret)["auths"][
+            "cloud.openshift.com"
+        ]["auth"]
 
     def wait_for_api_readiness(self, timeout):
         log.info("Waiting for inventory api to be ready")
@@ -98,7 +100,9 @@ class InventoryClient(object):
             name=name, id=cluster_uuid, **cluster_params
         )
         log.info("Creating day 2 cluster with params %s", cluster.__dict__)
-        result = self.client.register_add_hosts_cluster(new_add_hosts_cluster_params=cluster)
+        result = self.client.register_add_hosts_cluster(
+            new_add_hosts_cluster_params=cluster
+        )
         return result
 
     def get_cluster_hosts(self, cluster_id):
@@ -127,17 +131,21 @@ class InventoryClient(object):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(response, f)
         if verify_file_size:
-            content_length = int(response.headers['content-length'])
+            content_length = int(response.headers["content-length"])
             actual_file_size = os.path.getsize(file_path)
             if actual_file_size < content_length:
                 raise RuntimeError(
-                    f'Could not complete ISO download {file_path}. '
-                    f'Actual size: {actual_file_size}. Expected size: {content_length}'
+                    f"Could not complete ISO download {file_path}. "
+                    f"Actual size: {actual_file_size}. Expected size: {content_length}"
                 )
 
-    def generate_image(self, cluster_id, ssh_key, image_type=consts.ImageType.FULL_ISO, static_ips=None):
+    def generate_image(
+        self, cluster_id, ssh_key, image_type=consts.ImageType.FULL_ISO, static_ips=None
+    ):
         log.info("Generating image for cluster %s", cluster_id)
-        image_create_params = models.ImageCreateParams(ssh_public_key=ssh_key, image_type=image_type)
+        image_create_params = models.ImageCreateParams(
+            ssh_public_key=ssh_key, image_type=image_type
+        )
         log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(
             cluster_id=cluster_id, image_create_params=image_create_params
@@ -150,43 +158,65 @@ class InventoryClient(object):
             cluster_id=cluster_id, _preload_content=False
         )
         response_obj = response[0]
-        self._download(response=response_obj, file_path=image_path, verify_file_size=True)
+        self._download(
+            response=response_obj, file_path=image_path, verify_file_size=True
+        )
 
-    def generate_and_download_image(self, cluster_id, ssh_key, image_path, image_type=consts.ImageType.FULL_ISO,
-                                    static_ips=None):
-        self.generate_image(cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_ips=static_ips)
+    def generate_and_download_image(
+        self,
+        cluster_id,
+        ssh_key,
+        image_path,
+        image_type=consts.ImageType.FULL_ISO,
+        static_ips=None,
+    ):
+        self.generate_image(
+            cluster_id=cluster_id,
+            ssh_key=ssh_key,
+            image_type=image_type,
+            static_ips=static_ips,
+        )
         self.download_image(cluster_id=cluster_id, image_path=image_path)
 
     def update_hosts(self, cluster_id, hosts_with_roles, hosts_names=None):
         log.info(
             "Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id
         )
-        hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles, hosts_names=hosts_names)
+        hosts = models.ClusterUpdateParams(
+            hosts_roles=hosts_with_roles, hosts_names=hosts_names
+        )
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=hosts
         )
 
     def select_installation_disk(self, cluster_id, hosts_with_diskpaths):
-        log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
+        log.info(
+            "Setting installation disk for hosts %s in cluster %s",
+            hosts_with_diskpaths,
+            cluster_id,
+        )
 
         def role_to_selected_disk_config(host_id, path, role):
             disk_config_params = models.DiskConfigParams(id=path, role=role)
-            return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
+            return models.ClusterupdateparamsDisksSelectedConfig(
+                id=host_id, disks_config=[disk_config_params]
+            )
 
-        disks_selected_config = [role_to_selected_disk_config(h["id"], h["path"], h["role"]) for h in
-                                 hosts_with_diskpaths]
+        disks_selected_config = [
+            role_to_selected_disk_config(h["id"], h["path"], h["role"])
+            for h in hosts_with_diskpaths
+        ]
         params = models.ClusterUpdateParams(disks_selected_config=disks_selected_config)
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=params
         )
 
     def set_pull_secret(self, cluster_id, pull_secret):
-        log.info(
-            "Setting pull secret for cluster %s", cluster_id
-        )
+        log.info("Setting pull secret for cluster %s", cluster_id)
         update_params = models.ClusterUpdateParams(pull_secret=pull_secret)
         return self.client.update_cluster(
-            cluster_id=cluster_id, cluster_update_params=update_params)
+            cluster_id=cluster_id, cluster_update_params=update_params
+        )
 
     def update_cluster(self, cluster_id, update_params):
         log.info("Updating cluster %s with params %s", cluster_id, update_params)
@@ -227,7 +257,7 @@ class InventoryClient(object):
         hosts = self.get_cluster_hosts(cluster_id)
 
         for host in hosts:
-            hostname = host.get('requested_hostname')
+            hostname = host.get("requested_hostname")
             if hostname == host_name:
                 log.info(f"Requested host by name: {host_name}, host details: {host}")
                 return host
@@ -249,7 +279,12 @@ class InventoryClient(object):
         )
 
     def download_host_ignition(self, cluster_id, host_id, destination):
-        log.info("Downloading host %s cluster %s ignition files to %s", host_id, cluster_id, destination)
+        log.info(
+            "Downloading host %s cluster %s ignition files to %s",
+            host_id,
+            cluster_id,
+            destination,
+        )
 
         response = self.client.download_host_ignition(
             cluster_id=cluster_id, host_id=host_id, _preload_content=False
@@ -269,8 +304,8 @@ class InventoryClient(object):
         log.info("Downloading metrics to %s", dest)
 
         url = self.inventory_url
-        if not url.startswith('http://'):
-            url = f'http://{url}'
+        if not url.startswith("http://"):
+            url = f"http://{url}"
         response = requests.get(f"{url}/metrics")
         assert response.status_code == 200
 
@@ -297,7 +332,7 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
-    def get_events(self, cluster_id, host_id=''):
+    def get_events(self, cluster_id, host_id=""):
         response = self.events.list_events(
             cluster_id=cluster_id, host_id=host_id, _preload_content=False
         )
@@ -334,14 +369,10 @@ class InventoryClient(object):
         log.info(f"Enabling host: {host_id}, in cluster id: {cluster_id}")
         return self.client.enable_host(cluster_id=cluster_id, host_id=host_id)
 
-    def set_cluster_proxy(self, cluster_id, http_proxy, https_proxy='', no_proxy=''):
-        log.info(
-            "Setting proxy for cluster %s", cluster_id
-        )
+    def set_cluster_proxy(self, cluster_id, http_proxy, https_proxy="", no_proxy=""):
+        log.info("Setting proxy for cluster %s", cluster_id)
         update_params = models.ClusterUpdateParams(
-            http_proxy=http_proxy,
-            https_proxy=https_proxy,
-            no_proxy=no_proxy
+            http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy
         )
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=update_params
@@ -353,13 +384,16 @@ class InventoryClient(object):
 
     def patch_cluster_discovery_ignition(self, cluster_id, ignition_info):
         log.info("Patching cluster %s discovery ignition", cluster_id)
-        return self.client.update_discovery_ignition(cluster_id=cluster_id,
-                                                     discovery_ignition_params=models.DiscoveryIgnitionParams(
-                                                         config=json.dumps(ignition_info)))
+        return self.client.update_discovery_ignition(
+            cluster_id=cluster_id,
+            discovery_ignition_params=models.DiscoveryIgnitionParams(
+                config=json.dumps(ignition_info)
+            ),
+        )
 
     def get_cluster_discovery_ignition(self, cluster_id):
         log.info("Getting discovery ignition for cluster %s", cluster_id)
-        return self.client.get_discovery_ignition(cluster_id=cluster_id, )
+        return self.client.get_discovery_ignition(cluster_id=cluster_id,)
 
     def register_host(self, cluster_id, host_id):
         log.info(f"Registering host: {host_id} to cluster: {cluster_id}")
@@ -368,28 +402,28 @@ class InventoryClient(object):
 
     def host_get_next_step(self, cluster_id, host_id):
         log.info(f"Getting next step for host: {host_id} in cluster: {cluster_id}")
-        return self.client.get_next_steps(
-            cluster_id=cluster_id,
-            host_id=host_id
-        )
+        return self.client.get_next_steps(cluster_id=cluster_id, host_id=host_id)
 
     def host_post_step_result(self, cluster_id, host_id, **kwargs):
         reply = models.StepReply(**kwargs)
         self.client.post_step_reply(cluster_id=cluster_id, host_id=host_id, reply=reply)
 
-    def host_update_progress(self, cluster_id, host_id, current_stage, progress_info=None):
-        host_progress = models.HostProgress(current_stage=current_stage, progress_info=progress_info)
+    def host_update_progress(
+        self, cluster_id, host_id, current_stage, progress_info=None
+    ):
+        host_progress = models.HostProgress(
+            current_stage=current_stage, progress_info=progress_info
+        )
         self.client.update_host_install_progress(
-            cluster_id=cluster_id,
-            host_id=host_id,
-            host_progress=host_progress
+            cluster_id=cluster_id, host_id=host_id, host_progress=host_progress
         )
 
     def complete_cluster_installation(self, cluster_id, is_success, error_info=None):
-        completion_params = models.CompletionParams(is_success=is_success, error_info=error_info)
+        completion_params = models.CompletionParams(
+            is_success=is_success, error_info=error_info
+        )
         self.client.complete_installation(
-            cluster_id=cluster_id,
-            completion_params=completion_params
+            cluster_id=cluster_id, completion_params=completion_params
         )
 
     def get_cluster_admin_credentials(self, cluster_id):
@@ -410,13 +444,13 @@ class InventoryClient(object):
 
 
 def create_client(
-        url,
-        offline_token=utils.get_env('OFFLINE_TOKEN'),
-        pull_secret="",
-        wait_for_api=True,
-        timeout=consts.WAIT_FOR_BM_API
+    url,
+    offline_token=utils.get_env("OFFLINE_TOKEN"),
+    pull_secret="",
+    wait_for_api=True,
+    timeout=consts.WAIT_FOR_BM_API,
 ):
-    log.info('Creating assisted-service client for url: %s', url)
+    log.info("Creating assisted-service client for url: %s", url)
     c = InventoryClient(url, offline_token, pull_secret)
     if wait_for_api:
         c.wait_for_api_readiness(timeout)

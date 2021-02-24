@@ -40,11 +40,11 @@ def run_command(command, shell=False, raise_errors=True, env=None):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
-        universal_newlines=True
+        universal_newlines=True,
     )
 
     def _io_buffer_to_str(buf):
-        if hasattr(buf, 'read'):
+        if hasattr(buf, "read"):
             buf = buf.read().decode()
         return buf
 
@@ -53,8 +53,8 @@ def run_command(command, shell=False, raise_errors=True, env=None):
 
     if raise_errors and process.returncode != 0:
         raise RuntimeError(
-            f'command: {command} exited with an error: {err} '
-            f'code: {process.returncode}'
+            f"command: {command} exited with an error: {err} "
+            f"code: {process.returncode}"
         )
 
     return out, err, process.returncode
@@ -62,7 +62,12 @@ def run_command(command, shell=False, raise_errors=True, env=None):
 
 def run_command_with_output(command, env=None):
     with subprocess.Popen(
-            command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, env=env,
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        env=env,
     ) as p:
         for line in p.stdout:
             print(line, end="")  # process line here
@@ -122,14 +127,18 @@ def wait_for_cvo_available():
 
 def is_cvo_available():
     try:
-        res = subprocess.check_output("kubectl --kubeconfig=build/kubeconfig get clusterversion -o json", shell=True)
-        conditions = json.loads(res)['items'][0]['status']['conditions']
+        res = subprocess.check_output(
+            "kubectl --kubeconfig=build/kubeconfig get clusterversion -o json",
+            shell=True,
+        )
+        conditions = json.loads(res)["items"][0]["status"]["conditions"]
         for condition in conditions:
             log.info(
                 f"CVO condition <{condition['type']}> status is <{condition['status']}>, "
-                f"because: {condition.get('message')}")
+                f"because: {condition.get('message')}"
+            )
 
-            if condition['type'] == 'Available' and condition['status'] == 'True':
+            if condition["type"] == "Available" and condition["status"] == "True":
                 return True
     except BaseException:
         log.exception("exception in access the cluster api server")
@@ -150,7 +159,7 @@ def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
 
 def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
     hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    num_macs = len([mac for mac in hosts_macs if mac != ''])
+    num_macs = len([mac for mac in hosts_macs if mac != ""])
     return num_macs >= num_nodes
 
 
@@ -163,7 +172,9 @@ def get_cluster_hosts_with_mac(client, cluster_id, macs):
 
 
 def to_utc(timestr):
-    return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
+    return time.mktime(
+        datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple()
+    )
 
 
 def get_logs_collected_at(client, cluster_id):
@@ -197,16 +208,14 @@ def set_tf_main(tf_folder, main_str):
         _main_str = _file.write(main_str)
 
 
-def are_hosts_in_status(
-        hosts, nodes_count, statuses, fall_on_error_status=True
-):
+def are_hosts_in_status(hosts, nodes_count, statuses, fall_on_error_status=True):
     hosts_in_status = [host for host in hosts if host["status"] in statuses]
     if len(hosts_in_status) >= nodes_count:
         return True
     elif (
-            fall_on_error_status
-            and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR])
-            > 0
+        fall_on_error_status
+        and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR])
+        > 0
     ):
         hosts_in_error = [
             host for host in hosts if host["status"] == consts.NodesStatus.ERROR
@@ -226,13 +235,13 @@ def are_hosts_in_status(
 
 
 def wait_till_hosts_with_macs_are_in_status(
-        client,
-        cluster_id,
-        macs,
-        statuses,
-        timeout=consts.NODES_REGISTERED_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    macs,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
 
@@ -255,13 +264,13 @@ def wait_till_hosts_with_macs_are_in_status(
 
 
 def wait_till_all_hosts_are_in_status(
-        client,
-        cluster_id,
-        nodes_count,
-        statuses,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    nodes_count,
+    statuses,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
@@ -284,13 +293,13 @@ def wait_till_all_hosts_are_in_status(
 
 
 def wait_till_at_least_one_host_is_in_status(
-        client,
-        cluster_id,
-        statuses,
-        nodes_count=1,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    statuses,
+    nodes_count=1,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till 1 node is in one of the statuses %s", statuses)
 
@@ -313,14 +322,14 @@ def wait_till_at_least_one_host_is_in_status(
 
 
 def wait_till_specific_host_is_in_status(
-        client,
-        cluster_id,
-        host_name,
-        nodes_count,
-        statuses,
-        timeout=consts.NODES_REGISTERED_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    host_name,
+    nodes_count,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
 
@@ -343,20 +352,18 @@ def wait_till_specific_host_is_in_status(
 
 
 def wait_till_at_least_one_host_is_in_stage(
-        client,
-        cluster_id,
-        stages,
-        nodes_count=1,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
-        interval=5,
+    client,
+    cluster_id,
+    stages,
+    nodes_count=1,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    interval=5,
 ):
     log.info(f"Wait till {nodes_count} node is in stage {stages}")
     try:
         waiting.wait(
             lambda: are_host_progress_in_stage(
-                client.get_cluster_hosts(cluster_id),
-                stages,
-                nodes_count,
+                client.get_cluster_hosts(cluster_id), stages, nodes_count,
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
@@ -364,35 +371,37 @@ def wait_till_at_least_one_host_is_in_stage(
         )
     except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
-        log.error(f"All nodes stages: "
-                  f"{[host['progress']['current_stage'] for host in hosts]} "
-                  f"when waited for {stages}")
+        log.error(
+            f"All nodes stages: "
+            f"{[host['progress']['current_stage'] for host in hosts]} "
+            f"when waited for {stages}"
+        )
         raise
 
 
 def are_host_progress_in_stage(hosts, stages, nodes_count=1):
     log.info("Checking hosts installation stage")
-    hosts_in_stage = [host for host in hosts if
-                      (host["progress"]["current_stage"]) in stages]
+    hosts_in_stage = [
+        host for host in hosts if (host["progress"]["current_stage"]) in stages
+    ]
     if len(hosts_in_stage) >= nodes_count:
         return True
     host_info = [(host["id"], (host["progress"]["current_stage"])) for host in hosts]
     log.info(
         f"Asked {nodes_count} hosts to be in one of the statuses from {stages} and currently "
-        f"hosts statuses are {host_info}")
+        f"hosts statuses are {host_info}"
+    )
     return False
 
 
 def wait_till_cluster_is_in_status(
-        client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
+    client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
 ):
     log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
     try:
         waiting.wait(
             lambda: is_cluster_in_status(
-                client=client,
-                cluster_id=cluster_id,
-                statuses=statuses
+                client=client, cluster_id=cluster_id, statuses=statuses
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
@@ -410,8 +419,10 @@ def is_cluster_in_status(client, cluster_id, statuses):
         if cluster_status in statuses:
             return True
         else:
-            log.info(f"Cluster not yet in its required status. "
-                     f"Current status: {cluster_status}")
+            log.info(
+                f"Cluster not yet in its required status. "
+                f"Current status: {cluster_status}"
+            )
             return False
     except BaseException:
         log.exception("Failed to get cluster %s info", cluster_id)
@@ -421,8 +432,8 @@ def get_cluster_validation_value(cluster_info, validation_section, validation_id
     found_status = "validation not found"
     validations = json.loads(cluster_info.validations_info)
     for validation in validations[validation_section]:
-        if validation['id'] == validation_id:
-            found_status = validation['status']
+        if validation["id"] == validation_id:
+            found_status = validation["status"]
             break
     return found_status
 
@@ -434,15 +445,15 @@ def get_host_validation_value(cluster_info, host_id, validation_section, validat
         found_status = "validation not found"
         validations = json.loads(host.validations_info)
         for validation in validations[validation_section]:
-            if validation['id'] == validation_id:
-                found_status = validation['status']
+            if validation["id"] == validation_id:
+                found_status = validation["status"]
                 break
         return found_status
     return "host not found"
 
 
 def get_random_name(length=8):
-    return ''.join(random.choice(ascii_lowercase) for _ in range(length))
+    return "".join(random.choice(ascii_lowercase) for _ in range(length))
 
 
 def folder_exists(file_path):
@@ -470,24 +481,20 @@ def recreate_folder(folder, with_chmod=True, force_recreate=True):
 
 
 def get_assisted_service_url_by_args(args, wait=True):
-    if hasattr(args, 'inventory_url') and args.inventory_url:
+    if hasattr(args, "inventory_url") and args.inventory_url:
         return args.inventory_url
 
-    kwargs = {
-        'service': args.service_name,
-        'namespace': args.namespace
-    }
+    kwargs = {"service": args.service_name, "namespace": args.namespace}
     if args.oc_mode:
         get_url = get_remote_assisted_service_url
-        kwargs['oc'] = oc_utils.get_oc_api_client(
-            token=args.oc_token,
-            server=args.oc_server
+        kwargs["oc"] = oc_utils.get_oc_api_client(
+            token=args.oc_token, server=args.oc_server
         )
-        kwargs['scheme'] = args.oc_scheme
+        kwargs["scheme"] = args.oc_scheme
     else:
         get_url = get_local_assisted_service_url
-        kwargs['profile'] = args.profile
-        kwargs['deploy_target'] = args.deploy_target
+        kwargs["profile"] = args.profile
+        kwargs["deploy_target"] = args.deploy_target
 
     return retry(
         tries=5 if wait else 1,
@@ -496,66 +503,63 @@ def get_assisted_service_url_by_args(args, wait=True):
         exceptions=(
             requests.ConnectionError,
             requests.ConnectTimeout,
-            requests.RequestException
-        )
+            requests.RequestException,
+        ),
     )(get_url)(**kwargs)
 
 
 def get_remote_assisted_service_url(oc, namespace, service, scheme):
-    log.info('Getting oc %s URL in %s namespace', service, namespace)
+    log.info("Getting oc %s URL in %s namespace", service, namespace)
     service_urls = oc_utils.get_namespaced_service_urls_list(
-        client=oc,
-        namespace=namespace,
-        service=service,
-        scheme=scheme
+        client=oc, namespace=namespace, service=service, scheme=scheme
     )
     for url in service_urls:
         if is_assisted_service_reachable(url):
             return url
 
     raise RuntimeError(
-        f'could not find any reachable url to {service} service '
-        f'in {namespace} namespace'
+        f"could not find any reachable url to {service} service "
+        f"in {namespace} namespace"
     )
 
 
 def get_local_assisted_service_url(profile, namespace, service, deploy_target):
     if deploy_target in ["onprem"]:
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
-        return f'http://{assisted_hostname_or_ip}:8090'
+        return f"http://{assisted_hostname_or_ip}:8090"
     elif deploy_target == "ocp":
         res = subprocess.check_output("ip route get 1", shell=True).split()[6]
         ip = str(res, "utf-8")
-        return f'http://{ip}:7000'
+        return f"http://{ip}:7000"
     else:
         # default deploy target is minikube
-        log.info('Getting minikube %s URL in %s namespace', service, namespace)
+        log.info("Getting minikube %s URL in %s namespace", service, namespace)
         url, _, _ = run_command(
-            f'minikube  -p {profile} -n {namespace} service {service} --url'
+            f"minikube  -p {profile} -n {namespace} service {service} --url"
         )
         if is_assisted_service_reachable(url):
             return url
 
         raise RuntimeError(
-            f'could not find any reachable url to {service} service '
-            f'in {namespace} namespace'
+            f"could not find any reachable url to {service} service "
+            f"in {namespace} namespace"
         )
 
 
 def is_assisted_service_reachable(url):
     try:
-        r = requests.get(url + '/health', timeout=10, verify=False)
+        r = requests.get(url + "/health", timeout=10, verify=False)
         return r.status_code == 200
     except (
-            requests.ConnectionError,
-            requests.ConnectTimeout,
-            requests.RequestException
+        requests.ConnectionError,
+        requests.ConnectTimeout,
+        requests.RequestException,
     ):
         return False
 
 
 def get_tf_folder(cluster_name, namespace=None):
-    folder_name = f'{cluster_name}__{namespace}' if namespace else f'{cluster_name}'
+    folder_name = f"{cluster_name}__{namespace}" if namespace else f"{cluster_name}"
     return os.path.join(consts.TF_FOLDER, folder_name)
 
 
@@ -572,13 +576,13 @@ def get_all_namespaced_clusters():
 
 
 def get_name_and_namespace_from_dirname(dirname):
-    if '__' in dirname:
-        return dirname.rsplit('__', 1)
+    if "__" in dirname:
+        return dirname.rsplit("__", 1)
 
     log.warning(
-        'Unable to extract cluster name and namespace from directory name %s. '
-        'Directory name convention must be <cluster_name>:<namespace>',
-        dirname
+        "Unable to extract cluster name and namespace from directory name %s. "
+        "Directory name convention must be <cluster_name>:<namespace>",
+        dirname,
     )
 
 
@@ -603,17 +607,17 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
 
 
 @contextmanager
-def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
-    logging.getLogger('filelock').setLevel(logging.ERROR)
+def file_lock_context(filepath="/tmp/discovery-infra.lock", timeout=300):
+    logging.getLogger("filelock").setLevel(logging.ERROR)
 
     lock = filelock.FileLock(filepath, timeout)
     try:
         lock.acquire()
     except filelock.Timeout:
         log.info(
-            'Deleting lock file: %s '
-            'since it exceeded timeout of: %d seconds',
-            filepath, timeout
+            "Deleting lock file: %s " "since it exceeded timeout of: %d seconds",
+            filepath,
+            timeout,
         )
         os.unlink(filepath)
         lock.acquire()
@@ -627,12 +631,22 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
 def _get_hosts_from_network(net):
     desc = md.parseString(net.XMLDesc())
     try:
-        hosts = desc.getElementsByTagName("network")[0]. \
-            getElementsByTagName("ip")[0]. \
-            getElementsByTagName("dhcp")[0]. \
-            getElementsByTagName("host")
-        return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"),
-                                      "hostname": host.getAttribute("name")}, hosts))
+        hosts = (
+            desc.getElementsByTagName("network")[0]
+            .getElementsByTagName("ip")[0]
+            .getElementsByTagName("dhcp")[0]
+            .getElementsByTagName("host")
+        )
+        return list(
+            map(
+                lambda host: {
+                    "mac": host.getAttribute("mac"),
+                    "ipaddr": host.getAttribute("ip"),
+                    "hostname": host.getAttribute("name"),
+                },
+                hosts,
+            )
+        )
     except IndexError:
         return []
 
@@ -646,7 +660,9 @@ def _merge(leases, hosts):
 def get_network_leases(network_name):
     with file_lock_context():
         net = conn.networkLookupByName(network_name)
-        leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
+        leases = (
+            net.DHCPLeases()
+        )  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
         hosts = _get_hosts_from_network(net)
         return _merge(leases, hosts)
 
@@ -656,7 +672,9 @@ def create_ip_address_list(node_count, starting_ip_addr):
 
 
 def create_ip_address_nested_list(node_count, starting_ip_addr):
-    return [[str(ipaddress.ip_address(starting_ip_addr) + i)] for i in range(node_count)]
+    return [
+        [str(ipaddress.ip_address(starting_ip_addr) + i)] for i in range(node_count)
+    ]
 
 
 def create_empty_nested_list(node_count):
@@ -664,21 +682,33 @@ def create_empty_nested_list(node_count):
 
 
 def get_libvirt_nodes_from_tf_state(network_names, tf_state):
-    nodes = extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
-    nodes.update(extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
+    nodes = extract_nodes_from_tf_state(
+        tf_state, network_names, consts.NodeRoles.MASTER
+    )
+    nodes.update(
+        extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER)
+    )
     return nodes
 
 
 def extract_nodes_from_tf_state(tf_state, network_names, role):
     data = {}
-    for domains in [r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and role in r["name"]]:
+    for domains in [
+        r["instances"]
+        for r in tf_state.resources
+        if r["type"] == "libvirt_domain" and role in r["name"]
+    ]:
         for d in domains:
             for nic in d["attributes"]["network_interface"]:
 
                 if nic["network_name"] not in network_names:
                     continue
 
-                data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
+                data[nic["mac"]] = {
+                    "ip": nic["addresses"],
+                    "name": d["attributes"]["name"],
+                    "role": role,
+                }
 
     return data
 
@@ -688,7 +718,11 @@ def set_hosts_roles_based_on_requested_name(client, cluster_id):
     hosts_with_roles = []
 
     for host in hosts:
-        role = consts.NodeRoles.MASTER if "master" in host["requested_hostname"] else consts.NodeRoles.WORKER
+        role = (
+            consts.NodeRoles.MASTER
+            if "master" in host["requested_hostname"]
+            else consts.NodeRoles.WORKER
+        )
         hosts_with_roles.append({"id": host["id"], "role": role})
 
     client.update_hosts(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
@@ -702,7 +736,7 @@ def get_env(env, default=None):
 
 
 def touch(path):
-    with open(path, 'a'):
+    with open(path, "a"):
         os.utime(path, None)
 
 
@@ -724,45 +758,48 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
 
 
 def run_container(container_name, image, flags=None, command=""):
-    logging.info(f'Running Container {container_name}')
-    run_container_cmd = f'podman {consts.PODMAN_FLAGS} run --name {container_name}'
+    logging.info(f"Running Container {container_name}")
+    run_container_cmd = f"podman {consts.PODMAN_FLAGS} run --name {container_name}"
 
     flags = flags or []
     for flag in flags:
-        run_container_cmd += f' {flag}'
+        run_container_cmd += f" {flag}"
 
-    run_container_cmd += f' {image} {command}'
+    run_container_cmd += f" {image} {command}"
 
     run_command(run_container_cmd, shell=True)
 
 
 def remove_running_container(container_name):
-    logging.info(f'Removing Container {container_name}')
-    container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman' \
-                       f' {consts.PODMAN_FLAGS} rm {container_name}'
+    logging.info(f"Removing Container {container_name}")
+    container_rm_cmd = (
+        f"podman {consts.PODMAN_FLAGS} stop {container_name} && podman"
+        f" {consts.PODMAN_FLAGS} rm {container_name}"
+    )
     run_command(container_rm_cmd, shell=True)
 
 
 def get_openshift_version():
-    release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
+    release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if release_image:
         with pull_secret_file() as pull_secret:
             stdout, _, _ = run_command(
                 f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"
                 f" jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
-                shell=True)
+                shell=True,
+            )
         return stdout
 
-    return get_env('OPENSHIFT_VERSION', consts.DEFAULT_OPENSHIFT_VERSION)
+    return get_env("OPENSHIFT_VERSION", consts.DEFAULT_OPENSHIFT_VERSION)
 
 
 def copy_template_tree(dst, none_platform_mode=False):
     copy_tree(
         src=consts.TF_TEMPLATE_NONE_PLATFORM_FLOW
-        if none_platform_mode else
-        consts.TF_TEMPLATE_BARE_METAL_FLOW,
-        dst=dst
+        if none_platform_mode
+        else consts.TF_TEMPLATE_BARE_METAL_FLOW,
+        dst=dst,
     )
 
 
@@ -773,10 +810,11 @@ def pull_secret_file():
     try:
         json.loads(pull_secret)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Value of PULL_SECRET environment variable "
-                         f"is not a valid JSON payload") from e
+        raise ValueError(
+            f"Value of PULL_SECRET environment variable " f"is not a valid JSON payload"
+        ) from e
 
-    with tempfile.NamedTemporaryFile(mode='w') as f:
+    with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(pull_secret)
         f.flush()
         yield f.name
@@ -785,10 +823,14 @@ def pull_secret_file():
 def extract_installer(release_image, dest):
     logging.info("Extracting installer from %s to %s", release_image, dest)
     with pull_secret_file() as pull_secret:
-        run_command(f"oc adm release extract --registry-config '{pull_secret}' --command=openshift-install --to={dest} {release_image}")
+        run_command(
+            f"oc adm release extract --registry-config '{pull_secret}' --command=openshift-install --to={dest} {release_image}"
+        )
 
 
-def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
+def update_hosts(
+    client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True
+):
     """
     Update names and/or roles of the hosts in a cluster from a dictionary of libvirt nodes.
 
@@ -816,11 +858,13 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
             inventory = json.loads(host["inventory"])
 
             if libvirt_mac.lower() in map(
-                    lambda interface: interface["mac_address"].lower(),
-                    inventory["interfaces"],
+                lambda interface: interface["mac_address"].lower(),
+                inventory["interfaces"],
             ):
                 roles.append({"id": host["id"], "role": libvirt_metadata["role"]})
-                hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
+                hostnames.append(
+                    {"id": host["id"], "hostname": libvirt_metadata["name"]}
+                )
 
     if not update_hostnames:
         hostnames = None
@@ -828,17 +872,23 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
     if not update_roles:
         roles = None
 
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
+    client.update_hosts(
+        cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames
+    )
 
 
 def get_assisted_controller_status(kubeconfig):
     log.info("Getting controller status")
-    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer " \
-              f"get pods -l job-name=assisted-installer-controller"
-    response = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    command = (
+        f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer "
+        f"get pods -l job-name=assisted-installer-controller"
+    )
+    response = subprocess.run(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
     if response.returncode != 0:
-        log.error(f'failed to get controller status: {response.stderr}')
-        return b''
+        log.error(f"failed to get controller status: {response.stderr}")
+        return b""
 
-    log.info(f'{response.stdout}')
+    log.info(f"{response.stdout}")
     return response.stdout

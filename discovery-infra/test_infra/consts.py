@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 TF_FOLDER = "build/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
 IMAGE_FOLDER = "/tmp/test_images"
@@ -34,9 +35,9 @@ PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=
 LOG_FOLDER = "/tmp/assisted_test_infra_logs"
 DEFAULT_OPENSHIFT_VERSION = "4.6"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
-DEFAULT_TEST_INFRA_DOMAIN = '.test-infra-cluster-assisted-installer.redhat.com'
+DEFAULT_TEST_INFRA_DOMAIN = ".test-infra-cluster-assisted-installer.redhat.com"
 TEST_TARGET_INTERFACE = "vnet3"
-DEFAULT_NAMESPACE = 'assisted-installer'
+DEFAULT_NAMESPACE = "assisted-installer"
 
 
 class ImageType:
@@ -89,10 +90,17 @@ class HostsProgressStages:
     DONE = "Done"
 
 
-all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,
-                   HostsProgressStages.WRITE_IMAGE_TO_DISK, HostsProgressStages.WAIT_FOR_CONTROL_PLANE,
-                   HostsProgressStages.REBOOTING, HostsProgressStages.WAIT_FOR_IGNITION,
-                   HostsProgressStages.CONFIGURING, HostsProgressStages.JOINED, HostsProgressStages.DONE]
+all_host_stages = [
+    HostsProgressStages.START_INSTALLATION,
+    HostsProgressStages.INSTALLING,
+    HostsProgressStages.WRITE_IMAGE_TO_DISK,
+    HostsProgressStages.WAIT_FOR_CONTROL_PLANE,
+    HostsProgressStages.REBOOTING,
+    HostsProgressStages.WAIT_FOR_IGNITION,
+    HostsProgressStages.CONFIGURING,
+    HostsProgressStages.JOINED,
+    HostsProgressStages.DONE,
+]
 
 
 class Events:
@@ -100,18 +108,26 @@ class Events:
     SUCCESSFULLY_REGISTERED_CLUSTER = "Successfully registered cluster"
     PENDING_FOR_INPUT = "to pending-for-input"
     GENERATED_IMAGE = "Generated image (SSH public key is set)"
-    GENERATED_IMAGE_FULL = "Generated image (Image type is \"full-iso\", SSH public key is set)"
-    GENERATED_IMAGE_MINIMAL = "Generated image (Image type is \"minimal-iso\", SSH public key is set)"
+    GENERATED_IMAGE_FULL = (
+        'Generated image (Image type is "full-iso", SSH public key is set)'
+    )
+    GENERATED_IMAGE_MINIMAL = (
+        'Generated image (Image type is "minimal-iso", SSH public key is set)'
+    )
     DOWNLOAD_IMAGE = "Started image download"
     HOST_REGISTERED_TO_CLUSTER = ": registered to cluster"
     INSUFFICIENT = "insufficient"
-    KNOWN = "to \"known\""
+    KNOWN = 'to "known"'
     READY = "to ready"
-    PREPARING_FOR_INSTALLATION = "updated status from \"known\" to \"preparing-for-installation\""
+    PREPARING_FOR_INSTALLATION = (
+        'updated status from "known" to "preparing-for-installation"'
+    )
     SET_BOOTSTRAP = "set as bootstrap"
-    INSTALLING = "updated status from \"preparing-for-installation\" to \"installing\""
+    INSTALLING = 'updated status from "preparing-for-installation" to "installing"'
     CLUSTER_INSTALLING = "to installing"
-    INSTALLING_IN_PROGRESS = "updated status from \"installing\" to \"installing-in-progress\""
+    INSTALLING_IN_PROGRESS = (
+        'updated status from "installing" to "installing-in-progress"'
+    )
     INSTALLATION_STAGE = "reached installation stage Starting installation"
     INSTALLING_PENDING_USER_ACTION = "installing-pending-user-action"
     WRITING_IMAGE_TO_DISK = "reached installation stage Writing image to disk"
@@ -122,11 +138,13 @@ class Events:
     DONE = "reached installation stage Done"
     CANCELED_CLUSTER_INSTALLATION = "Canceled cluster installation"
     CANCELED_FOR_HOST = "Installation canceled for host"
-    CANCELLED_STATUS = "to \"cancelled\""
+    CANCELLED_STATUS = 'to "cancelled"'
     RESET_CLUSTER_INSTALLATION = "Reset cluster installation"
     RESET_FOR_HOST = "Installation reset for host"
-    RESETTING_PENDING_USER_ACTION = "updated status from \"cancelled\" to \"resetting-pending-user-action\""
-    INSTALLED = "updated status from \"installing-in-progress\" to \"installed\""
+    RESETTING_PENDING_USER_ACTION = (
+        'updated status from "cancelled" to "resetting-pending-user-action"'
+    )
+    INSTALLED = 'updated status from "installing-in-progress" to "installed"'
     FINALIZING = "to finalizing"
     SUCCESSFULLY_INSTALLED = "Successfully finished installing cluster"
     ERROR = "error"
@@ -135,10 +153,10 @@ class Events:
 
 
 class Platforms:
-    BARE_METAL = 'baremetal'
-    NONE = 'none'
+    BARE_METAL = "baremetal"
+    NONE = "none"
 
 
 class HighAvailabilityMode:
-    FULL = 'Full'
-    NONE = 'None'
+    FULL = "Full"
+    NONE = "None"

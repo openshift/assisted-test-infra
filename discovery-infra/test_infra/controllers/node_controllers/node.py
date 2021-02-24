@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 
 from test_infra import consts
@@ -5,7 +6,9 @@ from test_infra.controllers.node_controllers import ssh
 
 
 class Node:
-    def __init__(self, name, node_controller, private_ssh_key_path=None, username="core"):
+    def __init__(
+        self, name, node_controller, private_ssh_key_path=None, username="core"
+    ):
         self.name = name
         self.private_ssh_key_path = private_ssh_key_path
         self.username = username
@@ -47,9 +50,11 @@ class Node:
 
     @property
     def ssh_connection(self):
-        return ssh.SshConnection(self.ips[0],
-                                 private_ssh_key_path=self.private_ssh_key_path,
-                                 username=self.username)
+        return ssh.SshConnection(
+            self.ips[0],
+            private_ssh_key_path=self.private_ssh_key_path,
+            username=self.username,
+        )
 
     def upload_file(self, local_source_path, remote_target_path):
         with self.ssh_connection as _ssh:
@@ -94,19 +99,23 @@ class Node:
 
     def kill_service(self, service):
         logging.info("Killing service %s on host %s", service, self.name)
-        self.run_command(f'sudo systemctl kill {service}.service || true')
+        self.run_command(f"sudo systemctl kill {service}.service || true")
 
     def kill_podman_container_by_name(self, container_name):
-        output = self.run_command(f"sudo su root -c 'podman ps | grep {container_name}'")
-        logging.info(f"Container details on {self.name}: provided container name: {container_name}, output: "
-                     f"\n {output}")
+        output = self.run_command(
+            f"sudo su root -c 'podman ps | grep {container_name}'"
+        )
+        logging.info(
+            f"Container details on {self.name}: provided container name: {container_name}, output: "
+            f"\n {output}"
+        )
         logging.info(f"Killing container: {container_name}")
         output = self.run_command(f"sudo su root -c 'podman kill {container_name}'")
         logging.info(f"Output of kill container command: {output}")
 
     def is_service_active(self, service):
         logging.info("Verifying if service %s is active on host %s", service, self.name)
-        output = self.run_command(f'sudo systemctl is-active {service}.service || true')
+        output = self.run_command(f"sudo systemctl is-active {service}.service || true")
         return output.strip() == "active"
 
     def set_boot_order(self, cd_first=False):
@@ -147,11 +156,19 @@ class Node:
     def detach_all_test_disks(self):
         self.node_controller.detach_all_test_disks(self.name)
 
-    def attach_interface(self, network_xml, target_interface=consts.TEST_TARGET_INTERFACE):
-        return self.node_controller.attach_interface(self.name, network_xml, target_interface)
+    def attach_interface(
+        self, network_xml, target_interface=consts.TEST_TARGET_INTERFACE
+    ):
+        return self.node_controller.attach_interface(
+            self.name, network_xml, target_interface
+        )
 
-    def add_interface(self, network_name, target_interface=consts.TEST_TARGET_INTERFACE):
-        return self.node_controller.add_interface(self.name, network_name, target_interface)
+    def add_interface(
+        self, network_name, target_interface=consts.TEST_TARGET_INTERFACE
+    ):
+        return self.node_controller.add_interface(
+            self.name, network_name, target_interface
+        )
 
     def create_network(self, network_xml):
         return self.node_controller.create_network(network_xml)

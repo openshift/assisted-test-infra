@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import os
 import re
@@ -10,7 +11,9 @@ import yaml
 from test_infra import utils, consts
 from test_infra.tools.assets import NetworkAssets
 from test_infra.helper_classes.nodes import Nodes
-from test_infra.controllers.node_controllers.terraform_controller import TerraformController
+from test_infra.controllers.node_controllers.terraform_controller import (
+    TerraformController,
+)
 
 from download_logs import download_must_gather
 from oc_utils import get_operators_status
@@ -32,8 +35,10 @@ SSH_KEY = os.path.join("ssh_key", "key")
 def installer_generate(openshift_release_image):
     logging.info("Installer generate ignitions")
     bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
-    utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}",
-                                  env=bip_env)
+    utils.run_command_with_output(
+        f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}",
+        env=bip_env,
+    )
 
 
 @utils.retry(exceptions=Exception, tries=5, delay=30)
@@ -45,7 +50,9 @@ def installer_gather(ip, ssh_key, out_dir):
     matches = re.compile(r'.*logs captured here "(.*)".*').findall(stderr)
 
     if len(matches) == 0:
-        logging.warning(f"It seems like installer-gather didn't generate any bundles, stderr: {stderr}")
+        logging.warning(
+            f"It seems like installer-gather didn't generate any bundles, stderr: {stderr}"
+        )
         return
 
     bundle_file_path, *_ = matches
@@ -65,7 +72,8 @@ def download_live_image(download_path):
     # TODO: enable fetching the appropriate rhcos image
     utils.run_command(
         f"curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/"
-        f"4.7.0-rc.2/rhcos-4.7.0-rc.2-x86_64-live.x86_64.iso --retry 5 -o {download_path}")
+        f"4.7.0-rc.2/rhcos-4.7.0-rc.2-x86_64-live.x86_64.iso --retry 5 -o {download_path}"
+    )
 
 
 def embed(image_name, ignition_file, embed_image_name):
@@ -73,10 +81,16 @@ def embed(image_name, ignition_file, embed_image_name):
     embedded_image = os.path.join(BUILD_DIR, embed_image_name)
     os.remove(embedded_image) if os.path.exists(embedded_image) else None
 
-    flags = shlex.split("--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v .:/data -w /data")
-    utils.run_container("coreos-installer", "quay.io/coreos/coreos-installer:release", flags,
-                        f"iso ignition embed {BUILD_DIR}/{image_name} "
-                        f"-f --ignition-file /data/{IBIP_DIR}/{ignition_file} -o /data/{embedded_image}")
+    flags = shlex.split(
+        "--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v .:/data -w /data"
+    )
+    utils.run_container(
+        "coreos-installer",
+        "quay.io/coreos/coreos-installer:release",
+        flags,
+        f"iso ignition embed {BUILD_DIR}/{image_name} "
+        f"-f --ignition-file /data/{IBIP_DIR}/{ignition_file} -o /data/{embedded_image}",
+    )
 
     image_path = os.path.join(consts.BASE_IMAGE_FOLDER, embed_image_name)
     shutil.move(embedded_image, image_path)
@@ -108,8 +122,8 @@ def setup_files_and_folders(args, net_asset, cluster_name):
 
 def str_presenter(dumper, data):
     if "ssh-rsa" in data:  # check for multiline string
-        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
 
 
 def create_controller(net_asset):
@@ -138,7 +152,9 @@ def all_operators_up():
         all_operators_are_valid = len(invalid_operators) == 0
 
         if not all_operators_are_valid:
-            logging.debug("Following operators are still down: %s", ", ".join(invalid_operators))
+            logging.debug(
+                "Following operators are still down: %s", ", ".join(invalid_operators)
+            )
 
         return all_operators_are_valid
     except Exception as e:
@@ -157,7 +173,9 @@ def gather_sosreport_data(node):
 def log_collection(controller, vm_ip):
     etype, _value, _tb = sys.exc_info()
 
-    logging.info(f"Collecting logs after a {('failed', 'successful')[etype is None]} installation")
+    logging.info(
+        f"Collecting logs after a {('failed', 'successful')[etype is None]} installation"
+    )
 
     try:
         logging.info("Gathering sosreport data from host...")
@@ -187,22 +205,26 @@ def waiting_for_installation_completion(controller):
 
     try:
         logging.info("Configuring /etc/hosts...")
-        utils.config_etc_hosts(cluster_name=controller.cluster_name,
-                               base_dns_domain=controller.cluster_domain,
-                               api_vip=vm_ip)
+        utils.config_etc_hosts(
+            cluster_name=controller.cluster_name,
+            base_dns_domain=controller.cluster_domain,
+            api_vip=vm_ip,
+        )
 
         logging.info("Waiting for installation to complete...")
-        waiting.wait(all_operators_up,
-                     sleep_seconds=20,
-                     timeout_seconds=60 * 60,
-                     waiting_for="all operators to get up")
+        waiting.wait(
+            all_operators_up,
+            sleep_seconds=20,
+            timeout_seconds=60 * 60,
+            waiting_for="all operators to get up",
+        )
         logging.info("Installation completed successfully!")
     finally:
         log_collection(controller, vm_ip)
 
 
 def execute_ibip_flow(args):
-    openshift_release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
+    openshift_release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
     if not openshift_release_image:
         raise ValueError("os env OPENSHIFT_INSTALL_RELEASE_IMAGE must be provided")
 
@@ -214,7 +236,9 @@ def execute_ibip_flow(args):
     installer_generate(openshift_release_image)
 
     download_live_image(f"{BUILD_DIR}/installer-image.iso")
-    image_path = embed("installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME)
+    image_path = embed(
+        "installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME
+    )
 
     logging.info("Starting node...")
     controller.image_path = image_path

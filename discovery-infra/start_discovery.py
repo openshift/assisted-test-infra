@@ -25,7 +25,7 @@ from test_infra.controllers.load_balancer_controller import LoadBalancerControll
 
 
 class MachineNetwork(object):
-    YES_VALUES = ['yes', 'true', 'y']
+    YES_VALUES = ["yes", "true", "y"]
 
     def __init__(self, ip_v4, ip_v6, machine_cidr_4, machine_cidr_6, ns_index):
         self.has_ip_v4 = ip_v4.lower() in MachineNetwork.YES_VALUES
@@ -47,58 +47,53 @@ def set_tf_config(cluster_name):
 
     utils.copy_template_tree(tf_folder, is_none_platform_mode())
 
-    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
-    default_image_path = os.path.join(consts.IMAGE_FOLDER, f'{args.namespace}-installer-image.iso')
+    machine_net = MachineNetwork(
+        args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index
+    )
+    default_image_path = os.path.join(
+        consts.IMAGE_FOLDER, f"{args.namespace}-installer-image.iso"
+    )
     fill_tfvars(
         image_path=args.image or default_image_path,
         storage_path=args.storage_path,
         master_count=args.master_count,
         nodes_details=nodes_details,
         tf_folder=tf_folder,
-        machine_net=machine_net
+        machine_net=machine_net,
     )
 
 
 # Filling tfvars json files with terraform needed variables to spawn vms
 def fill_tfvars(
-        image_path,
-        storage_path,
-        master_count,
-        nodes_details,
-        tf_folder,
-        machine_net
+    image_path, storage_path, master_count, nodes_details, tf_folder, machine_net
 ):
     tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
         tfvars = json.load(_file)
 
     master_starting_ip = str(
-        ipaddress.ip_address(
-            ipaddress.IPv4Network(machine_net.cidr_v4).network_address
-        )
+        ipaddress.ip_address(ipaddress.IPv4Network(machine_net.cidr_v4).network_address)
         + 10
     )
     worker_starting_ip = str(
-        ipaddress.ip_address(
-            ipaddress.IPv4Network(machine_net.cidr_v4).network_address
-        )
+        ipaddress.ip_address(ipaddress.IPv4Network(machine_net.cidr_v4).network_address)
         + 10
         + int(tfvars["master_count"])
     )
     master_count = min(master_count, consts.NUMBER_OF_MASTERS)
-    worker_count = nodes_details['worker_count']
-    tfvars['image_path'] = image_path
-    tfvars['master_count'] = master_count
+    worker_count = nodes_details["worker_count"]
+    tfvars["image_path"] = image_path
+    tfvars["master_count"] = master_count
     if machine_net.has_ip_v4:
-        tfvars['libvirt_master_ips'] = utils.create_ip_address_nested_list(
+        tfvars["libvirt_master_ips"] = utils.create_ip_address_nested_list(
             master_count, starting_ip_addr=master_starting_ip
         )
-        tfvars['libvirt_worker_ips'] = utils.create_ip_address_nested_list(
+        tfvars["libvirt_worker_ips"] = utils.create_ip_address_nested_list(
             worker_count, starting_ip_addr=worker_starting_ip
         )
     else:
-        tfvars['libvirt_master_ips'] = utils.create_empty_nested_list(master_count)
-        tfvars['libvirt_worker_ips'] = utils.create_empty_nested_list(worker_count)
+        tfvars["libvirt_master_ips"] = utils.create_empty_nested_list(master_count)
+        tfvars["libvirt_worker_ips"] = utils.create_empty_nested_list(worker_count)
 
     machine_cidr_addresses = []
     provisioning_cidr_addresses = []
@@ -111,12 +106,12 @@ def fill_tfvars(
         machine_cidr_addresses += [machine_net.cidr_v6]
         provisioning_cidr_addresses += [machine_net.provisioning_cidr_v6]
 
-    tfvars['machine_cidr_addresses'] = machine_cidr_addresses
-    tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses
-    tfvars['api_vip'] = _get_vips_ips(machine_net)[0]
-    tfvars['libvirt_storage_pool_path'] = storage_path
-    tfvars['libvirt_master_macs'] = static_ips.generate_macs(master_count)
-    tfvars['libvirt_worker_macs'] = static_ips.generate_macs(worker_count)
+    tfvars["machine_cidr_addresses"] = machine_cidr_addresses
+    tfvars["provisioning_cidr_addresses"] = provisioning_cidr_addresses
+    tfvars["api_vip"] = _get_vips_ips(machine_net)[0]
+    tfvars["libvirt_storage_pool_path"] = storage_path
+    tfvars["libvirt_master_macs"] = static_ips.generate_macs(master_count)
+    tfvars["libvirt_worker_macs"] = static_ips.generate_macs(worker_count)
     tfvars.update(nodes_details)
 
     tfvars.update(_secondary_tfvars(master_count, nodes_details, machine_net))
@@ -126,7 +121,9 @@ def fill_tfvars(
 
 
 def _secondary_tfvars(master_count, nodes_details, machine_net):
-    vars_dict = {'libvirt_secondary_master_macs': static_ips.generate_macs(master_count)}
+    vars_dict = {
+        "libvirt_secondary_master_macs": static_ips.generate_macs(master_count)
+    }
     if machine_net.has_ip_v4:
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
@@ -156,43 +153,36 @@ def _secondary_tfvars(master_count, nodes_details, machine_net):
             + int(master_count)
         )
 
-    worker_count = nodes_details['worker_count']
-    vars_dict['libvirt_secondary_worker_macs'] = static_ips.generate_macs(worker_count)
+    worker_count = nodes_details["worker_count"]
+    vars_dict["libvirt_secondary_worker_macs"] = static_ips.generate_macs(worker_count)
     if machine_net.has_ip_v4:
-        vars_dict['libvirt_secondary_master_ips'] = utils.create_ip_address_nested_list(
-            master_count,
-            starting_ip_addr=secondary_master_starting_ip
+        vars_dict["libvirt_secondary_master_ips"] = utils.create_ip_address_nested_list(
+            master_count, starting_ip_addr=secondary_master_starting_ip
         )
-        vars_dict['libvirt_secondary_worker_ips'] = utils.create_ip_address_nested_list(
-            worker_count,
-            starting_ip_addr=secondary_worker_starting_ip
+        vars_dict["libvirt_secondary_worker_ips"] = utils.create_ip_address_nested_list(
+            worker_count, starting_ip_addr=secondary_worker_starting_ip
         )
     else:
-        vars_dict['libvirt_secondary_master_ips'] = utils.create_empty_nested_list(master_count)
-        vars_dict['libvirt_secondary_worker_ips'] = utils.create_empty_nested_list(worker_count)
+        vars_dict["libvirt_secondary_master_ips"] = utils.create_empty_nested_list(
+            master_count
+        )
+        vars_dict["libvirt_secondary_worker_ips"] = utils.create_empty_nested_list(
+            worker_count
+        )
     return vars_dict
 
 
 # Run make run terraform -> creates vms
-def create_nodes(
-        tf
-):
-    log.info('Start running terraform')
+def create_nodes(tf):
+    log.info("Start running terraform")
     with utils.file_lock_context():
         return tf.apply()
 
 
 # Starts terraform nodes creation, waits till all nodes will get ip and will move to known status
-def create_nodes_and_wait_till_registered(
-        inventory_client,
-        cluster,
-        nodes_details,
-        tf
-):
-    nodes_count = nodes_details['master_count'] + nodes_details["worker_count"]
-    create_nodes(
-        tf=tf
-    )
+def create_nodes_and_wait_till_registered(inventory_client, cluster, nodes_details, tf):
+    nodes_count = nodes_details["master_count"] + nodes_details["worker_count"]
+    create_nodes(tf=tf)
 
     # TODO: Check for only new nodes
     if not inventory_client:
@@ -212,14 +202,15 @@ def create_nodes_and_wait_till_registered(
         consts.NodesStatus.INSUFFICIENT,
         consts.NodesStatus.PENDING_FOR_INPUT,
     ]
-    if nodes_details['master_count'] == 1 or is_none_platform_mode():
+    if nodes_details["master_count"] == 1 or is_none_platform_mode():
         statuses.append(consts.NodesStatus.KNOWN)
 
     utils.wait_till_all_hosts_are_in_status(
         client=inventory_client,
         cluster_id=cluster.id,
         nodes_count=nodes_count,
-        statuses=statuses)
+        statuses=statuses,
+    )
 
 
 def set_cluster_vips(client, cluster_id, machine_net):
@@ -231,12 +222,17 @@ def set_cluster_vips(client, cluster_id, machine_net):
     client.update_cluster(cluster_id, cluster_info)
 
 
-def set_cluster_machine_cidr(client, cluster_id, machine_net, set_vip_dhcp_allocation=True):
+def set_cluster_machine_cidr(
+    client, cluster_id, machine_net, set_vip_dhcp_allocation=True
+):
     cluster_info = client.cluster_get(cluster_id)
     if set_vip_dhcp_allocation:
         cluster_info.vip_dhcp_allocation = True
-    cluster_info.machine_network_cidr = machine_net.cidr_v6 \
-        if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4
+    cluster_info.machine_network_cidr = (
+        machine_net.cidr_v6
+        if machine_net.has_ip_v6 and not machine_net.has_ip_v4
+        else machine_net.cidr_v4
+    )
     client.update_cluster(cluster_id, cluster_info)
 
 
@@ -274,14 +270,26 @@ def _get_http_proxy_params(ipv4, ipv6):
         ipv6_only = ipv6 and not ipv4
         if ipv6_only:
             proxy_ip = _get_proxy_ip(args.vm_network_cidr6)
-            proxy_url = f'http://[{proxy_ip}]:3128'
-            no_proxy = ','.join([args.vm_network_cidr6, args.service_network6, args.cluster_network6,
-                                 consts.DEFAULT_TEST_INFRA_DOMAIN])
+            proxy_url = f"http://[{proxy_ip}]:3128"
+            no_proxy = ",".join(
+                [
+                    args.vm_network_cidr6,
+                    args.service_network6,
+                    args.cluster_network6,
+                    consts.DEFAULT_TEST_INFRA_DOMAIN,
+                ]
+            )
         else:
             proxy_ip = _get_proxy_ip(args.vm_network_cidr)
-            proxy_url = f'http://{proxy_ip}:3128'
-            no_proxy = ','.join([args.vm_network_cidr, args.service_network, args.cluster_network,
-                                 consts.DEFAULT_TEST_INFRA_DOMAIN])
+            proxy_url = f"http://{proxy_ip}:3128"
+            no_proxy = ",".join(
+                [
+                    args.vm_network_cidr,
+                    args.service_network,
+                    args.cluster_network,
+                    consts.DEFAULT_TEST_INFRA_DOMAIN,
+                ]
+            )
         return proxy_url, proxy_url, no_proxy
     else:
         return args.http_proxy, args.https_proxy, args.no_proxy
@@ -292,7 +300,9 @@ def _get_http_proxy_params(ipv4, ipv6):
 def _cluster_create_params():
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
-    ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
+    ntp_source = _get_host_ip_from_cidr(
+        args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr
+    )
     user_managed_networking = is_user_managed_networking()
     http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
     params = {
@@ -305,10 +315,11 @@ def _cluster_create_params():
         "http_proxy": http_proxy,
         "https_proxy": https_proxy,
         "no_proxy": no_proxy,
-        "vip_dhcp_allocation": bool(args.vip_dhcp_allocation) and not user_managed_networking,
+        "vip_dhcp_allocation": bool(args.vip_dhcp_allocation)
+        and not user_managed_networking,
         "additional_ntp_source": ntp_source,
         "user_managed_networking": user_managed_networking,
-        "high_availability_mode": "None" if args.master_count == 1 else "Full"
+        "high_availability_mode": "None" if args.master_count == 1 else "Full",
     }
     return params
 
@@ -317,7 +328,9 @@ def _cluster_create_params():
 def _create_node_details(cluster_name):
     return {
         "libvirt_worker_memory": args.worker_memory,
-        "libvirt_master_memory": args.master_memory if not args.master_count == 1 else args.master_memory * 2,
+        "libvirt_master_memory": args.master_memory
+        if not args.master_count == 1
+        else args.master_memory * 2,
         "worker_count": args.number_of_workers,
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
@@ -326,8 +339,9 @@ def _create_node_details(cluster_name):
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": args.worker_disk,
         "libvirt_master_disk": args.master_disk,
-        "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
-        "libvirt_secondary_network_if": f's{args.network_bridge}',
+        "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK
+        + args.namespace,
+        "libvirt_secondary_network_if": f"s{args.network_bridge}",
         "bootstrap_in_place": args.master_count == 1,
     }
 
@@ -342,7 +356,7 @@ def _get_provisioning_cidr6(cidr, ns_index):
     provisioning_cidr = IPNetwork(cidr)
     provisioning_cidr += ns_index
     for _ in range(4):
-        provisioning_cidr += (1 << 63)
+        provisioning_cidr += 1 << 63
     return str(provisioning_cidr)
 
 
@@ -386,24 +400,29 @@ def nodes_flow(client, cluster_name, cluster):
         utils.set_tfvars(tf_folder, nodes_details)
 
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
-    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
-
-    create_nodes_and_wait_till_registered(
-        inventory_client=client,
-        cluster=cluster,
-        nodes_details=nodes_details,
-        tf=tf
+    machine_net = MachineNetwork(
+        args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index
     )
 
-    is_ipv4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
+    create_nodes_and_wait_till_registered(
+        inventory_client=client, cluster=cluster, nodes_details=nodes_details, tf=tf
+    )
+
+    is_ipv4 = machine_net.has_ip_v4 or not machine_net.has_ip_v6
     main_cidr = args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6
-    secondary_cidr = machine_net.provisioning_cidr_v4 if is_ipv4 else machine_net.provisioning_cidr_v6
+    secondary_cidr = (
+        machine_net.provisioning_cidr_v4
+        if is_ipv4
+        else machine_net.provisioning_cidr_v6
+    )
 
     if client:
         cluster_info = client.cluster_get(cluster.id)
         macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
         if is_none_platform_mode():
-            macs += utils.get_libvirt_nodes_macs(nodes_details["libvirt_secondary_network_name"])
+            macs += utils.get_libvirt_nodes_macs(
+                nodes_details["libvirt_secondary_network_name"]
+            )
 
         if not (cluster_info.api_vip and cluster_info.ingress_vip):
             utils.wait_till_hosts_with_macs_are_in_status(
@@ -413,14 +432,21 @@ def nodes_flow(client, cluster_name, cluster):
                 statuses=[
                     consts.NodesStatus.INSUFFICIENT,
                     consts.NodesStatus.PENDING_FOR_INPUT,
-                    consts.NodesStatus.KNOWN
+                    consts.NodesStatus.KNOWN,
                 ],
             )
 
             if args.master_count == 1:
-                tf.change_variables({"single_node_ip": helper_cluster.Cluster.get_ip_for_single_node(
-                    client, cluster.id, main_cidr, ipv4_first=is_ipv4)})
-                set_cluster_machine_cidr(client, cluster.id, machine_net, set_vip_dhcp_allocation=False)
+                tf.change_variables(
+                    {
+                        "single_node_ip": helper_cluster.Cluster.get_ip_for_single_node(
+                            client, cluster.id, main_cidr, ipv4_first=is_ipv4
+                        )
+                    }
+                )
+                set_cluster_machine_cidr(
+                    client, cluster.id, machine_net, set_vip_dhcp_allocation=False
+                )
             elif is_none_platform_mode():
                 set_cluster_vips(client, cluster.id, machine_net)
             elif args.vip_dhcp_allocation:
@@ -430,11 +456,27 @@ def nodes_flow(client, cluster_name, cluster):
         else:
             log.info("VIPs already configured")
 
-        set_hosts_roles(client, cluster, nodes_details, machine_net, tf, args.master_count, args.with_static_ips)
+        set_hosts_roles(
+            client,
+            cluster,
+            nodes_details,
+            machine_net,
+            tf,
+            args.master_count,
+            args.with_static_ips,
+        )
 
         if is_none_platform_mode() and args.master_count > 1:
-            master_ips = helper_cluster.Cluster.get_master_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_master_ips(client, cluster.id, secondary_cidr)
-            load_balancer_ip = _get_host_ip_from_cidr(machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4)
+            master_ips = helper_cluster.Cluster.get_master_ips(
+                client, cluster.id, main_cidr
+            ) + helper_cluster.Cluster.get_master_ips(
+                client, cluster.id, secondary_cidr
+            )
+            load_balancer_ip = _get_host_ip_from_cidr(
+                machine_net.cidr_v6
+                if machine_net.has_ip_v6 and not machine_net.has_ip_v4
+                else machine_net.cidr_v4
+            )
             lb_controller = LoadBalancerController(tf)
             lb_controller.set_load_balancing_config(load_balancer_ip, master_ips)
 
@@ -452,7 +494,7 @@ def nodes_flow(client, cluster_name, cluster):
                 cluster_id=cluster.id,
                 kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
                 pull_secret=args.pull_secret,
-                tf=tf
+                tf=tf,
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)
@@ -460,32 +502,47 @@ def nodes_flow(client, cluster_name, cluster):
                 cluster_info = client.cluster_get(cluster.id)
                 log.info("Start waiting till CVO status is available")
                 api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)
-                config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, api_vip)
+                config_etc_hosts(
+                    cluster_info.name, cluster_info.base_dns_domain, api_vip
+                )
                 utils.wait_for_cvo_available()
 
 
-def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_ip_mode):
+def set_hosts_roles(
+    client, cluster, nodes_details, machine_net, tf, master_count, static_ip_mode
+):
     networks_names = (
         nodes_details["libvirt_network_name"],
-        nodes_details["libvirt_secondary_network_name"]
+        nodes_details["libvirt_secondary_network_name"],
     )
 
     # don't set roles in bip role
     if machine_net.has_ip_v4:
         libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
-        libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
+        libvirt_nodes.update(
+            utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1])
+        )
         if static_ip_mode:
             log.info("Setting hostnames when running in static ips mode")
             update_hostnames = True
         else:
             update_hostnames = False
     else:
-        log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
-        libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
+        log.warning(
+            "Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts"
+        )
+        libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(
+            networks_names, tf.get_state()
+        )
         update_hostnames = True
 
-    utils.update_hosts(client, cluster.id, libvirt_nodes, update_hostnames=update_hostnames,
-                       update_roles=master_count > 1)
+    utils.update_hosts(
+        client,
+        cluster.id,
+        libvirt_nodes,
+        update_hostnames=update_hostnames,
+        update_roles=master_count > 1,
+    )
 
 
 def execute_day1_flow(cluster_name):
@@ -495,17 +552,17 @@ def execute_day1_flow(cluster_name):
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
 
     if not args.vm_network_cidr:
-        net_cidr = IPNetwork('192.168.126.0/24')
+        net_cidr = IPNetwork("192.168.126.0/24")
         net_cidr += args.ns_index
         args.vm_network_cidr = str(net_cidr)
 
     if not args.vm_network_cidr6:
-        net_cidr = IPNetwork('1001:db8::/120')
+        net_cidr = IPNetwork("1001:db8::/120")
         net_cidr += args.ns_index
         args.vm_network_cidr6 = str(net_cidr)
 
     if not args.network_bridge:
-        args.network_bridge = f'tt{args.ns_index}'
+        args.network_bridge = f"tt{args.ns_index}"
 
     set_tf_config(cluster_name)
     image_path = None
@@ -521,13 +578,11 @@ def execute_day1_flow(cluster_name):
         else:
 
             cluster = client.create_cluster(
-                cluster_name,
-                ssh_public_key=args.ssh_key, **_cluster_create_params()
+                cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
 
         image_path = os.path.join(
-            consts.IMAGE_FOLDER,
-            f'{args.namespace}-installer-image.iso'
+            consts.IMAGE_FOLDER, f"{args.namespace}-installer-image.iso"
         )
 
         if args.with_static_ips:
@@ -551,7 +606,7 @@ def execute_day1_flow(cluster_name):
         finally:
             if not image_path or args.keep_iso:
                 return
-            log.info('deleting iso: %s', image_path)
+            log.info("deleting iso: %s", image_path)
             os.unlink(image_path)
 
     return cluster.id
@@ -566,8 +621,8 @@ def is_none_platform_mode():
 
 
 def main():
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-    log.info('Cluster name: %s', cluster_name)
+    cluster_name = f"{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}"
+    log.info("Cluster name: %s", cluster_name)
 
     cluster_id = args.cluster_id
     if args.day1_cluster:
@@ -637,7 +692,11 @@ if __name__ == "__main__":
         "-nw", "--number-of-workers", help="Workers count to spawn", type=int, default=0
     )
     parser.add_argument(
-        "-ndw", "--number-of-day2-workers", help="Workers count to spawn", type=int, default=0
+        "-ndw",
+        "--number-of-day2-workers",
+        help="Workers count to spawn",
+        type=int,
+        default=0,
     )
     parser.add_argument(
         "-cn",
@@ -677,9 +736,7 @@ if __name__ == "__main__":
         "-ps", "--pull-secret", help="Pull secret", type=str, default=""
     )
     parser.add_argument(
-        "--with-static-ips",
-        help="Static ips mode",
-        action="store_true",
+        "--with-static-ips", help="Static ips mode", action="store_true",
     )
     parser.add_argument(
         "--iso-image-type",
@@ -709,14 +766,14 @@ if __name__ == "__main__":
         "--vm-network-cidr",
         help="Vm network cidr for IPv4",
         type=str,
-        default='192.168.126.0/24'
+        default="192.168.126.0/24",
     )
     parser.add_argument(
         "-vN6",
         "--vm-network-cidr6",
         help="Vm network cidr for IPv6",
         type=str,
-        default='1001:db8::/120'
+        default="1001:db8::/120",
     )
     parser.add_argument(
         "-nM", "--network-mtu", help="Network MTU", type=int, default=1500
@@ -734,11 +791,11 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        '-nB',
-        '--network-bridge',
-        help='Network bridge to use',
+        "-nB",
+        "--network-bridge",
+        help="Network bridge to use",
         type=str,
-        required=False
+        required=False,
     )
     parser.add_argument(
         "-iO",
@@ -764,7 +821,7 @@ if __name__ == "__main__":
         "-nX",
         "--no-proxy",
         help="A comma-separated list of destination domain names, domains, IP addresses, "
-             "or other network CIDRs to exclude proxyin",
+        "or other network CIDRs to exclude proxyin",
         type=str,
         default="",
     )
@@ -786,85 +843,58 @@ if __name__ == "__main__":
         "-id", "--cluster-id", help="Cluster id to install", type=str, default=None
     )
     parser.add_argument(
-        '--service-name',
-        help='Override assisted-service target service name',
+        "--service-name",
+        help="Override assisted-service target service name",
         type=str,
-        default='assisted-service'
+        default="assisted-service",
     )
     parser.add_argument(
         "--vip-dhcp-allocation",
         type=distutils.util.strtobool,
-        nargs='?',
+        nargs="?",
         const=True,
         default=True,
-        help="VIP DHCP allocation mode"
+        help="VIP DHCP allocation mode",
     )
+    parser.add_argument("--ns-index", help="Namespace index", type=int, required=True)
     parser.add_argument(
-        '--ns-index',
-        help='Namespace index',
-        type=int,
-        required=True
-    )
-    parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
+        "--profile",
+        help="Minikube profile for assisted-installer deployment",
         type=str,
-        default='assisted-installer'
+        default="assisted-installer",
     )
     parser.add_argument(
-        '--keep-iso',
-        help='If set, do not delete generated iso at the end of discovery',
-        action='store_true',
-        default=False
-    )
-    parser.add_argument(
-        "--day2-cloud-cluster",
-        help="day2 cloud cluster",
+        "--keep-iso",
+        help="If set, do not delete generated iso at the end of discovery",
         action="store_true",
+        default=False,
     )
     parser.add_argument(
-        "--day2-ocp-cluster",
-        help="day2 ocp cluster",
-        action="store_true",
+        "--day2-cloud-cluster", help="day2 cloud cluster", action="store_true",
     )
     parser.add_argument(
-        "--day1-cluster",
-        help="day1 cluster",
-        action="store_true",
+        "--day2-ocp-cluster", help="day2 ocp cluster", action="store_true",
     )
     parser.add_argument(
-        "-avd", "--api-vip-dnsname",
-        help="api vip dns name",
-        type=str
+        "--day1-cluster", help="day1 cluster", action="store_true",
     )
+    parser.add_argument("-avd", "--api-vip-dnsname", help="api vip dns name", type=str)
+    parser.add_argument("-avi", "--api-vip-ip", help="api vip ip", type=str)
     parser.add_argument(
-        "-avi", "--api-vip-ip",
-        help="api vip ip",
-        type=str
-    )
-    parser.add_argument(
-        '--deploy-target',
-        help='Where assisted-service is deployed',
+        "--deploy-target",
+        help="Where assisted-service is deployed",
         type=str,
-        default='minikube'
+        default="minikube",
     )
     parser.add_argument(
-        "--ipv4",
-        help='Should IPv4 be installed',
-        type=str,
-        default='yes'
+        "--ipv4", help="Should IPv4 be installed", type=str, default="yes"
     )
+    parser.add_argument("--ipv6", help="Should IPv6 be installed", type=str, default="")
     parser.add_argument(
-        "--ipv6",
-        help='Should IPv6 be installed',
+        "--platform",
+        help="VMs platform mode ('baremetal' or 'none')",
         type=str,
-        default=''
-    )
-    parser.add_argument(
-        '--platform',
-        help='VMs platform mode (\'baremetal\' or \'none\')',
-        type=str,
-        default='baremetal'
+        default="baremetal",
     )
     parser.add_argument(
         "--bootstrap-in-place",
@@ -875,7 +905,7 @@ if __name__ == "__main__":
         "--proxy",
         help="use http proxy with default values",
         type=distutils.util.strtobool,
-        nargs='?',
+        nargs="?",
         const=True,
         default=False,
     )

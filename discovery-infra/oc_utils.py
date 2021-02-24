@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import os
 import subprocess
@@ -10,30 +11,30 @@ from kubernetes.config.kube_config import load_kube_config
 
 def extend_parser_with_oc_arguments(parser):
     parser.add_argument(
-        '--oc-mode',
-        help='If set, use oc instead of minikube',
-        action='store_true',
-        default=False
+        "--oc-mode",
+        help="If set, use oc instead of minikube",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
-        '-oct',
-        '--oc-token',
-        help='Token for oc login (an alternative for --oc-user & --oc-pass)',
+        "-oct",
+        "--oc-token",
+        help="Token for oc login (an alternative for --oc-user & --oc-pass)",
         type=str,
-        default='http'
+        default="http",
     )
     parser.add_argument(
-        '-ocs',
-        '--oc-server',
-        help='Server for oc login, required if --oc-token is provided',
+        "-ocs",
+        "--oc-server",
+        help="Server for oc login, required if --oc-token is provided",
         type=str,
-        default='https://api.ocp.prod.psi.redhat.com:6443'
+        default="https://api.ocp.prod.psi.redhat.com:6443",
     )
     parser.add_argument(
-        '--oc-scheme',
-        help='Scheme for assisted-service url on oc',
+        "--oc-scheme",
+        help="Scheme for assisted-service url on oc",
         type=str,
-        default='http'
+        default="http",
     )
 
 
@@ -47,14 +48,14 @@ class OCConfiguration(Configuration):
 
     @property
     def token(self):
-        return self.api_key['authorization']
+        return self.api_key["authorization"]
 
     @token.setter
     def token(self, token):
-        if not token.startswith('Bearer '):
-            token = f'Bearer {token}'
+        if not token.startswith("Bearer "):
+            token = f"Bearer {token}"
 
-        self.api_key['authorization'] = token
+        self.api_key["authorization"] = token
 
     @property
     def server(self):
@@ -80,25 +81,25 @@ class OCApiClient(ApiClient):
     """ A class meant to replace kubernetes.client.APIClient for oc mode. """
 
     def call_api(
-            self,
-            resource_path,
-            method,
-            path_params=None,
-            query_params=None,
-            header_params=None,
-            body=None,
-            post_params=None,
-            files=None,
-            response_type=None,
-            auth_settings=None,
-            async_req=None,
-            _return_http_data_only=None,
-            collection_formats=None,
-            _preload_content=True,
-            _request_timeout=None,
-            _host=None
+        self,
+        resource_path,
+        method,
+        path_params=None,
+        query_params=None,
+        header_params=None,
+        body=None,
+        post_params=None,
+        files=None,
+        response_type=None,
+        auth_settings=None,
+        async_req=None,
+        _return_http_data_only=None,
+        collection_formats=None,
+        _preload_content=True,
+        _request_timeout=None,
+        _host=None,
     ):
-        if auth_settings == ['BearerToken']:
+        if auth_settings == ["BearerToken"]:
             auth_settings = self.configuration.auth_settings()
 
         return ApiClient.call_api(
@@ -118,15 +119,14 @@ class OCApiClient(ApiClient):
             collection_formats,
             _preload_content,
             _request_timeout,
-            _host=_host
+            _host=_host,
         )
 
 
 def get_oc_api_client(token=None, server=None, verify_ssl=False):
     config = OCConfiguration()
     load_kube_config(
-        config_file=os.environ.get('KUBECONFIG'),
-        client_configuration=config
+        config_file=os.environ.get("KUBECONFIG"), client_configuration=config
     )
 
     if token:
@@ -140,43 +140,44 @@ def get_oc_api_client(token=None, server=None, verify_ssl=False):
     return OCApiClient(config)
 
 
-def get_namespaced_service_urls_list(
-        client,
-        namespace,
-        service=None,
-        scheme='http'
-):
+def get_namespaced_service_urls_list(client, namespace, service=None, scheme="http"):
     urls = []
     routes = get_namespaced_service_routes_list(client, namespace, service)
     for route in routes.items:
-        for rule in _load_resource_config_dict(route)['spec']['rules']:
-            if 'host' in rule:
-                urls.append(scheme + '://' + rule['host'])
+        for rule in _load_resource_config_dict(route)["spec"]["rules"]:
+            if "host" in rule:
+                urls.append(scheme + "://" + rule["host"])
     return urls
 
 
 def get_namespaced_service_routes_list(client, namespace, service):
     return client.call_api(
-        f'/apis/route.openshift.io/v1/namespaces/{namespace}/routes',
-        method='GET',
-        query_params=[('fieldSelector', f'spec.to.name={service}')],
-        response_type='V1ResourceQuotaList',
-        auth_settings=['BearerToken'],
-        _return_http_data_only=True
+        f"/apis/route.openshift.io/v1/namespaces/{namespace}/routes",
+        method="GET",
+        query_params=[("fieldSelector", f"spec.to.name={service}")],
+        response_type="V1ResourceQuotaList",
+        auth_settings=["BearerToken"],
+        _return_http_data_only=True,
     )
 
 
 def _load_resource_config_dict(resource):
     raw = resource.metadata.annotations[
-        'kubectl.kubernetes.io/last-applied-configuration'
+        "kubectl.kubernetes.io/last-applied-configuration"
     ]
     return json.loads(raw)
 
 
 def get_operators_status(kubeconfig):
-    command = ["/usr/local/bin/oc",
-               "--kubeconfig", kubeconfig,
-               "get", "clusteroperators", "-o", "json"]
+    command = [
+        "/usr/local/bin/oc",
+        "--kubeconfig",
+        kubeconfig,
+        "get",
+        "clusteroperators",
+        "-o",
+        "json",
+    ]
 
     response = subprocess.run(command, stdout=subprocess.PIPE)
     if response.returncode != 0:

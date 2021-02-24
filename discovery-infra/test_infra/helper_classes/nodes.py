@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 import random
@@ -56,7 +57,10 @@ class Nodes:
     def _list(self):
         # TODO list_nodes return type is Dict[str, Node] but returns list
         nodes = self.controller.list_nodes()
-        return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes]
+        return [
+            Node(node.name(), self.controller, self.private_ssh_key_path)
+            for node in nodes
+        ]
 
     @property
     def setup_time(self):
@@ -69,7 +73,7 @@ class Nodes:
         self.run_for_all_nodes("shutdown")
 
     def start_all(self):
-        static_ips_config = env_variables.get('static_ips_config')
+        static_ips_config = env_variables.get("static_ips_config")
         if static_ips_config:
             skip_ips = False
         else:
@@ -117,12 +121,17 @@ class Nodes:
         return run_concurrently([(getattr(node, func_name), *args) for node in nodes])
 
     def run_for_given_nodes_by_cluster_hosts(self, cluster_hosts, func_name, *args):
-        return self.run_for_given_nodes([self.get_node_from_cluster_host(host) for
-                                         host in cluster_hosts], func_name, *args)
+        return self.run_for_given_nodes(
+            [self.get_node_from_cluster_host(host) for host in cluster_hosts],
+            func_name,
+            *args
+        )
 
     @staticmethod
     def run_ssh_command_on_given_nodes(nodes, command) -> Dict:
-        return run_concurrently({node.name: (node.run_command, command) for node in nodes})
+        return run_concurrently(
+            {node.name: (node.run_command, command) for node in nodes}
+        )
 
     def set_wrong_boot_order(self, nodes=None, start_nodes=True):
         nodes = nodes or self.nodes
@@ -140,8 +149,9 @@ class Nodes:
         node_mapping_dict = {}
         for cluster_host_object in cluster.get_hosts():
             name = self.get_cluster_hostname(cluster_host_object)
-            node_mapping_dict[name] = NodeMapping(self.nodes_as_dict[name],
-                                                  Munch.fromDict(cluster_host_object))
+            node_mapping_dict[name] = NodeMapping(
+                self.nodes_as_dict[name], Munch.fromDict(cluster_host_object)
+            )
         return node_mapping_dict
 
     def get_node_from_cluster_host(self, cluster_host_object):
@@ -160,20 +170,31 @@ class Nodes:
         return inventory["hostname"]
 
     def set_hostnames(self, cluster):
-        ipv6 = env_variables.get('ipv6')
-        static_ips_config = env_variables.get('static_ips_config')
+        ipv6 = env_variables.get("ipv6")
+        static_ips_config = env_variables.get("static_ips_config")
         if ipv6 or static_ips_config:
             # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
             # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be
             # set to valid hostname
             # TODO - NodeController has no `params` and `tf` attributes
             network_name = self.controller.params.libvirt_network_name
-            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
-            nodes_count = env_variables.get('num_nodes')
-            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True,
-                               update_roles=(nodes_count != 1))
+            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(
+                network_name, self.controller.tf.get_state()
+            )
+            nodes_count = env_variables.get("num_nodes")
+            utils.update_hosts(
+                cluster.api_client,
+                cluster.id,
+                libvirt_nodes,
+                update_hostnames=True,
+                update_roles=(nodes_count != 1),
+            )
 
     def set_single_node_ip(self, cluster):
-        self.controller.tf.change_variables({"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client,
-                                                                                              cluster.id, env_variables[
-                                                                                                  'machine_cidr'])})
+        self.controller.tf.change_variables(
+            {
+                "single_node_ip": cluster.get_ip_for_single_node(
+                    cluster.api_client, cluster.id, env_variables["machine_cidr"]
+                )
+            }
+        )

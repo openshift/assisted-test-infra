@@ -1,6 +1,6 @@
 ---
 # tasks file for host_vmware_iso
-- name: Remove virtual machines from vSphere 
+- name: Remove virtual machines from vSphere
   community.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
@@ -18,7 +18,7 @@
   delegate_to: localhost
   when: hostvars[item]['vendor'] == 'VMware'
 
-- name: Remove discovery ISO in {{ vcenter_datastore }} 
+- name: Remove discovery ISO in {{ vcenter_datastore }}
   community.vmware.vsphere_file:
     host: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'

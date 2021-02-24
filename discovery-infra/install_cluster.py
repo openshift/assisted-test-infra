@@ -62,13 +62,16 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             client=client,
             cluster_id=cluster.id,
             statuses=[consts.ClusterStatus.INSTALLED],
-            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT if cluster.high_availability_mode == "Full"
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
+            if cluster.high_availability_mode == "Full"
             else consts.CLUSTER_INSTALLATION_TIMEOUT * 2,
         )
     finally:
-        output_folder = f'build/{cluster.id}'
+        output_folder = f"build/{cluster.id}"
         utils.recreate_folder(output_folder)
-        download_logs_from_all_hosts(client=client, cluster_id=cluster.id, output_folder=output_folder)
+        download_logs_from_all_hosts(
+            client=client, cluster_id=cluster.id, output_folder=output_folder
+        )
 
 
 # Runs installation flow :
@@ -106,7 +109,8 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
     waiting.wait(
         lambda: client.download_kubeconfig(
             cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
-        ) is None,
+        )
+        is None,
         timeout_seconds=240,
         sleep_seconds=20,
         expected_exceptions=Exception,
@@ -117,7 +121,9 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
     if tf:
         cluster_info = client.cluster_get(cluster.id)
         if not cluster_info.api_vip:
-            cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)
+            cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(
+                client, cluster_info
+            )
 
         tf.set_new_vip(cluster_info.api_vip)
 
@@ -127,9 +133,10 @@ def download_logs_from_all_hosts(client, cluster_id, output_folder):
     for host in hosts:
         output_file = os.path.join(output_folder, f'host_{host["id"]}.tar.gz')
         waiting.wait(
-            lambda: client.download_host_logs(cluster_id=cluster_id,
-                                              host_id=host["id"],
-                                              output_file=output_file) is None,
+            lambda: client.download_host_logs(
+                cluster_id=cluster_id, host_id=host["id"], output_file=output_file
+            )
+            is None,
             timeout_seconds=240,
             sleep_seconds=20,
             expected_exceptions=Exception,
@@ -143,23 +150,20 @@ def main():
     # if not cluster id is given, reads it from latest run
     tf = None
     if not args.cluster_id:
-        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+        cluster_name = f"{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}"
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-        args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
+        args.cluster_id = utils.get_tfvars(tf_folder).get("cluster_inventory_id")
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
 
     client = assisted_service_api.create_client(
-        url=utils.get_assisted_service_url_by_args(
-            args=args,
-            wait=False
-        )
+        url=utils.get_assisted_service_url_by_args(args=args, wait=False)
     )
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,
         kubeconfig_path=args.kubeconfig_path,
         pull_secret=args.pull_secret,
-        tf=tf
+        tf=tf,
     )
 
 
@@ -186,28 +190,23 @@ if __name__ == "__main__":
         default="assisted-installer",
     )
     parser.add_argument(
-        '--service-name',
-        help='Override assisted-service target service name',
+        "--service-name",
+        help="Override assisted-service target service name",
         type=str,
-        default='assisted-service'
+        default="assisted-service",
+    )
+    parser.add_argument("-cn", "--cluster-name", help="Cluster name", required=False)
+    parser.add_argument(
+        "--profile",
+        help="Minikube profile for assisted-installer deployment",
+        type=str,
+        default="assisted-installer",
     )
     parser.add_argument(
-        '-cn',
-        '--cluster-name',
-        help='Cluster name',
-        required=False
-    )
-    parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
+        "--deploy-target",
+        help="Where assisted-service is deployed",
         type=str,
-        default='assisted-installer'
-    )
-    parser.add_argument(
-        '--deploy-target',
-        help='Where assisted-service is deployed',
-        type=str,
-        default='minikube'
+        default="minikube",
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

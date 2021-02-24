@@ -34,12 +34,15 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 log = logging.getLogger("")
 log.setLevel(logging.DEBUG)
-fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
+fmt = SensitiveFormatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s"
+)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setFormatter(
     SensitiveFormatter(
-        "%(asctime)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)"
+        "%(asctime)s %(levelname)-10s - %(thread)d - %(message)s \t"
+        "(%(pathname)s:%(lineno)d)"
     )
 )
 log.addHandler(ch)

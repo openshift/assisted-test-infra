@@ -12,9 +12,9 @@ import oc_utils
 
 def get_ocp_cluster(args):
     if not args.cluster_id:
-        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+        cluster_name = f"{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}"
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-        args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
+        args.cluster_id = utils.get_tfvars(tf_folder).get("cluster_inventory_id")
     client = assisted_service_api.create_client(
         url=utils.get_assisted_service_url_by_args(args=args)
     )
@@ -35,16 +35,10 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OCP")
     parser.add_argument(
-        "-id", "--cluster-id",
-        help="Cluster id to install",
-        type=str,
-        default=None
+        "-id", "--cluster-id", help="Cluster id to install", type=str, default=None
     )
     parser.add_argument(
-        "-cn", "--cluster-name",
-        help="Cluster name",
-        type=str,
-        default=""
+        "-cn", "--cluster-name", help="Cluster name", type=str, default=""
     )
     parser.add_argument(
         "-ns",
@@ -54,32 +48,28 @@ if __name__ == "__main__":
         default="assisted-installer",
     )
     parser.add_argument(
-        '--service-name',
-        help='Override assisted-service target service name',
+        "--service-name",
+        help="Override assisted-service target service name",
         type=str,
-        default='assisted-service'
+        default="assisted-service",
     )
     parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
+        "--profile",
+        help="Minikube profile for assisted-installer deployment",
         type=str,
-        default='assisted-installer'
+        default="assisted-installer",
     )
     parser.add_argument(
-        '--deploy-target',
-        help='Where assisted-service is deployed',
+        "--deploy-target",
+        help="Where assisted-service is deployed",
         type=str,
-        default='minikube'
+        default="minikube",
     )
     parser.add_argument(
-        "--config-etc-hosts",
-        help="Config /etc/hosts file",
-        action="store_true"
+        "--config-etc-hosts", help="Config /etc/hosts file", action="store_true"
     )
     parser.add_argument(
-        "--get-cluster-api-vip",
-        help="Get OCP cluster API VIP",
-        action="store_true"
+        "--get-cluster-api-vip", help="Get OCP cluster API VIP", action="store_true"
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

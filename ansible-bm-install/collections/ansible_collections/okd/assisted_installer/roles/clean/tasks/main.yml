@@ -1,5 +1,5 @@
 ---
 # main playbook for cleanup
-- name: Cleaning up VMware Environment 
+- name: Cleaning up VMware Environment
   include_tasks: vmware.yml
   when: vcenter_datastore is defined

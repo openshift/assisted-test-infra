@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import os
 import re
@@ -18,9 +19,9 @@ class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
     def __init__(self, **kwargs):
-        self.libvirt_connection = libvirt.open('qemu:///system')
+        self.libvirt_connection = libvirt.open("qemu:///system")
         self.private_ssh_key_path = kwargs.get("private_ssh_key_path")
-        self._setup_timestamp = utils.run_command("date +\"%Y-%m-%d %T\"")[0]
+        self._setup_timestamp = utils.run_command('date +"%Y-%m-%d %T"')[0]
 
     def __del__(self):
         with suppress(Exception):
@@ -41,7 +42,9 @@ class LibvirtController(NodeController, ABC):
             domain_name = domain.name()
             if name_filter and name_filter not in domain_name:
                 continue
-            if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
+            if (consts.NodeRoles.MASTER in domain_name) or (
+                consts.NodeRoles.WORKER in domain_name
+            ):
                 nodes.append(domain)
         logging.info("Found domains %s", nodes)
         return nodes
@@ -93,15 +96,17 @@ class LibvirtController(NodeController, ABC):
 
     @staticmethod
     def create_disk(disk_path, disk_size):
-        command = f'qemu-img create -f qcow2 {disk_path} {disk_size}'
+        command = f"qemu-img create -f qcow2 {disk_path} {disk_size}"
         utils.run_command(command, shell=True)
 
     @staticmethod
     # LIBGUESTFS_BACKEND set to mitigate errors with running libvirt as root
     # https://libguestfs.org/guestfs-faq.1.html#permission-denied-when-running-libguestfs-as-root
     def add_disk_bootflag(disk_path):
-        command = f'virt-format -a {disk_path} --partition=mbr'
-        utils.run_command(command, shell=True, env={**os.environ, "LIBGUESTFS_BACKEND": "direct"})
+        command = f"virt-format -a {disk_path} --partition=mbr"
+        utils.run_command(
+            command, shell=True, env={**os.environ, "LIBGUESTFS_BACKEND": "direct"}
+        )
 
     @classmethod
     def format_disk(cls, disk_path):
@@ -112,7 +117,7 @@ class LibvirtController(NodeController, ABC):
 
         command = f"qemu-img info {disk_path} | grep 'virtual size'"
         output = utils.run_command(command, shell=True)
-        image_size = output[0].split(' ')[2]
+        image_size = output[0].split(" ")[2]
         # Fix for libvirt 6.0.0
         if image_size.isdigit():
             image_size += "G"
@@ -126,34 +131,42 @@ class LibvirtController(NodeController, ABC):
         """
 
         def is_scsi_disk(disk):
-            return any(target.getAttribute('bus') == 'scsi' for target in
-                       disk.getElementsByTagName('target'))
+            return any(
+                target.getAttribute("bus") == "scsi"
+                for target in disk.getElementsByTagName("target")
+            )
 
-        all_disks = minidom.parseString(node.XMLDesc()).getElementsByTagName('disk')
+        all_disks = minidom.parseString(node.XMLDesc()).getElementsByTagName("disk")
 
         return [disk for disk in all_disks if is_scsi_disk(disk)]
 
     @staticmethod
     def _get_disk_source_file(disk):
-        sources = disk.getElementsByTagName('source')
+        sources = disk.getElementsByTagName("source")
 
-        assert len(sources) in (0, 1), f"A disk must have either 0 or 1 sources, {sources}"
+        assert len(sources) in (
+            0,
+            1,
+        ), f"A disk must have either 0 or 1 sources, {sources}"
 
         if len(sources) == 0:
             return None
 
-        return sources[0].getAttribute('file')
+        return sources[0].getAttribute("file")
 
     @staticmethod
     def _get_disk_alias(disk):
-        aliases = disk.getElementsByTagName('alias')
+        aliases = disk.getElementsByTagName("alias")
 
-        assert len(aliases) in (0, 1), f"A disk must have either 0 or 1 aliases, {aliases}"
+        assert len(aliases) in (
+            0,
+            1,
+        ), f"A disk must have either 0 or 1 aliases, {aliases}"
 
         if len(aliases) == 0:
             return None
 
-        return aliases[0].getAttribute('name')
+        return aliases[0].getAttribute("name")
 
     @classmethod
     def _get_attached_test_disks(cls, node):
@@ -162,8 +175,10 @@ class LibvirtController(NodeController, ABC):
         """
 
         def is_test_disk(disk):
-            return any(alias.getAttribute('name').startswith(cls.TEST_DISKS_PREFIX) for alias in
-                       disk.getElementsByTagName('alias'))
+            return any(
+                alias.getAttribute("name").startswith(cls.TEST_DISKS_PREFIX)
+                for alias in disk.getElementsByTagName("alias")
+            )
 
         all_scsi_disks = cls._get_all_scsi_disks(node)
 
@@ -174,22 +189,33 @@ class LibvirtController(NodeController, ABC):
         """
         :return: Returns `b` if, for example, the disks' target.dev is `sdb`
         """
-        target_elements = disk.getElementsByTagName('target')
-        assert len(target_elements) == 1, f"Disks shouldn't have multiple targets, {target_elements}"
+        target_elements = disk.getElementsByTagName("target")
+        assert (
+            len(target_elements) == 1
+        ), f"Disks shouldn't have multiple targets, {target_elements}"
         target_element = target_elements[0]
 
-        return re.findall(r"^sd(.*)$", target_element.getAttribute('dev'))[0]
+        return re.findall(r"^sd(.*)$", target_element.getAttribute("dev"))[0]
 
     def _get_available_scsi_identifier(self, node):
         """
         :return: Returns, for example, `d` if `sda`, `sdb`, `sdc`, `sde` are all already in use
         """
-        identifiers_in_use = [self._get_disk_scsi_identifier(disk) for disk in self._get_all_scsi_disks(node)]
+        identifiers_in_use = [
+            self._get_disk_scsi_identifier(disk)
+            for disk in self._get_all_scsi_disks(node)
+        ]
 
         try:
-            result = next(candidate for candidate in string.ascii_lowercase if candidate not in identifiers_in_use)
+            result = next(
+                candidate
+                for candidate in string.ascii_lowercase
+                if candidate not in identifiers_in_use
+            )
         except StopIteration:
-            raise ValueError(f"Couldn't find available scsi disk letter, all are taken: {identifiers_in_use}")
+            raise ValueError(
+                f"Couldn't find available scsi disk letter, all are taken: {identifiers_in_use}"
+            )
 
         return result
 
@@ -215,14 +241,16 @@ class LibvirtController(NodeController, ABC):
         if bootable:
             self.add_disk_bootflag(tmp_disk)
 
-        node.attachDevice(f"""
+        node.attachDevice(
+            f"""
             <disk type='file' device='disk'>
                 <alias name='{disk_alias}'/>
                 <driver name='qemu' type='qcow2'/>
                 <source file='{tmp_disk}'/>
                 <target dev='{target_dev}'/>
             </disk>
-        """)
+        """
+        )
 
         return tmp_disk
 
@@ -231,21 +259,30 @@ class LibvirtController(NodeController, ABC):
 
         for test_disk in self._get_attached_test_disks(node):
             alias = self._get_disk_alias(test_disk)
-            assert alias is not None, "A test disk has no alias. This should never happen"
+            assert (
+                alias is not None
+            ), "A test disk has no alias. This should never happen"
             node.detachDeviceAlias(alias)
 
             source_file = self._get_disk_source_file(test_disk)
-            assert source_file is not None, "A test disk has no source file. This should never happen"
+            assert (
+                source_file is not None
+            ), "A test disk has no source file. This should never happen"
             assert source_file.startswith(
-                tempfile.gettempdir()), "File unexpectedly not in tmp, avoiding deletion to be on the safe side"
+                tempfile.gettempdir()
+            ), "File unexpectedly not in tmp, avoiding deletion to be on the safe side"
             os.remove(source_file)
 
-    def attach_interface(self, node_name, network_xml, target_interface=consts.TEST_TARGET_INTERFACE):
+    def attach_interface(
+        self, node_name, network_xml, target_interface=consts.TEST_TARGET_INTERFACE
+    ):
         """
         Create network and Interface. New interface will be attached to a given node.
         """
         network = self.create_network(network_xml)
-        interface_mac = self.add_interface(node_name, network.bridgeName(), target_interface)
+        interface_mac = self.add_interface(
+            node_name, network.bridgeName(), target_interface
+        )
         return network, interface_mac
 
     def create_network(self, network_xml):
@@ -260,7 +297,9 @@ class LibvirtController(NodeController, ABC):
         if active != 1:
             self.destroy_network(network)
             raise Exception(f"Failed to activate network: {network_xml}")
-        logging.info(f"Successfully created and activated network. name: {network.name()}")
+        logging.info(
+            f"Successfully created and activated network. name: {network.name()}"
+        )
         return network
 
     def get_network_by_name(self, network_name):
@@ -281,11 +320,13 @@ class LibvirtController(NodeController, ABC):
         Create an interface using given network name, return created interface's mac address.
         Note: Do not use the same network for different tests
         """
-        logging.info(f"Creating new interface attached to network: {network_name}, for node: {node_name}")
+        logging.info(
+            f"Creating new interface attached to network: {network_name}, for node: {node_name}"
+        )
         net_leases = self.list_leases(network_name)
         mac_addresses = []
         for lease in net_leases:
-            mac_addresses.append(lease['mac'])
+            mac_addresses.append(lease["mac"])
         command = f"virsh attach-interface {node_name} network {network_name} --target {target_interface} --persistent"
         utils.run_command(command)
         try:
@@ -293,7 +334,7 @@ class LibvirtController(NodeController, ABC):
                 lambda: len(self.list_leases(network_name)) > len(mac_addresses),
                 timeout_seconds=30,
                 sleep_seconds=2,
-                waiting_for="Wait for network lease"
+                waiting_for="Wait for network lease",
             )
         except waiting.exceptions.TimeoutExpired:
             logging.error("Network lease wasnt found for added interface")
@@ -302,11 +343,13 @@ class LibvirtController(NodeController, ABC):
         mac_address = ""
         new_net_leases = self.list_leases(network_name)
         for lease in new_net_leases:
-            if not lease['mac'] in mac_addresses:
-                mac_address = lease['mac']
+            if not lease["mac"] in mac_addresses:
+                mac_address = lease["mac"]
                 break
-        logging.info(f"Successfully attached interface, network: {network_name}, mac: {mac_address}, for node:"
-                     f" {node_name}")
+        logging.info(
+            f"Successfully attached interface, network: {network_name}, mac: {mac_address}, for node:"
+            f" {node_name}"
+        )
         return mac_address
 
     def undefine_interface(self, node_name, mac):
@@ -346,15 +389,17 @@ class LibvirtController(NodeController, ABC):
 
     @staticmethod
     def _get_domain_ips_and_macs(domain):
-        interfaces = domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+        interfaces = domain.interfaceAddresses(
+            libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE
+        )
         ips = []
         macs = []
         if interfaces:
             for (_, val) in interfaces.items():
-                if val['addrs']:
-                    for addr in val['addrs']:
-                        ips.append(addr['addr'])
-                        macs.append(val['hwaddr'])
+                if val["addrs"]:
+                    for addr in val["addrs"]:
+                        ips.append(addr["addr"])
+                        macs.append(val["hwaddr"])
         if ips:
             logging.info("Host %s ips are %s", domain.name(), ips)
         if macs:
@@ -372,38 +417,44 @@ class LibvirtController(NodeController, ABC):
             timeout_seconds=timeout,
             sleep_seconds=interval,
             waiting_for="Waiting for Ips",
-            expected_exceptions=Exception
+            expected_exceptions=Exception,
         )
 
     def set_boot_order(self, node_name, cd_first=False):
-        logging.info(f"Going to set the following boot order: cd_first: {cd_first}, "
-                     f"for node: {node_name}")
+        logging.info(
+            f"Going to set the following boot order: cd_first: {cd_first}, "
+            f"for node: {node_name}"
+        )
         node = self.libvirt_connection.lookupByName(node_name)
         current_xml = node.XMLDesc(0)
         # Creating XML obj
-        xml = minidom.parseString(current_xml.encode('utf-8'))
-        os_element = xml.getElementsByTagName('os')[0]
+        xml = minidom.parseString(current_xml.encode("utf-8"))
+        os_element = xml.getElementsByTagName("os")[0]
         # Delete existing boot elements
-        for el in os_element.getElementsByTagName('boot'):
-            dev = el.getAttribute('dev')
-            if dev in ['cdrom', 'hd']:
+        for el in os_element.getElementsByTagName("boot"):
+            dev = el.getAttribute("dev")
+            if dev in ["cdrom", "hd"]:
                 os_element.removeChild(el)
             else:
-                raise ValueError(f'Found unexpected boot device: \'{dev}\'')
+                raise ValueError(f"Found unexpected boot device: '{dev}'")
         # Set boot elements for hd and cdrom
-        first = xml.createElement('boot')
-        first.setAttribute('dev', 'cdrom' if cd_first else 'hd')
+        first = xml.createElement("boot")
+        first.setAttribute("dev", "cdrom" if cd_first else "hd")
         os_element.appendChild(first)
-        second = xml.createElement('boot')
-        second.setAttribute('dev', 'hd' if cd_first else 'cdrom')
+        second = xml.createElement("boot")
+        second.setAttribute("dev", "hd" if cd_first else "cdrom")
         os_element.appendChild(second)
         # Apply new machine xml
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
-            raise Exception(f"Failed to set boot order cdrom first: {cd_first}, "
-                            f"for node: {node_name}")
-        logging.info(f"Boot order set successfully: cdrom first: {cd_first}, "
-                     f"for node: {node_name}")
+            raise Exception(
+                f"Failed to set boot order cdrom first: {cd_first}, "
+                f"for node: {node_name}"
+            )
+        logging.info(
+            f"Boot order set successfully: cdrom first: {cd_first}, "
+            f"for node: {node_name}"
+        )
 
     def get_host_id(self, node_name):
         dom = self.libvirt_connection.lookupByName(node_name)
@@ -411,7 +462,7 @@ class LibvirtController(NodeController, ABC):
 
     def get_cpu_cores(self, node_name):
         xml = self._get_xml(node_name)
-        vcpu_element = xml.getElementsByTagName('vcpu')[0]
+        vcpu_element = xml.getElementsByTagName("vcpu")[0]
         return int(vcpu_element.firstChild.nodeValue)
 
     def set_cpu_cores(self, node_name, core_count):
@@ -422,15 +473,15 @@ class LibvirtController(NodeController, ABC):
 
     def get_ram_kib(self, node_name):
         xml = self._get_xml(node_name)
-        memory_element = xml.getElementsByTagName('currentMemory')[0]
+        memory_element = xml.getElementsByTagName("currentMemory")[0]
         return int(memory_element.firstChild.nodeValue)
 
     def set_ram_kib(self, node_name, ram_kib):
         logging.info(f"Going to set memory to {ram_kib} for node: {node_name}")
         xml = self._get_xml(node_name)
-        memory_element = xml.getElementsByTagName('memory')[0]
+        memory_element = xml.getElementsByTagName("memory")[0]
         memory_element.firstChild.replaceWholeText(ram_kib)
-        current_memory_element = xml.getElementsByTagName('currentMemory')[0]
+        current_memory_element = xml.getElementsByTagName("currentMemory")[0]
         current_memory_element.firstChild.replaceWholeText(ram_kib)
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
@@ -440,4 +491,4 @@ class LibvirtController(NodeController, ABC):
     def _get_xml(self, node_name):
         dom = self.libvirt_connection.lookupByName(node_name)
         current_xml = dom.XMLDesc(0)
-        return minidom.parseString(current_xml.encode('utf-8'))
+        return minidom.parseString(current_xml.encode("utf-8"))

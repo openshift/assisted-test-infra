@@ -20,7 +20,7 @@ function download_service_logs() {
 
     for service in "installer" "db"; do
         podman logs ${service} > ${LOGS_DEST}/onprem_${service}.log || true
-    done    
+    done
   else
     ${KUBECTL} cluster-info
     ${KUBECTL} get pods -n ${NAMESPACE} || true

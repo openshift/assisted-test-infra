@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 import os
@@ -7,10 +8,11 @@ from test_infra import consts, utils
 
 
 class Assets:
-
     def __init__(self, assets_file, lock_file=None):
         self.assets_file = assets_file
-        self.lock_file = lock_file or os.path.join("/tmp", os.path.basename(assets_file) + ".lock")
+        self.lock_file = lock_file or os.path.join(
+            "/tmp", os.path.basename(assets_file) + ".lock"
+        )
         self._took_assets = []
 
     def get(self):
@@ -41,6 +43,5 @@ class Assets:
 
 
 class NetworkAssets(Assets):
-
     def __init__(self):
         super().__init__(assets_file=consts.TF_NETWORK_POOL_PATH)

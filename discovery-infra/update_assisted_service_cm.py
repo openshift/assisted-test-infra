@@ -33,7 +33,7 @@ ENVS = [
     ("IMAGE_BUILDER", ""),
     ("OCM_BASE_URL", ""),
     ("PUBLIC_CONTAINER_REGISTRIES", ""),
-    ("CHECK_CLUSTER_VERSION", "")
+    ("CHECK_CLUSTER_VERSION", ""),
 ]
 
 
