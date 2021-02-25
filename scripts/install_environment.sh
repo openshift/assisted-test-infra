@@ -208,13 +208,18 @@ function additional_configs() {
     sudo sysctl --load
 }
 
-install_packages
-install_libvirt
-install_runtime_container
-install_skipper
-config_firewalld
-config_squid
-fix_ipv6_routing
-config_chronyd
-config_nginx
-additional_configs
+if [ $# -eq 0 ]; then
+    install_packages
+    install_libvirt
+    install_runtime_container
+    install_skipper
+    config_firewalld
+    config_squid
+    fix_ipv6_routing
+    config_chronyd
+    config_nginx
+    additional_configs
+else
+    $@
+fi
+

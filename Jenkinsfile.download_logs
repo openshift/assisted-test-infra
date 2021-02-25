@@ -25,6 +25,7 @@ pipeline {
     stages {
         stage('Init') {
             steps {
+                sh "scripts/install_environment.sh install_skipper"
                 sh "make image_build"
             }
         }
