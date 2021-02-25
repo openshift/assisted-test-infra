@@ -804,6 +804,13 @@ class Cluster:
         except BaseException:
             return False
 
+    def wait_and_kill_installer(self, nodes, host):
+        # Wait for specific host to be in installing in progress
+        self.wait_for_specific_host_status(host=host,
+                                                statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
+        # Kill installer to simulate host error
+        selected_node = nodes.get_node_from_cluster_host(host)
+        selected_node.kill_installer()
 
 def get_api_vip_from_cluster(api_client, cluster_info: models.cluster.Cluster):
     if isinstance(cluster_info, dict):
