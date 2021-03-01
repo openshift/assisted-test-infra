@@ -33,6 +33,7 @@ def _install_cluster(client, cluster):
         cluster_id=cluster.id,
         timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT,
         statuses=[consts.ClusterStatus.INSTALLING],
+        break_statuses=[consts.ClusterStatus.ERROR]
     )
     utils.wait_till_all_hosts_are_in_status(
         client=client,
@@ -64,6 +65,7 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             statuses=[consts.ClusterStatus.INSTALLED],
             timeout=consts.CLUSTER_INSTALLATION_TIMEOUT if cluster.high_availability_mode == "Full"
             else consts.CLUSTER_INSTALLATION_TIMEOUT * 2,
+            break_statuses=[consts.ClusterStatus.ERROR]
         )
     finally:
         output_folder = f'build/{cluster.id}'
@@ -86,6 +88,7 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
         client=client,
         cluster_id=cluster_id,
         statuses=[consts.ClusterStatus.READY, consts.ClusterStatus.INSTALLING],
+        break_statuses=[consts.ClusterStatus.ERROR]
     )
     cluster = client.cluster_get(cluster_id)
     if cluster.status == consts.ClusterStatus.READY:

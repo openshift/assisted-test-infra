@@ -4,7 +4,6 @@ import ipaddress
 import itertools
 import json
 import logging
-import re
 import os
 import random
 import shlex
@@ -19,6 +18,7 @@ from functools import wraps
 from pathlib import Path
 from pprint import pformat
 from string import ascii_lowercase
+from typing import List
 
 import filelock
 import libvirt
@@ -384,10 +384,17 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
 
 
 def wait_till_cluster_is_in_status(
-        client, cluster_id, statuses, timeout=consts.NODES_REGISTERED_TIMEOUT, interval=30
+        client,
+        cluster_id,
+        statuses: List[str],
+        timeout=consts.NODES_REGISTERED_TIMEOUT,
+        interval=30,
+        break_statuses: List[str] = None
 ):
     log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
     try:
+        if break_statuses:
+            statuses += break_statuses
         waiting.wait(
             lambda: is_cluster_in_status(
                 client=client,
@@ -398,6 +405,9 @@ def wait_till_cluster_is_in_status(
             sleep_seconds=interval,
             waiting_for="Cluster to be in status %s" % statuses,
         )
+        if break_statuses and is_cluster_in_status(client, cluster_id, break_statuses):
+            raise BaseException(f"Stop installation process, "
+                                f"cluster is in status {client.cluster_get(cluster_id).status}")
     except BaseException:
         log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
