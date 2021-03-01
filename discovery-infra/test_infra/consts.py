@@ -32,7 +32,7 @@ WAIT_FOR_BM_API = 900
 NAMESPACE_POOL_SIZE = 15
 PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
 LOG_FOLDER = "/tmp/assisted_test_infra_logs"
-DEFAULT_OPENSHIFT_VERSION = "4.6"
+DEFAULT_OPENSHIFT_VERSION = "4.7"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_TEST_INFRA_DOMAIN = '.test-infra-cluster-assisted-installer.redhat.com'
 TEST_TARGET_INTERFACE = "vnet3"

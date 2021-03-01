@@ -94,7 +94,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OC_SERVER                   | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443                                    |
 | OC_TOKEN                    | token for oc login (an alternative for oc-user & oc-pass)                                                                                   |
 | OFFLINE_TOKEN               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)                          |
-| OPENSHIFT_VERSION           | OpenShift version to install, default: "4.6"                                                                                                |
+| OPENSHIFT_VERSION           | OpenShift version to install, default: "4.7"                                                                                                |
 | PROXY                       | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR       |
 | PULL_SECRET                 | pull secret to use for cluster installation command, no option to install cluster without it.                                               |
 | PULL_SECRET_FILE            | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it.      |
@@ -372,7 +372,7 @@ ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "
 Optionally, you can also provide OPENSHIFT_INSTALL_RELEASE_IMAGE and PUBLIC_CONTAINER_REGISTRIES:
 
 ```
-export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.6.8-x86_64
+export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.7.0-x86_64
 export PUBLIC_CONTAINER_REGISTRIES=quay.io
 ```
 

@@ -20,7 +20,7 @@ from tests.conftest import env_variables
 class Cluster:
 
     def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
-                 openshift_version="4.6", cluster_id=None, user_managed_networking=False,
+                 openshift_version="4.7", cluster_id=None, user_managed_networking=False,
                  high_availability_mode=consts.HighAvailabilityMode.FULL):
         self.api_client = api_client
 
