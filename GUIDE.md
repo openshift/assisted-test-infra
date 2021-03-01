@@ -42,9 +42,9 @@ As `$USER` user with `sudo` privileges,
 
         [$USER@assisted_installer assisted-test-infra]# make create_full_environment
 
-1.  **(Optional)** Currently the Installer defaults to deploying OpenShift 4.6. If you wish to change this value, set `OPENSHIFT_VERSION` to a different value, e.g. 4.7
+1.  **(Optional)** Currently the Installer defaults to deploying OpenShift 4.7. If you wish to change this value, set `OPENSHIFT_VERSION` to a different value, e.g. 4.6, 4.8
 
-        [$USER@assisted_installer assisted-test-infra]# export OPENSHIFT_VERSION=4.6
+        [$USER@assisted_installer assisted-test-infra]# export OPENSHIFT_VERSION=4.7
 
 1.  Once complete, run the "run" using make that creates the `assisted-service` and deploys the UI
 
@@ -63,7 +63,7 @@ As `$USER` user with `sudo` privileges,
 
 1. A popup window labeled `New Bare Metal OpenShift Cluster` opens and requests a Cluster Name and OpenShift Version. Enter an appropriate Cluster Name.
 
-   > NOTE: The OpenShift Version selected is the value assigned to `OPENSHIFT_VERSION` (defaults to 4.6)
+   > NOTE: The OpenShift Version selected is the value assigned to `OPENSHIFT_VERSION` (defaults to 4.7)
 
 1. On the next screen, enter the **Base DNS Domain**, **Pull Secret**, and **SSH Public Key**. Once complete, click on the button **Validate & Save Changes**.
 
