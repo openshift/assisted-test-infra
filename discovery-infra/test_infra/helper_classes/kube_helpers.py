@@ -342,7 +342,9 @@ class ClusterDeployment(BaseCustomResource):
             spec['platform'] = platform.as_dict()
 
         if install_strategy:
-            spec['provisioning']['installStrategy'] = install_strategy.as_dict()
+            spec['provisioning'] = {
+                'installStrategy': install_strategy.as_dict()
+            }
 
         if secret:
             spec['pullSecretRef'] = secret.ref.as_dict()
@@ -452,7 +454,7 @@ def deploy_default_secret(
     try:
         secret.create(pull_secret)
     except ApiException as e:
-        if e.reason != 'Conflict' or not ignore_conflict:
+        if not (e.reason == 'Conflict' and ignore_conflict):
             raise
     return secret
 
