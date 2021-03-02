@@ -73,6 +73,8 @@ class Secret:
     by a ClusterDeployment CRD.
     """
 
+    _docker_config_json_key = '.dockerconfigjson'
+
     def __init__(
             self,
             kube_api_client: ApiClient,
@@ -92,7 +94,7 @@ class Secret:
                 'apiVersion': 'v1',
                 'kind': 'Secret',
                 'metadata': self.ref.as_dict(),
-                'stringData': {'pullSecret': pull_secret}
+                'stringData': {self._docker_config_json_key: pull_secret}
             },
             namespace=self.ref.namespace
         )
