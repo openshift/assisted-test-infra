@@ -134,9 +134,9 @@ class BaseTest:
             modified_nodes.append(node)
 
         yield attach
-
-        for modified_node in modified_nodes:
-            modified_node.detach_all_test_disks()
+        if env_variables['test_teardown']:
+            for modified_node in modified_nodes:
+                modified_node.detach_all_test_disks()
 
     @pytest.fixture()
     def attach_interface(self):
