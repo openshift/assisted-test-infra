@@ -72,7 +72,7 @@ class Secret:
     A Kube API secret resource that consists of the pull secret data, used
     by a ClusterDeployment CRD.
     """
-
+    _secret_type = "kubernetes.io/dockerconfigjson"
     _docker_config_json_key = '.dockerconfigjson'
 
     def __init__(
@@ -91,6 +91,7 @@ class Secret:
     def create(self, pull_secret: str = env_variables['pull_secret']) -> None:
         self.v1_api.create_namespaced_secret(
             body={
+                'type': self._secret_type,
                 'apiVersion': 'v1',
                 'kind': 'Secret',
                 'metadata': self.ref.as_dict(),
