@@ -71,7 +71,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | DEPLOY_MANIFEST_TAG         | the Git tag of a manifest file that defines image tags to be used                                                                           |
 | DEPLOY_TAG                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters             |
 | DEPLOY_TARGET               | Specifies where assisted-service will be deployed. Defaults to "minikube". "onprem" will deploy assisted-service in a pod on the localhost. |
-| ENABLE_AUTH                 | configure assisted-service to authenticate API requests, default: false                                                                     |
+| AUTH_TYPE                   | configure the type of authentication assisted-service will use, default: none                                                               |
 | HTTPS_PROXY_URL             | A proxy URL to use for creating HTTPS connections outside the cluster                                                                       |
 | HTTP_PROXY_URL              | A proxy URL to use for creating HTTP connections outside the cluster                                                                        |
 | IMAGE_BUILDER               | image-builder image to use, will update assisted-service config map with given value                                                        |
@@ -318,12 +318,12 @@ make image_build
 make image_build SERVICE=<assisted service image URL>
 ```
 
-## Test with Authentication
+## Test with RHSSO Authentication
 
 To test with Authentication, the following additional environment variables are required:
 
 ```
-export ENABLE_AUTH=true
+export AUTH_TYPE=rhsso
 export OCM_CLIENT_ID=<SSO Service Account Name>
 export OCM_CLIENT_SECRET=<SSO Service Account Password>
 export OCM_BASE_URL=https://api.openshift.com
