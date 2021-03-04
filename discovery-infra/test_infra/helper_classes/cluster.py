@@ -128,23 +128,39 @@ class Cluster:
     def select_installation_disk(self, hosts_with_disk_paths):
         self.api_client.select_installation_disk(self.id, hosts_with_disk_paths)
 
-    def set_ocs(self, ocs_enabled):
-        logging.info(f'Enabling Ocs to:{ocs_enabled} for cluster: {self.id}')
-        self.set_operator('ocs', ocs_enabled)
+    def set_ocs(self, properties=None):
+        self.set_olm_operator('ocs', properties=properties)
 
-    def set_cnv(self, cnv_enabled):
-        logging.info(f'Enabling CNV to:{cnv_enabled} for cluster: {self.id}')
-        self.set_operator('cnv', cnv_enabled)
+    def unset_ocs(self):
+        self.unset_olm_operator('ocs')
 
-    def set_operator(self, operator, enabled):
+    def unset_olm_operator(self, operator_name):
+        logging.info(f'Unsetting {operator_name} for cluster: {self.id}')
         cluster = self.api_client.cluster_get(self.id)
-        olm_operators = cluster.olm_operators
-        olm_names = [olm_operator['name'] for olm_operator in olm_operators]
-        if operator not in olm_names and enabled:
-            olm_operators.append({'name': operator})
-        if operator in olm_names and not enabled:
-            olm_operators.remove({'name': operator})
-        self.api_client.update_cluster(self.id, olm_operators)
+
+        olm_operators = []
+        for operator in cluster.monitored_operators:
+            if operator.name == operator_name or operator.operator_type == 'builtin':
+                continue
+            olm_operators.append({'name': operator.name, 'properties': operator.properties})
+
+        self.api_client.update_cluster(self.id, {'olm_operators': olm_operators})
+
+    def set_olm_operator(self, operator_name, properties=None):
+        logging.info(f'Setting {operator_name} for cluster: {self.id}')
+        cluster = self.api_client.cluster_get(self.id)
+
+        if operator_name in [o.name for o in cluster.monitored_operators]:
+            return
+
+        olm_operators = []
+        for operator in cluster.monitored_operators:
+            if operator.operator_type == 'builtin':
+                continue
+            olm_operators.append({'name': operator.name, 'properties': operator.properties})
+        olm_operators.append({'name': operator_name, 'properties': properties})
+
+        self.api_client.update_cluster(self.id, {'olm_operators': olm_operators})
 
     def set_host_roles(self, requested_roles=None):
         if requested_roles is None:
