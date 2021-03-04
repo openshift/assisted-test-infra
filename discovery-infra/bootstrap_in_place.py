@@ -25,6 +25,8 @@ EMBED_IMAGE_NAME = "installer-SNO-image.iso"
 KUBE_CONFIG = os.path.join(IBIP_DIR, "auth", "kubeconfig")
 MUST_GATHER_DIR = os.path.join(IBIP_DIR, "must-gather")
 INSTALLER_GATHER_DIR = os.path.join(IBIP_DIR, "installer-gather")
+INSTALLER_GATHER_DEBUG_STDOUT = os.path.join(INSTALLER_GATHER_DIR, "gather.stdout.log")
+INSTALLER_GATHER_DEBUG_STDERR = os.path.join(INSTALLER_GATHER_DIR, "gather.stderr.log")
 SOSREPORT_SCRIPT = os.path.join(RESOURCES_DIR, "man_sosreport.sh")
 SSH_KEY = os.path.join("ssh_key", "key")
 
@@ -38,9 +40,15 @@ def installer_generate(openshift_release_image):
 
 @utils.retry(exceptions=Exception, tries=5, delay=30)
 def installer_gather(ip, ssh_key, out_dir):
-    _stdout, stderr, _ret = utils.run_command(
-        f"{INSTALLER_BINARY} gather bootstrap --bootstrap {ip} --master {ip} --key {ssh_key}"
+    stdout, stderr, _ret = utils.run_command(
+        f"{INSTALLER_BINARY} gather bootstrap --log-level debug --bootstrap {ip} --master {ip} --key {ssh_key}"
     )
+
+    with open(INSTALLER_GATHER_DEBUG_STDOUT, "w") as f:
+        f.write(stdout)
+
+    with open(INSTALLER_GATHER_DEBUG_STDERR, "w") as f:
+        f.write(stderr)
 
     matches = re.compile(r'.*logs captured here "(.*)".*').findall(stderr)
 
