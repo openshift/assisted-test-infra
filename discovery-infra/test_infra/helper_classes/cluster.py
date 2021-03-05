@@ -130,13 +130,20 @@ class Cluster:
 
     def set_ocs(self, ocs_enabled):
         logging.info(f'Enabling Ocs to:{ocs_enabled} for cluster: {self.id}')
+        self.set_operator('ocs', ocs_enabled)
+
+    def set_cnv(self, cnv_enabled):
+        logging.info(f'Enabling CNV to:{cnv_enabled} for cluster: {self.id}')
+        self.set_operator('cnv', cnv_enabled)
+
+    def set_operator(self, operator, enabled):
         cluster = self.api_client.cluster_get(self.id)
         olm_operators = cluster.olm_operators
         olm_names = [olm_operator['name'] for olm_operator in olm_operators]
-        if 'ocs' not in olm_names and ocs_enabled:
-            olm_operators.append({'name': 'ocs'})
-        if 'ocs' in olm_names and not ocs_enabled:
-            olm_operators.remove({'name': 'ocs'})
+        if operator not in olm_names and enabled:
+            olm_operators.append({'name': operator})
+        if operator in olm_names and not enabled:
+            olm_operators.remove({'name': operator})
         self.api_client.update_cluster(self.id, olm_operators)
 
     def set_host_roles(self, requested_roles=None):
