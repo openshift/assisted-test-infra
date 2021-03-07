@@ -20,7 +20,7 @@ function download_service_logs() {
 
     for service in "installer" "db"; do
         podman logs ${service} > ${LOGS_DEST}/onprem_${service}.log || true
-    done    
+    done
   else
     ${KUBECTL} cluster-info
     ${KUBECTL} get pods -n ${NAMESPACE} || true
@@ -28,6 +28,8 @@ function download_service_logs() {
     for service in "assisted-service" "postgres" "scality" "createimage"; do
       ${KUBECTL} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} > ${LOGS_DEST}/k8s_{}.log" || true
     done
+
+    ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp > ${LOGS_DEST}/k8s_events.log || true
   fi
 }
 
