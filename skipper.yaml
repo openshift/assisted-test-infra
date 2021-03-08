@@ -3,20 +3,36 @@ build-container-image: test-infra
 build-container-tag: latest
 
 volumes:
-  - $HOME/.cache/go-build/:/go/pkg/mod/
-  - $HOME/.minikube/:$HOME/.minikube/
-  - $HOME/.kube/:$HOME/.kube/
-  - /var/lib/libvirt/:/var/lib/libvirt/
-  - /var/run/libvirt/:/var/run/libvirt/
-  - /tmp:/tmp/
-  - /var/lib/libvirt/dnsmasq/:/var/lib/libvirt/dnsmasq/
-  - $HOME/.cache/libvirt/:$HOME/.cache/libvirt/
-  - $HOME/.ssh/:$HOME/.ssh/
+  # programs
+  - /usr/local/oc:/usr/local/oc
   - /usr/local/bin/oc:/usr/local/bin/oc
+  - /usr/bin/minikube:/usr/bin/minikube
+  - /usr/local/bin/minikube:/usr/local/bin/minikube
+  - /usr/bin/kubectl:/usr/bin/kubectl
+  - /usr/local/bin/kubectl:/usr/local/bin/kubectl
+
+  # config
+  - $HOME/.kube/:$HOME/.kube/
+  - $HOME/.minikube/:$HOME/.minikube/
+  - $HOME/.ssh/:$HOME/.ssh/
+
+  # logs
   - /var/log:/var/log
   - /run/log/journal:/run/log/journal
+  - /var/ai-logs:/var/ai-logs
+
+  # sockets
+  - $HOME/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d
+
+  # cache
+  - $HOME/.cache/go-build/:/go/pkg/mod/
+  - $HOME/.cache/libvirt/:$HOME/.cache/libvirt/
+
+  # etc
+  - /var/lib/libvirt/:/var/lib/libvirt/
+  - /var/run/libvirt/:/var/run/libvirt/
+  - /var/lib/libvirt/dnsmasq/:/var/lib/libvirt/dnsmasq/
+  - /tmp:/tmp/
   - /dev/:/dev
   - /run/udev:/run/udev
-  - /var/ai-logs:/var/ai-logs
-  - $HOME/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d
 env-file: skipper.env
