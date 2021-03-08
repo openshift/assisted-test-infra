@@ -99,4 +99,5 @@ def _prepare_dns_resolver(machine_cidrs):
 def _prepare_routes(primary_mac, machine_cidrs):
     network = ip_network(machine_cidrs[0])
     gw_ip = str(ip_address(network.network_address) + 1)
-    return {'config': [{'destination': '0.0.0.0/0', 'next-hop-address': gw_ip, 'next-hop-interface': primary_mac.replace(':', ''), 'table-id': 254}]}
+    default_route = '::/0' if network.version == 6 else '0.0.0.0/0'
+    return {'config': [{'destination': default_route , 'next-hop-address': gw_ip, 'next-hop-interface': primary_mac.replace(':', ''), 'table-id': 254}]}
