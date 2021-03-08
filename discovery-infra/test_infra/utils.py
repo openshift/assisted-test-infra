@@ -730,7 +730,7 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
             hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
         with open("/etc/hosts", "w") as f:
             f.writelines(hosts_lines)
-            logging.info("Updated /etc/hosts: %s", api_vip_dnsname)
+            logging.info("Updated /etc/hosts with record: %s %s", api_vip, api_vip_dnsname)
 
 
 def run_container(container_name, image, flags=None, command=""):
