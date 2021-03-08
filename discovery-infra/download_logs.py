@@ -212,7 +212,7 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
     log.info(f"Downloading must-gather to {dest_dir}")
     command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather" \
               f" --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
-    subprocess.run(command, shell=True)
+    run_command(command, shell=True, raise_errors=True)
 
 
 def handle_arguments():
