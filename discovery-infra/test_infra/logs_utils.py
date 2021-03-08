@@ -54,8 +54,9 @@ def _check_entry_from_extracted_tar(component, tarpath, verify):
             tar.extractall(tempdir)
             extractedfiles = os.listdir(tempdir)
             assert any(component in logfile for logfile in extractedfiles), f'can not find {component} in logs'
-            component_tar = [logfile for logfile in extractedfiles if component in logfile][0]
-            verify(os.path.join(tempdir, component_tar))
+            component_tars = [logfile for logfile in extractedfiles if (component in logfile and logfile.endswith(".gz"))]
+            if component_tars:
+                verify(os.path.join(tempdir, component_tars[0]))
 
 
 def _verify_oc_logs_uploaded(cluster_tar_path):
