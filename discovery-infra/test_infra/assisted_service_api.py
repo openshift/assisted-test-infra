@@ -269,7 +269,7 @@ class InventoryClient(object):
         log.info("Downloading metrics to %s", dest)
 
         url = self.inventory_url
-        if not url.startswith('http://'):
+        if not (url.startswith('http://') or url.startswith('https://')):
             url = f'http://{url}'
         response = requests.get(f"{url}/metrics")
         assert response.status_code == 200
