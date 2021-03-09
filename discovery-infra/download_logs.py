@@ -27,6 +27,7 @@ from logger import log, suppressAndLog
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 MAX_RETRIES = 3
+MUST_GATHER_MAX_RETRIES = 15
 RETRY_INTERVAL = 60 * 5
 CONNECTION_TIMEOUT = 30
 
@@ -130,7 +131,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
                 cluster['hosts'], [HostsProgressStages.CONFIGURING], 2)
             are_masters_in_join_state = are_host_progress_in_stage(
                 cluster['hosts'], [HostsProgressStages.JOINED], 2)
-            max_retries = 2 * MAX_RETRIES if are_masters_in_join_state else MAX_RETRIES
+            max_retries = MUST_GATHER_MAX_RETRIES if are_masters_in_join_state else MAX_RETRIES
             is_controller_expected = cluster['status'] == ClusterStatus.INSTALLED or are_masters_in_configuring_state
             min_number_of_logs = min_number_of_log_files(cluster, is_controller_expected)
 
