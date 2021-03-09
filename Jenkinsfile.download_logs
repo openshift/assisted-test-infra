@@ -11,7 +11,6 @@ pipeline {
         SKIPPER_PARAMS = " "
 
         LOGS_DEST = "/var/ai-logs/triage_logs"
-        ADDITIONAL_PARAMS = "--must-gather"
 
         // Credentials
         OFFLINE_TOKEN = credentials('admin_offline_token')
