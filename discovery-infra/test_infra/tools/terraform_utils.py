@@ -36,6 +36,7 @@ class TerraformUtils:
         self.apply(refresh=refresh)
 
     def get_state(self):
+        self.tf.read_state_file("terraform.tfstate")
         return self.tf.tfstate
 
     def set_new_vip(self, api_vip):
