@@ -22,6 +22,7 @@ import install_cluster
 import oc_utils
 from logger import log
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
+from test_infra.controllers.nat_controller import NatController
 
 
 class MachineNetwork(object):
@@ -187,7 +188,8 @@ def create_nodes_and_wait_till_registered(
         inventory_client,
         cluster,
         nodes_details,
-        tf
+        tf,
+        is_ipv4
 ):
     nodes_count = nodes_details['master_count'] + nodes_details["worker_count"]
     create_nodes(
@@ -214,6 +216,11 @@ def create_nodes_and_wait_till_registered(
     ]
     if nodes_details['master_count'] == 1 or is_none_platform_mode():
         statuses.append(consts.NodesStatus.KNOWN)
+
+    if is_ipv4 and is_none_platform_mode() and nodes_details['master_count'] > 1:
+        input_interfaces = [args.network_bridge, f"s{args.network_bridge}"]
+        nat_controller = NatController()
+        nat_controller.add_nat_rules(input_interfaces)
 
     utils.wait_till_all_hosts_are_in_status(
         client=inventory_client,
@@ -387,15 +394,16 @@ def nodes_flow(client, cluster_name, cluster):
 
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
+    is_ipv4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
 
     create_nodes_and_wait_till_registered(
         inventory_client=client,
         cluster=cluster,
         nodes_details=nodes_details,
-        tf=tf
+        tf=tf,
+        is_ipv4=is_ipv4
     )
 
-    is_ipv4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
     main_cidr = args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6
     secondary_cidr = machine_net.provisioning_cidr_v4 if is_ipv4 else machine_net.provisioning_cidr_v6
 
@@ -434,9 +442,12 @@ def nodes_flow(client, cluster_name, cluster):
 
         if is_none_platform_mode() and args.master_count > 1:
             master_ips = helper_cluster.Cluster.get_master_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_master_ips(client, cluster.id, secondary_cidr)
+            worker_ips = helper_cluster.Cluster.get_worker_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_worker_ips(client, cluster.id, secondary_cidr)
+            if not worker_ips:
+                worker_ips = master_ips
             load_balancer_ip = _get_host_ip_from_cidr(machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4)
             lb_controller = LoadBalancerController(tf)
-            lb_controller.set_load_balancing_config(load_balancer_ip, master_ips)
+            lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
         utils.wait_till_hosts_with_macs_are_in_status(
             client=client,

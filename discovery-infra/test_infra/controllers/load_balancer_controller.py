@@ -28,8 +28,9 @@ class LoadBalancerController:
         upstream_name = f'upstream_{re.sub(r"[.:]", r"_", load_balancer_ip)}_{port}'
         return self._render_upstream_block(master_ips, port, upstream_name) + self._render_server_block(load_balancer_ip, port, upstream_name)
 
-    def _render_load_balancer_config_file(self, load_balancer_ip, master_ips):
-        return '\n'.join([self._render_port_entities(load_balancer_ip, master_ips, port) for port in [443, 6443, 22623]])
+    def _render_load_balancer_config_file(self, load_balancer_ip, master_ips, worker_ips):
+        return '\n'.join([self._render_port_entities(load_balancer_ip, master_ips, port) for port in [6443, 22623]]) + '\n' + \
+            '\n'.join([self._render_port_entities(load_balancer_ip, worker_ips, port) for port in [80, 443]])
 
     def _connect_to_load_balancer(self, load_balancer_ip):
         family = socket.AF_INET6 if ':' in load_balancer_ip else socket.AF_INET
@@ -45,7 +46,7 @@ class LoadBalancerController:
         log.info("Waiting for load balancer %s to be up", load_balancer_ip)
         waiting.wait(lambda : self._connect_to_load_balancer(load_balancer_ip), timeout_seconds=120, sleep_seconds=5, waiting_for="Waiting for load balancer to be active")
 
-    def set_load_balancing_config(self, load_balancer_ip, master_ips):
-        load_balancer_config_file = self._render_load_balancer_config_file(load_balancer_ip, master_ips)
+    def set_load_balancing_config(self, load_balancer_ip, master_ips, worker_ips):
+        load_balancer_config_file = self._render_load_balancer_config_file(load_balancer_ip, master_ips, worker_ips)
         self._tf.change_variables({"load_balancer_ip": load_balancer_ip, "load_balancer_config_file": load_balancer_config_file})
         self._wait_for_load_balancer(load_balancer_ip)

@@ -6,6 +6,7 @@ import os
 import shutil
 
 from test_infra import assisted_service_api, utils, consts
+from test_infra.controllers.nat_controller import NatController
 
 import oc_utils
 import virsh_cleanup
@@ -27,11 +28,18 @@ def try_to_delete_cluster(namespace, tfvars):
     )
     client.delete_cluster(cluster_id=cluster_id)
 
+@utils.on_exception(message='Failed to remove nat', silent=True)
+def _try_remove_nat(namespace, tfvars):
+    primary_interface = tfvars.get('libvirt_network_if', f'tt{namespace}')
+    secondary_interface = tfvars.get('libvirt_secondary_network_if', f's{primary_interface}')
+    nat_controller = NatController()
+    nat_controller.remove_nat_rules([primary_interface, secondary_interface])
 
 def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     """ Runs terraform destroy and then cleans it with virsh cleanup to delete
         everything relevant.
     """
+    _try_remove_nat(namespace, tfvars)
     if os.path.exists(tf_folder):
         _try_to_delete_nodes(tf_folder)
 

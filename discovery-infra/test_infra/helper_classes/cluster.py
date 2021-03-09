@@ -748,17 +748,25 @@ class Cluster:
         raise Exception("IP for single node not found")
 
     @staticmethod
-    def get_master_ips(client, cluster_id, network):
+    def get_ips_for_role(client, cluster_id, network, role):
         cluster_info = client.cluster_get(cluster_id).to_dict()
         ret = []
         net = IPNetwork(network)
-        hosts_interfaces = Cluster.get_hosts_nics_data([h for h in cluster_info["hosts"] if h["role"] == consts.NodeRoles.MASTER])
+        hosts_interfaces = Cluster.get_hosts_nics_data([h for h in cluster_info["hosts"] if h["role"] == role])
         for host_interfaces in hosts_interfaces:
             for intf in host_interfaces:
                 ip = IPAddress(intf["ip"])
                 if ip in net:
                     ret = ret + [intf["ip"]]
         return ret
+
+    @staticmethod
+    def get_master_ips(client, cluster_id, network):
+        return Cluster.get_ips_for_role(client, cluster_id, network, consts.NodeRoles.MASTER)
+
+    @staticmethod
+    def get_worker_ips(client, cluster_id, network):
+        return Cluster.get_ips_for_role(client, cluster_id, network, consts.NodeRoles.WORKER)
 
     def get_host_disks(self, host, filter=None):
         hosts = self.get_hosts()

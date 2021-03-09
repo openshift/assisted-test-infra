@@ -32,6 +32,7 @@ resource "libvirt_network" "net" {
   autostart = true
 
   dns {
+   local_only = true
    dynamic "hosts" {
       for_each = concat(
       data.libvirt_network_dns_host_template.masters.*.rendered,
@@ -56,6 +57,7 @@ resource "libvirt_network" "secondary_net" {
   mtu = var.libvirt_network_mtu
   autostart = true
   dns {
+    local_only = true
     dynamic "hosts" {
       for_each = concat(
       data.libvirt_network_dns_host_template.masters.*.rendered,
@@ -210,14 +212,9 @@ resource "libvirt_domain" "worker" {
   }
 
   network_interface {
-    network_name = libvirt_network.net.name
+    network_name = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
     hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
-    addresses  = var.libvirt_worker_ips[count.index]
-  }
-
-  network_interface {
-    network_name = libvirt_network.secondary_net.name
-    addresses  = var.libvirt_secondary_worker_ips[count.index]
+    addresses  = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
   }
 
   boot_device{
