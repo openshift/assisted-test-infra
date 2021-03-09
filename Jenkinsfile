@@ -1,6 +1,3 @@
-String cron_string = BRANCH_NAME == "master" ? "@hourly" : ""
-
-
 pipeline {
     agent { label 'test-infra' }
 
@@ -19,8 +16,6 @@ pipeline {
         booleanParam(name: 'NOTIFY', defaultValue: true, description: 'Notify on fail (on master branch)')
         booleanParam(name: 'POST_DELETE', defaultValue: true, description: 'Whether to delete the cluster on post actions')
     }
-
-    triggers { cron(cron_string) }
 
     environment {
         SKIPPER_PARAMS = " "
