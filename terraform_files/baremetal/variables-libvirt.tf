@@ -180,3 +180,27 @@ variable "single_node_ip" {
   type = string
   default = ""
 }
+
+variable "machine_cidr" {
+  description = "IPv4 network from network pool for automated tests"
+  type = string
+  default = ""
+}
+
+variable "machine_cidr6" {
+  description = "IPv6 network from network pool for automated tests"
+  type = string
+  default = ""
+}
+
+variable "provisioning_cidr" {
+  description = "IPv4 provisioning network from network pool for automated tests"
+  type = string
+  default = ""
+}
+
+variable "provisioning_cidr6" {
+  description = "IPv6 provisioning network from network pool for automated tests"
+  type = string
+  default = ""
+}
