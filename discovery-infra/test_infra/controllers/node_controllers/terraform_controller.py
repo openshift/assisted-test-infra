@@ -19,6 +19,7 @@ class TerraformController(LibvirtController):
         self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}' + "-" + self.cluster_suffix)
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
         self.network_conf = kwargs.get('net_asset')
+        self.platform = kwargs.get('platform', consts.Platforms.BARE_METAL)
         self.cluster_domain = kwargs.get('base_domain', "redhat.com")
         self.ipv6 = kwargs.get('ipv6')
         self.params = self._terraform_params(**kwargs)
@@ -32,7 +33,7 @@ class TerraformController(LibvirtController):
         tf_folder = utils.get_tf_folder(self.cluster_name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder)
+        utils.copy_template_tree(tf_folder, none_platform_mode=self.platform == consts.Platforms.NONE)
         return tf_folder
 
     @classmethod
