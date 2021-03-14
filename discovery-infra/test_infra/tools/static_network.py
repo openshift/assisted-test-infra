@@ -15,6 +15,26 @@ def generate_macs(count):
             for _ in range(count)]
 
 
+def generate_day2_static_network_data_from_tf(tf_folder, num_day2_workers):
+    tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    with open(tfvars_json_file) as _file:
+        tfvars = json.load(_file)
+
+    network_config = []
+    primary_macs = tfvars['libvirt_worker_macs'][len(tfvars['libvirt_worker_macs']) - num_day2_workers:]
+    secondary_macs = tfvars['libvirt_secondary_worker_macs'][len(tfvars['libvirt_secondary_worker_macs']) - num_day2_workers:]
+    for count in range(num_day2_workers):
+        host_data = _prepare_host_static_network_data(primary_macs[count],
+                                                      secondary_macs[count],
+                                                      tfvars['machine_cidr_addresses'],
+                                                      tfvars['provisioning_cidr_addresses'],
+                                                      tfvars['master_count'] + tfvars['worker_count'] - num_day2_workers)
+        network_config.append(host_data)
+
+    return network_config
+
+
+
 def generate_static_network_data_from_tf(tf_folder):
     tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
