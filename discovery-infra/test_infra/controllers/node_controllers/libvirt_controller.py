@@ -193,7 +193,7 @@ class LibvirtController(NodeController, ABC):
 
         return result
 
-    def attach_test_disk(self, node_name, disk_size, bootable=False):
+    def attach_test_disk(self, node_name, disk_size, bootable=False, persistent=False):
         """
         Attaches a disk with the given size to the given node. All tests disks can later
         be detached with detach_all_test_disks
@@ -215,14 +215,19 @@ class LibvirtController(NodeController, ABC):
         if bootable:
             self.add_disk_bootflag(tmp_disk)
 
-        node.attachDevice(f"""
+        attach_flags = libvirt.VIR_DOMAIN_AFFECT_LIVE
+
+        if persistent:
+            attach_flags |= libvirt.VIR_DOMAIN_AFFECT_CONFIG
+
+        node.attachDeviceFlags(f"""
             <disk type='file' device='disk'>
                 <alias name='{disk_alias}'/>
                 <driver name='qemu' type='qcow2'/>
                 <source file='{tmp_disk}'/>
                 <target dev='{target_dev}'/>
             </disk>
-        """)
+        """, attach_flags)
 
         return tmp_disk
 
