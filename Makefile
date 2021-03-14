@@ -113,7 +113,7 @@ PLATFORM := $(or ${PLATFORM},baremetal)
 all: create_full_environment run_full_flow_with_install
 
 
-destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost stop_load_balancer
+destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost stop_load_balancer stop_nat
 
 ###############
 # Environment #
@@ -160,12 +160,21 @@ delete_podman_localhost:
 # Load balancer    #
 ####################
 
+# Start load balancer if it does not already exist.  Map the directory $(HOME)/.test-infra/etc/nginx/stream.d to be /etc/nginx/stream.d so it will be used by the python code to fill up load balancing definitions
 start_load_balancer:
-	# Start load balancer if it does not already exist.  Map the directory $(HOME)/.test-infra/etc/nginx/stream.d to be /etc/nginx/stream.d so it will be used by the python code to fill up load balancing definitions
-	if [ "$(PLATFORM)" = "none" ] ; then id=`podman ps --quiet --filter "name=load_balancer"` ; ( test -z "$$id" && podman run -d --rm --net=host --name=load_balancer -v $(HOME)/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d load_balancer:latest ) || ! test -z "$$id" ; fi
+	@if [ "$(PLATFORM)" = "none" ] ; then id=`podman ps --quiet --filter "name=load_balancer"` ; ( test -z "$$id" && echo "Staring load balancer ..." && podman run -d --rm --net=host --name=load_balancer -v $(HOME)/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d load_balancer:latest ) || ! test -z "$$id" ; fi
 
 stop_load_balancer:
-	id=`podman ps --quiet --filter "name=load_balancer"`; test ! -z "$$id"  && podman rm -f load_balancer ; rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
+	@id=`podman ps --quiet --filter "name=load_balancer"`; test ! -z "$$id"  && podman rm -f load_balancer ; rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
+
+########
+# Nat  #
+########
+
+# Remove all rules from NAT table that use mark 0x22b (555) which is used for none platform nat.  It is done iptables-save which dumps the nat table rules, removing the relevant rules, and feeding the result to iptables-restore
+stop_nat:
+	@iptables-save -t nat -c | grep -v 'mark 0x22b' | iptables-restore
+
 
 #############
 # Terraform #

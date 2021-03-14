@@ -176,6 +176,8 @@ EOF
   sudo mkdir -p $HOME/.test-infra/etc/nginx/stream.d
   sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
   sudo firewall-cmd --zone=libvirt --add-port=22623/tcp
+  sudo firewall-cmd --zone=libvirt --add-port=443/tcp
+  sudo firewall-cmd --zone=libvirt --add-port=80/tcp
 }
 
 function additional_configs() {
