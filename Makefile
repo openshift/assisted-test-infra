@@ -100,6 +100,7 @@ OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
 CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-controller-ocp:latest)
 
 PLATFORM := $(or ${PLATFORM},baremetal)
+IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 
 .EXPORT_ALL_VARIABLES:
 
