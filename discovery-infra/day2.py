@@ -51,38 +51,48 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
         consts.IMAGE_FOLDER,
         f'{args.namespace}-installer-image.iso'
     )
+
+    tf_folder = utils.get_tf_folder(terraform_cluster_dir_prefix, args.namespace)
+    set_day2_tf_configuration(tf_folder, args.number_of_day2_workers, api_vip_ip, api_vip_dnsname)
+
+    static_network_config = None
+    if args.with_static_network_config:
+        static_network_config = static_network.generate_day2_static_network_data_from_tf(tf_folder, args.number_of_day2_workers)
+
     client.generate_and_download_image(
         cluster_id=cluster.id,
         image_path=image_path,
         ssh_key=args.ssh_key,
+        static_network_config=static_network_config
     )
 
     day2_nodes_flow(
         client,
         terraform_cluster_dir_prefix,
+        tf_folder,
         cluster,
         has_ipv4,
         args.number_of_day2_workers,
         api_vip_ip,
         api_vip_dnsname,
-        args.namespace,
         args.install_cluster,
-        day2_type_flag
+        day2_type_flag,
+        args.with_static_network_config
     )
 
 
 def day2_nodes_flow(client,
                     terraform_cluster_dir_prefix,
+                    tf_folder,
                     cluster,
                     has_ipv_4,
                     num_worker_nodes,
                     api_vip_ip,
                     api_vip_dnsname,
-                    namespace,
                     install_cluster_flag,
-                    day2_type_flag):
-    tf_network_name, total_num_nodes = apply_day2_tf_configuration(terraform_cluster_dir_prefix, num_worker_nodes,
-                                                                   api_vip_ip, api_vip_dnsname, namespace)
+                    day2_type_flag,
+                    with_static_network_config):
+    tf_network_name, total_num_nodes = get_network_num_nodes_from_tf(tf_folder)
     with utils.file_lock_context():
         utils.run_command(
             f'make _apply_terraform CLUSTER_NAME={terraform_cluster_dir_prefix}'
@@ -109,13 +119,12 @@ def day2_nodes_flow(client,
         waiting_for="Nodes to be registered in inventory service",
     )
 
-    if not has_ipv_4:
-        log.info(
-            "Set hostnames of day2 cluster %s to work around libvirt for Terrafrom not setting"
-            " hostnames of IPv6-only hosts",
-            cluster.id)
-        tf_folder = utils.get_tf_folder(terraform_cluster_dir_prefix, namespace)
-        set_hostnames_from_tf(client=client, cluster_id=cluster.id, tf_folder=tf_folder, network_name=tf_network_name)
+    set_nodes_hostnames_if_needed(client,
+                                  tf_folder,
+                                  with_static_network_config,
+                                  has_ipv_4,
+                                  tf_network_name,
+                                  cluster.id)
 
     utils.wait_till_all_hosts_are_in_status(
         client=client,
@@ -162,10 +171,13 @@ def set_hostnames_from_tf(client, cluster_id, tf_folder, network_name):
     utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
 
 
-def apply_day2_tf_configuration(cluster_name, num_worker_nodes, api_vip_ip, api_vip_dnsname, namespace):
-    tf_folder = utils.get_tf_folder(cluster_name, namespace)
+def set_day2_tf_configuration(tf_folder, num_worker_nodes, api_vip_ip, api_vip_dnsname):
     configure_terraform(tf_folder, num_worker_nodes, api_vip_ip, api_vip_dnsname)
-    return get_network_nodes_from_terraform(tf_folder)
+
+
+def get_network_num_nodes_from_tf(tf_folder):
+    tfvars = utils.get_tfvars(tf_folder)
+    return tfvars['libvirt_network_name'], tfvars['master_count'] + tfvars['worker_count']
 
 
 def configure_terraform(tf_folder, num_worker_nodes, api_vip_ip, api_vip_dnsname):
@@ -186,11 +198,6 @@ def configure_terraform_workers_nodes(tfvars, num_worker_nodes):
 
 def configure_terraform_api_dns(tfvars, api_vip_ip, api_vip_dnsname):
     tfvars['api_vip'] = api_vip_ip
-
-
-def get_network_nodes_from_terraform(tf_folder):
-    tfvars = utils.get_tfvars(tf_folder)
-    return tfvars['libvirt_network_name'], tfvars['master_count'] + tfvars['worker_count']
 
 
 def set_workers_addresses_by_type(tfvars, num_worker_nodes, master_ip_type, worker_ip_type, worker_mac_type):
@@ -290,3 +297,18 @@ def set_cluster_proxy(client, cluster_id, copy_proxy_from_cluster, args):
     https_proxy = args.https_proxy if args.https_proxy else copy_proxy_from_cluster.https_proxy
     no_proxy = args.no_proxy if args.no_proxy else copy_proxy_from_cluster.no_proxy
     client.set_cluster_proxy(cluster_id, http_proxy, https_proxy, no_proxy)
+
+def set_nodes_hostnames_if_needed(client,
+                                  tf_folder,
+                                  with_static_network_config,
+                                  has_ipv_4,
+                                  network_name,
+                                  cluster_id):
+    if not has_ipv_4 or with_static_network_config:
+        tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
+        libvirt_nodes = utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
+        log.info(
+            "Set hostnames of day2 cluster %s in case of static network configuration or "
+            "to work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts",
+            cluster_id)
+        utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
