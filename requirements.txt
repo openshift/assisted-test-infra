@@ -1,7 +1,7 @@
 boto3==1.17.23
 dnspython==2.1.0
 ipython==7.11.1
-ipdb==0.13.5
+ipdb==0.13.6
 libvirt-python==7.0.0
 pre-commit==2.11.0
 pyyaml==5.4.1
