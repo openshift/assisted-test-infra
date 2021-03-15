@@ -98,7 +98,7 @@ class TerraformController(LibvirtController):
             tfvars = json.load(_file)
 
         machine_cidr = self.get_machine_cidr()
-        provisioning_cidr = self._get_provisioning_cidr()
+        provisioning_cidr = self.get_provisioning_cidr()
 
         logging.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(
@@ -136,7 +136,7 @@ class TerraformController(LibvirtController):
             json.dump(tfvars, _file)
 
     def _secondary_tfvars(self):
-        provisioning_cidr = self._get_provisioning_cidr()
+        provisioning_cidr = self.get_provisioning_cidr()
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
                 ipaddress.ip_network(provisioning_cidr).network_address
@@ -198,7 +198,7 @@ class TerraformController(LibvirtController):
     def get_machine_cidr(self):
         return self.network_conf.machine_cidr6 if self.ipv6 else self.network_conf.machine_cidr
 
-    def _get_provisioning_cidr(self):
+    def get_provisioning_cidr(self):
         return self.network_conf.provisioning_cidr6 if self.ipv6 else self.network_conf.provisioning_cidr
 
     def _try_to_delete_nodes(self):
