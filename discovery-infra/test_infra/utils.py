@@ -382,6 +382,44 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
         f"hosts statuses are {host_info}")
     return False
 
+def wait_for_logs_complete(
+        client, cluster_id, timeout, interval=60, check_host_logs_only=False
+):
+    log.info("wait till logs of cluster %s are collected (or timed-out)", cluster_id)
+    statuses=["completed", "timeout"]
+    try:
+        waiting.wait(
+        lambda: are_logs_in_status(
+            client=client,
+            cluster_id=cluster_id,
+            statuses=statuses,
+            check_host_logs_only=check_host_logs_only
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Logs to be in status %s" % statuses,
+        )
+        log.info("logs are in expected state")
+    except BaseException:
+        log.error("waiting for logs expired after %d", timeout)
+        raise
+
+def are_logs_in_status(client, cluster_id, statuses, check_host_logs_only=False):
+    try:
+        cluster = client.cluster_get(cluster_id)
+        hosts = client.get_cluster_hosts(cluster_id)
+        cluster_logs_status = cluster.logs_info
+        host_logs_statuses = [host.get("logs_info", "") for host in hosts]
+        if all(s in statuses for s in host_logs_statuses) and (check_host_logs_only or (cluster_logs_status in statuses)):
+            log.info("found expected state. cluster logs: %s, host logs: %s", cluster_logs_status, host_logs_statuses)
+            return True
+
+        log.info("Cluster logs not yet in their required state. %s, host logs: %s", cluster_logs_status, host_logs_statuses)
+        return False
+    except:
+        log.exception("Failed to get cluster %s log info", cluster_id)
+        return False
+
 
 def wait_till_cluster_is_in_status(
         client,

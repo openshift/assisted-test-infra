@@ -6,8 +6,9 @@ from tempfile import TemporaryDirectory
 
 from test_infra.consts import NUMBER_OF_MASTERS
 
-OC_DOWNLOAD_LOGS_INTERVAL = 10 * 60
-NUM_OF_RETRIES = 6
+OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
+OC_DOWNLOAD_LOGS_TIMEOUT = 60 * 60
+
 
 
 def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_success, verify_control_plane=False,
@@ -32,18 +33,15 @@ def verify_logs_uploaded(cluster_tar_path, expected_min_log_num, installation_su
                         _verify_oc_logs_uploaded(os.path.join(tempdir, gz))
 
 
-def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path, num_retries=NUM_OF_RETRIES):
-    for retry in range(num_retries):
-        try:
-            time.sleep(OC_DOWNLOAD_LOGS_INTERVAL)
-            cluster.download_installation_logs(cluster_tar_path)
-            assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
-            _verify_oc_logs_uploaded(cluster_tar_path)
-            return
-        except AssertionError as err:
-            logging.info(f'attempt {retry + 1} to download failed with error {str(err)}')
-
-    assert False, "oc logs were not uploaded"
+def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path):
+    try:
+        cluster.wait_for_logs_complete(timeout=OC_DOWNLOAD_LOGS_TIMEOUT, interval=OC_DOWNLOAD_LOGS_INTERVAL, check_host_logs_only=False)
+        cluster.download_installation_logs(cluster_tar_path)
+        assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
+        _verify_oc_logs_uploaded(cluster_tar_path)
+    except BaseException as err:
+        logging.exception('oc logs were not uploaded')
+        raise
 
 
 def _check_entry_from_extracted_tar(component, tarpath, verify):
