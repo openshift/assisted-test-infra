@@ -125,8 +125,8 @@ def create_controller(net_asset):
         cluster_name="test-infra-cluster",
         num_masters=1,
         num_workers=0,
-        master_memory=32 * 1024,  # 32GB of RAM
-        master_vcpu=12,
+        master_memory=45 * 1024,  # in megabytes
+        master_vcpu=16,
         net_asset=net_asset,
         iso_download_path="<TBD>",  # will be set later on
         bootstrap_in_place=True,
