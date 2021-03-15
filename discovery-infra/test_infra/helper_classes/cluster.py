@@ -21,7 +21,7 @@ class Cluster:
 
     def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
                  openshift_version="4.7", cluster_id=None, user_managed_networking=False,
-                 high_availability_mode=consts.HighAvailabilityMode.FULL):
+                 high_availability_mode=consts.HighAvailabilityMode.FULL, olm_operators=None):
         self.api_client = api_client
 
         self._high_availability_mode = high_availability_mode
@@ -31,7 +31,8 @@ class Cluster:
             cluster_name = cluster_name or env_variables.get('cluster_name', "test-infra-cluster")
             self.id = self._create(cluster_name, additional_ntp_source, openshift_version,
                                    user_managed_networking=user_managed_networking,
-                                   high_availability_mode=high_availability_mode).id
+                                   high_availability_mode=high_availability_mode,
+                                   olm_operators=olm_operators).id
             self.name = cluster_name
 
     def _create(self,
@@ -39,7 +40,8 @@ class Cluster:
                 additional_ntp_source,
                 openshift_version,
                 user_managed_networking,
-                high_availability_mode):
+                high_availability_mode,
+                olm_operators):
         return self.api_client.create_cluster(
             cluster_name,
             ssh_public_key=env_variables['ssh_public_key'],
@@ -49,7 +51,8 @@ class Cluster:
             vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
             additional_ntp_source=additional_ntp_source,
             user_managed_networking=user_managed_networking,
-            high_availability_mode=high_availability_mode
+            high_availability_mode=high_availability_mode,
+            olm_operators=olm_operators
         )
 
     def delete(self):

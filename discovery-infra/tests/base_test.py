@@ -63,7 +63,8 @@ class BaseTest:
                              additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
                              openshift_version: Optional[str] = env_variables['openshift_version'],
                              user_managed_networking=False,
-                             high_availability_mode=consts.HighAvailabilityMode.FULL):
+                             high_availability_mode=consts.HighAvailabilityMode.FULL,
+                             olm_operators=env_variables['olm_operators']):
             if not cluster_name:
                 cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
             res = Cluster(api_client=api_client,
@@ -71,7 +72,8 @@ class BaseTest:
                           additional_ntp_source=additional_ntp_source,
                           openshift_version=openshift_version,
                           user_managed_networking=user_managed_networking,
-                          high_availability_mode=high_availability_mode)
+                          high_availability_mode=high_availability_mode,
+                          olm_operators=olm_operators)
             clusters.append(res)
             return res
 
