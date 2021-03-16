@@ -64,6 +64,12 @@ SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 
+# elasticsearch
+ES_SERVER := $(or $(ES_SERVER), "")
+ES_USER := $(or $(ES_USER), "")
+ES_PASS := $(or $(ES_PASS), "")
+BACKUP_DESTINATION := $(or $(BACKUP_DESTINATION), "")
+
 # deploy
 IMAGE_TAG := latest
 
@@ -370,6 +376,19 @@ download_service_logs:
 
 download_cluster_logs:
 	./scripts/download_logs.sh download_cluster_logs
+
+##############
+# monitoring #
+##############
+
+_scrape_service_events:
+	discovery-infra/log_scrap.py $(REMOTE_SERVICE_URL) -es $(ES_SERVER) -eu $(ES_USER) -ep $(ES_PASS) --backup-destination $(BACKUP_DESTINATION)
+
+scrape_service_events:
+	skipper make $(SKIPPER_PARAMS) _scrape_service_events
+
+deploy_elasticsearch:
+	docker-compose -f discovery-infra/monitoring/docker-compose.yml up -d
 
 #######
 # ISO #
