@@ -41,6 +41,10 @@ class Nodes:
         for n in self.nodes:
             yield n
 
+    def drop_cache(self):
+        self._nodes = None
+        self._nodes_as_dict = None
+
     def get_masters(self):
         return [node for node in self.nodes if node.is_master_in_name()]
 

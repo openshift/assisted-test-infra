@@ -15,14 +15,15 @@ class TerraformController(LibvirtController):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cluster_suffix = self._get_random_name()
+        self.cluster_suffix = kwargs.get('cluster_suffix', self._get_random_name())
         self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}' + "-" + self.cluster_suffix)
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
         self.network_conf = kwargs.get('net_asset')
         self.cluster_domain = kwargs.get('base_domain', "redhat.com")
         self.ipv6 = kwargs.get('ipv6')
         self.params = self._terraform_params(**kwargs)
-        self.tf_folder = self._create_tf_folder()
+        tf_folder = kwargs.get('tf_folder')
+        self.tf_folder = tf_folder if tf_folder else self._create_tf_folder()
         self.image_path = kwargs["iso_download_path"]
         self.bootstrap_in_place = kwargs.get('bootstrap_in_place', False)
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)

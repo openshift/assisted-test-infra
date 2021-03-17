@@ -27,6 +27,7 @@ class Cluster:
         self._high_availability_mode = high_availability_mode
         if cluster_id:
             self.id = cluster_id
+            self.name = cluster_name or api_client.cluster_get(cluster_id).name
         else:
             cluster_name = cluster_name or env_variables.get('cluster_name', "test-infra-cluster")
             self.id = self._create(cluster_name, additional_ntp_source, openshift_version,

@@ -7,12 +7,13 @@ from python_terraform import Terraform, IsFlagged
 
 class TerraformUtils:
     VAR_FILE = "terraform.tfvars.json"
+    STATE_FILE = "terraform.tfstate"
 
     def __init__(self, working_dir):
         logging.info("TF FOLDER %s ", working_dir)
         self.working_dir = working_dir
         self.var_file_path = os.path.join(working_dir, self.VAR_FILE)
-        self.tf = Terraform(working_dir=working_dir, state="terraform.tfstate", var_file=self.VAR_FILE)
+        self.tf = Terraform(working_dir=working_dir, state=self.STATE_FILE, var_file=self.VAR_FILE)
         self.init_tf()
 
     def init_tf(self):
@@ -36,6 +37,7 @@ class TerraformUtils:
         self.apply(refresh=refresh)
 
     def get_state(self):
+        self.tf.read_state_file(self.STATE_FILE)
         return self.tf.tfstate
 
     def set_new_vip(self, api_vip):
