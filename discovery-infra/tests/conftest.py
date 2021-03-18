@@ -64,6 +64,7 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "test_teardown": bool(util.strtobool(utils.get_env('TEST_TEARDOWN', 'true'))),
                  "namespace": utils.get_env('NAMESPACE', consts.DEFAULT_NAMESPACE),
                  "olm_operators": utils.get_env('OLM_OPERATORS', []),
+                 "platform": utils.get_env("PLATFORM", consts.Platforms.BARE_METAL)
                  }
 cluster_mid_name = infra_utils.get_random_name()
 

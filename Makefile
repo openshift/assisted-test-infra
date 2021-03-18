@@ -417,7 +417,7 @@ lint:
 _lint:
 	pre-commit run --all-files
 
-test:
+test: start_load_balancer
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS) _test_setup

@@ -13,7 +13,9 @@ import yaml
 from assisted_service_client import models
 from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
-from test_infra.tools import static_network
+from test_infra.controllers.load_balancer_controller import LoadBalancerController
+from test_infra.controllers.nat_controller import NatController
+from test_infra.tools import static_network, terraform_utils
 from tests.conftest import env_variables
 
 
@@ -533,8 +535,12 @@ class Cluster:
             ssh_key=env_variables['ssh_public_key'],
             nodes_count=env_variables['num_nodes'],
             vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-            download_image=True
+            download_image=True,
+            platform=env_variables['platform']
     ):
+        if platform == consts.Platforms.NONE and not nodes.controller.ipv6:
+            self._configure_nat(nodes.controller)
+
         if download_image:
             if env_variables.get('static_network_config'):
                 static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
@@ -559,6 +565,9 @@ class Cluster:
             vip_dhcp_allocation=vip_dhcp_allocation,
         )
         self.wait_for_ready_to_install()
+
+        if platform == consts.Platforms.NONE:
+            self._configure_load_balancer(nodes.controller)
 
     def download_kubeconfig_no_ingress(
             self, kubeconfig_path=env_variables['kubeconfig_path']
@@ -713,6 +722,29 @@ class Cluster:
     def get_events(self, host_id=''):
         return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
 
+    def _configure_load_balancer(self, controller):
+        main_cidr = controller.get_machine_cidr()
+        secondary_cidr = controller.get_provisioning_cidr()
+
+        master_ips = self.get_master_ips(self.api_client, self.id, main_cidr) + \
+                     self.get_master_ips(self.api_client, self.id, secondary_cidr)
+        worker_ips = self.get_worker_ips(self.api_client, self.id, main_cidr)
+
+        load_balancer_ip = str(IPNetwork(main_cidr).ip + 1)
+
+        tf = terraform_utils.TerraformUtils(working_dir=controller.tf_folder)
+        lb_controller = LoadBalancerController(tf)
+        lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
+
+    @classmethod
+    def _configure_nat(cls, controller):
+        libvirt_network_if = controller.network_conf.libvirt_network_if
+        libvirt_secondary_network_if = controller.network_conf.libvirt_secondary_network_if
+        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
+
+        nat_controller = NatController()
+        nat_controller.add_nat_rules(input_interfaces)
+
     def _find_event(self, event_to_find, reference_time, params_list, host_id):
         events_list = self.get_events(host_id=host_id)
         for event in events_list:
@@ -857,10 +889,11 @@ class Cluster:
     def wait_and_kill_installer(self, nodes, host):
         # Wait for specific host to be in installing in progress
         self.wait_for_specific_host_status(host=host,
-                                                statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
+                                           statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
         # Kill installer to simulate host error
         selected_node = nodes.get_node_from_cluster_host(host)
         selected_node.kill_installer()
+
 
 def get_api_vip_from_cluster(api_client, cluster_info: models.cluster.Cluster):
     if isinstance(cluster_info, dict):

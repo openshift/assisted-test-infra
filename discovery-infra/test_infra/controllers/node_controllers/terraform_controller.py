@@ -19,6 +19,7 @@ class TerraformController(LibvirtController):
         self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}' + "-" + self.cluster_suffix)
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
         self.network_conf = kwargs.get('net_asset')
+        self.platform = kwargs.get('platform', consts.Platforms.BARE_METAL)
         self.cluster_domain = kwargs.get('base_domain', "redhat.com")
         self.ipv6 = kwargs.get('ipv6')
         self.params = self._terraform_params(**kwargs)
@@ -33,7 +34,7 @@ class TerraformController(LibvirtController):
         tf_folder = utils.get_tf_folder(self.cluster_name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder)
+        utils.copy_template_tree(tf_folder, none_platform_mode=self.platform == consts.Platforms.NONE)
         return tf_folder
 
     @classmethod
@@ -98,7 +99,7 @@ class TerraformController(LibvirtController):
             tfvars = json.load(_file)
 
         machine_cidr = self.get_machine_cidr()
-        provisioning_cidr = self._get_provisioning_cidr()
+        provisioning_cidr = self.get_provisioning_cidr()
 
         logging.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(
@@ -136,7 +137,7 @@ class TerraformController(LibvirtController):
             json.dump(tfvars, _file)
 
     def _secondary_tfvars(self):
-        provisioning_cidr = self._get_provisioning_cidr()
+        provisioning_cidr = self.get_provisioning_cidr()
         secondary_master_starting_ip = str(
             ipaddress.ip_address(
                 ipaddress.ip_network(provisioning_cidr).network_address
@@ -198,7 +199,7 @@ class TerraformController(LibvirtController):
     def get_machine_cidr(self):
         return self.network_conf.machine_cidr6 if self.ipv6 else self.network_conf.machine_cidr
 
-    def _get_provisioning_cidr(self):
+    def get_provisioning_cidr(self):
         return self.network_conf.provisioning_cidr6 if self.ipv6 else self.network_conf.provisioning_cidr
 
     def _try_to_delete_nodes(self):
