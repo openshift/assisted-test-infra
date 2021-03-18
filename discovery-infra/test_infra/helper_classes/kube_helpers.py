@@ -3,7 +3,8 @@ kube_helpers.py provides infra to deploy, manage and install cluster using
 CRDs instead of restful API calls.
 
 Simplest use of this infra is performed by calling cluster_deployment_context
-fixture. With this context manager you will be able to manage a cluster
+fixture, must be called with a kube_api_client which is provided as a fixture
+as well. With this context manager you will be able to manage a cluster
 without need to handle registration and deregistration.
 
 Example of usage:
@@ -11,8 +12,10 @@ Example of usage:
 with cluster_deployment_context(kube_api_client) as cluster_deployment:
     print(cluster_deployment.status())
 
-When a ClusterDeployment has sufficient data, installation will be started
-automatically.
+An Agent CRD will be created for each registered host. In order to start the
+installation all agents must be approved.
+When a ClusterDeployment has sufficient data and the assigned agents are
+approved, installation will be started automatically.
 """
 
 import abc
@@ -21,7 +24,7 @@ import json
 import logging
 import os
 from pprint import pformat
-from typing import Optional, Union, Dict, Tuple, ContextManager
+from typing import Optional, Union, Dict, Tuple, List, ContextManager
 
 import waiting
 import yaml
@@ -62,6 +65,9 @@ class ObjectReference:
 
     def __repr__(self) -> str:
         return str(self.as_dict())
+
+    def __eq__(self, other: 'ObjectReference') -> bool:
+        return other.name == self.name and other.namespace == self.namespace
 
     def as_dict(self) -> dict:
         return {'name': self.name, 'namespace': self.namespace}
@@ -141,7 +147,7 @@ class BaseCustomResource(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def status(self, timeout: Union[int, float]) -> dict:
+    def status(self, **kwargs) -> dict:
         pass
 
 
@@ -252,6 +258,7 @@ class InstallStrategy:
 
 DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT = 60
 DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT = 300
+DEFAULT_WAIT_FOR_AGENTS_TIMEOUT = 60
 
 
 class ClusterDeployment(BaseCustomResource):
@@ -263,6 +270,7 @@ class ClusterDeployment(BaseCustomResource):
     """
 
     _hive_api_group = 'hive.openshift.io'
+    _version = 'v1'
     _plural = 'clusterdeployments'
 
     def __init__(
@@ -282,7 +290,7 @@ class ClusterDeployment(BaseCustomResource):
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
             group=self._hive_api_group,
-            version='v1',
+            version=self._version,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace
@@ -306,7 +314,7 @@ class ClusterDeployment(BaseCustomResource):
             **kwargs
     ) -> None:
         body = {
-            'apiVersion': f'{self._hive_api_group}/v1',
+            'apiVersion': f'{self._hive_api_group}/{self._version}',
             'kind': 'ClusterDeployment',
             'metadata': self.ref.as_dict(),
             'spec': {
@@ -320,7 +328,7 @@ class ClusterDeployment(BaseCustomResource):
         body['spec'].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
             group=self._hive_api_group,
-            version='v1',
+            version=self._version,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace
@@ -354,7 +362,7 @@ class ClusterDeployment(BaseCustomResource):
 
         self.crd_api.patch_namespaced_custom_object(
             group=self._hive_api_group,
-            version='v1',
+            version=self._version,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -368,7 +376,7 @@ class ClusterDeployment(BaseCustomResource):
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
             group=self._hive_api_group,
-            version='v1',
+            version=self._version,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace
@@ -377,7 +385,7 @@ class ClusterDeployment(BaseCustomResource):
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
             group=self._hive_api_group,
-            version='v1',
+            version=self._version,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace
@@ -442,6 +450,125 @@ class ClusterDeployment(BaseCustomResource):
             waiting_for=f'cluster {self.ref} state to be {required_state}',
             expected_exceptions=waiting.exceptions.TimeoutExpired
         )
+
+    def list_agents(self) -> List['Agent']:
+        return Agent.list(self.crd_api, self)
+
+    def wait_for_agents(
+            self,
+            num_agents: int = 1,
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT
+    ) -> List['Agent']:
+
+        def _wait_for_sufficient_agents_number() -> List['Agent']:
+            agents = self.list_agents()
+            return agents if len(agents) == num_agents else []
+
+        return waiting.wait(
+            _wait_for_sufficient_agents_number,
+            sleep_seconds=0.5,
+            timeout_seconds=timeout,
+            waiting_for=f'cluster {self.ref} to have {num_agents} agents',
+        )
+
+
+class Agent(BaseCustomResource):
+    """
+    A CRD that represents host's agent in assisted-service.
+    When host is registered to the cluster the service will create an Agent
+    resource and assign it to the relevant cluster.
+    In oder to start the installation, all assigned agents must be approved.
+    """
+    _api_group = 'adi.io.my.domain'
+    _version = 'v1alpha1'
+    _plural = 'agents'
+
+    def __init__(
+            self,
+            kube_api_client: ApiClient,
+            name: str,
+            namespace: str = env_variables['namespace']
+    ):
+        BaseCustomResource.__init__(self, name, namespace)
+        self.crd_api = CustomObjectsApi(kube_api_client)
+
+    @classmethod
+    def list(
+            cls,
+            crd_api: CustomObjectsApi,
+            cluster_deployment: ClusterDeployment,
+    ) -> List['Agent']:
+        resources = crd_api.list_namespaced_custom_object(
+            group=cls._api_group,
+            version=cls._version,
+            plural=cls._plural,
+            namespace=cluster_deployment.ref.namespace,
+        )
+        assigned_agents = []
+        for item in resources.get('items', []):
+            assigned_cluster_ref = ObjectReference(
+                name=item['spec']['clusterDeploymentName']['name'],
+                namespace=item['spec']['clusterDeploymentName']['namespace']
+            )
+            if assigned_cluster_ref == cluster_deployment.ref:
+                assigned_agents.append(
+                    cls(
+                        kube_api_client=cluster_deployment.crd_api.api_client,
+                        name=item['metadata']['name'],
+                        namespace=item['metadata']['namespace']
+                    )
+                )
+
+        return assigned_agents
+
+    def create(self):
+        raise RuntimeError(
+            'agent resource must be created by the assisted-installer operator'
+        )
+
+    def get(self) -> dict:
+        return self.crd_api.get_namespaced_custom_object(
+            group=self._api_group,
+            version=self._version,
+            plural=self._plural,
+            name=self.ref.name,
+            namespace=self.ref.namespace
+        )
+
+    def patch(self, **kwargs) -> None:
+        body = {'spec': kwargs}
+
+        self.crd_api.patch_namespaced_custom_object(
+            group=self._api_group,
+            version=self._version,
+            plural=self._plural,
+            name=self.ref.name,
+            namespace=self.ref.namespace,
+            body=body
+        )
+
+        logger.info(
+            'patching agent %s: %s', self.ref, pformat(body)
+        )
+
+    def delete(self) -> None:
+        self.crd_api.delete_namespaced_custom_object(
+            group=self._api_group,
+            version=self._version,
+            plural=self._plural,
+            name=self.ref.name,
+            namespace=self.ref.namespace
+        )
+
+        logger.info('deleted agent %s', self.ref)
+
+    def status(self) -> dict:
+        return self.get()['status']
+
+    def approve(self) -> None:
+        self.patch(approved=True)
+
+        logger.info('approved agent %s', self.ref)
 
 
 def deploy_default_secret(
@@ -573,6 +700,9 @@ def delete_cluster_deployment(
 
     if cluster_deployment.secret:
         _try_to_delete_resource(cluster_deployment.secret)
+
+    for agent in cluster_deployment.list_agents():
+        _try_to_delete_resource(agent)
 
     _try_to_delete_resource(cluster_deployment)
 
