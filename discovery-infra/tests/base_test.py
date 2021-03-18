@@ -128,12 +128,12 @@ class BaseTest:
 
     @staticmethod
     def attach_disk_flags(persistent):
-        modified_nodes = []
+        modified_nodes = set()
 
         def attach(node, disk_size, bootable=False):
             nonlocal modified_nodes
             node.attach_test_disk(disk_size, bootable=bootable, persistent=persistent)
-            modified_nodes.append(node)
+            modified_nodes.add(node)
 
         yield attach
         if env_variables['test_teardown']:
