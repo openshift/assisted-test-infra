@@ -34,7 +34,7 @@ pipeline {
                 sh "make download_cluster_logs"
                 dir ('deploymentRepo') {
                     sh "rm -rf assisted-installer-deployment"
-                    sh "git clone 'https://github.com/eranco74/assisted-installer-deployment'"
+                    sh "git clone 'https://github.com/openshift-assisted/assisted-installer-deployment'"
                 }
                 sh "skipper run deploymentRepo/assisted-installer-deployment/tools/create_triage_tickets.py -up ${JIRA_CREDS} -v"
             }
