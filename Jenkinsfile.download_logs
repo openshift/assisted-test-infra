@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Run') {
+        stage('Cluster-logs') {
             steps {
                 sh "make download_cluster_logs"
                 dir ('deploymentRepo') {
@@ -40,6 +40,11 @@ pipeline {
                         sh "skipper run ./tools/create_triage_tickets.py -up ${JIRA_CREDS} -v"
                     }
                 }
+            }
+        }
+        stage('Testgrid failures') {
+            steps {
+                sh "skipper run deploymentRepo/assisted-installer-deployment/tools/create_testgrid_tickets.py -up ${JIRA_CREDS} -v"
             }
         }
     }
