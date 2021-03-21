@@ -35,8 +35,11 @@ pipeline {
                 dir ('deploymentRepo') {
                     sh "rm -rf assisted-installer-deployment"
                     sh "git clone 'https://github.com/openshift-assisted/assisted-installer-deployment'"
+
+                    dir ('assisted-installer-deployment') {
+                        sh "skipper run ./tools/create_triage_tickets.py -up ${JIRA_CREDS} -v"
+                    }
                 }
-                sh "skipper run deploymentRepo/assisted-installer-deployment/tools/create_triage_tickets.py -up ${JIRA_CREDS} -v"
             }
         }
     }
