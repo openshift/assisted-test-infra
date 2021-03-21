@@ -68,6 +68,12 @@
 
 							// ITERATING THROUGH OBJECTS
 							$.each(data, function (key, value) {
+								let severity_to_colors = {
+									'error': ['white', '#810000'],
+									'warning': ['black', '#E8E9A1'],
+									'info': ['black', '#A3DDCB'],
+								};
+								[font, background] = severity_to_colors[value.severity];
 
 								//CONSTRUCTION OF ROWS HAVING
 								// DATA FROM JSON OBJECT
@@ -80,7 +86,7 @@
 								}
 								event += '<td>' + value.event_time + '</td>';
 								event += '<td>' + value.message + '</td>';
-								event += '<td>' + value.severity + '</td>';
+								event += '<td style="background-color:' + background + '; color:' + font + '">' + value.severity + '</td>';
 								event += '</tr>';
 							});
 
