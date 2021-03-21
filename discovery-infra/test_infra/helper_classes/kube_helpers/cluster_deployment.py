@@ -1,154 +1,19 @@
-"""
-kube_helpers.py provides infra to deploy, manage and install cluster using
-CRDs instead of restful API calls.
-
-Simplest use of this infra is performed by calling cluster_deployment_context
-fixture, must be called with a kube_api_client which is provided as a fixture
-as well. With this context manager you will be able to manage a cluster
-without need to handle registration and deregistration.
-
-Example of usage:
-
-with cluster_deployment_context(kube_api_client) as cluster_deployment:
-    print(cluster_deployment.status())
-
-An Agent CRD will be created for each registered host. In order to start the
-installation all agents must be approved.
-When a ClusterDeployment has sufficient data and the assigned agents are
-approved, installation will be started automatically.
-"""
-
-import abc
 import contextlib
-import json
-import logging
-import os
 from pprint import pformat
 from typing import Optional, Union, Dict, Tuple, List, ContextManager
 
 import waiting
 import yaml
-from kubernetes.client import ApiClient, CoreV1Api, CustomObjectsApi
+from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
-from kubernetes.config import load_kube_config
-from kubernetes.config.kube_config import Configuration
 from test_infra.utils import get_random_name
 from tests.conftest import env_variables
 
-# silence kubernetes debug messages.
-logging.getLogger('kubernetes').setLevel(logging.INFO)
 
-logger = logging.getLogger(__name__)
-
-
-def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
-    logger.info('creating kube client with config file: %s', kubeconfig_path)
-
-    conf = Configuration()
-    load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
-    return ApiClient(configuration=conf)
-
-
-def _does_string_contain_value(s: Union[str, None]) -> bool:
-    return s and s != '""'
-
-
-class ObjectReference:
-    """
-    A class that contains the information required to to let you locate a
-    referenced Kube API resource.
-    """
-
-    def __init__(self, name: str, namespace: str):
-        self.name = name
-        self.namespace = namespace
-
-    def __repr__(self) -> str:
-        return str(self.as_dict())
-
-    def __eq__(self, other: 'ObjectReference') -> bool:
-        return other.name == self.name and other.namespace == self.namespace
-
-    def as_dict(self) -> dict:
-        return {'name': self.name, 'namespace': self.namespace}
-
-
-class Secret:
-    """
-    A Kube API secret resource that consists of the pull secret data, used
-    by a ClusterDeployment CRD.
-    """
-    _secret_type = "kubernetes.io/dockerconfigjson"
-    _docker_config_json_key = '.dockerconfigjson'
-
-    def __init__(
-            self,
-            kube_api_client: ApiClient,
-            name: str,
-            namespace: str = env_variables['namespace']
-    ):
-        self.v1_api = CoreV1Api(kube_api_client)
-        self._reference = ObjectReference(name=name, namespace=namespace)
-
-    @property
-    def ref(self) -> ObjectReference:
-        return self._reference
-
-    def create(self, pull_secret: str = env_variables['pull_secret']) -> None:
-        self.v1_api.create_namespaced_secret(
-            body={
-                'type': self._secret_type,
-                'apiVersion': 'v1',
-                'kind': 'Secret',
-                'metadata': self.ref.as_dict(),
-                'stringData': {self._docker_config_json_key: pull_secret}
-            },
-            namespace=self.ref.namespace
-        )
-
-        logger.info('created secret %s', self.ref)
-
-    def delete(self) -> None:
-        self.v1_api.delete_namespaced_secret(
-            name=self.ref.name,
-            namespace=self.ref.namespace
-        )
-
-        logger.info('deleted secret %s', self.ref)
-
-
-class BaseCustomResource(abc.ABC):
-    """
-    Base class for all CRDs, enforces basic methods that every resource must
-    have e.g create, path, get, delete and status.
-    """
-
-    def __init__(self, name: str, namespace: str):
-        self._reference = ObjectReference(name=name, namespace=namespace)
-
-    @property
-    def ref(self) -> ObjectReference:
-        return self._reference
-
-    @abc.abstractmethod
-    def create(self, **kwargs) -> None:
-        pass
-
-    @abc.abstractmethod
-    def patch(self, **kwargs) -> None:
-        pass
-
-    @abc.abstractmethod
-    def get(self) -> dict:
-        pass
-
-    @abc.abstractmethod
-    def delete(self) -> None:
-        pass
-
-    @abc.abstractmethod
-    def status(self, **kwargs) -> dict:
-        pass
+from .common import logger, does_string_contain_value
+from .base_resource import BaseCustomResource
+from .secret import deploy_default_secret, Secret
+from .agent import Agent
 
 
 DEFAULT_API_VIP = env_variables.get('api_vip', '')
@@ -245,10 +110,10 @@ class InstallStrategy:
             }
         }
 
-        if _does_string_contain_value(self.ssh_public_key):
+        if does_string_contain_value(self.ssh_public_key):
             data['agent']['sshPublicKey'] = self.ssh_public_key
 
-        if _does_string_contain_value(self.machine_cidr):
+        if does_string_contain_value(self.machine_cidr):
             data['agent']['networking']['machineNetwork'] = [{
                 'cidr': self.machine_cidr
             }]
@@ -451,16 +316,16 @@ class ClusterDeployment(BaseCustomResource):
             expected_exceptions=waiting.exceptions.TimeoutExpired
         )
 
-    def list_agents(self) -> List['Agent']:
+    def list_agents(self) -> List[Agent]:
         return Agent.list(self.crd_api, self)
 
     def wait_for_agents(
             self,
             num_agents: int = 1,
             timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT
-    ) -> List['Agent']:
+    ) -> List[Agent]:
 
-        def _wait_for_sufficient_agents_number() -> List['Agent']:
+        def _wait_for_sufficient_agents_number() -> List[Agent]:
             agents = self.list_agents()
             return agents if len(agents) == num_agents else []
 
@@ -470,132 +335,6 @@ class ClusterDeployment(BaseCustomResource):
             timeout_seconds=timeout,
             waiting_for=f'cluster {self.ref} to have {num_agents} agents',
         )
-
-
-class Agent(BaseCustomResource):
-    """
-    A CRD that represents host's agent in assisted-service.
-    When host is registered to the cluster the service will create an Agent
-    resource and assign it to the relevant cluster.
-    In oder to start the installation, all assigned agents must be approved.
-    """
-    _api_group = 'adi.io.my.domain'
-    _version = 'v1alpha1'
-    _plural = 'agents'
-
-    def __init__(
-            self,
-            kube_api_client: ApiClient,
-            name: str,
-            namespace: str = env_variables['namespace']
-    ):
-        BaseCustomResource.__init__(self, name, namespace)
-        self.crd_api = CustomObjectsApi(kube_api_client)
-
-    @classmethod
-    def list(
-            cls,
-            crd_api: CustomObjectsApi,
-            cluster_deployment: ClusterDeployment,
-    ) -> List['Agent']:
-        resources = crd_api.list_namespaced_custom_object(
-            group=cls._api_group,
-            version=cls._version,
-            plural=cls._plural,
-            namespace=cluster_deployment.ref.namespace,
-        )
-        assigned_agents = []
-        for item in resources.get('items', []):
-            assigned_cluster_ref = ObjectReference(
-                name=item['spec']['clusterDeploymentName']['name'],
-                namespace=item['spec']['clusterDeploymentName']['namespace']
-            )
-            if assigned_cluster_ref == cluster_deployment.ref:
-                assigned_agents.append(
-                    cls(
-                        kube_api_client=cluster_deployment.crd_api.api_client,
-                        name=item['metadata']['name'],
-                        namespace=item['metadata']['namespace']
-                    )
-                )
-
-        return assigned_agents
-
-    def create(self):
-        raise RuntimeError(
-            'agent resource must be created by the assisted-installer operator'
-        )
-
-    def get(self) -> dict:
-        return self.crd_api.get_namespaced_custom_object(
-            group=self._api_group,
-            version=self._version,
-            plural=self._plural,
-            name=self.ref.name,
-            namespace=self.ref.namespace
-        )
-
-    def patch(self, **kwargs) -> None:
-        body = {'spec': kwargs}
-
-        self.crd_api.patch_namespaced_custom_object(
-            group=self._api_group,
-            version=self._version,
-            plural=self._plural,
-            name=self.ref.name,
-            namespace=self.ref.namespace,
-            body=body
-        )
-
-        logger.info(
-            'patching agent %s: %s', self.ref, pformat(body)
-        )
-
-    def delete(self) -> None:
-        self.crd_api.delete_namespaced_custom_object(
-            group=self._api_group,
-            version=self._version,
-            plural=self._plural,
-            name=self.ref.name,
-            namespace=self.ref.namespace
-        )
-
-        logger.info('deleted agent %s', self.ref)
-
-    def status(self) -> dict:
-        return self.get()['status']
-
-    def approve(self) -> None:
-        self.patch(approved=True)
-
-        logger.info('approved agent %s', self.ref)
-
-
-def deploy_default_secret(
-        kube_api_client: ApiClient,
-        name: str,
-        ignore_conflict: bool = True,
-        pull_secret: Optional[str] = None
-) -> Secret:
-    if pull_secret is None:
-        pull_secret = os.environ.get('PULL_SECRET', '')
-    _validate_pull_secret(pull_secret)
-    secret = Secret(kube_api_client, name)
-    try:
-        secret.create(pull_secret)
-    except ApiException as e:
-        if not (e.reason == 'Conflict' and ignore_conflict):
-            raise
-    return secret
-
-
-def _validate_pull_secret(pull_secret: str) -> None:
-    if not pull_secret:
-        return
-    try:
-        json.loads(pull_secret)
-    except json.JSONDecodeError:
-        raise ValueError(f'invalid pull secret {pull_secret}')
 
 
 def deploy_default_cluster_deployment(
@@ -690,7 +429,7 @@ def delete_cluster_deployment(
         ignore_not_found: bool = True
 ) -> None:
     def _try_to_delete_resource(
-            resource: Union[Secret, ClusterDeployment]
+            resource: Union[Secret, ClusterDeployment, Agent]
     ) -> None:
         try:
             resource.delete()
