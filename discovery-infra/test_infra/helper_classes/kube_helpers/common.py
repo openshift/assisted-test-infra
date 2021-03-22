@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Union
 
 from kubernetes.client import ApiClient
+from kubernetes.client.rest import ApiException
 from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration
 
@@ -11,6 +12,26 @@ from kubernetes.config.kube_config import Configuration
 logging.getLogger('kubernetes').setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
+
+
+class KubeAPIContext:
+    """
+    This class is used to hold information shared between both kubernetes and
+    custom resources. It provides a contextmanager responsible for cleanup of
+    all the resources created within it.
+    """
+    resources = set()
+
+    def __init__(self, kube_api_client: Optional[ApiClient] = None):
+        self.api_client = kube_api_client
+
+    def __enter__(self):
+        logger.info('entering kube api context')
+        self.resources.clear()
+
+    def __exit__(self, *_):
+        logger.info('exiting kube api context')
+        delete_all_resources(self)
 
 
 class ObjectReference:
@@ -41,5 +62,20 @@ def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
     return ApiClient(configuration=conf)
 
 
+def delete_all_resources(
+        kube_api_context: KubeAPIContext,
+        ignore_not_found: bool = True
+) -> None:
+    logger.info('deleting all resources')
+
+    for resource in kube_api_context.resources:
+        try:
+            resource.delete()
+        except ApiException as e:
+            if not (e.reason == 'Not Found' and ignore_not_found):
+                raise
+
+
 def does_string_contain_value(s: Union[str, None]) -> bool:
     return s and s != '""'
+
