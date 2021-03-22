@@ -169,7 +169,7 @@ delete_podman_localhost:
 
 # Start load balancer if it does not already exist.  Map the directory $(HOME)/.test-infra/etc/nginx/stream.d to be /etc/nginx/stream.d so it will be used by the python code to fill up load balancing definitions
 start_load_balancer:
-	@if [ "$(PLATFORM)" = "none" ] ; then id=`podman ps --quiet --filter "name=load_balancer"` ; ( test -z "$$id" && echo "Staring load balancer ..." && podman run -d --rm --net=host --name=load_balancer -v $(HOME)/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d load_balancer:latest ) || ! test -z "$$id" ; fi
+	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ] ; then id=`podman ps --quiet --filter "name=load_balancer"` ; ( test -z "$$id" && echo "Staring load balancer ..." && podman run -d --rm --net=host --name=load_balancer -v $(HOME)/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d load_balancer:latest ) || ! test -z "$$id" ; fi
 
 stop_load_balancer:
 	@id=`podman ps --quiet --filter "name=load_balancer"`; test ! -z "$$id"  && podman rm -f load_balancer ; rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
@@ -417,7 +417,8 @@ lint:
 _lint:
 	pre-commit run --all-files
 
-test: start_load_balancer
+test:
+	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS) _test_setup
