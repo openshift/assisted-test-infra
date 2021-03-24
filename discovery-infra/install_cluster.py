@@ -48,7 +48,6 @@ def _install_cluster(client, cluster):
 
 
 def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
-    log.info("Waiting %s till cluster finished installation", timeout)
     # TODO: Change host validation for only previous known hosts
     try:
         utils.wait_till_all_hosts_are_in_status(
@@ -86,7 +85,8 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
 # 2. Running install cluster api
 # 3. Waiting till all nodes are in installing status
 # 4. Downloads kubeconfig for future usage
-def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
+def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret,
+                     tf=None, kube_client=None, cluster_deployment=None):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
     log.info("Verifying pull secret")
@@ -111,21 +111,28 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret, tf=None):
         cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
     )
 
-    wait_till_installed(client=client, cluster=cluster)
+    log.info("Waiting until cluster finishes installation")
+    if kube_client is not None:
+        cluster_deployment.wait_to_be_installed()
+    else:
+        wait_till_installed(client=client, cluster=cluster)
 
     log.info("Download kubeconfig")
-    waiting.wait(
-        lambda: client.download_kubeconfig(
-            cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
-        ) is None,
-        timeout_seconds=240,
-        sleep_seconds=20,
-        expected_exceptions=Exception,
-        waiting_for="Kubeconfig",
-    )
+    if kube_client is not None:
+        cluster_deployment.download_kubeconfig(kubeconfig_path=kubeconfig_path)
+    else:
+        waiting.wait(
+            lambda: client.download_kubeconfig(
+                cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
+            ) is None,
+            timeout_seconds=240,
+            sleep_seconds=20,
+            expected_exceptions=Exception,
+            waiting_for="Kubeconfig",
+        )
 
     # set new vips
-    if tf:
+    if tf and kube_client is None:
         cluster_info = client.cluster_get(cluster.id)
         if not cluster_info.api_vip:
             cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)

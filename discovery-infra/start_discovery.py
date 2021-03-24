@@ -1,20 +1,25 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import pathlib
 import argparse
+import contextlib
 import distutils.util
 import ipaddress
 import json
 import os
-import time
 
 import dns.resolver
+from kubernetes.client import CustomObjectsApi
+from kubernetes.client.exceptions import ApiException
 from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.tools import static_network
-from test_infra.tools import terraform_utils
-from test_infra.utils import config_etc_hosts
+from test_infra.tools import static_network, terraform_utils
+from test_infra.helper_classes.kube_helpers import (
+    create_kube_api_client, ClusterDeployment, Platform,
+    InstallStrategy, Secret, InstallEnv, Agent, Proxy
+)
 
 import bootstrap_in_place as ibip
 import day2
@@ -39,6 +44,17 @@ class MachineNetwork(object):
         self.cidr_v6 = machine_cidr_6
         self.provisioning_cidr_v4 = _get_provisioning_cidr(machine_cidr_4, ns_index)
         self.provisioning_cidr_v6 = _get_provisioning_cidr6(machine_cidr_6, ns_index)
+
+        self.machine_cidr_addresses = []
+        self.provisioning_cidr_addresses = []
+
+        if self.has_ip_v4:
+            self.machine_cidr_addresses += [self.cidr_v4]
+            self.provisioning_cidr_addresses += [self.provisioning_cidr_v4]
+
+        if self.has_ip_v6:
+            self.machine_cidr_addresses += [self.cidr_v6]
+            self.provisioning_cidr_addresses += [self.provisioning_cidr_v6]
 
 
 def set_tf_config(cluster_name):
@@ -101,19 +117,8 @@ def fill_tfvars(
         tfvars['libvirt_master_ips'] = utils.create_empty_nested_list(master_count)
         tfvars['libvirt_worker_ips'] = utils.create_empty_nested_list(worker_count)
 
-    machine_cidr_addresses = []
-    provisioning_cidr_addresses = []
-
-    if machine_net.has_ip_v4:
-        machine_cidr_addresses += [machine_net.cidr_v4]
-        provisioning_cidr_addresses += [machine_net.provisioning_cidr_v4]
-
-    if machine_net.has_ip_v6:
-        machine_cidr_addresses += [machine_net.cidr_v6]
-        provisioning_cidr_addresses += [machine_net.provisioning_cidr_v6]
-
-    tfvars['machine_cidr_addresses'] = machine_cidr_addresses
-    tfvars['provisioning_cidr_addresses'] = provisioning_cidr_addresses
+    tfvars['machine_cidr_addresses'] = machine_net.machine_cidr_addresses
+    tfvars['provisioning_cidr_addresses'] = machine_net.provisioning_cidr_addresses
     tfvars['api_vip'] = _get_vips_ips(machine_net)[0]
     tfvars['libvirt_storage_pool_path'] = storage_path
     tfvars['libvirt_master_macs'] = static_network.generate_macs(master_count)
@@ -385,7 +390,7 @@ def validate_dns(client, cluster_id):
 
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
-def nodes_flow(client, cluster_name, cluster):
+def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, cluster_deployment=None):
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     nodes_details = utils.get_tfvars(tf_folder)
     if cluster:
@@ -393,7 +398,6 @@ def nodes_flow(client, cluster_name, cluster):
         utils.set_tfvars(tf_folder, nodes_details)
 
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
-    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
     is_ipv4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
 
     create_nodes_and_wait_till_registered(
@@ -457,13 +461,18 @@ def nodes_flow(client, cluster_name, cluster):
         )
 
         if args.install_cluster:
-            time.sleep(10)
+            if args.kube_api:
+                for agent in Agent.list(CustomObjectsApi(kube_client), cluster_deployment):
+                    agent.approve()
+
             install_cluster.run_install_flow(
                 client=client,
                 cluster_id=cluster.id,
                 kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
                 pull_secret=args.pull_secret,
-                tf=tf
+                tf=tf,
+                kube_client=kube_client,
+                cluster_deployment=cluster_deployment,
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)
@@ -514,7 +523,12 @@ def execute_day1_flow(cluster_name):
 
     set_tf_config(cluster_name)
     image_path = None
+    image_url = None
     image_type = args.iso_image_type
+    kube_client = None
+    cluster_deployment = None
+
+    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
 
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
@@ -523,8 +537,74 @@ def execute_day1_flow(cluster_name):
         )
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
-        else:
 
+        elif args.kube_api:
+            kube_client = create_kube_api_client(str(pathlib.Path("~/.kube/config").expanduser()))
+            cluster_deployment = ClusterDeployment(
+                kube_api_client=kube_client,
+                name=cluster_name,
+                namespace=args.namespace
+            )
+
+            secret=Secret(
+                kube_api_client=kube_client,
+                name=cluster_name,
+                namespace=args.namespace,
+            )
+            with contextlib.suppress(ApiException):
+                secret.delete()
+
+            secret.create(pull_secret=args.pull_secret)
+
+            ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
+            ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
+            api_vip, ingress_vip = "", ""
+
+            with contextlib.suppress(ApiException):
+                cluster_deployment.delete()
+
+            cluster_deployment.create(
+                platform=Platform(
+                    api_vip=api_vip,
+                    ingress_vip=ingress_vip,
+                ),
+                install_strategy=InstallStrategy(
+                    host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
+                    machine_cidr=machine_net.machine_cidr_addresses[0],
+                    cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
+                    service_cidr=args.service_network if ipv4 else args.service_network6,
+                    ssh_public_key=args.ssh_key,
+                    control_plane_agents=args.master_count,
+                    worker_agents=args.number_of_workers,
+                ),
+                secret=secret,
+                base_domain=args.base_dns_domain,
+            )
+            cluster_deployment.wait_for_state("insufficient")
+
+            http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
+            install_env = InstallEnv(
+                kube_api_client=kube_client,
+                name=f"{cluster_name}-install-env",
+                namespace=args.namespace
+            )
+            with contextlib.suppress(ApiException):
+                install_env.delete()
+
+            install_env.create(
+                cluster_deployment=cluster_deployment,
+                secret=secret,
+                proxy=Proxy(
+                    http_proxy=http_proxy,
+                    https_proxy=https_proxy,
+                    no_proxy=no_proxy
+                )
+            )
+            install_env.status()
+            image_url = install_env.get_iso_download_url()
+            cluster = client.cluster_get(cluster_id=install_env.get_cluster_id())
+
+        else:
             cluster = client.create_cluster(
                 cluster_name,
                 ssh_public_key=args.ssh_key, **_cluster_create_params()
@@ -541,18 +621,22 @@ def execute_day1_flow(cluster_name):
         else:
             static_network_config = None
 
-        client.generate_and_download_image(
-            cluster_id=cluster.id,
-            image_path=image_path,
-            image_type=image_type,
-            ssh_key=args.ssh_key,
-            static_network_config=static_network_config,
-        )
+        if image_url is not None:
+            utils.download_iso(image_url, image_path)
+        else:
+            client.generate_and_download_image(
+                cluster_id=cluster.id,
+                image_path=image_path,
+                image_type=image_type,
+                ssh_key=args.ssh_key,
+                static_network_config=static_network_config,
+            )
+
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
         try:
-            nodes_flow(client, cluster_name, cluster)
+            nodes_flow(client, cluster_name, cluster, machine_net, kube_client, cluster_deployment)
         finally:
             if not image_path or args.keep_iso:
                 return
@@ -578,9 +662,8 @@ def main():
     if args.day1_cluster:
         cluster_id = execute_day1_flow(cluster_name)
 
-    # None platform currently not supporting day2
-    if is_none_platform_mode():
-        return
+    elif is_none_platform_mode():
+        raise NotImplementedError("None platform currently not supporting day2")
 
     has_ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     if args.day2_cloud_cluster:
@@ -878,14 +961,22 @@ if __name__ == "__main__":
         const=True,
         default=False,
     )
+    parser.add_argument(
+        "--kube-api",
+        help='Should kube-api interface be used for cluster deployment',
+        type=distutils.util.strtobool,
+        nargs='?',
+        const=True,
+        default=False,
+    )
 
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
     if not args.pull_secret:
-        raise Exception("Can't install cluster without pull secret, please provide one")
+        raise ValueError("Can't install cluster without pull secret, please provide one")
 
     if args.master_count == 1:
-        log.info("Master count is 1, setting workers to 0")
+        log.warning("Master count is 1, setting workers to 0")
         args.number_of_workers = 0
 
     main()

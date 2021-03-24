@@ -51,6 +51,13 @@ class Secret(BaseResource):
 
         logger.info('deleted secret %s', self.ref)
 
+    def get(self) -> dict:
+        return self.v1_api.read_namespaced_secret(
+            name=self.ref.name,
+            namespace=self.ref.namespace,
+            pretty=True,
+        )
+
 
 def deploy_default_secret(
         kube_api_client: ApiClient,

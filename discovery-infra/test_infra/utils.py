@@ -914,3 +914,10 @@ def get_assisted_controller_status(kubeconfig):
 
     log.info(f'{response.stdout}')
     return response.stdout
+
+
+def download_iso(image_url, image_path):
+    with requests.get(image_url, stream=True) as image, \
+            open(image_path, "wb") as out:
+        for chunk in image.iter_content(chunk_size=1024):
+            out.write(chunk)
