@@ -9,9 +9,10 @@ from kubernetes.client.rest import ApiException
 from tests.conftest import env_variables
 
 from .common import logger, ObjectReference
+from .base_resource import BaseResource
 
 
-class Secret:
+class Secret(BaseResource):
     """
     A Kube API secret resource that consists of the pull secret data, used
     by a ClusterDeployment CRD.
@@ -25,12 +26,8 @@ class Secret:
             name: str,
             namespace: str = env_variables['namespace']
     ):
+        super().__init__(name, namespace)
         self.v1_api = CoreV1Api(kube_api_client)
-        self._reference = ObjectReference(name=name, namespace=namespace)
-
-    @property
-    def ref(self) -> ObjectReference:
-        return self._reference
 
     def create(self, pull_secret: str = env_variables['pull_secret']) -> None:
         self.v1_api.create_namespaced_secret(

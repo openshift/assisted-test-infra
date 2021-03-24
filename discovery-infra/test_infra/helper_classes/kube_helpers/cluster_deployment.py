@@ -1,12 +1,10 @@
-import contextlib
 from pprint import pformat
-from typing import Optional, Union, Dict, Tuple, List, ContextManager
+from typing import Optional, Union, Dict, Tuple, List
 
 import waiting
 import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
-from test_infra.utils import get_random_name
 from tests.conftest import env_variables
 
 
@@ -144,13 +142,8 @@ class ClusterDeployment(BaseCustomResource):
             name: str,
             namespace: str = env_variables['namespace']
     ):
-        BaseCustomResource.__init__(self, name, namespace)
+        super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
-        self._assigned_secret = None
-
-    @property
-    def secret(self) -> Secret:
-        return self._assigned_secret
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
@@ -159,11 +152,6 @@ class ClusterDeployment(BaseCustomResource):
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace
-        )
-        secret_ref = yaml_data['spec']['pullSecretRef']
-        self._assigned_secret = Secret(
-            kube_api_client=self.crd_api.api_client,
-            name=secret_ref['name'],
         )
 
         logger.info(
@@ -198,7 +186,6 @@ class ClusterDeployment(BaseCustomResource):
             body=body,
             namespace=self.ref.namespace
         )
-        self._assigned_secret = secret
 
         logger.info(
             'created cluster deployment %s: %s', self.ref, pformat(body)
@@ -422,52 +409,3 @@ def _create_from_attrs(
         base_domain=base_domain,
         **kwargs
     )
-
-
-def delete_cluster_deployment(
-        cluster_deployment: ClusterDeployment,
-        ignore_not_found: bool = True
-) -> None:
-    def _try_to_delete_resource(
-            resource: Union[Secret, ClusterDeployment, Agent]
-    ) -> None:
-        try:
-            resource.delete()
-        except ApiException as e:
-            if not (e.reason == 'Not Found' and ignore_not_found):
-                raise
-
-    if cluster_deployment.secret:
-        _try_to_delete_resource(cluster_deployment.secret)
-
-    for agent in cluster_deployment.list_agents():
-        _try_to_delete_resource(agent)
-
-    _try_to_delete_resource(cluster_deployment)
-
-
-@contextlib.contextmanager
-def cluster_deployment_context(
-        kube_api_client: ApiClient,
-        name: Optional[str] = None,
-        **kwargs
-) -> ContextManager[ClusterDeployment]:
-    """
-    Used by tests as pytest fixture, this contextmanager function yields a
-    ClusterDeployment CRD that is deployed and registered to assisted service,
-    alongside to a Secret resource.
-    When exiting context the resources are deleted and deregistered from the
-    service.
-    """
-    if not name:
-        name = get_random_name(length=8)
-
-    cluster_deployment = deploy_default_cluster_deployment(
-        kube_api_client,
-        name,
-        **kwargs
-    )
-    try:
-        yield cluster_deployment
-    finally:
-        delete_cluster_deployment(cluster_deployment)

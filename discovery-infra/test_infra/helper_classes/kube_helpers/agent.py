@@ -26,7 +26,7 @@ class Agent(BaseCustomResource):
             name: str,
             namespace: str = env_variables['namespace']
     ):
-        BaseCustomResource.__init__(self, name, namespace)
+        super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
 
     @classmethod
