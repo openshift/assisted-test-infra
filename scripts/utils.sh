@@ -12,9 +12,9 @@ function get_namespace_index() {
     index=$(skipper run python3 scripts/indexer.py --action set --namespace $namespace $oc_flag)
     if [[ -z $index ]]; then
         all_namespaces=$(skipper run python3 scripts/indexer.py --action list)
-        echo "Maximum number of namespaces allowed are currently running: $all_namespaces"
-        echo "Please remove an old namespace in order to create a new one, run:"
-        echo "make delete_minikube_profile NAMESPACE=<namespace>"
+        echo "Error: Failed allocating namespace index for namespace ${namespace}"
+        echo "Please check that the current number of assisted-installer namespaces is not exceeding 15,"
+        echo "and verify that skipper is installed and working properly from test-infra directory."
         exit 1
     fi
 
