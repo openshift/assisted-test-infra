@@ -80,6 +80,9 @@ class Cluster:
         hosts = self.get_hosts()
         return {h["id"]: h["role"] for h in hosts}
 
+    def get_operators(self):
+        return self.api_client.get_cluster_operators(self.id)
+
     def generate_image(self, ssh_key=env_variables['ssh_public_key']):
         self.api_client.generate_image(cluster_id=self.id, ssh_key=ssh_key)
 
@@ -369,12 +372,15 @@ class Cluster:
 
     def start_install_and_wait_for_installed(self,
                                              wait_for_hosts=True,
+                                             wait_for_operators=True,
                                              wait_for_cluster_install=True,
                                              nodes_count=env_variables['num_nodes']
                                              ):
         self.start_install()
         if wait_for_hosts:
             self.wait_for_hosts_to_install(nodes_count=nodes_count)
+        if wait_for_operators:
+            self.wait_for_operators_to_finish()
         if wait_for_cluster_install:
             self.wait_for_install()
 
@@ -514,6 +520,20 @@ class Cluster:
             nodes_count=nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
+        )
+
+    def wait_for_operators_to_finish(
+        self,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True
+    ):
+        utils.wait_till_all_operators_are_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            operators_count=len(self.get_operators()),
+            statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
+            timeout=timeout,
+            fall_on_error_status=False,
         )
 
     def wait_for_install(

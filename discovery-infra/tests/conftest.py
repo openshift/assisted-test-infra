@@ -63,7 +63,7 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "master_vcpu": utils.get_env('MASTER_CPU', consts.MASTER_CPU),
                  "test_teardown": bool(util.strtobool(utils.get_env('TEST_TEARDOWN', 'true'))),
                  "namespace": utils.get_env('NAMESPACE', consts.DEFAULT_NAMESPACE),
-                 "olm_operators": utils.get_env('OLM_OPERATORS', '').lower().split(),
+                 "olm_operators": list(map(lambda name: {'name': name}, utils.get_env('OLM_OPERATORS', '').lower().split())),
                  "platform": utils.get_env("PLATFORM", consts.Platforms.BARE_METAL)
                  }
 cluster_mid_name = infra_utils.get_random_name()
