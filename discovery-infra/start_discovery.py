@@ -467,12 +467,6 @@ def nodes_flow(client, cluster_name, cluster):
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)
-            if args.wait_for_cvo:
-                cluster_info = client.cluster_get(cluster.id)
-                log.info("Start waiting till CVO status is available")
-                api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)
-                config_etc_hosts(cluster_info.name, cluster_info.base_dns_domain, api_vip)
-                utils.wait_for_cvo_available()
 
 
 def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_network_mode):
@@ -736,12 +730,6 @@ if __name__ == "__main__":
         "-in",
         "--install-cluster",
         help="Install cluster, will take latest id",
-        action="store_true",
-    )
-    parser.add_argument(
-        "-cvo",
-        "--wait-for-cvo",
-        help="Wait for CVO available after cluster installation",
         action="store_true",
     )
     parser.add_argument(

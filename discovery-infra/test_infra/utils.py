@@ -18,7 +18,7 @@ from functools import wraps
 from pathlib import Path
 from pprint import pformat
 from string import ascii_lowercase
-from typing import List
+from typing import List, Dict
 
 import filelock
 import libvirt
@@ -111,31 +111,6 @@ def get_libvirt_nodes_mac_role_ip_and_name(network_name):
         raise
 
 
-def wait_for_cvo_available():
-    waiting.wait(
-        lambda: is_cvo_available(),
-        timeout_seconds=3600,
-        sleep_seconds=20,
-        waiting_for="CVO to become available",
-    )
-
-
-def is_cvo_available():
-    try:
-        res = subprocess.check_output("kubectl --kubeconfig=build/kubeconfig get clusterversion -o json", shell=True)
-        conditions = json.loads(res)['items'][0]['status']['conditions']
-        for condition in conditions:
-            log.info(
-                f"CVO condition <{condition['type']}> status is <{condition['status']}>, "
-                f"because: {condition.get('message')}")
-
-            if condition['type'] == 'Available' and condition['status'] == 'True':
-                return True
-    except BaseException:
-        log.exception("exception in access the cluster api server")
-    return False
-
-
 def get_libvirt_nodes_macs(network_name):
     return [lease["mac"] for lease in get_network_leases(network_name)]
 
@@ -225,6 +200,24 @@ def are_hosts_in_status(
     return False
 
 
+def are_operators_in_status(operators: List[Dict], operators_count: int, statuses: List[str], fall_on_error_status: bool) -> bool:
+    log.info(
+        "Asked operators to be in one of the statuses from %s and currently operators statuses are %s",
+        statuses,
+        [(operator["name"], operator.get("status"), operator.get("status_info")) for operator in operators],
+    )
+
+    if len([operator for operator in operators if operator.get("status") in statuses]) >= operators_count:
+        return True
+
+    if fall_on_error_status:
+        for operator in operators:
+            if operator.get("status") == consts.OperatorStatus.FAILED:
+                raise ValueError(f"Operator {operator['name']} status is {consts.OperatorStatus.FAILED} with info {operator.get('status_info')}")
+
+    return False
+
+
 def wait_till_hosts_with_macs_are_in_status(
         client,
         cluster_id,
@@ -251,6 +244,35 @@ def wait_till_hosts_with_macs_are_in_status(
     except BaseException:
         hosts = get_cluster_hosts_with_mac(client, cluster_id, macs)
         log.info("All nodes: %s", hosts)
+        raise
+
+
+def wait_till_all_operators_are_in_status(
+        client,
+        cluster_id,
+        operators_count,
+        statuses,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=False,
+        interval=5,
+):
+    log.info("Wait till %s operators are in one of the statuses %s", operators_count, statuses)
+
+    try:
+        waiting.wait(
+            lambda: are_operators_in_status(
+                client.get_cluster_operators(cluster_id),
+                operators_count,
+                statuses,
+                fall_on_error_status,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Monitored operators to be in of the statuses %s" % statuses,
+        )
+    except BaseException:
+        operators = client.get_cluster_operators(cluster_id)
+        log.info("All operators: %s", operators)
         raise
 
 
@@ -382,6 +404,7 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
         f"hosts statuses are {host_info}")
     return False
 
+
 def wait_for_logs_complete(
         client, cluster_id, timeout, interval=60, check_host_logs_only=False
 ):
@@ -403,6 +426,7 @@ def wait_for_logs_complete(
     except BaseException:
         log.error("waiting for logs expired after %d", timeout)
         raise
+
 
 def are_logs_in_status(client, cluster_id, statuses, check_host_logs_only=False):
     try:

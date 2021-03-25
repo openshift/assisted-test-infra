@@ -59,6 +59,14 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             timeout=timeout,
             interval=60,
         )
+        utils.wait_till_all_operators_are_in_status(
+            client=client,
+            cluster_id=cluster.id,
+            operators_count=len(cluster.monitored_operators),
+            statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            fall_on_error_status=False,
+        )
         utils.wait_till_cluster_is_in_status(
             client=client,
             cluster_id=cluster.id,

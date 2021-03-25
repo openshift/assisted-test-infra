@@ -105,6 +105,10 @@ class InventoryClient(object):
         log.info("Getting registered nodes for cluster %s", cluster_id)
         return self.client.list_hosts(cluster_id=cluster_id)
 
+    def get_cluster_operators(self, cluster_id):
+        log.info("Getting monitored operators for cluster %s", cluster_id)
+        return self.client.list_of_cluster_operators(cluster_id=cluster_id)
+
     def get_hosts_in_statuses(self, cluster_id, statuses):
         hosts = self.get_cluster_hosts(cluster_id)
         return [host for host in hosts if host["status"] in statuses]
