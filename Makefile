@@ -120,7 +120,7 @@ IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 all: create_full_environment run_full_flow_with_install
 
 
-destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost stop_load_balancer stop_nat
+destroy: destroy_nodes delete_minikube_profile kill_port_forwardings delete_podman_localhost stop_load_balancer
 
 ###############
 # Environment #
@@ -173,14 +173,6 @@ start_load_balancer:
 
 stop_load_balancer:
 	@id=`podman ps --quiet --filter "name=load_balancer"`; test ! -z "$$id"  && podman rm -f load_balancer ; rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
-
-########
-# Nat  #
-########
-
-# Remove all rules from NAT table that use mark 0x22b (555) which is used for none platform nat.  It is done iptables-save which dumps the nat table rules, removing the relevant rules, and feeding the result to iptables-restore
-stop_nat:
-	@iptables-save -t nat -c | grep -v 'mark 0x22b' | iptables-restore
 
 
 #############

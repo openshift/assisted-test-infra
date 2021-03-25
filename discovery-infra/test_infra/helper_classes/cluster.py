@@ -3,6 +3,7 @@ import ipaddress
 import json
 import logging
 import random
+import re
 import time
 from collections import Counter
 from typing import List
@@ -539,7 +540,7 @@ class Cluster:
             platform=env_variables['platform']
     ):
         if platform == consts.Platforms.NONE and not nodes.controller.ipv6:
-            self._configure_nat(nodes.controller)
+            self.configure_nat(nodes.controller)
 
         if download_image:
             if env_variables.get('static_network_config'):
@@ -737,13 +738,26 @@ class Cluster:
         lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
     @classmethod
-    def _configure_nat(cls, controller):
+    def _get_namespace_index(cls, libvirt_network_if):
+        # Hack to retrieve namespace index - does not exist in tests
+        matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+        return int(matcher.groups()[0]) if matcher is not None else 0
+
+    @classmethod
+    def configure_nat(cls, controller):
         libvirt_network_if = controller.network_conf.libvirt_network_if
         libvirt_secondary_network_if = controller.network_conf.libvirt_secondary_network_if
         input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
-
         nat_controller = NatController()
-        nat_controller.add_nat_rules(input_interfaces)
+        nat_controller.add_nat_rules(input_interfaces, cls._get_namespace_index(libvirt_network_if))
+
+    @classmethod
+    def unconfigure_nat(cls, controller):
+        libvirt_network_if = controller.network_conf.libvirt_network_if
+        libvirt_secondary_network_if = controller.network_conf.libvirt_secondary_network_if
+        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
+        nat_controller = NatController()
+        nat_controller.remove_nat_rules(input_interfaces, cls._get_namespace_index(libvirt_network_if))
 
     def _find_event(self, event_to_find, reference_time, params_list, host_id):
         events_list = self.get_events(host_id=host_id)
