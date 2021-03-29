@@ -29,6 +29,7 @@ from .cluster_deployment import (
 )
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
+from .installenv import deploy_default_installenv, InstallEnv
 from .common import (
     create_kube_api_client,
     delete_all_resources,
@@ -39,6 +40,7 @@ from .common import (
 __all__ = (
     'deploy_default_cluster_deployment',
     'deploy_default_secret',
+    'deploy_default_installenv',
     'create_kube_api_client',
     'delete_all_resources',
     'Platform',
@@ -47,5 +49,6 @@ __all__ = (
     'Secret',
     'Agent',
     'KubeAPIContext',
-    'ObjectReference'
+    'ObjectReference',
+    'InstallEnv'
 )
