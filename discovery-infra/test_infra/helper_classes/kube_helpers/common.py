@@ -1,6 +1,6 @@
 import logging
 
-from typing import Optional, Union
+from typing import Optional
 
 from kubernetes.client import ApiClient
 from kubernetes.client.rest import ApiException
@@ -76,6 +76,6 @@ def delete_all_resources(
                 raise
 
 
-def does_string_contain_value(s: Union[str, None]) -> bool:
+def does_string_contain_value(s: Optional[str]) -> bool:
     return s and s != '""'
 

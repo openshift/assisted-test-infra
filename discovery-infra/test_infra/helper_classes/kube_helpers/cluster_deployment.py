@@ -7,16 +7,21 @@ from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 from tests.conftest import env_variables
 
-
+from .global_vars import (
+    DEFAULT_API_VIP,
+    DEFAULT_API_VIP_DNS_NAME,
+    DEFAULT_INGRESS_VIP,
+    DEFAULT_MACHINE_CIDR,
+    DEFAULT_CLUSTER_CIDR,
+    DEFAULT_SERVICE_CIDR,
+    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT
+)
 from .common import logger, does_string_contain_value
 from .base_resource import BaseCustomResource
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
-
-
-DEFAULT_API_VIP = env_variables.get('api_vip', '')
-DEFAULT_API_VIP_DNS_NAME = env_variables.get('api_vip_dns_name', '')
-DEFAULT_INGRESS_VIP = env_variables.get('ingress_vip', '')
 
 
 class Platform:
@@ -30,23 +35,22 @@ class Platform:
             api_vip: str = DEFAULT_API_VIP,
             api_vip_dns_name: str = DEFAULT_API_VIP_DNS_NAME,
             ingress_vip: str = DEFAULT_INGRESS_VIP,
-            vip_dhcp_allocation: bool = env_variables['vip_dhcp_allocation']
+            agent_selector: Optional[Dict[str, str]] = None
     ):
         self.api_vip = api_vip
         self.api_vip_dns_name = api_vip_dns_name
         self.ingress_vip = ingress_vip
-        self.vip_dhcp_allocation = vip_dhcp_allocation
+        self.agent_selector = agent_selector
 
     def __repr__(self) -> str:
         return str(self.as_dict())
 
     def as_dict(self) -> dict:
-        vip_dhcp_allocation = 'Enabled' if self.vip_dhcp_allocation else ''
         data = {
             'agentBareMetal': {
                 'apiVIP': self.api_vip,
                 'ingressVIP': self.ingress_vip,
-                'VIPDHCPAllocation': vip_dhcp_allocation
+                'agentSelector': self.agent_selector or {}
             }
         }
 
@@ -54,11 +58,6 @@ class Platform:
             data['agentBareMetal']['apiVIPDNSName'] = self.api_vip_dns_name
 
         return data
-
-
-DEFAULT_MACHINE_CIDR = env_variables.get('machine_cidr', '')
-DEFAULT_CLUSTER_CIDR = env_variables.get('cluster_cidr', '172.30.0.0/16')
-DEFAULT_SERVICE_CIDR = env_variables.get('service_cidr', '10.128.0.0/14')
 
 
 class InstallStrategy:
@@ -119,11 +118,6 @@ class InstallStrategy:
         return data
 
 
-DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT = 60
-DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT = 300
-DEFAULT_WAIT_FOR_AGENTS_TIMEOUT = 60
-
-
 class ClusterDeployment(BaseCustomResource):
     """
     A CRD that represents cluster in assisted-service.
@@ -132,8 +126,8 @@ class ClusterDeployment(BaseCustomResource):
     When has sufficient data installation will start automatically.
     """
 
-    _hive_api_group = 'hive.openshift.io'
-    _version = 'v1'
+    _api_group = 'hive.openshift.io'
+    _api_version = 'v1'
     _plural = 'clusterdeployments'
 
     def __init__(
@@ -147,8 +141,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=self._hive_api_group,
-            version=self._version,
+            group=self._api_group,
+            version=self._api_version,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace
@@ -167,7 +161,7 @@ class ClusterDeployment(BaseCustomResource):
             **kwargs
     ) -> None:
         body = {
-            'apiVersion': f'{self._hive_api_group}/{self._version}',
+            'apiVersion': f'{self._api_group}/{self._api_version}',
             'kind': 'ClusterDeployment',
             'metadata': self.ref.as_dict(),
             'spec': {
@@ -180,8 +174,8 @@ class ClusterDeployment(BaseCustomResource):
         }
         body['spec'].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=self._hive_api_group,
-            version=self._version,
+            group=self._api_group,
+            version=self._api_version,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace
@@ -213,8 +207,8 @@ class ClusterDeployment(BaseCustomResource):
             spec['pullSecretRef'] = secret.ref.as_dict()
 
         self.crd_api.patch_namespaced_custom_object(
-            group=self._hive_api_group,
-            version=self._version,
+            group=self._api_group,
+            version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -227,8 +221,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=self._hive_api_group,
-            version=self._version,
+            group=self._api_group,
+            version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace
@@ -236,8 +230,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=self._hive_api_group,
-            version=self._version,
+            group=self._api_group,
+            version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace
@@ -388,12 +382,12 @@ def _create_from_attrs(
         ignore_conflict: bool,
         cluster_deployment: ClusterDeployment,
         base_domain: str,
-        secret: Secret,
+        secret: Optional[Secret] = None,
         platform_params: Optional[dict] = None,
         install_strategy_params: Optional[dict] = None,
         **kwargs
 ) -> None:
-    if secret is None:
+    if not secret:
         secret = deploy_default_secret(
             kube_api_client=kube_api_client,
             name=name,
