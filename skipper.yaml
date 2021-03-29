@@ -35,5 +35,6 @@ volumes:
   - /tmp:/tmp/
   - /dev/:/dev
   - /run/udev:/run/udev
-env-file: skipper.env
+env_file:
+  - skipper.env
 
