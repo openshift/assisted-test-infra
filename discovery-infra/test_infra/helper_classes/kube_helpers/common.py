@@ -7,6 +7,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration
 
+from tests.conftest import env_variables
 
 # silence kubernetes debug messages.
 logging.getLogger('kubernetes').setLevel(logging.INFO)
@@ -56,6 +57,9 @@ class ObjectReference:
 
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
     logger.info('creating kube client with config file: %s', kubeconfig_path)
+
+    if not kubeconfig_path and env_variables['kubeconfig_path']:
+        kubeconfig_path = env_variables['kubeconfig_path']
 
     conf = Configuration()
     load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
