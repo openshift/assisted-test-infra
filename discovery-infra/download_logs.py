@@ -112,7 +112,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     recreate_folder(os.path.join(output_folder, "cluster_files"))
 
     try:
-        write_metadata_file(client, cluster, os.path.join(output_folder, 'metdata.json'))
+        write_metadata_file(client, cluster, os.path.join(output_folder, 'metadata.json'))
 
         with suppressAndLog(AssertionError, ConnectionError, requests.exceptions.ConnectionError):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
