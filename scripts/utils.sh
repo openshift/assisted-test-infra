@@ -13,8 +13,7 @@ function get_namespace_index() {
     if [[ -z $index ]]; then
         all_namespaces=$(skipper run python3 scripts/indexer.py --action list)
         echo "Maximum number of namespaces allowed are currently running: $all_namespaces"
-        echo "Please remove an old namespace in order to create a new one, run:"
-        echo "make delete_minikube_profile NAMESPACE=<namespace>"
+        echo "Please remove an old namespace in order to create a new one"
         exit 1
     fi
 
@@ -35,16 +34,15 @@ function spawn_port_forwarding_command() {
     external_port=$2
     namespace=$3
     namespace_index=$4
-    profile=$5
-    kubeconfig=$6
-    target=$7
-    ip=${8:-""}
-    port=${9:-""}
+    kubeconfig=$5
+    target=$6
+    ip=${7:-""}
+    port=${8:-""}
 
     filename=${service_name}__${namespace}__${namespace_index}__${external_port}__assisted_installer
     if [ "$target" = "minikube" ]; then
-        ip=$(minikube -p $profile ip)
-        port=$(kubectl --server $(get_profile_url $profile) --kubeconfig=$kubeconfig get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+        ip=$(minikube ip)
+        port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
     fi
     cat <<EOF >build/xinetd-$filename
 service ${service_name}
@@ -146,11 +144,6 @@ function as_singleton() {
     $func
 }
 
-function get_profile_url() {
-    profile=$1
-    echo https://$(minikube ip --profile $profile):8443
-}
-
 
 function validate_namespace() {
     namespace=$1
@@ -160,11 +153,6 @@ function validate_namespace() {
     echo "Invalid namespace '$namespace'"
     echo "It can contain only letters, numbers and '-'"
     exit 1
-}
-
-function get_profile_url() {
-    profile=$1
-    echo https://$(minikube ip --profile $profile):8443
 }
 
 function local_setup_before_deployment() {

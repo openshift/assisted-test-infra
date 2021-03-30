@@ -560,7 +560,6 @@ def get_assisted_service_url_by_args(args, wait=True):
         kwargs['scheme'] = args.oc_scheme
     else:
         get_url = get_local_assisted_service_url
-        kwargs['profile'] = args.profile
         kwargs['deploy_target'] = args.deploy_target
 
     return retry(
@@ -593,7 +592,7 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
     )
 
 
-def get_local_assisted_service_url(profile, namespace, service, deploy_target):
+def get_local_assisted_service_url(namespace, service, deploy_target):
     if deploy_target in ["onprem"]:
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
         return f'http://{assisted_hostname_or_ip}:8090'
@@ -605,7 +604,7 @@ def get_local_assisted_service_url(profile, namespace, service, deploy_target):
         # default deploy target is minikube
         log.info('Getting minikube %s URL in %s namespace', service, namespace)
         url, _, _ = run_command(
-            f'minikube  -p {profile} -n {namespace} service {service} --url'
+            f'minikube -n {namespace} service {service} --url'
         )
         if is_assisted_service_reachable(url):
             return url

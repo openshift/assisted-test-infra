@@ -95,7 +95,7 @@ def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
 
     if not url:
         url = utils.get_local_assisted_service_url(
-            utils.get_env('PROFILE'), env_variables['namespace'], 'assisted-service', utils.get_env('DEPLOY_TARGET'))
+            env_variables['namespace'], 'assisted-service', utils.get_env('DEPLOY_TARGET'))
 
     return assisted_service_api.create_client(url, offline_token, **kwargs)
 

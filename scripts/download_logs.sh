@@ -6,7 +6,6 @@ set -o pipefail
 set -o xtrace
 
 NAMESPACE=${NAMESPACE:-assisted-installer}
-PROFILE=${PROFILE:-minikube}
 CLUSTER_ID=${CLUSTER_ID:-""}
 ADDITIONAL_PARAMS=${ADDITIONAL_PARAMS:-""}
 KUBECTL=${KUBECTL:-kubectl}
@@ -40,7 +39,7 @@ function download_cluster_logs() {
     if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
       SERVICE_URL=http://localhost:8090
     else
-      SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -p ${PROFILE} -n ${NAMESPACE} --url)
+      SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
     fi
   fi
 

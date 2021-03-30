@@ -7,7 +7,6 @@ pipeline {
 
     environment {
         SKIPPER_PARAMS = " "
-        PROFILE = "minikube"
         NAMESPACE = "assisted-installer"
         E2E_TESTS_MODE="true"
 
@@ -29,7 +28,7 @@ pipeline {
                 sh "make create_full_environment"
 
                 // Login
-                sh "minikube --profile ${PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
+                sh "minikube ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
             }
         }
 
@@ -58,13 +57,8 @@ pipeline {
                 }
 
                 try {
-                    ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
-                    minikube_url = "https://${ip}:8443"
-
-                    sh "kubectl --server=${minikube_url} get pods -A"
-
                     for (service in ["assisted-service","postgres","scality","createimage"]) {
-                        sh "kubectl --server=${minikube_url} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl --server=${minikube_url} logs {} -n ${NAMESPACE} > {}.log\" || true"
+                        sh "kubectl get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl logs {} -n ${NAMESPACE} > {}.log\" || true"
                     }
                 } finally {
                     sh "make destroy"

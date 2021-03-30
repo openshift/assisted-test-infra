@@ -60,12 +60,6 @@ if __name__ == "__main__":
         default='assisted-service'
     )
     parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
-        type=str,
-        default='assisted-installer'
-    )
-    parser.add_argument(
         '--deploy-target',
         help='Where assisted-service is deployed',
         type=str,
