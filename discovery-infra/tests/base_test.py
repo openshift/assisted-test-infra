@@ -12,6 +12,7 @@ import test_infra.utils as infra_utils
 import waiting
 from assisted_service_client.rest import ApiException
 from download_logs import download_logs
+from junit_report import JunitFixtureTestCase
 from paramiko import SSHException
 from test_infra import consts
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
@@ -34,6 +35,7 @@ class BaseTest:
         return _vars
 
     @pytest.fixture(scope="function")
+    @JunitFixtureTestCase()
     def nodes(self, setup_node_controller, request):
         if hasattr(request, 'param'):
             node_vars = self.override_node_parameters(**request.param)
@@ -56,6 +58,7 @@ class BaseTest:
                 net_asset.release_all()
 
     @pytest.fixture()
+    @JunitFixtureTestCase()
     def cluster(self, api_client, request, nodes):
         clusters = []
 

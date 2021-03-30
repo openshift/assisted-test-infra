@@ -12,6 +12,7 @@ import requests
 import waiting
 import yaml
 from assisted_service_client import models
+from junit_report import JunitTestCase
 from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
@@ -371,6 +372,7 @@ class Cluster:
             nodes_count=nodes_count
         )
 
+    @JunitTestCase()
     def start_install_and_wait_for_installed(self,
                                              wait_for_hosts=True,
                                              wait_for_operators=True,
@@ -548,6 +550,7 @@ class Cluster:
             timeout=timeout,
         )
 
+    @JunitTestCase()
     def prepare_for_install(
             self,
             nodes,
