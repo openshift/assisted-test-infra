@@ -4,6 +4,7 @@
 import argparse
 import os
 import shutil
+import re
 
 from test_infra import assisted_service_api, utils, consts
 from test_infra.controllers.nat_controller import NatController
@@ -28,18 +29,25 @@ def try_to_delete_cluster(namespace, tfvars):
     )
     client.delete_cluster(cluster_id=cluster_id)
 
+def _get_namespace_index(libvirt_network_if):
+    # Hack to retrieve namespace index - does not exist in tests
+    matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+    return int(matcher.groups()[0]) if matcher is not None else 0
+
 @utils.on_exception(message='Failed to remove nat', silent=True)
-def _try_remove_nat(namespace, tfvars):
-    primary_interface = tfvars.get('libvirt_network_if', f'tt{namespace}')
+def _try_remove_nat(tfvars):
+    primary_interface = tfvars.get('libvirt_network_if')
+    if primary_interface is None:
+        raise Exception("Could not get primary interface")
     secondary_interface = tfvars.get('libvirt_secondary_network_if', f's{primary_interface}')
     nat_controller = NatController()
-    nat_controller.remove_nat_rules([primary_interface, secondary_interface])
+    nat_controller.remove_nat_rules([primary_interface, secondary_interface], _get_namespace_index(primary_interface))
 
 def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     """ Runs terraform destroy and then cleans it with virsh cleanup to delete
         everything relevant.
     """
-    _try_remove_nat(namespace, tfvars)
+    _try_remove_nat(tfvars)
     if os.path.exists(tf_folder):
         _try_to_delete_nodes(tf_folder)
 

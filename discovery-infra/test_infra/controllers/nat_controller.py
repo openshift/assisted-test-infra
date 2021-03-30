@@ -7,6 +7,10 @@ from test_infra.utils import run_command
 # reference this mark in order to perform NAT operation on these packets.
 #
 class NatController:
+    # Build iptables mark
+    def _build_mark(self, ns_index):
+        return 555 + int(ns_index)
+
     # Find all interfaces that have default route on them.  Usually it is a single interface.
     def _get_default_interfaces(self):
         interfaces, _, _ = run_command(r"ip -4 route | egrep '^default ' | awk '{print $5}'", shell=True)
@@ -14,14 +18,14 @@ class NatController:
 
     # Mark all packets coming from the input_interface with "555".  Marking is needed because input interface
     # query is not available in POSTROUTING chain
-    def _build_mark_string(self, input_interface):
-        rule_template = ["PREROUTING", "-i", input_interface, "-j", "MARK", "--set-mark", "555"]
+    def _build_mark_string(self, input_interface, mark):
+        rule_template = ["PREROUTING", "-i", input_interface, "-j", "MARK", "--set-mark", f"{mark}"]
 
         return " ".join(rule_template)
 
     # Perform MASQUERADE nat operation  on all marked packets with "555" and their output interface is "output_interface"
-    def _build_nat_string(self, output_interface):
-        rule_template = ["POSTROUTING", "-m", "mark", "--mark", "555", "-o", output_interface, "-j", "MASQUERADE"]
+    def _build_nat_string(self, output_interface, mark):
+        rule_template = ["POSTROUTING", "-m", "mark", "--mark", f"{mark}", "-o", output_interface, "-j", "MASQUERADE"]
 
         return " ".join(rule_template)
 
@@ -61,16 +65,19 @@ class NatController:
             self._delete_rule(rule_suffix)
 
     # Add rules for the input interfaces and output interfaces
-    def add_nat_rules(self, input_interfaces):
+    def add_nat_rules(self, input_interfaces, ns_index):
         logging.info("Adding nat rules for interfaces %s", input_interfaces)
+        mark = self._build_mark(ns_index)
         for output_interface in self._get_default_interfaces():
-            self._add_rule(self._build_nat_string(output_interface))
+            self._add_rule(self._build_nat_string(output_interface, mark))
         for input_interface in input_interfaces:
-            self._add_rule(self._build_mark_string(input_interface))
+            self._add_rule(self._build_mark_string(input_interface, mark))
 
-    # Delete nat rules.  The nat rules for the output interfaces are not deleted since they may be used
-    # by another cluster.  They may be removed by he destroy Makefile target
-    def remove_nat_rules(self, input_interfaces):
+    # Delete nat rules
+    def remove_nat_rules(self, input_interfaces, ns_index):
         logging.info("Deleting nat rules for interfaces %s", input_interfaces)
+        mark = self._build_mark(ns_index)
         for input_interface in input_interfaces:
-            self._remove_rule(self._build_mark_string(input_interface))
+            self._remove_rule(self._build_mark_string(input_interface, mark))
+        for output_interface in self._get_default_interfaces():
+            self._remove_rule(self._build_nat_string(output_interface, mark))
