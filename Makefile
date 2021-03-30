@@ -280,7 +280,11 @@ config_etc_hosts_for_ocp_cluster:
 	discovery-infra/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --profile $(PROFILE) $(ADDITIONAL_PARAMS)
 
 bring_assisted_installer:
-	@if cd assisted-installer >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(INSTALLER_BRANCH); else git clone --branch $(INSTALLER_BRANCH) $(INSTALLER_REPO);fi
+	@if ! cd assisted-installer >/dev/null 2>&1; then \
+		git clone $(INSTALLER_REPO); \
+	fi
+
+	@cd assisted-installer && git fetch origin $(INSTALLER_BRANCH) && git reset --hard $(INSTALLER_BRANCH)
 
 ###########
 # Cluster #
@@ -362,7 +366,11 @@ deploy_assisted_service: start_minikube bring_assisted_service
 	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
-	@if cd assisted-service >/dev/null 2>&1; then git fetch --all && git reset --hard origin/$(SERVICE_BRANCH); else git clone --branch $(SERVICE_BRANCH) $(SERVICE_REPO);fi
+	@if ! cd assisted-service >/dev/null 2>&1; then \
+		git clone $(SERVICE_REPO); \
+	fi
+
+	@cd assisted-service && git fetch origin $(SERVICE_BRANCH) && git reset --hard $(SERVICE_BRANCH)
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)
