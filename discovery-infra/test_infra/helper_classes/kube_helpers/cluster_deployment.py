@@ -1,4 +1,5 @@
 from pprint import pformat
+from base64 import b64decode
 from typing import Optional, Union, Dict, Tuple, List
 
 import waiting
@@ -16,8 +17,10 @@ from .global_vars import (
     DEFAULT_SERVICE_CIDR,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT
+    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+    DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
 )
+
 from .common import logger, does_string_contain_value
 from .base_resource import BaseCustomResource
 from .secret import deploy_default_secret, Secret
@@ -50,7 +53,7 @@ class Platform:
             'agentBareMetal': {
                 'apiVIP': self.api_vip,
                 'ingressVIP': self.ingress_vip,
-                'agentSelector': self.agent_selector or {}
+                'agentSelector': self.agent_selector or {},
             }
         }
 
@@ -75,7 +78,6 @@ class InstallStrategy:
             ssh_public_key: str = env_variables['ssh_public_key'],
             control_plane_agents: int = 1,
             worker_agents: int = 0,
-            label_selector: Optional[Dict[str, str]] = None
     ):
         self.host_prefix = host_prefix
         self.machine_cidr = machine_cidr
@@ -83,7 +85,6 @@ class InstallStrategy:
         self.service_cidr = service_cidr
         self.control_plane_agents = control_plane_agents
         self.worker_agents = worker_agents
-        self.label_selector = label_selector
         self.ssh_public_key = ssh_public_key
 
     def __repr__(self) -> str:
@@ -103,7 +104,6 @@ class InstallStrategy:
                     'controlPlaneAgents': self.control_plane_agents,
                     'workerAgents': self.worker_agents,
                 },
-                'agentSelector': {'matchLabels': self.label_selector or {}}
             }
         }
 
@@ -249,7 +249,6 @@ class ClusterDeployment(BaseCustomResource):
         Since the status key is created only after resource is processed by the
         controller in the service, it might take a few seconds before appears.
         """
-
         def _attempt_to_get_status() -> dict:
             return self.get()['status']
 
@@ -316,6 +315,37 @@ class ClusterDeployment(BaseCustomResource):
             timeout_seconds=timeout,
             waiting_for=f'cluster {self.ref} to have {num_agents} agents',
         )
+
+    def wait_to_be_installed(self, timeout=DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT):
+        def _wait_for_cluster_to_be_installed() -> bool:
+            return self.get()["spec"].get("installed", False)
+
+        return waiting.wait(
+            _wait_for_cluster_to_be_installed,
+            sleep_seconds=1,
+            timeout_seconds=timeout,
+            waiting_for=f'cluster {self.ref} to be installed',
+        )
+
+    def download_kubeconfig(self, kubeconfig_path):
+        def _get_kubeconfig_secret() -> dict:
+            return self.get()["spec"]["clusterMetadata"]["adminKubeconfigSecretRef"]
+
+        secret_ref = waiting.wait(
+            _get_kubeconfig_secret,
+            sleep_seconds=1,
+            timeout_seconds=240,
+            expected_exceptions=KeyError,
+            waiting_for=f'kubeconfig secret creation for cluster {self.ref}',
+        )
+
+        kubeconfig_data = Secret(
+            kube_api_client=self.crd_api.api_client,
+            **secret_ref
+        ).get().data["kubeconfig"]
+
+        with open(kubeconfig_path, "wt") as kubeconfig_file:
+            kubeconfig_file.write(b64decode(kubeconfig_data).decode())
 
 
 def deploy_default_cluster_deployment(

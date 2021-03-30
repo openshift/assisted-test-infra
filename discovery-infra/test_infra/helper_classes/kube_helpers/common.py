@@ -56,10 +56,8 @@ class ObjectReference:
 
 
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
+    kubeconfig_path = kubeconfig_path or "~/.kube/config"
     logger.info('creating kube client with config file: %s', kubeconfig_path)
-
-    if not kubeconfig_path and env_variables['kubeconfig_path']:
-        kubeconfig_path = env_variables['kubeconfig_path']
 
     conf = Configuration()
     load_kube_config(config_file=kubeconfig_path, client_configuration=conf)

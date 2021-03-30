@@ -25,11 +25,11 @@ from .cluster_deployment import (
     deploy_default_cluster_deployment,
     Platform,
     InstallStrategy,
-    ClusterDeployment
+    ClusterDeployment,
 )
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
-from .installenv import deploy_default_installenv, InstallEnv
+from .installenv import deploy_default_installenv, InstallEnv, Proxy
 from .common import (
     create_kube_api_client,
     delete_all_resources,
@@ -50,5 +50,6 @@ __all__ = (
     'Agent',
     'KubeAPIContext',
     'ObjectReference',
-    'InstallEnv'
+    'InstallEnv',
+    'Proxy',
 )
