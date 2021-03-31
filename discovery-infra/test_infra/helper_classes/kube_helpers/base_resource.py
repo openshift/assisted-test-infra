@@ -1,4 +1,7 @@
 import abc
+import contextlib
+
+from kubernetes.client.rest import ApiException
 
 from .common import KubeAPIContext, ObjectReference
 
@@ -20,8 +23,22 @@ class BaseResource(abc.ABC):
         return self._reference
 
     @abc.abstractmethod
+    def create(self, **kwargs) -> None:
+        pass
+
+    @abc.abstractmethod
     def delete(self) -> None:
         pass
+
+    @abc.abstractmethod
+    def get(self) -> dict:
+        pass
+
+    def apply(self, **kwargs):
+        with contextlib.suppress(ApiException):
+            self.delete()
+
+        self.create(**kwargs)
 
 
 class BaseCustomResource(BaseResource):
@@ -31,15 +48,7 @@ class BaseCustomResource(BaseResource):
     """
 
     @abc.abstractmethod
-    def create(self, **kwargs) -> None:
-        pass
-
-    @abc.abstractmethod
     def patch(self, **kwargs) -> None:
-        pass
-
-    @abc.abstractmethod
-    def get(self) -> dict:
         pass
 
     @abc.abstractmethod

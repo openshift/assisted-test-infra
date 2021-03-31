@@ -3,7 +3,6 @@
 
 import pathlib
 import argparse
-import contextlib
 import distutils.util
 import ipaddress
 import json
@@ -11,7 +10,6 @@ import os
 
 import dns.resolver
 from kubernetes.client import CustomObjectsApi
-from kubernetes.client.exceptions import ApiException
 from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils
 from test_infra.helper_classes import cluster as helper_cluster
@@ -551,19 +549,13 @@ def execute_day1_flow(cluster_name):
                 name=cluster_name,
                 namespace=args.namespace,
             )
-            with contextlib.suppress(ApiException):
-                secret.delete()
-
-            secret.create(pull_secret=args.pull_secret)
+            secret.apply(pull_secret=args.pull_secret)
 
             ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
             ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
             api_vip, ingress_vip = "", ""
 
-            with contextlib.suppress(ApiException):
-                cluster_deployment.delete()
-
-            cluster_deployment.create(
+            cluster_deployment.apply(
                 platform=Platform(
                     api_vip=api_vip,
                     ingress_vip=ingress_vip,
@@ -588,10 +580,7 @@ def execute_day1_flow(cluster_name):
                 name=f"{cluster_name}-install-env",
                 namespace=args.namespace
             )
-            with contextlib.suppress(ApiException):
-                install_env.delete()
-
-            install_env.create(
+            install_env.apply(
                 cluster_deployment=cluster_deployment,
                 secret=secret,
                 proxy=Proxy(
