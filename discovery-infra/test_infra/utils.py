@@ -18,15 +18,17 @@ from functools import wraps
 from pathlib import Path
 from pprint import pformat
 from string import ascii_lowercase
-from typing import List, Dict
+from typing import Dict, List
 
 import filelock
 import libvirt
 import oc_utils
 import requests
 import waiting
+from assisted_service_client.models.monitored_operator import MonitoredOperator
 from logger import log
 from retry import retry
+
 from test_infra import consts
 
 conn = libvirt.open("qemu:///system")
@@ -200,20 +202,20 @@ def are_hosts_in_status(
     return False
 
 
-def are_operators_in_status(operators: List[Dict], operators_count: int, statuses: List[str], fall_on_error_status: bool) -> bool:
+def are_operators_in_status(operators: List[MonitoredOperator], operators_count: int, statuses: List[str], fall_on_error_status: bool) -> bool:
     log.info(
         "Asked operators to be in one of the statuses from %s and currently operators statuses are %s",
         statuses,
-        [(operator["name"], operator.get("status"), operator.get("status_info")) for operator in operators],
+        [(operator.name, operator.status, operator.status_info) for operator in operators],
     )
 
-    if len([operator for operator in operators if operator.get("status") in statuses]) >= operators_count:
+    if len([operator for operator in operators if operator.status in statuses]) >= operators_count:
         return True
 
     if fall_on_error_status:
         for operator in operators:
-            if operator.get("status") == consts.OperatorStatus.FAILED:
-                raise ValueError(f"Operator {operator['name']} status is {consts.OperatorStatus.FAILED} with info {operator.get('status_info')}")
+            if operator.status == consts.OperatorStatus.FAILED:
+                raise ValueError(f"Operator {operator.name} status is {consts.OperatorStatus.FAILED} with info {operator.status_info}")
 
     return False
 
