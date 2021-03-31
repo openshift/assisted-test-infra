@@ -107,7 +107,7 @@ class InventoryClient(object):
 
     def get_cluster_operators(self, cluster_id):
         log.info("Getting monitored operators for cluster %s", cluster_id)
-        return self.client.list_of_cluster_operators(cluster_id=cluster_id)
+        return self.cluster_get(cluster_id=cluster_id).monitored_operators
 
     def get_hosts_in_statuses(self, cluster_id, statuses):
         hosts = self.get_cluster_hosts(cluster_id)
