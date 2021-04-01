@@ -40,6 +40,7 @@ class BaseTest:
         else:
             node_vars = env_variables
         net_asset = None
+        needs_nat = "platform" in node_vars and node_vars["platform"] == consts.Platforms.NONE
         try:
             if not qe_env:
                 net_asset = NetworkAssets()
@@ -47,10 +48,14 @@ class BaseTest:
             controller = setup_node_controller(**node_vars)
             nodes = Nodes(controller, node_vars["private_ssh_key_path"])
             nodes.prepare_nodes()
+            if needs_nat:
+                nodes.configure_nat()
             yield nodes
             if env_variables['test_teardown']:
                 logging.info('--- TEARDOWN --- node controller\n')
                 nodes.destroy_all_nodes()
+            if needs_nat:
+                nodes.unconfigure_nat()
         finally:
             if not qe_env:
                 net_asset.release_all()

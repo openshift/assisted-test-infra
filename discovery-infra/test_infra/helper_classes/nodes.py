@@ -1,6 +1,7 @@
 import json
 import logging
 import random
+import re
 from typing import Dict, Iterator, List
 
 from munch import Munch
@@ -9,6 +10,7 @@ from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
 from tests.conftest import env_variables
+from test_infra.controllers.nat_controller import NatController
 
 
 class NodeMapping:
@@ -22,6 +24,7 @@ class Nodes:
     def __init__(self, node_controller: NodeController, private_ssh_key_path):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
+        self._nat_controller = NatController()
         self._nodes = None
         self._nodes_as_dict = None
 
@@ -40,6 +43,24 @@ class Nodes:
     def __iter__(self) -> Iterator[Node]:
         for n in self.nodes:
             yield n
+
+    @classmethod
+    def _get_namespace_index(cls, libvirt_network_if):
+        # Hack to retrieve namespace index - does not exist in tests
+        matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+        return int(matcher.groups()[0]) if matcher is not None else 0
+
+    def configure_nat(self):
+        libvirt_network_if = self.controller.network_conf.libvirt_network_if
+        libvirt_secondary_network_if = self.controller.network_conf.libvirt_secondary_network_if
+        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
+        self._nat_controller.add_nat_rules(input_interfaces, self._get_namespace_index(libvirt_network_if))
+
+    def unconfigure_nat(self):
+        libvirt_network_if = self.controller.network_conf.libvirt_network_if
+        libvirt_secondary_network_if = self.controller.network_conf.libvirt_secondary_network_if
+        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
+        self._nat_controller.remove_nat_rules(input_interfaces, self._get_namespace_index(libvirt_network_if))
 
     def drop_cache(self):
         self._nodes = None

@@ -15,7 +15,6 @@ from assisted_service_client import models
 from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
-from test_infra.controllers.nat_controller import NatController
 from test_infra.tools import static_network, terraform_utils
 from tests.conftest import env_variables
 
@@ -559,9 +558,6 @@ class Cluster:
             download_image=True,
             platform=env_variables['platform']
     ):
-        if platform == consts.Platforms.NONE and not nodes.controller.ipv6:
-            self.configure_nat(nodes.controller)
-
         if download_image:
             if env_variables.get('static_network_config'):
                 static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
@@ -762,22 +758,6 @@ class Cluster:
         # Hack to retrieve namespace index - does not exist in tests
         matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
         return int(matcher.groups()[0]) if matcher is not None else 0
-
-    @classmethod
-    def configure_nat(cls, controller):
-        libvirt_network_if = controller.network_conf.libvirt_network_if
-        libvirt_secondary_network_if = controller.network_conf.libvirt_secondary_network_if
-        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
-        nat_controller = NatController()
-        nat_controller.add_nat_rules(input_interfaces, cls._get_namespace_index(libvirt_network_if))
-
-    @classmethod
-    def unconfigure_nat(cls, controller):
-        libvirt_network_if = controller.network_conf.libvirt_network_if
-        libvirt_secondary_network_if = controller.network_conf.libvirt_secondary_network_if
-        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
-        nat_controller = NatController()
-        nat_controller.remove_nat_rules(input_interfaces, cls._get_namespace_index(libvirt_network_if))
 
     def _find_event(self, event_to_find, reference_time, params_list, host_id):
         events_list = self.get_events(host_id=host_id)
