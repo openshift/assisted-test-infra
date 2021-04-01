@@ -44,23 +44,24 @@ class Nodes:
         for n in self.nodes:
             yield n
 
-    @classmethod
-    def _get_namespace_index(cls, libvirt_network_if):
-        # Hack to retrieve namespace index - does not exist in tests
+    @property
+    def nat_interfaces(self):
+        return (self.controller.network_conf.libvirt_network_if,
+                self.controller.network_conf.libvirt_secondary_network_if)
+
+    @staticmethod
+    def _get_namespace_index(libvirt_network_if):
+        """ Hack to retrieve namespace index - does not exist in tests """
         matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
         return int(matcher.groups()[0]) if matcher is not None else 0
 
     def configure_nat(self):
-        libvirt_network_if = self.controller.network_conf.libvirt_network_if
-        libvirt_secondary_network_if = self.controller.network_conf.libvirt_secondary_network_if
-        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
-        self._nat_controller.add_nat_rules(input_interfaces, self._get_namespace_index(libvirt_network_if))
+        nat_interfaces = self.nat_interfaces
+        self._nat_controller.add_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
 
     def unconfigure_nat(self):
-        libvirt_network_if = self.controller.network_conf.libvirt_network_if
-        libvirt_secondary_network_if = self.controller.network_conf.libvirt_secondary_network_if
-        input_interfaces = [libvirt_network_if, libvirt_secondary_network_if]
-        self._nat_controller.remove_nat_rules(input_interfaces, self._get_namespace_index(libvirt_network_if))
+        nat_interfaces = self.nat_interfaces
+        self._nat_controller.remove_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
 
     def drop_cache(self):
         self._nodes = None

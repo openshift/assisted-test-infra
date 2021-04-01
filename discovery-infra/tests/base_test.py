@@ -40,7 +40,7 @@ class BaseTest:
         else:
             node_vars = env_variables
         net_asset = None
-        needs_nat = "platform" in node_vars and node_vars["platform"] == consts.Platforms.NONE
+        needs_nat = node_vars.get("platform") == consts.Platforms.NONE
         try:
             if not qe_env:
                 net_asset = NetworkAssets()
