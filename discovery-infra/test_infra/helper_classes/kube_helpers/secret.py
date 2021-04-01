@@ -1,6 +1,5 @@
 import os
 import json
-
 from typing import Optional
 
 from kubernetes.client import ApiClient, CoreV1Api
@@ -8,7 +7,7 @@ from kubernetes.client.rest import ApiException
 
 from tests.conftest import env_variables
 
-from .common import logger, ObjectReference
+from .common import logger
 from .base_resource import BaseResource
 
 
@@ -29,7 +28,7 @@ class Secret(BaseResource):
         super().__init__(name, namespace)
         self.v1_api = CoreV1Api(kube_api_client)
 
-    def create(self, pull_secret: str = env_variables['pull_secret']) -> None:
+    def create(self, pull_secret: str = env_variables['pull_secret']):
         self.v1_api.create_namespaced_secret(
             body={
                 'type': self._secret_type,

@@ -159,7 +159,7 @@ class ClusterDeployment(BaseCustomResource):
             secret: Secret,
             base_domain: str = env_variables['base_domain'],
             **kwargs
-    ) -> None:
+    ):
         body = {
             'apiVersion': f'{self._api_group}/{self._api_version}',
             'kind': 'ClusterDeployment',
