@@ -24,7 +24,6 @@ class Nodes:
     def __init__(self, node_controller: NodeController, private_ssh_key_path):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
-        self._nat_controller = NatController()
         self._nodes = None
         self._nodes_as_dict = None
 
@@ -57,11 +56,11 @@ class Nodes:
 
     def configure_nat(self):
         nat_interfaces = self.nat_interfaces
-        self._nat_controller.add_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
+        NatController.add_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
 
     def unconfigure_nat(self):
         nat_interfaces = self.nat_interfaces
-        self._nat_controller.remove_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
+        NatController.remove_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
 
     def drop_cache(self):
         self._nodes = None
