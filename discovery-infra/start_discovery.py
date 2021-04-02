@@ -9,6 +9,7 @@ import json
 import os
 
 import dns.resolver
+from assisted_service_client.rest import ApiException
 from kubernetes.client import CustomObjectsApi
 from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils
@@ -500,12 +501,18 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
                        update_roles=master_count > 1)
 
 
-def execute_day1_flow(cluster_name):
-    client = None
-    cluster = {}
-    if args.managed_dns_domains:
+def execute_day1_flow():
+    client, cluster = try_get_cluster()
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+
+    if cluster:
+        args.base_dns_domain = cluster.base_dns_domain
+        cluster_name = cluster.name
+
+    elif args.managed_dns_domains:
         args.base_dns_domain = args.managed_dns_domains.split(":")[0]
 
+    log.info('Cluster name: %s', cluster_name)
     if not args.vm_network_cidr:
         net_cidr = IPNetwork('192.168.126.0/24')
         net_cidr += args.ns_index
@@ -530,9 +537,10 @@ def execute_day1_flow(cluster_name):
 
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
-        client = assisted_service_api.create_client(
-            url=utils.get_assisted_service_url_by_args(args=args)
-        )
+        if not client:
+            client = assisted_service_api.create_client(
+                url=utils.get_assisted_service_url_by_args(args=args)
+            )
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
 
@@ -643,13 +651,24 @@ def is_none_platform_mode():
     return args.platform.lower() == consts.Platforms.NONE
 
 
-def main():
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-    log.info('Cluster name: %s', cluster_name)
+def try_get_cluster():
+    try:
+        if args.cluster_id:
+            client = assisted_service_api.create_client(
+                url=utils.get_assisted_service_url_by_args(args=args)
+            )
+            return client, client.cluster_get(cluster_id=args.cluster_id)
 
+    except ApiException:
+        pass
+
+    return None, None
+
+
+def main():
     cluster_id = args.cluster_id
     if args.day1_cluster:
-        cluster_id = execute_day1_flow(cluster_name)
+        cluster_id = execute_day1_flow()
 
     elif is_none_platform_mode():
         raise NotImplementedError("None platform currently not supporting day2")
@@ -769,7 +788,7 @@ if __name__ == "__main__":
         "--base-dns-domain",
         help="Base dns domain",
         type=str,
-        default="redhat.com",
+        default=consts.DEFAULT_BASE_DNS_DOMAIN,
     )
     parser.add_argument(
         "-mD",
