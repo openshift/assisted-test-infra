@@ -1,3 +1,5 @@
+import logging
+
 from pprint import pformat
 from base64 import b64decode
 from typing import Optional, Union, Dict, Tuple, List
@@ -21,10 +23,13 @@ from .global_vars import (
     DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
 )
 
-from .common import logger, does_string_contain_value
+from .common import does_string_contain_value
 from .base_resource import BaseCustomResource
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
+
+
+logger = logging.getLogger(__name__)
 
 
 class Platform:

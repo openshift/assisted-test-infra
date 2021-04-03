@@ -1,9 +1,12 @@
+import logging
 import re
+import yaml
+
+import waiting
+
 from typing import Optional, Union, Dict
 from pprint import pformat
 
-import yaml
-import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 
@@ -11,11 +14,19 @@ from tests.conftest import env_variables
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
 from .secret import deploy_default_secret, Secret
-from .common import logger
-from .global_vars import DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+from .global_vars import (
+    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
+)
 
-ISO_URL_PATTERN = re.compile(r"(?P<api_url>.+)/api/assisted-install/v1/clusters/"
-                             r"(?P<cluster_id>[0-9a-z-]+)/downloads/image")
+
+logger = logging.getLogger(__name__)
+
+
+ISO_URL_PATTERN = re.compile(
+    r'(?P<api_url>.+)/api/assisted-install/v1/clusters/'
+    r'(?P<cluster_id>[0-9a-z-]+)/downloads/image'
+)
 
 
 class Proxy:
@@ -32,7 +43,7 @@ class Proxy:
             self,
             http_proxy: str,
             https_proxy: str,
-            no_proxy: str
+            no_proxy: str,
     ):
         self.http_proxy = http_proxy
         self.https_proxy = https_proxy
@@ -63,7 +74,7 @@ class InstallEnv(BaseCustomResource):
             self,
             kube_api_client: ApiClient,
             name: str,
-            namespace: str = env_variables['namespace']
+            namespace: str = env_variables['namespace'],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -74,7 +85,7 @@ class InstallEnv(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             body=yaml_data,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info(
@@ -88,7 +99,7 @@ class InstallEnv(BaseCustomResource):
             proxy: Optional[Proxy] = None,
             label_selector: Optional[Dict[str, str]] = None,
             ignition_config_override: Optional[str] = None,
-            **kwargs
+            **kwargs,
     ) -> None:
         body = {
             'apiVersion': f'{self._api_group}/{self._api_version}',
@@ -98,12 +109,12 @@ class InstallEnv(BaseCustomResource):
                 'clusterRef': cluster_deployment.ref.as_dict(),
                 'pullSecretRef': secret.ref.as_dict(),
                 'nmStateConfigLabelSelector': {  # TODO: set nmstate configuration
-                    "matchLabels": {
-                        "adi.io.my.domain/selector-nmstate-config-name": "abcd"
+                    'matchLabels': {
+                        'adi.io.my.domain/selector-nmstate-config-name': 'abcd',
                     }
                 },
                 'agentLabelSelector': {'matchLabels': label_selector or {}},
-                'ignitionConfigOverride': ignition_config_override or ''
+                'ignitionConfigOverride': ignition_config_override or '',
             }
         }
         spec = body['spec']
@@ -115,7 +126,7 @@ class InstallEnv(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             body=body,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info(
@@ -129,7 +140,7 @@ class InstallEnv(BaseCustomResource):
             proxy: Optional[Proxy] = None,
             label_selector: Optional[Dict[str, str]] = None,
             ignition_config_override: Optional[str] = None,
-            **kwargs
+            **kwargs,
     ) -> None:
         body = {'spec': kwargs}
 
@@ -155,7 +166,7 @@ class InstallEnv(BaseCustomResource):
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
-            body=body
+            body=body,
         )
 
         logger.info(
@@ -168,7 +179,7 @@ class InstallEnv(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
     def delete(self) -> None:
@@ -177,14 +188,14 @@ class InstallEnv(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info('deleted installEnv %s', self.ref)
 
     def status(
             self,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     ) -> dict:
         """
         Status is a section in the CRD that is created after registration to
@@ -201,22 +212,27 @@ class InstallEnv(BaseCustomResource):
             sleep_seconds=0.5,
             timeout_seconds=timeout,
             waiting_for=f'installEnv {self.ref} status',
-            expected_exceptions=KeyError
+            expected_exceptions=KeyError,
         )
 
-    def get_iso_download_url(self):
+    def get_iso_download_url(
+            self,
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
+    ):
         def _attempt_to_get_image_url() -> str:
             return self.get()['status']['isoDownloadURL']
 
         return waiting.wait(
             _attempt_to_get_image_url,
             sleep_seconds=3,
-            timeout_seconds=60,
-            waiting_for=f'image to be created',
-            expected_exceptions=KeyError)
+            timeout_seconds=timeout,
+            waiting_for='image to be created',
+            expected_exceptions=KeyError,
+        )
 
     def get_cluster_id(self):
-        return ISO_URL_PATTERN.match(self.get_iso_download_url()).group("cluster_id")
+        iso_download_url = self.get_iso_download_url()
+        return ISO_URL_PATTERN.match(iso_download_url).group('cluster_id')
 
 
 def deploy_default_installenv(
@@ -228,7 +244,7 @@ def deploy_default_installenv(
         proxy: Optional[Proxy] = None,
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
-        **kwargs
+        **kwargs,
 ) -> InstallEnv:
 
     install_env = InstallEnv(kube_api_client, name)
@@ -236,7 +252,7 @@ def deploy_default_installenv(
         if 'filepath' in kwargs:
             _create_installenv_from_yaml_file(
                 install_env=install_env,
-                filepath=kwargs['filepath']
+                filepath=kwargs['filepath'],
             )
         else:
             _create_installenv_from_attrs(
@@ -249,7 +265,7 @@ def deploy_default_installenv(
                 proxy=proxy,
                 label_selector=label_selector,
                 ignition_config_override=ignition_config_override,
-                **kwargs
+                **kwargs,
             )
     except ApiException as e:
         if not (e.reason == 'Conflict' and ignore_conflict):
@@ -264,7 +280,7 @@ def deploy_default_installenv(
 
 def _create_installenv_from_yaml_file(
         install_env: InstallEnv,
-        filepath: str
+        filepath: str,
 ) -> None:
     with open(filepath) as fp:
         yaml_data = yaml.safe_load(fp)
@@ -280,12 +296,12 @@ def _create_installenv_from_attrs(
         proxy: Optional[Proxy] = None,
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
-        **kwargs
+        **kwargs,
 ) -> None:
     if not secret:
         secret = deploy_default_secret(
             kube_api_client=kube_api_client,
-            name=cluster_deployment.ref.name
+            name=cluster_deployment.ref.name,
         )
     install_env.create(
         cluster_deployment=cluster_deployment,
@@ -293,5 +309,5 @@ def _create_installenv_from_attrs(
         proxy=proxy,
         label_selector=label_selector,
         ignition_config_override=ignition_config_override,
-        **kwargs
+        **kwargs,
     )
