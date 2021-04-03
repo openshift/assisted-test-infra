@@ -85,7 +85,7 @@ class InstallEnv(BaseCustomResource):
             self,
             cluster_deployment: ClusterDeployment,
             secret: Secret,
-            proxy: Proxy,
+            proxy: Optional[Proxy] = None,
             label_selector: Optional[Dict[str, str]] = None,
             ignition_config_override: Optional[str] = None,
             **kwargs
@@ -97,7 +97,6 @@ class InstallEnv(BaseCustomResource):
             'spec': {
                 'clusterRef': cluster_deployment.ref.as_dict(),
                 'pullSecretRef': secret.ref.as_dict(),
-                'proxy': proxy.as_dict(),
                 'nmStateConfigLabelSelector': {  # TODO: set nmstate configuration
                     "matchLabels": {
                         "adi.io.my.domain/selector-nmstate-config-name": "abcd"
@@ -107,7 +106,10 @@ class InstallEnv(BaseCustomResource):
                 'ignitionConfigOverride': ignition_config_override or ''
             }
         }
-        body['spec'].update(kwargs)
+        spec = body['spec']
+        if proxy:
+            spec['proxy'] = proxy.as_dict()
+        spec.update(kwargs)
         self.crd_api.create_namespaced_custom_object(
             group=self._api_group,
             version=self._api_version,
@@ -124,6 +126,7 @@ class InstallEnv(BaseCustomResource):
             self,
             cluster_deployment: Optional[ClusterDeployment],
             secret: Optional[Secret],
+            proxy: Optional[Proxy] = None,
             label_selector: Optional[Dict[str, str]] = None,
             ignition_config_override: Optional[str] = None,
             **kwargs
@@ -136,6 +139,9 @@ class InstallEnv(BaseCustomResource):
 
         if secret:
             spec['pullSecretRef'] = secret.ref.as_dict()
+
+        if proxy:
+            spec['proxy'] = proxy.as_dict()
 
         if label_selector:
             spec['agentLabelSelector'] = {'matchLabels': label_selector}
@@ -219,6 +225,7 @@ def deploy_default_installenv(
         ignore_conflict: bool = True,
         cluster_deployment: Optional[ClusterDeployment] = None,
         secret: Optional[Secret] = None,
+        proxy: Optional[Proxy] = None,
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         **kwargs
@@ -239,6 +246,7 @@ def deploy_default_installenv(
                 install_env=install_env,
                 cluster_deployment=cluster_deployment,
                 secret=secret,
+                proxy=proxy,
                 label_selector=label_selector,
                 ignition_config_override=ignition_config_override,
                 **kwargs
@@ -269,6 +277,7 @@ def _create_installenv_from_attrs(
         install_env: InstallEnv,
         cluster_deployment: ClusterDeployment,
         secret: Optional[Secret] = None,
+        proxy: Optional[Proxy] = None,
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         **kwargs
@@ -281,6 +290,7 @@ def _create_installenv_from_attrs(
     install_env.create(
         cluster_deployment=cluster_deployment,
         secret=secret,
+        proxy=proxy,
         label_selector=label_selector,
         ignition_config_override=ignition_config_override,
         **kwargs
