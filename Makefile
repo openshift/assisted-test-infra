@@ -107,6 +107,7 @@ CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-con
 
 PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
+ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},true)
 
 KUBE_API := $(or ${KUBE_API},no)
 
