@@ -2,6 +2,11 @@
 
 source scripts/utils.sh
 
+set -o nounset
+set -o pipefail
+set -o errexit
+set -o xtrace
+
 export PROFILE=${PROFILE:-assisted-installer}
 
 function configure_minikube() {
