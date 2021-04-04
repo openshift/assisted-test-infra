@@ -1,4 +1,6 @@
-from typing import List
+import waiting
+
+from typing import List, Union
 from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
@@ -7,6 +9,7 @@ from tests.conftest import env_variables
 
 from .common import logger, ObjectReference
 from .base_resource import BaseCustomResource
+from .global_vars import DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
 
 
 class Agent(BaseCustomResource):
@@ -24,7 +27,7 @@ class Agent(BaseCustomResource):
             self,
             kube_api_client: ApiClient,
             name: str,
-            namespace: str = env_variables['namespace']
+            namespace: str = env_variables['namespace'],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -45,14 +48,14 @@ class Agent(BaseCustomResource):
         for item in resources.get('items', []):
             assigned_cluster_ref = ObjectReference(
                 name=item['spec']['clusterDeploymentName']['name'],
-                namespace=item['spec']['clusterDeploymentName']['namespace']
+                namespace=item['spec']['clusterDeploymentName']['namespace'],
             )
             if assigned_cluster_ref == cluster_deployment.ref:
                 assigned_agents.append(
                     cls(
                         kube_api_client=cluster_deployment.crd_api.api_client,
                         name=item['metadata']['name'],
-                        namespace=item['metadata']['namespace']
+                        namespace=item['metadata']['namespace'],
                     )
                 )
 
@@ -69,7 +72,7 @@ class Agent(BaseCustomResource):
             version=self._version,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
     def patch(self, **kwargs) -> None:
@@ -81,7 +84,7 @@ class Agent(BaseCustomResource):
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
-            body=body
+            body=body,
         )
 
         logger.info(
@@ -94,13 +97,25 @@ class Agent(BaseCustomResource):
             version=self._version,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info('deleted agent %s', self.ref)
 
-    def status(self) -> dict:
-        return self.get()['status']
+    def status(
+            self,
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+    ) -> dict:
+        def _attempt_to_get_status() -> dict:
+            return self.get()['status']
+
+        return waiting.wait(
+            _attempt_to_get_status,
+            sleep_seconds=0.5,
+            timeout_seconds=timeout,
+            waiting_for=f'agent {self.ref} status',
+            expected_exceptions=KeyError
+        )
 
     def approve(self) -> None:
         self.patch(approved=True)
