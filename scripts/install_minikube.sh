@@ -9,9 +9,8 @@ function install_minikube() {
 
     if ! [ -x "$(command -v minikube)" ]; then
         echo "Installing minikube..."
-        curl --retry 3 -Lo minikube https://storage.googleapis.com/minikube/releases/v1.8.2/minikube-linux-amd64
-        chmod +x minikube
-        ${SUDO} cp minikube /usr/bin/
+        arkade get minikube --version=v1.18.1
+        ${SUDO} mv ${HOME}/.arkade/bin/minikube /usr/local/bin/
     else
         echo "minikube is already installed"
     fi
@@ -20,9 +19,8 @@ function install_minikube() {
 function install_kubectl() {
     if ! [ -x "$(command -v kubectl)" ]; then
         echo "Installing kubectl..."
-        curl --retry 3 -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl
-        chmod +x kubectl
-        ${SUDO} mv kubectl /usr/bin/
+        arkade get kubectl --version=v1.20.0
+        ${SUDO} mv ${HOME}/.arkade/bin/kubectl /usr/local/bin/
     else
         echo "kubectl is already installed"
     fi
@@ -41,6 +39,16 @@ function install_oc() {
     fi
 }
 
+function install_arkade() {
+    if ! [ -x "$(command -v arkade)" ]; then
+        echo "Installing arkade..."
+        curl -sLS https://dl.get-arkade.dev | ${SUDO} sh
+    else
+        echo "arkade is already installed"
+    fi
+}
+
+install_arkade
 install_minikube
 install_kubectl
 install_oc
