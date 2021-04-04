@@ -1,6 +1,7 @@
 import json
 import logging
 import random
+import re
 from typing import Dict, Iterator, List
 
 from munch import Munch
@@ -9,6 +10,7 @@ from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
 from tests.conftest import env_variables
+from test_infra.controllers.nat_controller import NatController
 
 
 class NodeMapping:
@@ -40,6 +42,25 @@ class Nodes:
     def __iter__(self) -> Iterator[Node]:
         for n in self.nodes:
             yield n
+
+    @property
+    def nat_interfaces(self):
+        return (self.controller.network_conf.libvirt_network_if,
+                self.controller.network_conf.libvirt_secondary_network_if)
+
+    @staticmethod
+    def _get_namespace_index(libvirt_network_if):
+        """ Hack to retrieve namespace index - does not exist in tests """
+        matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+        return int(matcher.groups()[0]) if matcher is not None else 0
+
+    def configure_nat(self):
+        nat_interfaces = self.nat_interfaces
+        NatController.add_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
+
+    def unconfigure_nat(self):
+        nat_interfaces = self.nat_interfaces
+        NatController.remove_nat_rules(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
 
     def drop_cache(self):
         self._nodes = None
