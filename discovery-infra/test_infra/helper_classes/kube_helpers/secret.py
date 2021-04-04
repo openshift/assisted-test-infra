@@ -1,5 +1,7 @@
+import logging
 import os
 import json
+
 from typing import Optional
 
 from kubernetes.client import ApiClient, CoreV1Api
@@ -7,8 +9,10 @@ from kubernetes.client.rest import ApiException
 
 from tests.conftest import env_variables
 
-from .common import logger
 from .base_resource import BaseResource
+
+
+logger = logging.getLogger(__name__)
 
 
 class Secret(BaseResource):
