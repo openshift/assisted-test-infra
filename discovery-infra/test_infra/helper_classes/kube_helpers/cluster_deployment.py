@@ -43,7 +43,7 @@ class Platform:
             api_vip: str = DEFAULT_API_VIP,
             api_vip_dns_name: str = DEFAULT_API_VIP_DNS_NAME,
             ingress_vip: str = DEFAULT_INGRESS_VIP,
-            agent_selector: Optional[Dict[str, str]] = None
+            agent_selector: Optional[Dict[str, str]] = None,
     ):
         self.api_vip = api_vip
         self.api_vip_dns_name = api_vip_dns_name
@@ -101,7 +101,7 @@ class InstallStrategy:
                 'networking': {
                     'clusterNetwork': [{
                         'cidr': self.cluster_cidr,
-                        'hostPrefix': self.host_prefix
+                        'hostPrefix': self.host_prefix,
                     }],
                     'serviceNetwork': [self.service_cidr]
                 },
@@ -117,7 +117,7 @@ class InstallStrategy:
 
         if does_string_contain_value(self.machine_cidr):
             data['agent']['networking']['machineNetwork'] = [{
-                'cidr': self.machine_cidr
+                'cidr': self.machine_cidr,
             }]
 
         return data
@@ -139,7 +139,7 @@ class ClusterDeployment(BaseCustomResource):
             self,
             kube_api_client: ApiClient,
             name: str,
-            namespace: str = env_variables['namespace']
+            namespace: str = env_variables['namespace'],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -150,7 +150,7 @@ class ClusterDeployment(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             body=yaml_data,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info(
@@ -163,7 +163,7 @@ class ClusterDeployment(BaseCustomResource):
             install_strategy: InstallStrategy,
             secret: Secret,
             base_domain: str = env_variables['base_domain'],
-            **kwargs
+            **kwargs,
     ):
         body = {
             'apiVersion': f'{self._api_group}/{self._api_version}',
@@ -183,7 +183,7 @@ class ClusterDeployment(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             body=body,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info(
@@ -195,7 +195,7 @@ class ClusterDeployment(BaseCustomResource):
             platform: Optional[Platform] = None,
             install_strategy: Optional[InstallStrategy] = None,
             secret: Optional[Secret] = None,
-            **kwargs
+            **kwargs,
     ) -> None:
         body = {'spec': kwargs}
 
@@ -217,7 +217,7 @@ class ClusterDeployment(BaseCustomResource):
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
-            body=body
+            body=body,
         )
 
         logger.info(
@@ -230,7 +230,7 @@ class ClusterDeployment(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
     def delete(self) -> None:
@@ -239,14 +239,14 @@ class ClusterDeployment(BaseCustomResource):
             version=self._api_version,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info('deleted cluster deployment %s', self.ref)
 
     def status(
             self,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     ) -> dict:
         """
         Status is a section in the CRD that is created after registration to
@@ -262,12 +262,12 @@ class ClusterDeployment(BaseCustomResource):
             sleep_seconds=0.5,
             timeout_seconds=timeout,
             waiting_for=f'cluster {self.ref} status',
-            expected_exceptions=KeyError
+            expected_exceptions=KeyError,
         )
 
     def state(
             self,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> Tuple[str, str]:
         state, state_info = None, None
         for condition in self.status(timeout).get('conditions', []):
@@ -286,7 +286,7 @@ class ClusterDeployment(BaseCustomResource):
     def wait_for_state(
             self,
             required_state: str,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         required_state = required_state.lower()
 
@@ -298,7 +298,7 @@ class ClusterDeployment(BaseCustomResource):
             _has_required_state,
             timeout_seconds=timeout,
             waiting_for=f'cluster {self.ref} state to be {required_state}',
-            expected_exceptions=waiting.exceptions.TimeoutExpired
+            expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
     def list_agents(self) -> List[Agent]:
@@ -307,7 +307,7 @@ class ClusterDeployment(BaseCustomResource):
     def wait_for_agents(
             self,
             num_agents: int = 1,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
     ) -> List[Agent]:
 
         def _wait_for_sufficient_agents_number() -> List[Agent]:
@@ -346,7 +346,7 @@ class ClusterDeployment(BaseCustomResource):
 
         kubeconfig_data = Secret(
             kube_api_client=self.crd_api.api_client,
-            **secret_ref
+            **secret_ref,
         ).get().data["kubeconfig"]
 
         with open(kubeconfig_path, "wt") as kubeconfig_file:
@@ -358,10 +358,10 @@ def deploy_default_cluster_deployment(
         name: str,
         ignore_conflict: bool = True,
         base_domain: str = env_variables['base_domain'],
-        platform_params: Optional[dict] = None,
-        install_strategy_params: Optional[dict] = None,
+        platform: Optional[Platform] = None,
+        install_strategy: Optional[InstallStrategy] = None,
         secret: Optional[Secret] = None,
-        **kwargs
+        **kwargs,
 ) -> ClusterDeployment:
     cluster_deployment = ClusterDeployment(kube_api_client, name)
     try:
@@ -370,7 +370,8 @@ def deploy_default_cluster_deployment(
                 kube_api_client=kube_api_client,
                 ignore_conflict=ignore_conflict,
                 cluster_deployment=cluster_deployment,
-                filepath=kwargs['filepath'])
+                filepath=kwargs['filepath'],
+            )
         else:
             _create_from_attrs(
                 kube_api_client=kube_api_client,
@@ -379,9 +380,9 @@ def deploy_default_cluster_deployment(
                 cluster_deployment=cluster_deployment,
                 base_domain=base_domain,
                 secret=secret,
-                platform_params=platform_params,
-                install_strategy_params=install_strategy_params,
-                **kwargs
+                platform=platform,
+                install_strategy=install_strategy,
+                **kwargs,
             )
     except ApiException as e:
         if not (e.reason == 'Conflict' and ignore_conflict):
@@ -398,7 +399,7 @@ def _create_from_yaml_file(
         kube_api_client: ApiClient,
         ignore_conflict: bool,
         cluster_deployment: ClusterDeployment,
-        filepath: str
+        filepath: str,
 ) -> None:
     with open(filepath) as fp:
         yaml_data = yaml.safe_load(fp)
@@ -406,7 +407,7 @@ def _create_from_yaml_file(
     deploy_default_secret(
         kube_api_client=kube_api_client,
         name=yaml_data['spec']['pullSecretRef']['name'],
-        ignore_conflict=ignore_conflict
+        ignore_conflict=ignore_conflict,
     )
     cluster_deployment.create_from_yaml(yaml_data)
 
@@ -418,23 +419,21 @@ def _create_from_attrs(
         cluster_deployment: ClusterDeployment,
         base_domain: str,
         secret: Optional[Secret] = None,
-        platform_params: Optional[dict] = None,
-        install_strategy_params: Optional[dict] = None,
-        **kwargs
+        platform: Optional[Platform] = None,
+        install_strategy: Optional[InstallStrategy] = None,
+        **kwargs,
 ) -> None:
     if not secret:
         secret = deploy_default_secret(
             kube_api_client=kube_api_client,
             name=name,
-            ignore_conflict=ignore_conflict
+            ignore_conflict=ignore_conflict,
         )
 
-    platform = Platform(**platform_params or {})
-    install_strategy = InstallStrategy(**install_strategy_params or {})
     cluster_deployment.create(
-        platform=platform,
-        install_strategy=install_strategy,
+        platform=platform or Platform(),
+        install_strategy=install_strategy or InstallStrategy(),
         secret=secret,
         base_domain=base_domain,
-        **kwargs
+        **kwargs,
     )
