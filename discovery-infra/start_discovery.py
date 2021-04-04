@@ -8,6 +8,7 @@ import ipaddress
 import json
 import os
 
+import yaml
 import dns.resolver
 from kubernetes.client import CustomObjectsApi
 from netaddr import IPNetwork
@@ -16,7 +17,7 @@ from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
 from test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Platform,
-    InstallStrategy, Secret, InstallEnv, Agent, Proxy
+    InstallStrategy, Secret, InstallEnv, Agent, Proxy, NMStateConfig,
 )
 
 import bootstrap_in_place as ibip
@@ -500,6 +501,36 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
                        update_roles=master_count > 1)
 
 
+def apply_static_network_config(cluster_name, kube_client):
+    if not args.with_static_network_config:
+        return None
+
+    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+    static_network_config = static_network.generate_static_network_data_from_tf(tf_folder)
+    if args.kube_api:
+        if args.master_count != 1:
+            raise NotImplementedError("At the moment, KubeAPI workflow supports only single-node clusters")
+
+        mac_to_interface = static_network_config[0]["mac_interface_map"]
+        interfaces = [
+            {"name": item["logical_nic_name"], "macAddress": item["mac_address"]}
+            for item in mac_to_interface
+        ]
+
+        nmstate_config = NMStateConfig(
+            kube_api_client=kube_client,
+            name=f"{cluster_name}-nmstate-config",
+            namespace=args.namespace,
+        )
+        nmstate_config.apply(
+            config=yaml.safe_load(static_network_config[0]["network_yaml"]),
+            interfaces=interfaces,
+            label=cluster_name,
+        )
+
+    return static_network_config
+
+
 def execute_day1_flow(cluster_name):
     client = None
     cluster = {}
@@ -574,6 +605,23 @@ def execute_day1_flow(cluster_name):
             )
             cluster_deployment.wait_for_state("insufficient")
 
+        else:
+            cluster = client.create_cluster(
+                cluster_name,
+                ssh_public_key=args.ssh_key, **_cluster_create_params()
+            )
+
+        static_network_config = apply_static_network_config(
+            cluster_name=cluster_name,
+            kube_client=kube_client,
+        )
+
+        image_path = os.path.join(
+            consts.IMAGE_FOLDER,
+            f'{args.namespace}-installer-image.iso'
+        )
+
+        if args.kube_api:
             http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
             install_env = InstallEnv(
                 kube_api_client=kube_client,
@@ -592,26 +640,8 @@ def execute_day1_flow(cluster_name):
             install_env.status()
             image_url = install_env.get_iso_download_url()
             cluster = client.cluster_get(cluster_id=install_env.get_cluster_id())
-
-        else:
-            cluster = client.create_cluster(
-                cluster_name,
-                ssh_public_key=args.ssh_key, **_cluster_create_params()
-            )
-
-        image_path = os.path.join(
-            consts.IMAGE_FOLDER,
-            f'{args.namespace}-installer-image.iso'
-        )
-
-        if args.with_static_network_config:
-            tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-            static_network_config = static_network.generate_static_network_data_from_tf(tf_folder)
-        else:
-            static_network_config = None
-
-        if image_url is not None:
             utils.download_iso(image_url, image_path)
+
         else:
             client.generate_and_download_image(
                 cluster_id=cluster.id,
@@ -620,7 +650,6 @@ def execute_day1_flow(cluster_name):
                 ssh_key=args.ssh_key,
                 static_network_config=static_network_config,
             )
-
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:

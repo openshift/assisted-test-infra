@@ -99,6 +99,7 @@ class InstallEnv(BaseCustomResource):
             proxy: Optional[Proxy] = None,
             label_selector: Optional[Dict[str, str]] = None,
             ignition_config_override: Optional[str] = None,
+            nmstate_label: Optional[str] = None,
             **kwargs,
     ) -> None:
         body = {
@@ -108,9 +109,10 @@ class InstallEnv(BaseCustomResource):
             'spec': {
                 'clusterRef': cluster_deployment.ref.as_dict(),
                 'pullSecretRef': secret.ref.as_dict(),
-                'nmStateConfigLabelSelector': {  # TODO: set nmstate configuration
+                'nmStateConfigLabelSelector': {
                     'matchLabels': {
-                        'adi.io.my.domain/selector-nmstate-config-name': 'abcd',
+                        f'{self._api_group}/selector-nmstate-config-name':
+                            nmstate_label or ''
                     }
                 },
                 'agentLabelSelector': {'matchLabels': label_selector or {}},
@@ -140,6 +142,7 @@ class InstallEnv(BaseCustomResource):
             proxy: Optional[Proxy] = None,
             label_selector: Optional[Dict[str, str]] = None,
             ignition_config_override: Optional[str] = None,
+            nmstate_label: Optional[str] = None,
             **kwargs,
     ) -> None:
         body = {'spec': kwargs}
@@ -156,6 +159,13 @@ class InstallEnv(BaseCustomResource):
 
         if label_selector:
             spec['agentLabelSelector'] = {'matchLabels': label_selector}
+
+        if nmstate_label:
+            spec['nmStateConfigLabelSelector'] = {
+                'matchLabels': {
+                    f'{self._api_group}/selector-nmstate-config-name': nmstate_label,
+                }
+            }
 
         if ignition_config_override:
             spec['ignitionConfigOverride'] = ignition_config_override
