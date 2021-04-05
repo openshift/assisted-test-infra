@@ -725,6 +725,14 @@ class Cluster:
             timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT
         )
 
+    def wait_for_cluster_to_be_in_finalayzing_status(self):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.FINALIZING],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
+        )
+
     @classmethod
     def reset_cluster_and_wait_for_ready(cls, cluster, nodes):
         # Reset cluster install
