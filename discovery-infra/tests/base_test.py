@@ -12,7 +12,7 @@ import test_infra.utils as infra_utils
 import waiting
 from assisted_service_client.rest import ApiException
 from download_logs import download_logs
-from junit_report import JunitFixtureTestCase
+from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
 from test_infra import consts
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
@@ -62,6 +62,7 @@ class BaseTest:
     def cluster(self, api_client, request, nodes):
         clusters = []
 
+        @JunitTestCase()
         def get_cluster_func(cluster_name: Optional[str] = None,
                              additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
                              openshift_version: Optional[str] = env_variables['openshift_version'],
