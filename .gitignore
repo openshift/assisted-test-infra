@@ -9,3 +9,4 @@ minikube
 *.log
 **/RCS/**
 *~
+.env
