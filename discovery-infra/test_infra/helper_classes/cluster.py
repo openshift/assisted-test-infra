@@ -536,6 +536,11 @@ class Cluster:
             fall_on_error_status=False,
         )
 
+    def is_operator_in_status(self, operator_name, status):
+        return utils.is_operator_in_status(operators=self.get_operators(),
+                                           operator_name=operator_name,
+                                           status=status)
+
     def wait_for_install(
             self,
             timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
@@ -723,6 +728,15 @@ class Cluster:
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLING],
             timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT
+        )
+
+    def wait_for_cluster_to_be_in_finalizing_status(self):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.FINALIZING, consts.ClusterStatus.INSTALLED],
+            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            break_statuses=[consts.ClusterStatus.ERROR]
         )
 
     @classmethod
