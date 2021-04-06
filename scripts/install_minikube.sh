@@ -7,9 +7,11 @@ function install_minikube() {
         return
     fi
 
-    if ! [ -x "$(command -v minikube)" ]; then
+    minikube_version=v1.18.1
+    minikube_path=$(command -v minikube)
+    if ! [ -x "$minikube_path" ] || [ $(minikube version -o json | jq -r '.minikubeVersion') != $minikube_version ]; then
         echo "Installing minikube..."
-        arkade get minikube --version=v1.18.1
+        arkade get minikube --version=$minikube_version
         ${SUDO} mv ${HOME}/.arkade/bin/minikube /usr/local/bin/
     else
         echo "minikube is already installed"
