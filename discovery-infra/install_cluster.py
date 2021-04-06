@@ -99,17 +99,18 @@ def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret,
         break_statuses=[consts.ClusterStatus.ERROR]
     )
     cluster = client.cluster_get(cluster_id)
-    if cluster.status == consts.ClusterStatus.READY:
+    if cluster.status == consts.ClusterStatus.READY and kube_client is None:
         log.info("Install cluster %s", cluster_id)
         _install_cluster(client=client, cluster=cluster)
 
     else:
         log.info("Cluster is already in installing status, skipping install command")
 
-    log.info("Download kubeconfig-noingress")
-    client.download_kubeconfig_no_ingress(
-        cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
-    )
+    if kube_client is None:
+        log.info("Download kubeconfig-noingress")
+        client.download_kubeconfig_no_ingress(
+            cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
+        )
 
     log.info("Waiting until cluster finishes installation")
     if kube_client is not None:
