@@ -26,7 +26,7 @@ function init_minikube() {
     done
 
     minikube start --driver=kvm2 --memory=8192 --cpus=4 --profile=${PROFILE} --force --wait-timeout=15m0s --disk-size=50g
-    minikube tunnel --cleanup &> /dev/null &
+    minikube --profile=${PROFILE} tunnel --cleanup &> /dev/null &
 }
 
 if [ "${DEPLOY_TARGET}" != "minikube" ]; then
