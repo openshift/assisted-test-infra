@@ -76,8 +76,6 @@ IMAGE_TAG := latest
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
-SERVICE_REPLICAS_COUNT := 3
-
 IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 
@@ -107,9 +105,13 @@ CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-con
 
 PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
-ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},true)
-
+SERVICE_REPLICAS_COUNT := 3
+ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},no)
 KUBE_API := $(or ${KUBE_API},no)
+ifeq ($(ENABLE_KUBE_API),true)
+	SERVICE_REPLICAS_COUNT=1
+	KUBE_API=yes
+endif
 
 .EXPORT_ALL_VARIABLES:
 
