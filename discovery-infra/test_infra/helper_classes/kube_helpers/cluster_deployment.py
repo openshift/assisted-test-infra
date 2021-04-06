@@ -226,12 +226,12 @@ class ClusterDeployment(BaseCustomResource):
     
     def annotate_install_config(self, install_config: str) -> None:
         body = {
-                    'metadata': {
-                        'annotations': {
-                            'adi.io.my.domain/install-config-overrides': install_config
-                        }
-                    }
+            'metadata': {
+                'annotations': {
+                    'adi.io.my.domain/install-config-overrides': install_config
                 }
+            }
+        }
 
         self.crd_api.patch_namespaced_custom_object(
             group=self._api_group,
@@ -243,7 +243,7 @@ class ClusterDeployment(BaseCustomResource):
         )
 
         logger.info(
-            'patching cluster deployment %s: %s', self.ref, pformat(body)
+            'patching cluster install config %s: %s', self.ref, pformat(body)
         )
 
     def get(self) -> dict:
