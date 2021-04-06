@@ -12,13 +12,13 @@ REPORTS = $(ROOT_DIR)/reports
 SKIPPER_PARAMS ?= -i
 
 # assisted-service
-SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
+SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "origin/master")
 SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 
 # assisted-installer
-INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
+INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "origin/master")
 INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted-installer")
 
 # ui service
@@ -281,7 +281,7 @@ bring_assisted_installer:
 		git clone $(INSTALLER_REPO); \
 	fi
 
-	@cd assisted-installer && git fetch origin $(INSTALLER_BRANCH) && git reset --hard $(INSTALLER_BRANCH)
+	@cd assisted-installer && git fetch origin && git reset --hard $(INSTALLER_BRANCH)
 
 ###########
 # Cluster #
@@ -367,7 +367,7 @@ bring_assisted_service:
 		git clone $(SERVICE_REPO); \
 	fi
 
-	@cd assisted-service && git fetch origin $(SERVICE_BRANCH) && git reset --hard $(SERVICE_BRANCH)
+	@cd assisted-service && git fetch origin && git reset --hard $(SERVICE_BRANCH)
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)

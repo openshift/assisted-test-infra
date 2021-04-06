@@ -75,7 +75,9 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | HTTPS_PROXY_URL             | A proxy URL to use for creating HTTPS connections outside the cluster                                                                       |
 | HTTP_PROXY_URL              | A proxy URL to use for creating HTTP connections outside the cluster                                                                        |
 | IMAGE_BUILDER               | image-builder image to use, will update assisted-service config map with given value                                                        |
+| INSTALLER_BRANCH            | assisted-installer branch to use, default: origin/master                                                                                    |
 | INSTALLER_IMAGE             | assisted-installer image to use, will update assisted-service config map with given value                                                   |
+| INSTALLER_REPO              | assisted-installer repository to use, default: https://github.com/openshift/assisted-installer                                              |
 | IPv4                        | Boolean value indicating if IPv4 is enabled. Default is yes                                                                                 |
 | IPv6                        | Boolean value indicating if IPv6 is enabled. Default is no                                                                                  |
 | ISO                         | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix             |
@@ -86,7 +88,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | NO_PROXY_VALUES             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying                       |
 | NUM_MASTERS                 | number of VMs to spawn as masters, default: 3                                                                                               |
 | NUM_WORKERS                 | number of VMs to spawn as workers, default: 0                                                                                               |
-| OCM_BASE_URL                | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/                  |
+| OCM_BASE_URL                | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/                                           |
 | OCM_CLIENT_ID               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                                         |
 | OCM_CLIENT_SECRET           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz                                                   |
 | OC_MODE                     | if set, use oc instead of minikube                                                                                                          |
@@ -102,7 +104,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | ROUTE53_SECRET              | Amazon Route 53 secret to use for DNS domains registration.                                                                                 |
 | SERVICE                     | assisted-service image to use                                                                                                               |
 | SERVICE_BASE_URL            | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol                                   |
-| SERVICE_BRANCH              | assisted-service branch to use, default: master                                                                                             |
+| SERVICE_BRANCH              | assisted-service branch to use, default: origin/master                                                                                      |
 | SERVICE_NAME                | assisted-service target service name, default: assisted-service                                                                             |
 | SERVICE_REPO                | assisted-service repository to use, default: https://github.com/openshift/assisted-service                                                  |
 | SSH_PUB_KEY                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub                                            |
@@ -111,7 +113,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                                       |
 | PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                                 |
 | CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                                       |
-| ENABLE_KUBE_API             | If set, deploy assisted-service with Kube API controllers (minikube only)                                                                                     |
+| ENABLE_KUBE_API             | If set, deploy assisted-service with Kube API controllers (minikube only)                                                                   |
 
 ## Instructions
 
