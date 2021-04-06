@@ -12,6 +12,7 @@ import requests
 import waiting
 import yaml
 from assisted_service_client import models
+from junit_report import JunitTestCase
 from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
@@ -86,6 +87,7 @@ class Cluster:
     def generate_image(self, ssh_key=env_variables['ssh_public_key']):
         self.api_client.generate_image(cluster_id=self.id, ssh_key=ssh_key)
 
+    @JunitTestCase()
     def generate_and_download_image(
             self,
             iso_download_path=env_variables['iso_download_path'],
@@ -111,6 +113,7 @@ class Cluster:
             timeout=consts.DISCONNECTED_TIMEOUT
         )
 
+    @JunitTestCase()
     def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
                                         allow_insufficient=False):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
@@ -274,6 +277,7 @@ class Cluster:
                      f"for cluster: {self.id}")
         self.api_client.set_cluster_proxy(self.id, http_proxy, https_proxy, no_proxy)
 
+    @JunitTestCase()
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
 
@@ -370,6 +374,7 @@ class Cluster:
             nodes_count=nodes_count
         )
 
+    @JunitTestCase()
     def start_install_and_wait_for_installed(self,
                                              wait_for_hosts=True,
                                              wait_for_operators=True,
@@ -547,6 +552,7 @@ class Cluster:
             timeout=timeout,
         )
 
+    @JunitTestCase()
     def prepare_for_install(
             self,
             nodes,
