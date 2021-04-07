@@ -281,7 +281,7 @@ bring_assisted_installer:
 		git clone $(INSTALLER_REPO); \
 	fi
 
-	@cd assisted-installer && git fetch origin $(INSTALLER_BRANCH) && git reset --hard $(INSTALLER_BRANCH)
+	@cd assisted-installer && git fetch origin $(INSTALLER_BRANCH) && git reset --hard FETCH_HEAD
 
 ###########
 # Cluster #
@@ -367,7 +367,7 @@ bring_assisted_service:
 		git clone $(SERVICE_REPO); \
 	fi
 
-	@cd assisted-service && git fetch origin $(SERVICE_BRANCH) && git reset --hard $(SERVICE_BRANCH)
+	@cd assisted-service && git fetch origin $(SERVICE_BRANCH) && git reset --hard FETCH_HEAD
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE) PROFILE=$(PROFILE)
