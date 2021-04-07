@@ -27,8 +27,9 @@ from .cluster_deployment import (
     InstallStrategy,
     ClusterDeployment,
 )
-from .secret import deploy_default_secret, Secret
 from .agent import Agent
+from .nmstate_config import NMStateConfig
+from .secret import deploy_default_secret, Secret
 from .installenv import deploy_default_installenv, InstallEnv, Proxy
 from .common import (
     create_kube_api_client,
@@ -52,4 +53,5 @@ __all__ = (
     'ObjectReference',
     'InstallEnv',
     'Proxy',
+    'NMStateConfig',
 )
