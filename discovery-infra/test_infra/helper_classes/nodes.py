@@ -199,6 +199,6 @@ class Nodes:
                                update_roles=(nodes_count != 1))
 
     def set_single_node_ip(self, cluster):
-        self.controller.tf.change_variables({"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client,
-                                                                                              cluster.id, env_variables[
-                                                                                                  'machine_cidr'])})
+        self.controller.tf.change_variables(
+            {"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client,
+                                                              cluster.id, self.controller.get_machine_cidr())})

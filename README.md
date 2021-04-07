@@ -111,7 +111,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | WORKER_MEMORY               | memory for worker VM, default: 8892MB                                                                                                       |
 | PUBLIC_CONTAINER_REGISTRIES | comma-separated list of registries that do not require authentication for pulling assisted installer images                                 |
 | CHECK_CLUSTER_VERSION       | If "True", the controller will wait for CVO to finish                                                                                       |
-| ENABLE_KUBE_API             | If set, deploy assisted-service with Kube API controllers (minikube only)                                                                                     |
+| ENABLE_KUBE_API             | If set, deploy assisted-service with Kube API controllers (minikube only)                                                                   |
 
 ## Instructions
 

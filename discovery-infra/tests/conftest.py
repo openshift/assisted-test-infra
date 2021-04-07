@@ -3,6 +3,7 @@ import os
 import uuid
 from distutils import util
 from pathlib import Path
+from typing import List
 
 import pytest
 import test_infra.utils as infra_utils
@@ -42,7 +43,7 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "openshift_version": utils.get_openshift_version(),
                  "base_domain": utils.get_env('BASE_DOMAIN', "redhat.com"),
                  "num_masters": int(utils.get_env('NUM_MASTERS', consts.NUMBER_OF_MASTERS)),
-                 "num_workers": max(2, int(utils.get_env('NUM_WORKERS', 0))),
+                 "num_workers": int(utils.get_env('NUM_WORKERS', 2)),
                  "num_day2_workers": int(utils.get_env('NUM_DAY2_WORKERS', 0)),
                  "vip_dhcp_allocation": bool(util.strtobool(utils.get_env('VIP_DHCP_ALLOCATION'))),
                  "worker_memory": int(utils.get_env('WORKER_MEMORY', '8892')),
@@ -65,7 +66,9 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "test_teardown": bool(util.strtobool(utils.get_env('TEST_TEARDOWN', 'true'))),
                  "namespace": utils.get_env('NAMESPACE', consts.DEFAULT_NAMESPACE),
                  "olm_operators": list(map(lambda name: {'name': name}, utils.get_env('OLM_OPERATORS', '').lower().split())),
-                 "platform": utils.get_env("PLATFORM", consts.Platforms.BARE_METAL)
+                 "platform": utils.get_env("PLATFORM", consts.Platforms.BARE_METAL),
+                 "user_managed_networking": False,
+                 "high_availability_mode": consts.HighAvailabilityMode.FULL,
                  }
 cluster_mid_name = infra_utils.get_random_name()
 
@@ -84,6 +87,18 @@ env_variables["iso_download_path"] = image
 env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_masters"]
 
 
+if env_variables["num_masters"] == 1:
+    env_variables["high_availability_mode"] = consts.HighAvailabilityMode.NONE
+    env_variables["user_managed_networking"] = True
+    env_variables["vip_dhcp_allocation"] = False
+    os.environ["OPENSHIFT_VERSION"] = "4.8"
+
+
+if env_variables["platform"] == consts.Platforms.NONE:
+    env_variables["user_managed_networking"] = True
+    env_variables["vip_dhcp_allocation"] = False
+
+
 @pytest.fixture(scope="session")
 def api_client():
     logging.info('--- SETUP --- api_client\n')
@@ -98,6 +113,17 @@ def get_api_client(offline_token=env_variables['offline_token'], **kwargs):
             env_variables['namespace'], 'assisted-service', utils.get_env('DEPLOY_TARGET'))
 
     return assisted_service_api.create_client(url, offline_token, **kwargs)
+
+
+def get_available_openshift_versions() -> List[str]:
+    available_versions = list(get_api_client().get_openshift_versions().keys())
+    specific_version = utils.get_openshift_version(default=None)
+    if specific_version:
+        if specific_version in available_versions:
+            return [specific_version]
+        raise ValueError(f"Invalid version {specific_version}, can't find among versions: {available_versions}")
+
+    return available_versions
 
 
 @pytest.fixture(scope="session")
