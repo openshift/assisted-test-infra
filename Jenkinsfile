@@ -25,7 +25,7 @@ pipeline {
         PROFILE = "test-infra-${RUN_ID}"
         NAMESPACE = "test-infra-${RUN_ID}"
         LOGS_DEST = "${WORKSPACE}/cluster_logs"
-        ENABLE_KUBE_API = "true"
+        ENABLE_KUBE_API = "false"
         GENERATE_CRD = "false"
 
         // Credentials
