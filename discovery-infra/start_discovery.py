@@ -906,12 +906,6 @@ if __name__ == "__main__":
         required=True
     )
     parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
-        type=str,
-        default='assisted-installer'
-    )
-    parser.add_argument(
         '--keep-iso',
         help='If set, do not delete generated iso at the end of discovery',
         action='store_true',

@@ -22,7 +22,6 @@ pipeline {
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
         RUN_ID = UUID.randomUUID().toString().take(8)
-        PROFILE = "test-infra-${RUN_ID}"
         NAMESPACE = "test-infra-${RUN_ID}"
         LOGS_DEST = "${WORKSPACE}/cluster_logs"
         ENABLE_KUBE_API = "false"
@@ -48,7 +47,7 @@ pipeline {
                 sh "make create_full_environment"
 
                 // Login
-                sh "minikube --profile ${PROFILE} ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
+                sh "minikube ssh \"docker login --username ${OCPMETAL_CREDS_USR} --password ${OCPMETAL_CREDS_PSW}\""
             }
         }
 
@@ -71,11 +70,8 @@ pipeline {
                 }
 
                 try {
-                    ip = sh(returnStdout: true, script: "minikube ip --profile ${PROFILE}").trim()
-                    minikube_url = "https://${ip}:8443"
-
-                    sh "make download_service_logs KUBECTL='kubectl --server=${minikube_url}'"
-                    sh "make download_cluster_logs ADDITIONAL_PARAMS='--download-all' KUBECTL='kubectl --server=${minikube_url}'"
+                    sh "make download_service_logs"
+                    sh "make download_cluster_logs ADDITIONAL_PARAMS='--download-all'"
                 } finally {
                     if (params.POST_DELETE) {
                         sh "make destroy"

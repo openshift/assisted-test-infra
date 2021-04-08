@@ -40,5 +40,5 @@ echo "Done installing minikube and oc"
 
 if [ -z "${NO_MINIKUBE}" ]; then
     echo "Install and start minikube"
-    make start_minikube PROFILE=${PROFILE:-minikube}
+    make start_minikube
 fi

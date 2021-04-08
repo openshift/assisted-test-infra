@@ -95,13 +95,7 @@ def _delete_virsh_resources(*filters):
 )
 def delete_clusters_from_all_namespaces():
     for name, namespace in utils.get_all_namespaced_clusters():
-        args.profile = namespace
-        try:
-            args.profile = 'minikube'
-            delete_cluster(name, namespace)
-        except BaseException:
-            args.profile = namespace
-            delete_cluster(name, namespace)
+        delete_cluster(name, namespace)
 
 
 @utils.on_exception(message='Failed to delete cluster', silent=True)
@@ -181,12 +175,6 @@ if __name__ == "__main__":
         '--cluster-name',
         help='Cluster name',
         required=False
-    )
-    parser.add_argument(
-        '--profile',
-        help='Minikube profile for assisted-installer deployment',
-        type=str,
-        default='assisted-installer'
     )
     parser.add_argument(
         '--deploy-target',
