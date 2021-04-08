@@ -15,6 +15,10 @@ logging.getLogger('kubernetes').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class UnexpectedStateError(Exception):
+    pass
+
+
 class KubeAPIContext:
     """
     This class is used to hold information shared between both kubernetes and
