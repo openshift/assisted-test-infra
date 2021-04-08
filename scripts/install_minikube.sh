@@ -9,12 +9,16 @@ function install_minikube() {
 
     minikube_version=v1.18.1
     minikube_path=$(command -v minikube)
-    if ! [ -x "$minikube_path" ] || [ $(minikube version -o json | jq -r '.minikubeVersion') != $minikube_version ]; then
+    if ! [ -x "$minikube_path" ]; then 
         echo "Installing minikube..."
         arkade get minikube --version=$minikube_version
-        ${SUDO} mv ${HOME}/.arkade/bin/minikube /usr/local/bin/
+        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube /usr/local/bin/
+    elif [ "$(minikube version | grep version | awk -F'version: *' '{print $2}')" != "$minikube_version" ]; then
+        echo "Upgrading minikube..."
+        arkade get minikube --version=$minikube_version
+        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube $minikube_path
     else
-        echo "minikube is already installed"
+        echo "minikube is already installed and up-to-date"
     fi
 }
 
