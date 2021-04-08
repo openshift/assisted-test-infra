@@ -220,6 +220,17 @@ def are_operators_in_status(operators: List[MonitoredOperator], operators_count:
     return False
 
 
+def is_operator_in_status(operators: List[MonitoredOperator], operator_name: str, status: str) -> bool:
+    log.info(
+        f"Asked operator %s to be in status: %s, and currently operators statuses are %s",
+        operator_name,
+        status,
+        [(operator.name, operator.status, operator.status_info) for operator in operators],
+    )
+    return any(operator.status == status for operator in operators
+               if operator.name == operator_name)
+
+
 def wait_till_hosts_with_macs_are_in_status(
         client,
         cluster_id,
