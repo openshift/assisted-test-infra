@@ -9,7 +9,11 @@ from tests.conftest import env_variables
 
 from .common import logger, ObjectReference
 from .base_resource import BaseCustomResource
-from .global_vars import DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+from .global_vars import (
+    CRD_API_GROUP,
+    CRD_API_VERSION,
+    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+)
 
 
 class Agent(BaseCustomResource):
@@ -19,8 +23,6 @@ class Agent(BaseCustomResource):
     resource and assign it to the relevant cluster.
     In oder to start the installation, all assigned agents must be approved.
     """
-    _api_group = 'adi.io.my.domain'
-    _version = 'v1alpha1'
     _plural = 'agents'
 
     def __init__(
@@ -39,8 +41,8 @@ class Agent(BaseCustomResource):
             cluster_deployment: 'ClusterDeployment',
     ) -> List['Agent']:
         resources = crd_api.list_namespaced_custom_object(
-            group=cls._api_group,
-            version=cls._version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=cls._plural,
             namespace=cluster_deployment.ref.namespace,
         )
@@ -68,8 +70,8 @@ class Agent(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=self._api_group,
-            version=self._version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -79,8 +81,8 @@ class Agent(BaseCustomResource):
         body = {'spec': kwargs}
 
         self.crd_api.patch_namespaced_custom_object(
-            group=self._api_group,
-            version=self._version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -93,8 +95,8 @@ class Agent(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=self._api_group,
-            version=self._version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,

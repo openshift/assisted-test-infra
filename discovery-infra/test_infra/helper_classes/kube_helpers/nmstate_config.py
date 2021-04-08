@@ -7,34 +7,35 @@ from kubernetes.client import ApiClient, CustomObjectsApi
 
 from tests.conftest import env_variables
 from .base_resource import BaseCustomResource
-from .global_vars import DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
-
+from .global_vars import (
+    CRD_API_GROUP,
+    CRD_API_VERSION,
+    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class NMStateConfig(BaseCustomResource):
     """Configure nmstate (static IP) related settings for agents."""
-    _api_group = 'adi.io.my.domain'
-    _api_version = 'v1alpha1'
     _plural = 'nmstateconfigs'
 
     def __init__(
             self,
             kube_api_client: ApiClient,
             name: str,
-            namespace: str = env_variables['namespace']
+            namespace: str = env_variables['namespace'],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             body=yaml_data,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info(
@@ -46,14 +47,14 @@ class NMStateConfig(BaseCustomResource):
             config: dict,
             interfaces: list,
             label: Optional[str] = None,
-            **kwargs
+            **kwargs,
     ) -> None:
         body = {
-            'apiVersion': f'{self._api_group}/{self._api_version}',
+            'apiVersion': f'{CRD_API_GROUP}/{CRD_API_VERSION}',
             'kind': 'NMStateConfig',
             'metadata': {
                 'labels': {
-                    f'{self._api_group}/selector-nmstate-config-name': label,
+                    f'{CRD_API_GROUP}/selector-nmstate-config-name': label,
                 },
                 **self.ref.as_dict()
             },
@@ -64,11 +65,11 @@ class NMStateConfig(BaseCustomResource):
         }
         body['spec'].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             body=body,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info(
@@ -79,7 +80,7 @@ class NMStateConfig(BaseCustomResource):
             self,
             config: dict,
             interfaces: list,
-            **kwargs
+            **kwargs,
     ) -> None:
         body = {'spec': kwargs}
 
@@ -91,12 +92,12 @@ class NMStateConfig(BaseCustomResource):
             spec['interfaces'] = interfaces
 
         self.crd_api.patch_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
-            body=body
+            body=body,
         )
 
         logger.info(
@@ -105,20 +106,20 @@ class NMStateConfig(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
-            namespace=self.ref.namespace
+            namespace=self.ref.namespace,
         )
 
         logger.info('deleted nmstate config %s', self.ref)
