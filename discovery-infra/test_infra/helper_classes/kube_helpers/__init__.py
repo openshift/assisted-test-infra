@@ -34,6 +34,7 @@ from .installenv import deploy_default_installenv, InstallEnv, Proxy
 from .common import (
     create_kube_api_client,
     delete_all_resources,
+    UnexpectedStateError,
     KubeAPIContext,
     ObjectReference
 )
@@ -54,4 +55,5 @@ __all__ = (
     'InstallEnv',
     'Proxy',
     'NMStateConfig',
+    'UnexpectedStateError',
 )

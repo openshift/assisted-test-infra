@@ -2,7 +2,7 @@ import logging
 
 from pprint import pformat
 from base64 import b64decode
-from typing import Optional, Union, Dict, Tuple, List
+from typing import Optional, Union, Dict, Tuple, List, Iterable
 
 import waiting
 import yaml
@@ -20,13 +20,14 @@ from .global_vars import (
     DEFAULT_MACHINE_CIDR,
     DEFAULT_CLUSTER_CIDR,
     DEFAULT_SERVICE_CIDR,
+    FAILURE_STATES,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
     DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
 )
 
-from .common import does_string_contain_value
+from .common import does_string_contain_value, UnexpectedStateError
 from .base_resource import BaseCustomResource
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
@@ -309,12 +310,23 @@ class ClusterDeployment(BaseCustomResource):
             self,
             required_state: str,
             timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+            *,
+            raise_on_states: Iterable[str] = FAILURE_STATES,
     ) -> None:
         required_state = required_state.lower()
+        raise_on_states = [x.lower() for x in raise_on_states]
 
-        def _has_required_state() -> bool:
-            state, _ = self.state(timeout=0.5)
-            return state.lower() == required_state
+        def _has_required_state() -> Optional[bool]:
+            state, state_info = self.state(timeout=0.5)
+            state = state.lower()
+            if state == required_state:
+                return True
+            elif state in raise_on_states:
+                raise UnexpectedStateError(
+                    f'while waiting for state `{required_state}`, cluster '
+                    f'{self.ref} state changed unexpectedly to `{state}`: '
+                    f'{state_info}'
+                )
 
         waiting.wait(
             _has_required_state,
@@ -343,20 +355,16 @@ class ClusterDeployment(BaseCustomResource):
             waiting_for=f'cluster {self.ref} to have {num_agents} agents',
         )
 
-    def wait_to_be_installed(self, timeout=DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT):
-        def _wait_for_cluster_to_be_installed() -> bool:
-            return self.get()["spec"].get("installed", False)
-
-        return waiting.wait(
-            _wait_for_cluster_to_be_installed,
-            sleep_seconds=1,
-            timeout_seconds=timeout,
-            waiting_for=f'cluster {self.ref} to be installed',
-        )
+    def wait_to_be_installed(
+            self, 
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
+    ) -> None:
+        self.wait_for_state('installed', timeout, raise_on_states=FAILURE_STATES)
+        assert self.get()['spec'].get('installed')
 
     def download_kubeconfig(self, kubeconfig_path):
         def _get_kubeconfig_secret() -> dict:
-            return self.get()["spec"]["clusterMetadata"]["adminKubeconfigSecretRef"]
+            return self.get()['spec']['clusterMetadata']['adminKubeconfigSecretRef']
 
         secret_ref = waiting.wait(
             _get_kubeconfig_secret,
@@ -369,9 +377,9 @@ class ClusterDeployment(BaseCustomResource):
         kubeconfig_data = Secret(
             kube_api_client=self.crd_api.api_client,
             **secret_ref,
-        ).get().data["kubeconfig"]
+        ).get().data['kubeconfig']
 
-        with open(kubeconfig_path, "wt") as kubeconfig_file:
+        with open(kubeconfig_path, 'wt') as kubeconfig_file:
             kubeconfig_file.write(b64decode(kubeconfig_data).decode())
 
 
