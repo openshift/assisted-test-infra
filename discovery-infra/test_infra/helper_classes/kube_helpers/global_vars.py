@@ -1,6 +1,11 @@
 from tests.conftest import env_variables
 
 
+CRD_API_GROUP = 'adi.io.my.domain'
+CRD_API_VERSION = 'v1alpha1'
+HIVE_API_GROUP = 'hive.openshift.io'
+HIVE_API_VERSION = 'v1'
+
 DEFAULT_API_VIP = env_variables.get('api_vip', '')
 DEFAULT_API_VIP_DNS_NAME = env_variables.get('api_vip_dns_name', '')
 DEFAULT_INGRESS_VIP = env_variables.get('ingress_vip', '')

@@ -11,6 +11,9 @@ from kubernetes.client.rest import ApiException
 from tests.conftest import env_variables
 
 from .global_vars import (
+    CRD_API_GROUP,
+    HIVE_API_GROUP,
+    HIVE_API_VERSION,
     DEFAULT_API_VIP,
     DEFAULT_API_VIP_DNS_NAME,
     DEFAULT_INGRESS_VIP,
@@ -130,9 +133,6 @@ class ClusterDeployment(BaseCustomResource):
     On deletion it will be unregistered from the service.
     When has sufficient data installation will start automatically.
     """
-
-    _api_group = 'hive.openshift.io'
-    _api_version = 'v1'
     _plural = 'clusterdeployments'
 
     def __init__(
@@ -146,8 +146,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=HIVE_API_GROUP,
+            version=HIVE_API_VERSION,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace,
@@ -166,7 +166,7 @@ class ClusterDeployment(BaseCustomResource):
             **kwargs,
     ):
         body = {
-            'apiVersion': f'{self._api_group}/{self._api_version}',
+            'apiVersion': f'{HIVE_API_GROUP}/{HIVE_API_VERSION}',
             'kind': 'ClusterDeployment',
             'metadata': self.ref.as_dict(),
             'spec': {
@@ -179,8 +179,8 @@ class ClusterDeployment(BaseCustomResource):
         }
         body['spec'].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=HIVE_API_GROUP,
+            version=HIVE_API_VERSION,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace,
@@ -212,8 +212,8 @@ class ClusterDeployment(BaseCustomResource):
             spec['pullSecretRef'] = secret.ref.as_dict()
 
         self.crd_api.patch_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=HIVE_API_GROUP,
+            version=HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -228,14 +228,14 @@ class ClusterDeployment(BaseCustomResource):
         body = {
             'metadata': {
                 'annotations': {
-                    'adi.io.my.domain/install-config-overrides': install_config
+                    f'{CRD_API_GROUP}/install-config-overrides': install_config
                 }
             }
         }
 
         self.crd_api.patch_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=HIVE_API_GROUP,
+            version=HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -248,8 +248,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=HIVE_API_GROUP,
+            version=HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -257,8 +257,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=HIVE_API_GROUP,
+            version=HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,

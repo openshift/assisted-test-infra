@@ -15,6 +15,8 @@ from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
 from .secret import deploy_default_secret, Secret
 from .global_vars import (
+    CRD_API_GROUP,
+    CRD_API_VERSION,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
 )
@@ -66,8 +68,6 @@ class InstallEnv(BaseCustomResource):
     Image is automatically generated on CRD deployment, after InstallEnv is
     reconciled. Image download url will be exposed in the status.
     """
-    _api_group = 'adi.io.my.domain'
-    _api_version = 'v1alpha1'
     _plural = 'installenvs'
 
     def __init__(
@@ -81,8 +81,8 @@ class InstallEnv(BaseCustomResource):
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace,
@@ -103,7 +103,7 @@ class InstallEnv(BaseCustomResource):
             **kwargs,
     ) -> None:
         body = {
-            'apiVersion': f'{self._api_group}/{self._api_version}',
+            'apiVersion': f'{CRD_API_GROUP}/{CRD_API_VERSION}',
             'kind': 'InstallEnv',
             'metadata': self.ref.as_dict(),
             'spec': {
@@ -111,7 +111,7 @@ class InstallEnv(BaseCustomResource):
                 'pullSecretRef': secret.ref.as_dict(),
                 'nmStateConfigLabelSelector': {
                     'matchLabels': {
-                        f'{self._api_group}/selector-nmstate-config-name':
+                        f'{CRD_API_GROUP}/selector-nmstate-config-name':
                             nmstate_label or ''
                     }
                 },
@@ -124,8 +124,8 @@ class InstallEnv(BaseCustomResource):
             spec['proxy'] = proxy.as_dict()
         spec.update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace,
@@ -163,7 +163,7 @@ class InstallEnv(BaseCustomResource):
         if nmstate_label:
             spec['nmStateConfigLabelSelector'] = {
                 'matchLabels': {
-                    f'{self._api_group}/selector-nmstate-config-name': nmstate_label,
+                    f'{CRD_API_GROUP}/selector-nmstate-config-name': nmstate_label,
                 }
             }
 
@@ -171,8 +171,8 @@ class InstallEnv(BaseCustomResource):
             spec['ignitionConfigOverride'] = ignition_config_override
 
         self.crd_api.patch_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -185,8 +185,8 @@ class InstallEnv(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -194,8 +194,8 @@ class InstallEnv(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=self._api_group,
-            version=self._api_version,
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
