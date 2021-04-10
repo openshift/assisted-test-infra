@@ -85,60 +85,131 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
 # 2. Running install cluster api
 # 3. Waiting till all nodes are in installing status
 # 4. Downloads kubeconfig for future usage
-def run_install_flow(client, cluster_id, kubeconfig_path, pull_secret,
-                     tf=None, kube_client=None, cluster_deployment=None):
+def run_install_flow(
+        client,
+        cluster_id,
+        kubeconfig_path,
+        pull_secret,
+        tf,
+        cluster_deployment=None,
+        nodes_number=None,
+):
+    if cluster_deployment is None:
+        run_installation_flow_rest_api(
+            client=client,
+            cluster_id=cluster_id,
+            pull_secret=pull_secret,
+            kubeconfig_path=kubeconfig_path,
+            tf=tf,
+        )
+    else:
+        run_installation_flow_kube_api(
+            cluster_deployment=cluster_deployment,
+            nodes_number=nodes_number,
+            kubeconfig_path=kubeconfig_path,
+        )
+
+
+def run_installation_flow_rest_api(
+        client,
+        cluster_id,
+        pull_secret,
+        kubeconfig_path,
+        tf
+):
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
+
+    start_cluster_installation_rest_api(
+        cluster=cluster,
+        client=client,
+        cluster_id=cluster_id,
+        pull_secret=pull_secret,
+        kubeconfig_path=kubeconfig_path,
+    )
+
+    log.info("Waiting until cluster finishes installation")
+    wait_till_installed(client=client, cluster=cluster)
+
+    log.info("Downloading kubeconfig")
+    waiting.wait(
+        lambda: client.download_kubeconfig(
+            cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
+        ) is None,
+        timeout_seconds=240,
+        sleep_seconds=20,
+        expected_exceptions=Exception,
+        waiting_for="Kubeconfig",
+    )
+
+    if tf is not None:
+        update_vip_from_tf(client, cluster_id, tf)
+
+
+def start_cluster_installation_rest_api(
+        client,
+        cluster,
+        cluster_id,
+        pull_secret,
+        kubeconfig_path
+):
     log.info("Verifying pull secret")
-    verify_pull_secret(client=client, cluster=cluster, pull_secret=pull_secret)
+    verify_pull_secret(
+        client=client,
+        cluster=cluster,
+        pull_secret=pull_secret,
+    )
     log.info("Wait till cluster is ready")
     utils.wait_till_cluster_is_in_status(
         client=client,
         cluster_id=cluster_id,
         statuses=[consts.ClusterStatus.READY, consts.ClusterStatus.INSTALLING],
-        break_statuses=[consts.ClusterStatus.ERROR]
+        break_statuses=[consts.ClusterStatus.ERROR],
     )
     cluster = client.cluster_get(cluster_id)
-    if cluster.status == consts.ClusterStatus.READY and kube_client is None:
+    if cluster.status == consts.ClusterStatus.READY:
         log.info("Install cluster %s", cluster_id)
         _install_cluster(client=client, cluster=cluster)
 
     else:
-        log.info("Cluster is already in installing status, skipping install command")
-
-    if kube_client is None:
-        log.info("Download kubeconfig-noingress")
-        client.download_kubeconfig_no_ingress(
-            cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
+        log.info(
+            "Cluster is already in installing status, skipping install command"
         )
+
+    log.info("Download kubeconfig-noingress")
+    client.download_kubeconfig_no_ingress(
+        cluster_id=cluster_id,
+        kubeconfig_path=kubeconfig_path,
+    )
+
+
+def update_vip_from_tf(client, cluster_id, tf):
+    cluster_info = client.cluster_get(cluster_id)
+    if not cluster_info.api_vip:
+        cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(
+            client, cluster_info)
+
+    log.info("Setting new vip=%s", cluster_info.api_vip)
+    tf.set_new_vip(cluster_info.api_vip)
+
+
+def run_installation_flow_kube_api(
+        cluster_deployment,
+        nodes_number,
+        kubeconfig_path,
+):
+    log.info("Approving agents")
+    for agent in cluster_deployment.wait_for_agents(nodes_number):
+        agent.approve()
+
+    log.info("Waiting for installation to start")
+    cluster_deployment.wait_for_state(consts.ClusterStatus.INSTALLING)
 
     log.info("Waiting until cluster finishes installation")
-    if kube_client is not None:
-        cluster_deployment.wait_to_be_installed()
-    else:
-        wait_till_installed(client=client, cluster=cluster)
+    cluster_deployment.wait_to_be_installed()
 
-    log.info("Download kubeconfig")
-    if kube_client is not None:
-        cluster_deployment.download_kubeconfig(kubeconfig_path=kubeconfig_path)
-    else:
-        waiting.wait(
-            lambda: client.download_kubeconfig(
-                cluster_id=cluster_id, kubeconfig_path=kubeconfig_path
-            ) is None,
-            timeout_seconds=240,
-            sleep_seconds=20,
-            expected_exceptions=Exception,
-            waiting_for="Kubeconfig",
-        )
-
-    # set new vips
-    if tf and kube_client is None:
-        cluster_info = client.cluster_get(cluster.id)
-        if not cluster_info.api_vip:
-            cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(client, cluster_info)
-
-        tf.set_new_vip(cluster_info.api_vip)
+    log.info("Download kubeconfig-noingress")
+    cluster_deployment.download_kubeconfig(kubeconfig_path=kubeconfig_path)
 
 
 def download_logs_from_all_hosts(client, cluster_id, output_folder):
