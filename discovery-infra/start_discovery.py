@@ -10,14 +10,14 @@ import os
 
 import yaml
 import dns.resolver
-from kubernetes.client import CustomObjectsApi
+
 from netaddr import IPNetwork
-from test_infra import assisted_service_api, consts, utils
+from test_infra import assisted_service_api, consts, utils, kubeapi_utils
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
 from test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Platform,
-    InstallStrategy, Secret, InstallEnv, Agent, Proxy, NMStateConfig,
+    InstallStrategy, Secret, InstallEnv, Proxy, NMStateConfig,
 )
 
 import bootstrap_in_place as ibip
@@ -193,18 +193,40 @@ def create_nodes_and_wait_till_registered(
         cluster,
         nodes_details,
         tf,
-        is_ipv4
+        is_ipv4,
+        nodes_number,
+        cluster_deployment,
 ):
-    nodes_count = nodes_details['master_count'] + nodes_details["worker_count"]
     create_nodes(
         tf=tf
     )
 
+    if cluster_deployment:
+        log.info('Waiting for %d agents to be created', nodes_number)
+        cluster_deployment.wait_for_agents(nodes_number)
+    else:
+        wait_until_nodes_are_registered_rest_api(
+            inventory_client=inventory_client,
+            cluster=cluster,
+            nodes_details=nodes_details,
+            is_ipv4=is_ipv4,
+            nodes_number=nodes_number,
+        )
+
+
+def wait_until_nodes_are_registered_rest_api(
+        inventory_client,
+        cluster,
+        nodes_details,
+        is_ipv4,
+        nodes_number,
+):
     # TODO: Check for only new nodes
     if not inventory_client:
         # We will wait for leases only if only nodes are created without connection to s
         utils.wait_till_nodes_are_ready(
-            nodes_count=nodes_count, network_name=nodes_details["libvirt_network_name"]
+            nodes_count=nodes_number,
+            network_name=nodes_details["libvirt_network_name"],
         )
         log.info("No inventory url, will not wait till nodes registration")
         return
@@ -229,8 +251,9 @@ def create_nodes_and_wait_till_registered(
     utils.wait_till_all_hosts_are_in_status(
         client=inventory_client,
         cluster_id=cluster.id,
-        nodes_count=nodes_count,
-        statuses=statuses)
+        nodes_count=nodes_number,
+        statuses=statuses,
+    )
 
 
 def set_cluster_vips(client, cluster_id, machine_net):
@@ -246,9 +269,12 @@ def set_cluster_machine_cidr(client, cluster_id, machine_net, set_vip_dhcp_alloc
     cluster_info = client.cluster_get(cluster_id)
     if set_vip_dhcp_allocation:
         cluster_info.vip_dhcp_allocation = True
-    cluster_info.machine_network_cidr = machine_net.cidr_v6 \
-        if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4
+    cluster_info.machine_network_cidr = get_machine_cidr_from_machine_net(machine_net)
     client.update_cluster(cluster_id, cluster_info)
+
+
+def get_machine_cidr_from_machine_net(machine_net):
+    return machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4
 
 
 def _get_vips_ips(machine_net):
@@ -397,14 +423,17 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
         utils.set_tfvars(tf_folder, nodes_details)
 
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
-    is_ipv4 =  machine_net.has_ip_v4 or not machine_net.has_ip_v6
+    is_ipv4 = machine_net.has_ip_v4 or not machine_net.has_ip_v6
+    nodes_number = args.master_count + args.number_of_workers
 
     create_nodes_and_wait_till_registered(
         inventory_client=client,
         cluster=cluster,
         nodes_details=nodes_details,
         tf=tf,
-        is_ipv4=is_ipv4
+        is_ipv4=is_ipv4,
+        nodes_number=nodes_number,
+        cluster_deployment=cluster_deployment,
     )
 
     main_cidr = args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6
@@ -417,21 +446,34 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
             macs += utils.get_libvirt_nodes_macs(nodes_details["libvirt_secondary_network_name"])
 
         if not (cluster_info.api_vip and cluster_info.ingress_vip):
-            utils.wait_till_hosts_with_macs_are_in_status(
-                client=client,
-                cluster_id=cluster.id,
-                macs=macs,
-                statuses=[
-                    consts.NodesStatus.INSUFFICIENT,
-                    consts.NodesStatus.PENDING_FOR_INPUT,
-                    consts.NodesStatus.KNOWN
-                ],
-            )
+            if not args.kube_api:
+                utils.wait_till_hosts_with_macs_are_in_status(
+                    client=client,
+                    cluster_id=cluster.id,
+                    macs=macs,
+                    statuses=[
+                        consts.NodesStatus.INSUFFICIENT,
+                        consts.NodesStatus.PENDING_FOR_INPUT,
+                        consts.NodesStatus.KNOWN
+                    ],
+                )
 
             if args.master_count == 1:
-                tf.change_variables({"single_node_ip": helper_cluster.Cluster.get_ip_for_single_node(
-                    client, cluster.id, main_cidr, ipv4_first=is_ipv4)})
-                set_cluster_machine_cidr(client, cluster.id, machine_net, set_vip_dhcp_allocation=False)
+                set_single_node_ip(
+                    client=client,
+                    cluster_id=cluster.id,
+                    main_cidr=main_cidr,
+                    is_ipv4=is_ipv4,
+                    cluster_deployment=cluster_deployment,
+                    tf=tf,
+                )
+                if not args.kube_api:
+                    set_cluster_machine_cidr(
+                        client=client,
+                        cluster_id=cluster.id,
+                        machine_net=machine_net,
+                        set_vip_dhcp_allocation=False,
+                    )
             elif is_none_platform_mode():
                 set_cluster_vips(client, cluster.id, machine_net)
             elif args.vip_dhcp_allocation:
@@ -441,7 +483,24 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
         else:
             log.info("VIPs already configured")
 
-        set_hosts_roles(client, cluster, nodes_details, machine_net, tf, args.master_count, args.with_static_network_config)
+        if args.kube_api:
+            kubeapi_utils.set_agents_hostnames(
+                cluster_deployment=cluster_deployment,
+                is_ipv4=is_ipv4,
+                static_network_mode=args.with_static_network_config,
+                tf=tf,
+                nodes_number=nodes_number,
+            )
+        else:
+            set_hosts_roles(
+                client=client,
+                cluster=cluster,
+                nodes_details=nodes_details,
+                machine_net=machine_net,
+                tf=tf,
+                master_count=args.master_count,
+                static_network_mode=args.with_static_network_config,
+            )
 
         if is_none_platform_mode() and args.master_count > 1:
             master_ips = helper_cluster.Cluster.get_master_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_master_ips(client, cluster.id, secondary_cidr)
@@ -452,29 +511,50 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
             lb_controller = LoadBalancerController(tf)
             lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
-        utils.wait_till_hosts_with_macs_are_in_status(
-            client=client,
-            cluster_id=cluster.id,
-            macs=macs,
-            statuses=[consts.NodesStatus.KNOWN],
-        )
+        if not args.kube_api:
+            utils.wait_till_hosts_with_macs_are_in_status(
+                client=client,
+                cluster_id=cluster.id,
+                macs=macs,
+                statuses=[consts.NodesStatus.KNOWN],
+            )
 
         if args.install_cluster:
-            if args.kube_api:
-                for agent in Agent.list(CustomObjectsApi(kube_client), cluster_deployment):
-                    agent.approve()
-
             install_cluster.run_install_flow(
                 client=client,
                 cluster_id=cluster.id,
                 kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
                 pull_secret=args.pull_secret,
                 tf=tf,
-                kube_client=kube_client,
                 cluster_deployment=cluster_deployment,
+                nodes_number=nodes_number,
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)
+
+
+def set_single_node_ip(
+        client,
+        cluster_id,
+        main_cidr,
+        is_ipv4,
+        cluster_deployment,
+        tf,
+):
+    if cluster_deployment:
+        single_node_ip = kubeapi_utils.get_ip_for_single_node(
+            cluster_deployment=cluster_deployment,
+            is_ipv4=is_ipv4,
+        )
+    else:
+        single_node_ip = helper_cluster.Cluster.get_ip_for_single_node(
+            client=client,
+            cluster_id=cluster_id,
+            machine_cidr=main_cidr,
+            ipv4_first=is_ipv4,
+        )
+
+    tf.change_variables({"single_node_ip": single_node_ip})
 
 
 def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_network_mode):
@@ -593,7 +673,7 @@ def execute_day1_flow(cluster_name):
                 ),
                 install_strategy=InstallStrategy(
                     host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
-                    machine_cidr=machine_net.machine_cidr_addresses[0],
+                    machine_cidr=get_machine_cidr_from_machine_net(machine_net),
                     cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
                     service_cidr=args.service_network if ipv4 else args.service_network6,
                     ssh_public_key=args.ssh_key,
