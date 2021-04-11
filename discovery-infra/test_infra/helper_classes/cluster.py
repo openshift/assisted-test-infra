@@ -538,7 +538,7 @@ class Cluster:
             operators_count=len(self.get_operators()),
             statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
             timeout=timeout,
-            fall_on_error_status=False,
+            fall_on_error_status=fall_on_error_status,
         )
 
     def is_operator_in_status(self, operator_name, status):
