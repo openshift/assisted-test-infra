@@ -35,9 +35,10 @@ PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=
 LOG_FOLDER = "/tmp/assisted_test_infra_logs"
 DEFAULT_OPENSHIFT_VERSION = "4.7"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
-DEFAULT_TEST_INFRA_DOMAIN = '.test-infra-cluster-assisted-installer.redhat.com'
-TEST_TARGET_INTERFACE = "vnet3"
+DEFAULT_BASE_DNS_DOMAIN = "redhat.com"
 DEFAULT_NAMESPACE = 'assisted-installer'
+DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BASE_DNS_DOMAIN}"
+TEST_TARGET_INTERFACE = "vnet3"
 
 
 class ImageType:
