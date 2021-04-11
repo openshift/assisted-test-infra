@@ -20,7 +20,7 @@ class TerraformController(LibvirtController):
         self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
         self.network_conf = kwargs.get('net_asset')
         self.platform = kwargs.get('platform', consts.Platforms.BARE_METAL)
-        self.cluster_domain = kwargs.get('base_domain', "redhat.com")
+        self.cluster_domain = kwargs.get('base_domain', consts.DEFAULT_BASE_DNS_DOMAIN)
         self.ipv6 = kwargs.get('ipv6')
         self.params = self._terraform_params(**kwargs)
         tf_folder = kwargs.get('tf_folder')

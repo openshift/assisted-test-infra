@@ -36,7 +36,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
     api_vip_ip = cluster.api_vip
     terraform_cluster_dir_prefix = cluster_name
     if day2_type_flag == "ocp":
-        terraform_cluster_dir_prefix = "test-infra-cluster-assisted-installer"
+        terraform_cluster_dir_prefix = f"{consts.CLUSTER_PREFIX}-{consts.DEFAULT_NAMESPACE}"
     else:
         cluster_id = str(uuid.uuid4())
         copy_proxy_from_cluster = cluster
