@@ -5,11 +5,18 @@ import argparse
 import os
 
 import waiting
-from test_infra import assisted_service_api, consts, utils
-from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.tools import terraform_utils
 
 import oc_utils
+
+from distutils.util import strtobool
+
+from test_infra import assisted_service_api, consts, utils, kubeapi_utils
+from test_infra.helper_classes import cluster as helper_cluster
+from test_infra.tools import terraform_utils
+from test_infra.helper_classes.kube_helpers import (
+    create_kube_api_client, ClusterDeployment,
+)
+
 from logger import log
 
 
@@ -92,25 +99,23 @@ def run_install_flow(
         pull_secret,
         tf,
         cluster_deployment=None,
-        nodes_number=None,
 ):
-    if cluster_deployment is None:
-        run_installation_flow_rest_api(
-            client=client,
-            cluster_id=cluster_id,
-            pull_secret=pull_secret,
-            kubeconfig_path=kubeconfig_path,
-            tf=tf,
-        )
-    else:
-        run_installation_flow_kube_api(
+    if cluster_deployment is not None:
+        return kubeapi_utils.run_installation(
             cluster_deployment=cluster_deployment,
-            nodes_number=nodes_number,
             kubeconfig_path=kubeconfig_path,
         )
 
+    run_installation(
+        client=client,
+        cluster_id=cluster_id,
+        pull_secret=pull_secret,
+        kubeconfig_path=kubeconfig_path,
+        tf=tf,
+    )
 
-def run_installation_flow_rest_api(
+
+def run_installation(
         client,
         cluster_id,
         pull_secret,
@@ -120,7 +125,7 @@ def run_installation_flow_rest_api(
     log.info("Verifying cluster exists")
     cluster = client.cluster_get(cluster_id)
 
-    start_cluster_installation_rest_api(
+    start_cluster_installation(
         cluster=cluster,
         client=client,
         cluster_id=cluster_id,
@@ -146,7 +151,7 @@ def run_installation_flow_rest_api(
         update_vip_from_tf(client, cluster_id, tf)
 
 
-def start_cluster_installation_rest_api(
+def start_cluster_installation(
         client,
         cluster,
         cluster_id,
@@ -193,24 +198,6 @@ def update_vip_from_tf(client, cluster_id, tf):
     tf.set_new_vip(cluster_info.api_vip)
 
 
-def run_installation_flow_kube_api(
-        cluster_deployment,
-        nodes_number,
-        kubeconfig_path,
-):
-    log.info("Approving agents")
-    for agent in cluster_deployment.wait_for_agents(nodes_number):
-        agent.approve()
-
-    log.info("Waiting for installation to start")
-    cluster_deployment.wait_for_state(consts.ClusterStatus.INSTALLING)
-
-    log.info("Waiting until cluster finishes installation")
-    cluster_deployment.wait_to_be_installed()
-
-    log.info("Download kubeconfig-noingress")
-    cluster_deployment.download_kubeconfig(kubeconfig_path=kubeconfig_path)
-
 
 def download_logs_from_all_hosts(client, cluster_id, output_folder):
     hosts = client.get_cluster_hosts(cluster_id=cluster_id)
@@ -232,24 +219,36 @@ def main():
     log.info("Creating assisted service client")
     # if not cluster id is given, reads it from latest run
     tf = None
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
     if not args.cluster_id:
-        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
         args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
 
-    client = assisted_service_api.create_client(
-        url=utils.get_assisted_service_url_by_args(
-            args=args,
-            wait=False
+    client, cluster_deployment = None, None
+    if args.kube_api:
+        cluster_deployment = ClusterDeployment(
+            kube_api_client=create_kube_api_client(),
+            name=cluster_name,
+            namespace=args.namespace,
         )
-    )
+        cluster_deployment.wait_for_agents()
+        cluster_deployment.wait_for_state(consts.ClusterStatus.READY)
+    else:
+        client = assisted_service_api.create_client(
+            url=utils.get_assisted_service_url_by_args(
+                args=args,
+                wait=False
+            )
+        )
+
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,
         kubeconfig_path=args.kubeconfig_path,
         pull_secret=args.pull_secret,
-        tf=tf
+        tf=tf,
+        cluster_deployment=cluster_deployment,
     )
 
 
@@ -292,6 +291,14 @@ if __name__ == "__main__":
         help='Where assisted-service is deployed',
         type=str,
         default='minikube'
+    )
+    parser.add_argument(
+        '--kube-api',
+        help='Should kube-api interface be used for cluster deployment',
+        type=strtobool,
+        nargs='?',
+        const=True,
+        default=False,
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

@@ -195,8 +195,8 @@ def create_nodes_and_wait_till_registered(
         nodes_details,
         tf,
         is_ipv4,
-        nodes_number,
         cluster_deployment,
+        nodes_number,
 ):
     create_nodes(
         tf=tf
@@ -204,7 +204,7 @@ def create_nodes_and_wait_till_registered(
 
     if cluster_deployment:
         log.info('Waiting for %d agents to be created', nodes_number)
-        cluster_deployment.wait_for_agents(nodes_number)
+        cluster_deployment.wait_for_agents()
     else:
         wait_until_nodes_are_registered_rest_api(
             inventory_client=inventory_client,
@@ -437,8 +437,8 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
         nodes_details=nodes_details,
         tf=tf,
         is_ipv4=is_ipv4,
-        nodes_number=nodes_number,
         cluster_deployment=cluster_deployment,
+        nodes_number=nodes_number,
     )
 
     main_cidr = args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6
@@ -494,7 +494,6 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
                 is_ipv4=is_ipv4,
                 static_network_mode=args.with_static_network_config,
                 tf=tf,
-                nodes_number=nodes_number,
             )
         else:
             set_hosts_roles(
@@ -532,7 +531,6 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
                 pull_secret=args.pull_secret,
                 tf=tf,
                 cluster_deployment=cluster_deployment,
-                nodes_number=nodes_number,
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)

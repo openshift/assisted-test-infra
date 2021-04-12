@@ -146,6 +146,13 @@ class ClusterDeployment(BaseCustomResource):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
 
+    @property
+    def agent_number(self) -> int:
+        spec = self.get()['spec']
+        install_strategy = spec['provisioning']['installStrategy']
+        requirements = install_strategy['agent']['provisionRequirements']
+        return requirements['controlPlaneAgents'] + requirements['workerAgents']
+
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
             group=HIVE_API_GROUP,
@@ -342,9 +349,13 @@ class ClusterDeployment(BaseCustomResource):
 
     def wait_for_agents(
             self,
-            num_agents: int = 1,
+            num_agents: Optional[int] = None,
             timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
     ) -> List[Agent]:
+
+        if num_agents is None:
+            # get required agents number from spec
+            num_agents = self.agent_number
 
         def _wait_for_sufficient_agents_number() -> List[Agent]:
             agents = self.list_agents()

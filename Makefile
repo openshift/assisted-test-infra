@@ -287,7 +287,7 @@ bring_assisted_installer:
 ###########
 
 _install_cluster:
-	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME)
+	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME) --kube-api $(KUBE_API)
 
 install_cluster:
 	skipper make $(SKIPPER_PARAMS) _install_cluster NAMESPACE=$(NAMESPACE)

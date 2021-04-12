@@ -6,7 +6,6 @@ import waiting
 from ipaddress import IPv4Interface, IPv6Interface
 from kubernetes.client import CoreV1Api, CustomObjectsApi
 
-from test_infra import utils
 from test_infra.helper_classes.kube_helpers import (
     suppress_not_found_error,
     Secret,
@@ -14,6 +13,8 @@ from test_infra.helper_classes.kube_helpers import (
     ClusterDeployment,
     NMStateConfig,
 )
+from test_infra import utils, consts
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,6 @@ def set_agents_hostnames(
         is_ipv4,
         static_network_mode,
         tf,
-        nodes_number,
 ):
     if is_ipv4 and not static_network_mode:
         return
@@ -61,7 +61,7 @@ def set_agents_hostnames(
         namespace=cluster_deployment.ref.namespace,
         tf=tf,
     )
-    for agent in cluster_deployment.wait_for_agents(nodes_number):
+    for agent in cluster_deployment.wait_for_agents():
         set_agent_hostname(agent, nodes_details)
 
 
@@ -143,3 +143,18 @@ def delete_kube_api_resources_for_namespace(
         name=nmstate_name or f'{name}-nmstate-config',
         namespace=namespace,
     ).delete()
+
+
+def run_installation(cluster_deployment, kubeconfig_path):
+    logger.info("Approving agents")
+    for agent in cluster_deployment.wait_for_agents():
+        agent.approve()
+
+    logger.info("Waiting for installation to start")
+    cluster_deployment.wait_for_state(consts.ClusterStatus.INSTALLING)
+
+    logger.info("Waiting until cluster finishes installation")
+    cluster_deployment.wait_to_be_installed()
+
+    logger.info("Download kubeconfig-noingress")
+    cluster_deployment.download_kubeconfig(kubeconfig_path=kubeconfig_path)
