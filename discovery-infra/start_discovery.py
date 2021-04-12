@@ -648,7 +648,7 @@ def execute_day1_flow(cluster_name):
             cluster = client.cluster_get(cluster_id=args.cluster_id)
 
         elif args.kube_api:
-            kube_client = create_kube_api_client(str(pathlib.Path("~/.kube/config").expanduser()))
+            kube_client = create_kube_api_client()
             cluster_deployment = ClusterDeployment(
                 kube_api_client=kube_client,
                 name=cluster_name,
