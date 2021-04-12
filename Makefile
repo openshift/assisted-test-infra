@@ -330,14 +330,14 @@ install_day1_and_day2_cloud:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
 
 destroy_nodes:
-	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) -cn $(CLUSTER_NAME) $(OC_PARAMS)'
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) -cn $(CLUSTER_NAME) $(OC_PARAMS) --kube-api $(KUBE_API)'
 	rm -rf build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
 
 destroy_all_nodes_from_namespaces:
-	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all'
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all --kube-api $(KUBE_API)'
 
 destroy_all_nodes:
-	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py --delete-all'
+	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py --delete-all --kube-api $(KUBE_API)'
 
 deploy_ibip: _test_setup
 ifdef SKIPPER_USERNAME

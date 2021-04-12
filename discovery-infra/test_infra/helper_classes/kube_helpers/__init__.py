@@ -34,6 +34,7 @@ from .installenv import deploy_default_installenv, InstallEnv, Proxy
 from .common import (
     create_kube_api_client,
     delete_all_resources,
+    suppress_not_found_error,
     UnexpectedStateError,
     KubeAPIContext,
     ObjectReference
@@ -45,6 +46,7 @@ __all__ = (
     'deploy_default_installenv',
     'create_kube_api_client',
     'delete_all_resources',
+    'suppress_not_found_error',
     'Platform',
     'InstallStrategy',
     'ClusterDeployment',

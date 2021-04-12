@@ -4,9 +4,16 @@ import functools
 import waiting
 
 from ipaddress import IPv4Interface, IPv6Interface
+from kubernetes.client import CoreV1Api, CustomObjectsApi
 
 from test_infra import utils
-
+from test_infra.helper_classes.kube_helpers import (
+    suppress_not_found_error,
+    Secret,
+    InstallEnv,
+    ClusterDeployment,
+    NMStateConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -91,3 +98,48 @@ def get_hostname_for_agent(agent, nodes_details):
             if interface['macAddress'].lower() == mac_address:
                 return node_metadata['name']
 
+
+def delete_kube_api_resources_for_namespace(
+        kube_api_client,
+        name,
+        namespace,
+        *,
+        secret_name=None,
+        installenv_name=None,
+        nmstate_name=None,
+):
+    CoreV1Api.delete_namespaced_secret = suppress_not_found_error(
+        fn=CoreV1Api.delete_namespaced_secret,
+    )
+    CustomObjectsApi.delete_namespaced_custom_object = suppress_not_found_error(
+        fn=CustomObjectsApi.delete_namespaced_custom_object
+    )
+
+    cluster_deployment = ClusterDeployment(
+        kube_api_client=kube_api_client,
+        name=name,
+        namespace=namespace,
+    )
+
+    for agent in cluster_deployment.list_agents():
+        agent.delete()
+
+    cluster_deployment.delete()
+
+    Secret(
+        kube_api_client=kube_api_client,
+        name=secret_name or name,
+        namespace=namespace,
+    ).delete()
+
+    InstallEnv(
+        kube_api_client=kube_api_client,
+        name=installenv_name or f'{name}-install-env',
+        namespace=namespace,
+    ).delete()
+
+    NMStateConfig(
+        kube_api_client=kube_api_client,
+        name=nmstate_name or f'{name}-nmstate-config',
+        namespace=namespace,
+    ).delete()
