@@ -1,6 +1,7 @@
 import logging
 
 from typing import Optional
+from functools import wraps
 
 from kubernetes.client import ApiClient
 from kubernetes.client.rest import ApiException
@@ -87,3 +88,14 @@ def delete_all_resources(
 def does_string_contain_value(s: Optional[str]) -> bool:
     return s and s != '""'
 
+
+def suppress_not_found_error(fn):
+    @wraps(fn)
+    def decorator(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except ApiException as e:
+            if e.reason == 'Not Found':
+                return
+            raise
+    return decorator
