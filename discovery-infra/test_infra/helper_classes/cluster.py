@@ -481,11 +481,11 @@ class Cluster:
             timeout=consts.READY_TIMEOUT
         )
 
-    def is_in_cancelled_status(self):
+    def is_in_canceled_status(self):
         return utils.is_cluster_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            statuses=[consts.ClusterStatus.CANCELLED]
+            statuses=[consts.ClusterStatus.CANCELED]
         )
 
     def is_finalizing(self):

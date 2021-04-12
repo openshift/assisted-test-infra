@@ -75,7 +75,7 @@ class ClusterStatus:
     FINALIZING = "finalizing"
     ERROR = "error"
     PENDING_FOR_INPUT = "pending-for-input"
-    CANCELLED = "cancelled"
+    CANCELED = "canceled"
     INSTALLING_PENDING_USER_ACTION = "installing-pending-user-action"
 
 
@@ -131,10 +131,10 @@ class Events:
     DONE = "reached installation stage Done"
     CANCELED_CLUSTER_INSTALLATION = "Canceled cluster installation"
     CANCELED_FOR_HOST = "Installation canceled for host"
-    CANCELLED_STATUS = "to \"cancelled\""
+    CANCELED_STATUS = "to \"canceled\""
     RESET_CLUSTER_INSTALLATION = "Reset cluster installation"
     RESET_FOR_HOST = "Installation reset for host"
-    RESETTING_PENDING_USER_ACTION = "updated status from \"cancelled\" to \"resetting-pending-user-action\""
+    RESETTING_PENDING_USER_ACTION = "updated status from \"canceled\" to \"resetting-pending-user-action\""
     INSTALLED = "updated status from \"installing-in-progress\" to \"installed\""
     FINALIZING = "to finalizing"
     SUCCESSFULLY_INSTALLED = "Successfully finished installing cluster"
