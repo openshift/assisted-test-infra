@@ -213,7 +213,10 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
     log.info(f"Downloading must-gather to {dest_dir}")
     command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather" \
               f" --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
-    run_command(command, shell=True, raise_errors=True)
+    try:
+        run_command(command, shell=True, raise_errors=True)
+    except RuntimeError as ex:
+        log.warning(f"Failed to run must gather: {ex}")
 
 
 def handle_arguments():
