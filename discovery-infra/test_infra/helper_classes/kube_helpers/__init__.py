@@ -30,7 +30,7 @@ from .cluster_deployment import (
 from .agent import Agent
 from .nmstate_config import NMStateConfig
 from .secret import deploy_default_secret, Secret
-from .installenv import deploy_default_installenv, InstallEnv, Proxy
+from .infraenv import deploy_default_infraenv, InfraEnv, Proxy
 from .common import (
     create_kube_api_client,
     delete_all_resources,
@@ -43,7 +43,7 @@ from .common import (
 __all__ = (
     'deploy_default_cluster_deployment',
     'deploy_default_secret',
-    'deploy_default_installenv',
+    'deploy_default_infraenv',
     'create_kube_api_client',
     'delete_all_resources',
     'suppress_not_found_error',
@@ -54,7 +54,7 @@ __all__ = (
     'Agent',
     'KubeAPIContext',
     'ObjectReference',
-    'InstallEnv',
+    'InfraEnv',
     'Proxy',
     'NMStateConfig',
     'UnexpectedStateError',

@@ -10,7 +10,7 @@ from test_infra import utils
 from test_infra.helper_classes.kube_helpers import (
     suppress_not_found_error,
     Secret,
-    InstallEnv,
+    InfraEnv,
     ClusterDeployment,
     NMStateConfig,
 )
@@ -105,7 +105,7 @@ def delete_kube_api_resources_for_namespace(
         namespace,
         *,
         secret_name=None,
-        installenv_name=None,
+        infraenv_name=None,
         nmstate_name=None,
 ):
     CoreV1Api.delete_namespaced_secret = suppress_not_found_error(
@@ -132,9 +132,9 @@ def delete_kube_api_resources_for_namespace(
         namespace=namespace,
     ).delete()
 
-    InstallEnv(
+    InfraEnv(
         kube_api_client=kube_api_client,
-        name=installenv_name or f'{name}-install-env',
+        name=infraenv_name or f'{name}-infra-env',
         namespace=namespace,
     ).delete()
 
