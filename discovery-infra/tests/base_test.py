@@ -139,9 +139,9 @@ class BaseTest:
     def attach_disk_flags(persistent):
         modified_nodes = set()
 
-        def attach(node, disk_size, bootable=False):
+        def attach(node, disk_size, bootable=False, with_wwn=False):
             nonlocal modified_nodes
-            node.attach_test_disk(disk_size, bootable=bootable, persistent=persistent)
+            node.attach_test_disk(disk_size, bootable=bootable, persistent=persistent, with_wwn=with_wwn)
             modified_nodes.add(node)
 
         yield attach

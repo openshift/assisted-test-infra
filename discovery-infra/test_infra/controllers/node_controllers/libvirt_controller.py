@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import secrets
 import string
 import tempfile
 from abc import ABC
@@ -193,7 +194,7 @@ class LibvirtController(NodeController, ABC):
 
         return result
 
-    def attach_test_disk(self, node_name, disk_size, bootable=False, persistent=False):
+    def attach_test_disk(self, node_name, disk_size, bootable=False, persistent=False, with_wwn=False):
         """
         Attaches a disk with the given size to the given node. All tests disks can later
         be detached with detach_all_test_disks
@@ -220,12 +221,15 @@ class LibvirtController(NodeController, ABC):
         if persistent:
             attach_flags |= libvirt.VIR_DOMAIN_AFFECT_CONFIG
 
+        wwn = f"<wwn>0x{secrets.token_hex(8)}</wwn>" if with_wwn else ""
+
         node.attachDeviceFlags(f"""
             <disk type='file' device='disk'>
                 <alias name='{disk_alias}'/>
                 <driver name='qemu' type='qcow2'/>
                 <source file='{tmp_disk}'/>
                 <target dev='{target_dev}'/>
+                {wwn}
             </disk>
         """, attach_flags)
 
