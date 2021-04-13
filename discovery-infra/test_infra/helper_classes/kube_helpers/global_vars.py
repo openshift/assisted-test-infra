@@ -1,8 +1,8 @@
 from tests.conftest import env_variables
 
 
-CRD_API_GROUP = 'adi.io.my.domain'
-CRD_API_VERSION = 'v1alpha1'
+CRD_API_GROUP = 'agent-install.openshift.io'
+CRD_API_VERSION = 'v1beta1'
 HIVE_API_GROUP = 'hive.openshift.io'
 HIVE_API_VERSION = 'v1'
 
