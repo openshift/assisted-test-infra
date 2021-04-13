@@ -93,6 +93,10 @@ ifdef KEEP_ISO
     KEEP_ISO_FLAG = --keep-iso
 endif
 
+ifdef DEBUG
+	DEBUG_FLAGS=-m debugpy --listen 0.0.0.0:5678 --wait-for-client
+endif
+
 PROXY := $(or $(PROXY),no)
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
@@ -422,7 +426,7 @@ test:
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS) _test_setup
-	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest $(or ${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
+	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
 
 test_parallel:
 	skipper make $(SKIPPER_PARAMS) _test_parallel
