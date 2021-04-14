@@ -175,12 +175,12 @@ class InventoryClient(object):
     def select_installation_disk(self, cluster_id, hosts_with_diskpaths):
         log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
 
-        def role_to_selected_disk_config(host_id, path, role):
-            disk_config_params = models.DiskConfigParams(id=path, role=role)
+        def role_to_selected_disk_config(host_id, disk_id, role):
+            disk_config_params = models.DiskConfigParams(id=disk_id, role=role)
             return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
 
-        disks_selected_config = [role_to_selected_disk_config(h["id"], h["path"], h["role"]) for h in
-                                 hosts_with_diskpaths]
+        disks_selected_config = [role_to_selected_disk_config(h["id"], h["disk_id"] if "disk_id" in h else h["path"],
+                                                              h["role"]) for h in hosts_with_diskpaths]
         params = models.ClusterUpdateParams(disks_selected_config=disks_selected_config)
         return self.client.update_cluster(
             cluster_id=cluster_id, cluster_update_params=params
