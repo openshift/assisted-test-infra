@@ -47,9 +47,10 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
-    def attach_test_disk(self, node_name: str, disk_size: int, bootable=False, persistent=False):
+    def attach_test_disk(self, node_name: str, disk_size: int, bootable=False, persistent=False, with_wwn=False):
         """
         Attaches a test disk. That disk can later be detached with `detach_all_test_disks`
+        :param with_wwn: Weather the disk should have a WWN(World Wide Name), Having a WWN creates a disk by-id link
         :param node_name: Node to attach disk to
         :param disk_size: Size of disk to attach
         :param bootable: Whether to format an MBR sector at the beginning of the disk
