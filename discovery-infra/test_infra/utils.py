@@ -933,3 +933,12 @@ def download_iso(image_url, image_path):
             open(image_path, "wb") as out:
         for chunk in image.iter_content(chunk_size=1024):
             out.write(chunk)
+
+def parse_olm_operators_from_env():
+    return get_env("OLM_OPERATORS", "").lower().split()
+
+def resource_param(value, param_name, operators):
+    try:
+        return sum((consts.OPERATOR_PARAMS[operator][param_name] for operator in operators), value)
+    except KeyError as e:
+        raise ValueError(f"Unknown operator name {e.args[0]}")

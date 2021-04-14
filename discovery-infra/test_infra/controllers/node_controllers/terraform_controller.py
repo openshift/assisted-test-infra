@@ -43,10 +43,11 @@ class TerraformController(LibvirtController):
 
     # TODO move all those to conftest and pass it as kwargs
     def _terraform_params(self, **kwargs):
-        params = {"libvirt_worker_memory": kwargs.get('worker_memory'),
-                  "libvirt_master_memory": kwargs.get('master_memory', 16984),
-                  "libvirt_worker_vcpu": kwargs.get("worker_vcpu", 4),
-                  "libvirt_master_vcpu": kwargs.get("master_vcpu", 4),
+        operators = [o['name'] for o in kwargs.get("olm_operators")]
+        params = {"libvirt_worker_memory": utils.resource_param(kwargs.get("worker_memory"), "worker_memory", operators),
+                  "libvirt_master_memory": utils.resource_param(kwargs.get("master_memory", 16984), "master_memory", operators),
+                  "libvirt_worker_vcpu": utils.resource_param(kwargs.get("worker_vcpu", 4), "worker_vcpu", operators),
+                  "libvirt_master_vcpu": utils.resource_param(kwargs.get("master_vcpu", 4), "master_vcpu", operators),
                   "worker_count": kwargs.get('num_workers', 0),
                   "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
                   "cluster_name": self.cluster_name,
@@ -74,9 +75,6 @@ class TerraformController(LibvirtController):
             if value is not None:
                 params[key] = value
         return Munch.fromDict(params)
-
-    def list_nodes(self):
-        return self.list_nodes_with_name_filter(self.cluster_name)
 
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
