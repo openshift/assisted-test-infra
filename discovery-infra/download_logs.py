@@ -16,6 +16,8 @@ import assisted_service_client
 import requests
 import urllib3
 from dateutil.parser import isoparse
+
+from test_infra import warn_deprecate
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus, HostsProgressStages
 from test_infra.helper_classes import cluster as helper_cluster
@@ -32,6 +34,8 @@ RETRY_INTERVAL = 60 * 5
 CONNECTION_TIMEOUT = 30
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+warn_deprecate()
 
 
 def main():

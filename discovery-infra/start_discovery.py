@@ -12,7 +12,7 @@ import yaml
 import dns.resolver
 
 from netaddr import IPNetwork
-from test_infra import assisted_service_api, consts, utils, kubeapi_utils
+from test_infra import assisted_service_api, consts, utils, kubeapi_utils, warn_deprecate
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
 from test_infra.helper_classes.kube_helpers import (
@@ -27,6 +27,8 @@ import oc_utils
 from logger import log
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
 from test_infra.controllers.nat_controller import NatController
+
+warn_deprecate()
 
 
 class MachineNetwork(object):

@@ -5,12 +5,14 @@ import argparse
 import os
 
 import waiting
-from test_infra import assisted_service_api, consts, utils
+from test_infra import assisted_service_api, consts, utils, warn_deprecate
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import terraform_utils
 
 import oc_utils
 from logger import log
+
+warn_deprecate()
 
 
 # Verify folder to download kubeconfig exists. If will be needed in other places move to utils

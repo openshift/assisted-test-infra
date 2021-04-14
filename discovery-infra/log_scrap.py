@@ -22,7 +22,11 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 
 import assisted_service_client
+
+from test_infra import warn_deprecate
 from test_infra.assisted_service_api import InventoryClient, create_client
+
+warn_deprecate()
 
 RETRY_INTERVAL = 60 * 5
 MAX_EVENTS = 1000

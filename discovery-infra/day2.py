@@ -6,10 +6,12 @@ import time
 import uuid
 
 import waiting
-from test_infra import assisted_service_api, utils, consts
+from test_infra import assisted_service_api, utils, consts, warn_deprecate
 from test_infra.tools import static_network, terraform_utils
 
 from logger import log
+
+warn_deprecate()
 
 
 def set_cluster_pull_secret(client, cluster_id, pull_secret):

@@ -7,6 +7,10 @@ from kubernetes.client import ApiClient
 from kubernetes.config.kube_config import Configuration
 from kubernetes.config.kube_config import load_kube_config
 
+from test_infra import warn_deprecate
+
+warn_deprecate()
+
 
 def extend_parser_with_oc_arguments(parser):
     parser.add_argument(
