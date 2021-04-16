@@ -62,13 +62,13 @@ class Proxy:
         }
 
 
-class InstallEnv(BaseCustomResource):
+class InfraEnv(BaseCustomResource):
     """
-    InstallEnv is used to generate cluster iso.
-    Image is automatically generated on CRD deployment, after InstallEnv is
+    InfraEnv is used to generate cluster iso.
+    Image is automatically generated on CRD deployment, after InfraEnv is
     reconciled. Image download url will be exposed in the status.
     """
-    _plural = 'installenvs'
+    _plural = 'infraenvs'
 
     def __init__(
             self,
@@ -89,7 +89,7 @@ class InstallEnv(BaseCustomResource):
         )
 
         logger.info(
-            'created installEnv %s: %s', self.ref, pformat(yaml_data)
+            'created infraEnv %s: %s', self.ref, pformat(yaml_data)
         )
 
     def create(
@@ -104,7 +104,7 @@ class InstallEnv(BaseCustomResource):
     ) -> None:
         body = {
             'apiVersion': f'{CRD_API_GROUP}/{CRD_API_VERSION}',
-            'kind': 'InstallEnv',
+            'kind': 'InfraEnv',
             'metadata': self.ref.as_dict(),
             'spec': {
                 'clusterRef': cluster_deployment.ref.as_dict(),
@@ -132,7 +132,7 @@ class InstallEnv(BaseCustomResource):
         )
 
         logger.info(
-            'created installEnv %s: %s', self.ref, pformat(body)
+            'created infraEnv %s: %s', self.ref, pformat(body)
         )
 
     def patch(
@@ -180,7 +180,7 @@ class InstallEnv(BaseCustomResource):
         )
 
         logger.info(
-            'patching installEnv %s: %s', self.ref, pformat(body)
+            'patching infraEnv %s: %s', self.ref, pformat(body)
         )
 
     def get(self) -> dict:
@@ -201,7 +201,7 @@ class InstallEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info('deleted installEnv %s', self.ref)
+        logger.info('deleted infraEnv %s', self.ref)
 
     def status(
             self,
@@ -209,7 +209,7 @@ class InstallEnv(BaseCustomResource):
     ) -> dict:
         """
         Status is a section in the CRD that is created after registration to
-        assisted service and it defines the observed state of InstallEnv.
+        assisted service and it defines the observed state of InfraEnv.
         Since the status key is created only after resource is processed by the
         controller in the service, it might take a few seconds before appears.
         """
@@ -221,7 +221,7 @@ class InstallEnv(BaseCustomResource):
             _attempt_to_get_status,
             sleep_seconds=0.5,
             timeout_seconds=timeout,
-            waiting_for=f'installEnv {self.ref} status',
+            waiting_for=f'infraEnv {self.ref} status',
             expected_exceptions=KeyError,
         )
 
@@ -245,7 +245,7 @@ class InstallEnv(BaseCustomResource):
         return ISO_URL_PATTERN.match(iso_download_url).group('cluster_id')
 
 
-def deploy_default_installenv(
+def deploy_default_infraenv(
         kube_api_client: ApiClient,
         name: str,
         ignore_conflict: bool = True,
@@ -255,21 +255,21 @@ def deploy_default_installenv(
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         **kwargs,
-) -> InstallEnv:
+) -> InfraEnv:
 
-    install_env = InstallEnv(kube_api_client, name)
+    infra_env = InfraEnv(kube_api_client, name)
     try:
         if 'filepath' in kwargs:
-            _create_installenv_from_yaml_file(
-                install_env=install_env,
+            _create_infraenv_from_yaml_file(
+                infra_env=infra_env,
                 filepath=kwargs['filepath'],
             )
         else:
-            _create_installenv_from_attrs(
+            _create_infraenv_from_attrs(
                 kube_api_client=kube_api_client,
                 name=name,
                 ignore_conflict=ignore_conflict,
-                install_env=install_env,
+                infra_env=infra_env,
                 cluster_deployment=cluster_deployment,
                 secret=secret,
                 proxy=proxy,
@@ -283,24 +283,24 @@ def deploy_default_installenv(
 
     # wait until install-env will have status (i.e until resource will be
     # processed in assisted-service).
-    install_env.status()
+    infra_env.status()
 
-    return install_env
+    return infra_env
 
 
-def _create_installenv_from_yaml_file(
-        install_env: InstallEnv,
+def _create_infraenv_from_yaml_file(
+        infra_env: InfraEnv,
         filepath: str,
 ) -> None:
     with open(filepath) as fp:
         yaml_data = yaml.safe_load(fp)
 
-    install_env.create_from_yaml(yaml_data)
+    infra_env.create_from_yaml(yaml_data)
 
 
-def _create_installenv_from_attrs(
+def _create_infraenv_from_attrs(
         kube_api_client: ApiClient,
-        install_env: InstallEnv,
+        infra_env: InfraEnv,
         cluster_deployment: ClusterDeployment,
         secret: Optional[Secret] = None,
         proxy: Optional[Proxy] = None,
@@ -313,7 +313,7 @@ def _create_installenv_from_attrs(
             kube_api_client=kube_api_client,
             name=cluster_deployment.ref.name,
         )
-    install_env.create(
+    infra_env.create(
         cluster_deployment=cluster_deployment,
         secret=secret,
         proxy=proxy,

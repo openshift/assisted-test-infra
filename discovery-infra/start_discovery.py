@@ -17,7 +17,7 @@ from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
 from test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Platform,
-    InstallStrategy, Secret, InstallEnv, Proxy, NMStateConfig,
+    InstallStrategy, Secret, InfraEnv, Proxy, NMStateConfig,
 )
 
 import bootstrap_in_place as ibip
@@ -703,7 +703,7 @@ def execute_day1_flow(cluster_name):
 
         if args.kube_api:
             http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
-            install_env = InstallEnv(
+            install_env = InfraEnv(
                 kube_api_client=kube_client,
                 name=f"{cluster_name}-install-env",
                 namespace=args.namespace
