@@ -532,11 +532,16 @@ class Cluster:
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
         fall_on_error_status=True
     ):
+        if fall_on_error_status:
+            statuses = [consts.OperatorStatus.AVAILABLE]
+        else:
+            statuses = [consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED]
+
         utils.wait_till_all_operators_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             operators_count=len(self.get_operators()),
-            statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
+            statuses=statuses,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
         )
