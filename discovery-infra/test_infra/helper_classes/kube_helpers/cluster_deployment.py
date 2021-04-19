@@ -320,7 +320,7 @@ class ClusterDeployment(BaseCustomResource):
 
         def _has_required_state() -> Optional[bool]:
             state, state_info = self.state(timeout=0.5)
-            state = state.lower()
+            state = state.lower() if state else state
             if state == required_state:
                 return True
             elif state in raise_on_states:
