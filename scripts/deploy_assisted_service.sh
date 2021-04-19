@@ -15,6 +15,19 @@ export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
 export ENABLE_KUBE_API=${ENABLE_KUBE_API:-false}
 export ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=${ENABLE_KUBE_API}"
+export OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS:-}
+export OPENSHIFT_VERSIONS_CMD=""
+
+if [[ "${ENABLE_KUBE_API}" == "true" && -z "${OPENSHIFT_VERSIONS}" ]]; then
+    # Supporting version 4.8 for kube-api
+    supported_version=$(cat assisted-service/default_ocp_versions.json |
+        jq -rc 'with_entries(.key = "4.8")')
+        # TODO: include only 'rhcos_image' and 'rhcos_version' when custom
+        #       OCP version is supported in assisted-service (MGMT-4554)
+    json_template=\''%s'\'
+    OPENSHIFT_VERSIONS=$(printf "$json_template" "$supported_version")
+    OPENSHIFT_VERSIONS_CMD="OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS}"
+fi
 
 mkdir -p build
 
@@ -63,7 +76,7 @@ elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
 else
     print_log "Updating assisted_service params"
     skipper run discovery-infra/update_assisted_service_cm.py
-    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE})
+    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD $OPENSHIFT_VERSIONS_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE})
 
     add_firewalld_port $SERVICE_PORT
 
