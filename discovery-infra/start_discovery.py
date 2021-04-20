@@ -346,16 +346,20 @@ def _cluster_create_params():
         "vip_dhcp_allocation": bool(args.vip_dhcp_allocation) and not user_managed_networking,
         "additional_ntp_source": ntp_source,
         "user_managed_networking": user_managed_networking,
-        "high_availability_mode": "None" if args.master_count == 1 else "Full"
+        "high_availability_mode": consts.HighAvailabilityMode.NONE if args.master_count == 1 else consts.HighAvailabilityMode.FULL,
+        "olm_operators": [{'name': name} for name in utils.parse_olm_operators_from_env()]
     }
     return params
 
 
 # convert params from args to terraform tfvars
 def _create_node_details(cluster_name):
+    operators = utils.parse_olm_operators_from_env()
     return {
-        "libvirt_worker_memory": args.worker_memory,
-        "libvirt_master_memory": args.master_memory if not args.master_count == 1 else args.master_memory * 2,
+        "libvirt_worker_memory": utils.resource_param(args.worker_memory, "worker_memory", operators),
+        "libvirt_master_memory": utils.resource_param(args.master_memory if not args.master_count == 1 else args.master_memory * 2, "master_memory", operators),
+        "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, "worker_vcpu", operators),
+        "libvirt_master_vcpu": utils.resource_param(args.master_cpu, "master_vcpu", operators),
         "worker_count": args.number_of_workers,
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
@@ -845,6 +849,20 @@ if __name__ == "__main__":
         help="Worker memory (ram) in mb",
         type=int,
         default=8192,
+    )
+    parser.add_argument(
+        "-mc",
+        "--master-cpu",
+        help="Master cpu count",
+        type=int,
+        default=consts.MASTER_CPU,
+    )
+    parser.add_argument(
+        "-wc",
+        "--worker-cpu",
+        help="Worker cpu count",
+        type=int,
+        default=consts.WORKER_CPU,
     )
     parser.add_argument(
         "-nw", "--number-of-workers", help="Workers count to spawn", type=int, default=0
