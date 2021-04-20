@@ -29,7 +29,6 @@ from .global_vars import (
 
 from .common import does_string_contain_value, UnexpectedStateError
 from .base_resource import BaseCustomResource
-from .cluster_image_set import ClusterImageSetReference
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
 
@@ -164,7 +163,6 @@ class ClusterDeployment(BaseCustomResource):
             platform: Platform,
             install_strategy: InstallStrategy,
             secret: Secret,
-            imageSetRef: ClusterImageSetReference,
             base_domain: str = env_variables['base_domain'],
             **kwargs,
     ):
@@ -176,7 +174,7 @@ class ClusterDeployment(BaseCustomResource):
                 'clusterName': self.ref.name,
                 'baseDomain': base_domain,
                 'platform': platform.as_dict(),
-                'provisioning': {'installStrategy': install_strategy.as_dict(), 'imageSetRef': imageSetRef.as_dict()},
+                'provisioning': {'installStrategy': install_strategy.as_dict()},
                 'pullSecretRef': secret.ref.as_dict(),
             }
         }

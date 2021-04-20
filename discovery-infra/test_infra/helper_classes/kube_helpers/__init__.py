@@ -25,11 +25,7 @@ from .cluster_deployment import (
     deploy_default_cluster_deployment,
     Platform,
     InstallStrategy,
-    ClusterDeployment
-)
-from .cluster_image_set import (
-    ClusterImageSet,
-    ClusterImageSetReference
+    ClusterDeployment,
 )
 from .agent import Agent
 from .nmstate_config import NMStateConfig
