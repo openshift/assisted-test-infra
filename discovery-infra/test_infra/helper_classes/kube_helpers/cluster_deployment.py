@@ -359,8 +359,13 @@ class ClusterDeployment(BaseCustomResource):
             self, 
             timeout: Union[int, float] = DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
     ) -> None:
-        self.wait_for_state('installed', timeout, raise_on_states=FAILURE_STATES)
-        assert self.get()['spec'].get('installed')
+
+        waiting.wait(
+            lambda: self.get()['spec'].get('installed') is True,
+            timeout_seconds=timeout,
+            waiting_for=f'cluster {self.ref} state installed',
+            expected_exceptions=waiting.exceptions.TimeoutExpired,
+        )
 
     def download_kubeconfig(self, kubeconfig_path):
         def _get_kubeconfig_secret() -> dict:
