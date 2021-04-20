@@ -71,16 +71,28 @@ class BaseTest:
                              openshift_version: Optional[str] = env_variables['openshift_version'],
                              user_managed_networking: Optional[bool] = env_variables["user_managed_networking"],
                              high_availability_mode=env_variables["high_availability_mode"],
-                             olm_operators=env_variables['olm_operators']):
+                             olm_operators=env_variables['olm_operators'],
+                             ssh_public_key=env_variables['ssh_public_key'],
+                             cluster_id=env_variables["cluster_id"],
+                             pull_secret=env_variables['pull_secret'],
+                             base_dns_domain=env_variables['base_domain'],
+                             vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+                             ):
             if not cluster_name:
                 cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
             res = Cluster(api_client=api_client,
                           cluster_name=cluster_name,
                           additional_ntp_source=additional_ntp_source,
                           openshift_version=openshift_version,
+                          cluster_id=cluster_id,
                           user_managed_networking=user_managed_networking,
                           high_availability_mode=high_availability_mode,
-                          olm_operators=olm_operators)
+                          olm_operators=olm_operators,
+                          ssh_public_key=ssh_public_key,
+                          pull_secret=pull_secret,
+                          base_dns_domain=base_dns_domain,
+                          vip_dhcp_allocation=vip_dhcp_allocation
+                          )
             clusters.append(res)
             return res
 

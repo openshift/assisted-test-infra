@@ -16,15 +16,21 @@ from junit_report import JunitTestCase
 from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
+from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
-from tests.conftest import env_variables
 
 
 class Cluster:
 
     def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
                  openshift_version="4.7", cluster_id=None, user_managed_networking=False,
-                 high_availability_mode=consts.HighAvailabilityMode.FULL, olm_operators=None):
+                 high_availability_mode=consts.HighAvailabilityMode.FULL, olm_operators=None,
+                 ssh_public_key=None, pull_secret=None, base_dns_domain=None, vip_dhcp_allocation=None):
+        self._ssh_key = ssh_public_key
+        self._pull_secret = pull_secret
+        self._base_dns_domain = base_dns_domain
+        self._vip_dhcp_allocation = vip_dhcp_allocation
+
         self.api_client = api_client
 
         self._high_availability_mode = high_availability_mode
@@ -32,7 +38,6 @@ class Cluster:
             self.id = cluster_id
             self.name = cluster_name or api_client.cluster_get(cluster_id).name
         else:
-            cluster_name = cluster_name or env_variables.get('cluster_name', "test-infra-cluster")
             self.id = self._create(cluster_name, additional_ntp_source, openshift_version,
                                    user_managed_networking=user_managed_networking,
                                    high_availability_mode=high_availability_mode,
@@ -48,11 +53,11 @@ class Cluster:
                 olm_operators):
         return self.api_client.create_cluster(
             cluster_name,
-            ssh_public_key=env_variables['ssh_public_key'],
+            ssh_public_key=self._ssh_key,
             openshift_version=openshift_version,
-            pull_secret=env_variables['pull_secret'],
-            base_dns_domain=env_variables['base_domain'],
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+            pull_secret=self._pull_secret,
+            base_dns_domain=self._base_dns_domain,
+            vip_dhcp_allocation=self._vip_dhcp_allocation,
             additional_ntp_source=additional_ntp_source,
             user_managed_networking=user_managed_networking,
             high_availability_mode=high_availability_mode,
@@ -84,26 +89,25 @@ class Cluster:
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
-    def generate_image(self, ssh_key=env_variables['ssh_public_key']):
-        self.api_client.generate_image(cluster_id=self.id, ssh_key=ssh_key)
+    def generate_image(self):
+        self.api_client.generate_image(cluster_id=self.id, ssh_key=self._ssh_key)
 
     @JunitTestCase()
     def generate_and_download_image(
             self,
-            iso_download_path=env_variables['iso_download_path'],
-            ssh_key=env_variables['ssh_public_key'],
+            iso_download_path,
             static_network_config=None,
-            iso_image_type=env_variables['iso_image_type']
+            iso_image_type=None
     ):
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
-            ssh_key=ssh_key,
+            ssh_key=self._ssh_key,
             image_path=iso_download_path,
             image_type=iso_image_type,
             static_network_config=static_network_config,
         )
 
-    def wait_until_hosts_are_disconnected(self, nodes_count=env_variables['num_nodes']):
+    def wait_until_hosts_are_disconnected(self, nodes_count):
         statuses = [consts.NodesStatus.DISCONNECTED]
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -114,8 +118,7 @@ class Cluster:
         )
 
     @JunitTestCase()
-    def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
-                                        allow_insufficient=False):
+    def wait_until_hosts_are_discovered(self, nodes_count, allow_insufficient=False):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT)
@@ -174,9 +177,9 @@ class Cluster:
 
         self.api_client.update_cluster(self.id, {'olm_operators': olm_operators})
 
-    def set_host_roles(self, requested_roles=None):
+    def set_host_roles(self, num_masters, num_workers, requested_roles=None):
         if requested_roles is None:
-            requested_roles = Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
+            requested_roles = Counter(master=num_masters, worker=num_workers)
         assigned_roles = self._get_matching_hosts(
             host_type=consts.NodeRoles.MASTER,
             count=requested_roles["master"])
@@ -200,13 +203,16 @@ class Cluster:
     def set_network_params(
             self,
             controller,
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+            vip_dhcp_allocation,
+            service_network_cidr,
+            cluster_network_cidr,
+            cluster_network_host_prefix
     ):
         self.api_client.update_cluster(self.id, {
             "vip_dhcp_allocation": vip_dhcp_allocation,
-            "service_network_cidr": env_variables['service_cidr'],
-            "cluster_network_cidr": env_variables['cluster_cidr'],
-            "cluster_network_host_prefix": env_variables['host_prefix'],
+            "service_network_cidr": service_network_cidr,
+            "cluster_network_cidr": cluster_network_cidr,
+            "cluster_network_host_prefix": cluster_network_host_prefix,
         })
         if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             self.set_machine_cidr(controller.get_machine_cidr())
@@ -349,23 +355,23 @@ class Cluster:
             nodes_count=nodes_count
         )
 
-    def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self):
+    def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self, num_masters):
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.CONFIGURING],
-            nodes_count=env_variables['num_masters'] - 1
+            nodes_count=num_masters - 1
         )
 
-    def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self):
+    def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self, num_masters):
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.JOINED],
-            nodes_count=env_variables['num_masters'] - 1
+            nodes_count=num_masters - 1
         )
 
-    def wait_for_hosts_stage(self, stage: str, nodes_count: int = env_variables['num_nodes'], inclusive: bool = True):
+    def wait_for_hosts_stage(self, stage: str, nodes_count: int, inclusive: bool = True):
         index = consts.all_host_stages.index(stage)
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
@@ -376,10 +382,10 @@ class Cluster:
 
     @JunitTestCase()
     def start_install_and_wait_for_installed(self,
+                                             nodes_count,
                                              wait_for_hosts=True,
                                              wait_for_operators=True,
                                              wait_for_cluster_install=True,
-                                             nodes_count=env_variables['num_nodes']
                                              ):
         self.start_install()
         if wait_for_hosts:
@@ -452,7 +458,7 @@ class Cluster:
 
     def wait_for_hosts_to_be_in_wrong_boot_order(
             self,
-            nodes_count=env_variables['num_nodes'],
+            nodes_count,
             timeout=consts.PENDING_USER_ACTION_TIMEOUT,
             fall_on_error_status=True
     ):
@@ -514,7 +520,7 @@ class Cluster:
 
     def wait_for_hosts_to_install(
             self,
-            nodes_count=env_variables['num_nodes'],
+            nodes_count,
             timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
             fall_on_error_status=True
     ):
@@ -565,17 +571,24 @@ class Cluster:
     @JunitTestCase()
     def prepare_for_install(
             self,
-            nodes,
-            iso_download_path=env_variables['iso_download_path'],
-            iso_image_type=env_variables['iso_image_type'],
-            ssh_key=env_variables['ssh_public_key'],
-            nodes_count=env_variables['num_nodes'],
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-            download_image=True,
-            platform=env_variables['platform']
+            nodes: Nodes,
+            iso_download_path,
+            iso_image_type,
+            nodes_count,
+            vip_dhcp_allocation,
+            download_image,
+            platform,
+            static_ips_config,
+            is_ipv6,
+            service_network_cidr,
+            cluster_network_cidr,
+            cluster_network_host_prefix,
+            static_network_config=None,
     ):
+        if self._ssh_key is None:
+            raise ValueError("SSH "*20)
         if download_image:
-            if env_variables.get('static_network_config'):
+            if static_network_config:
                 static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
             else:
                 static_network_config = None
@@ -583,33 +596,31 @@ class Cluster:
             self.generate_and_download_image(
                 iso_download_path=iso_download_path,
                 iso_image_type=iso_image_type,
-                ssh_key=ssh_key,
                 static_network_config=static_network_config
             )
-        nodes.start_all()
+        nodes.start_all(static_ips_config)
         self.wait_until_hosts_are_discovered(nodes_count=nodes_count, allow_insufficient=True)
-        nodes.set_hostnames(self)
+        nodes.set_hostnames(self, nodes_count, is_ipv6, static_ips_config)
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
-            self.set_host_roles()
+            self.set_host_roles(len(nodes.get_masters()), len(nodes.get_workers()))
         else:
             nodes.set_single_node_ip(self)
         self.set_network_params(
             controller=nodes.controller,
             vip_dhcp_allocation=vip_dhcp_allocation,
+            service_network_cidr=service_network_cidr,
+            cluster_network_cidr=cluster_network_cidr,
+            cluster_network_host_prefix=cluster_network_host_prefix
         )
         self.wait_for_ready_to_install()
 
         if platform == consts.Platforms.NONE:
             self._configure_load_balancer(nodes.controller)
 
-    def download_kubeconfig_no_ingress(
-            self, kubeconfig_path=env_variables['kubeconfig_path']
-    ):
+    def download_kubeconfig_no_ingress(self, kubeconfig_path):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
 
-    def download_kubeconfig(
-            self, kubeconfig_path=env_variables['kubeconfig_path']
-    ):
+    def download_kubeconfig(self, kubeconfig_path):
         self.api_client.download_kubeconfig(self.id, kubeconfig_path)
 
     def download_installation_logs(self, cluster_tar_path):
@@ -649,9 +660,9 @@ class Cluster:
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
-    def setup_nodes(self, nodes):
+    def setup_nodes(self, nodes, static_ips_config):
         self.generate_and_download_image()
-        nodes.start_all()
+        nodes.start_all(static_ips_config)
         self.wait_until_hosts_are_discovered(nodes_count=len(nodes))
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 

@@ -26,7 +26,7 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "openshift_version": utils.get_openshift_version(),
                  "base_domain": utils.get_env('BASE_DOMAIN', consts.DEFAULT_BASE_DNS_DOMAIN),
                  "num_masters": int(utils.get_env('NUM_MASTERS', consts.NUMBER_OF_MASTERS)),
-                 "num_workers": int(utils.get_env('NUM_WORKERS', 2)),
+                 "num_workers": int(utils.get_env('NUM_WORKERS', 0)),
                  "num_day2_workers": int(utils.get_env('NUM_DAY2_WORKERS', 0)),
                  "vip_dhcp_allocation": bool(util.strtobool(utils.get_env('VIP_DHCP_ALLOCATION'))),
                  "worker_memory": int(utils.get_env('WORKER_MEMORY', '8892')),
@@ -52,6 +52,9 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "platform": utils.get_env("PLATFORM", consts.Platforms.BARE_METAL),
                  "user_managed_networking": False,
                  "high_availability_mode": consts.HighAvailabilityMode.FULL,
+                 "download_image": bool(util.strtobool(utils.get_env("DOWNLOAD_IMAGE", default="True"))),
+                 "is_ipv6": bool(util.strtobool(utils.get_env("IPv6", default="False"))),
+                 "cluster_id": utils.get_env("CLUSTER_ID")
                  }
 cluster_mid_name = infra_utils.get_random_name()
 
