@@ -827,7 +827,7 @@ def remove_running_container(container_name):
     run_command(container_rm_cmd, shell=True)
 
 
-def get_openshift_version():
+def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
     release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
 
     if release_image:
@@ -838,7 +838,7 @@ def get_openshift_version():
                 shell=True)
         return stdout
 
-    return get_env('OPENSHIFT_VERSION', consts.DEFAULT_OPENSHIFT_VERSION)
+    return get_env('OPENSHIFT_VERSION', default)
 
 
 def get_openshift_release_image():

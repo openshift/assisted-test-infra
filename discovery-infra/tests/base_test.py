@@ -71,8 +71,8 @@ class BaseTest:
         def get_cluster_func(cluster_name: Optional[str] = None,
                              additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
                              openshift_version: Optional[str] = env_variables['openshift_version'],
-                             user_managed_networking=False,
-                             high_availability_mode=consts.HighAvailabilityMode.FULL,
+                             user_managed_networking: Optional[bool] = env_variables["user_managed_networking"],
+                             high_availability_mode=env_variables["high_availability_mode"],
                              olm_operators=env_variables['olm_operators']):
             if not cluster_name:
                 cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
