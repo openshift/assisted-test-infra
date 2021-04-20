@@ -109,12 +109,14 @@ CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-con
 PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 SERVICE_REPLICAS_COUNT := 3
+AUTH_TYPE := $(or ${AUTH_TYPE},none)
 ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},no)
 KUBE_API := $(or ${KUBE_API},no)
 ifeq ($(ENABLE_KUBE_API),true)
 	SERVICE_REPLICAS_COUNT=1
 	KUBE_API=yes
 	VIP_DHCP_ALLOCATION=no
+	AUTH_TYPE=local
 endif
 
 .EXPORT_ALL_VARIABLES:
@@ -360,7 +362,7 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 
 deploy_assisted_service: start_minikube bring_assisted_service
 	mkdir -p assisted-service/build
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_assisted_service.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
 	@if ! cd assisted-service >/dev/null 2>&1; then \
