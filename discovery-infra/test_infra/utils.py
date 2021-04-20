@@ -935,7 +935,7 @@ def download_iso(image_url, image_path):
             out.write(chunk)
 
 def parse_olm_operators_from_env():
-    return get_env("OLM_OPERATORS", "").lower().split()
+    return get_env("OLM_OPERATORS", default="").lower().split()
 
 def resource_param(value, param_name, operators):
     try:
