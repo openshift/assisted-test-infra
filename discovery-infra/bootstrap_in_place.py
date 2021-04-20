@@ -7,13 +7,16 @@ import sys
 
 import waiting
 import yaml
-from test_infra import utils, consts
+from test_infra import utils, consts, warn_deprecate
 from test_infra.tools.assets import NetworkAssets
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
 
 from download_logs import download_must_gather
 from oc_utils import get_operators_status
+
+warn_deprecate()
+
 
 BUILD_DIR = "build"
 INSTALL_CONFIG_FILE_NAME = "install-config.yaml"

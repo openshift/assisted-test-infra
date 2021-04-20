@@ -4,11 +4,13 @@
 import argparse
 import subprocess
 
-from test_infra import utils
+from test_infra import utils, warn_deprecate
 
 from logger import log
 
 DEFAULT_SKIP_LIST = ["default"]
+
+warn_deprecate()
 
 
 def run_command(command, check=False, resource_filter=None):

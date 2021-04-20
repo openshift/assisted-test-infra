@@ -16,6 +16,11 @@ import os
 
 import yaml
 
+from test_infra import warn_deprecate
+
+warn_deprecate()
+
+
 CM_PATH = "assisted-service/deploy/assisted-service-configmap.yaml"
 ENVS = [
     ("HW_VALIDATOR_MIN_CPU_CORES", "2"),
