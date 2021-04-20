@@ -269,8 +269,7 @@ def set_cluster_vips(client, cluster_id, machine_net):
 
 def set_cluster_machine_cidr(client, cluster_id, machine_net, set_vip_dhcp_allocation=True):
     cluster_info = client.cluster_get(cluster_id)
-    if set_vip_dhcp_allocation:
-        cluster_info.vip_dhcp_allocation = True
+    cluster_info.vip_dhcp_allocation = set_vip_dhcp_allocation
     cluster_info.machine_network_cidr = get_machine_cidr_from_machine_net(machine_net)
     client.update_cluster(cluster_id, cluster_info)
 
@@ -482,7 +481,7 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
                     )
             elif is_none_platform_mode():
                 set_cluster_vips(client, cluster.id, machine_net)
-            elif args.vip_dhcp_allocation:
+            elif args.vip_dhcp_allocation and not args.kube_api:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:
                 set_cluster_vips(client, cluster.id, machine_net)
@@ -668,7 +667,7 @@ def execute_day1_flow():
                 namespace=args.namespace
             )
 
-            secret=Secret(
+            secret = Secret(
                 kube_api_client=kube_client,
                 name=cluster_name,
                 namespace=args.namespace,
@@ -679,6 +678,9 @@ def execute_day1_flow():
             ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
             api_vip, ingress_vip = "", ""
 
+            if args.master_count > 1:
+                api_vip, ingress_vip = _get_vips_ips(machine_net)
+
             cluster_deployment.apply(
                 platform=Platform(
                     api_vip=api_vip,
@@ -686,7 +688,7 @@ def execute_day1_flow():
                 ),
                 install_strategy=InstallStrategy(
                     host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
-                    machine_cidr=get_machine_cidr_from_machine_net(machine_net),
+                    machine_cidr=get_machine_cidr_from_machine_net(machine_net) if args.master_count == 1 else None,
                     cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
                     service_cidr=args.service_network if ipv4 else args.service_network6,
                     ssh_public_key=args.ssh_key,
