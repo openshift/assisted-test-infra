@@ -418,6 +418,17 @@ def validate_dns(client, cluster_id):
         raise e
 
 
+def get_api_and_ingress_vips(**kwargs):
+    if 'cluster_deployment' in kwargs:
+        return kubeapi_utils.get_api_and_ingress_vips(
+            cluster_deployment=kwargs['cluster_deployment']
+        )
+
+    assert 'client' in kwargs and 'cluster' in kwargs
+    cluster_info = kwargs['client'].cluster_get(kwargs['cluster'].id)
+    return cluster_info.api_vip, cluster_info.ingress_vip
+
+
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
 def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, cluster_deployment=None):
@@ -445,12 +456,16 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
     secondary_cidr = machine_net.provisioning_cidr_v4 if is_ipv4 else machine_net.provisioning_cidr_v6
 
     if client:
-        cluster_info = client.cluster_get(cluster.id)
+        api_vip, ingress_vip = get_api_and_ingress_vips(
+            **{'cluster_deployment': cluster_deployment} if args.kube_api
+            else {'cluster': cluster, 'client': client}
+        )
+
         macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
         if is_none_platform_mode():
             macs += utils.get_libvirt_nodes_macs(nodes_details["libvirt_secondary_network_name"])
 
-        if not (cluster_info.api_vip and cluster_info.ingress_vip):
+        if not (api_vip and ingress_vip):
             if not args.kube_api:
                 utils.wait_till_hosts_with_macs_are_in_status(
                     client=client,
@@ -652,14 +667,17 @@ def execute_day1_flow():
 
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
-        if not client:
+        if not args.kube_api and not client:
             client = assisted_service_api.create_client(
                 url=utils.get_assisted_service_url_by_args(args=args)
             )
-        if args.cluster_id:
-            cluster = client.cluster_get(cluster_id=args.cluster_id)
 
-        elif args.kube_api:
+        if args.kube_api:
+            if args.cluster_id:
+                raise ValueError(
+                    'providing cluster_id in kube api mode is currently '
+                    'not supported'
+                )
             kube_client = create_kube_api_client()
             cluster_deployment = ClusterDeployment(
                 kube_api_client=kube_client,
@@ -705,6 +723,8 @@ def execute_day1_flow():
                 cluster_name,
                 ssh_public_key=args.ssh_key, **_cluster_create_params()
             )
+            if not args.cluster_id:
+                args.cluster_id = cluster.id
 
         static_network_config = apply_static_network_config(
             cluster_name=cluster_name,
@@ -734,9 +754,9 @@ def execute_day1_flow():
             )
             install_env.status()
             image_url = install_env.get_iso_download_url()
-            cluster = client.cluster_get(cluster_id=install_env.get_cluster_id())
             utils.download_iso(image_url, image_path)
-
+            args.cluster_id = install_env.get_cluster_id()
+            cluster = type('cluster', (), {'id': args.cluster_id})
         else:
             client.generate_and_download_image(
                 cluster_id=cluster.id,
@@ -756,7 +776,7 @@ def execute_day1_flow():
             log.info('deleting iso: %s', image_path)
             os.unlink(image_path)
 
-    return cluster.id
+    return args.cluster_id
 
 
 def is_user_managed_networking():
@@ -768,7 +788,7 @@ def is_none_platform_mode():
 
 
 def try_get_cluster():
-    if args.cluster_id:
+    if args.cluster_id and not args.kube_api:
         try:
             client = assisted_service_api.create_client(
                 url=utils.get_assisted_service_url_by_args(args=args)

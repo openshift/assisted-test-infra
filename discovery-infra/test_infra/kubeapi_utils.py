@@ -143,3 +143,18 @@ def delete_kube_api_resources_for_namespace(
         name=nmstate_name or f'{name}-nmstate-config',
         namespace=namespace,
     ).delete()
+
+
+def get_api_and_ingress_vips(cluster_deployment):
+    cluster_info = cluster_deployment.get()
+    assert 'spec' in cluster_info
+    spec = cluster_info['spec']
+    assert 'platform' in spec
+    platform = spec['platform']
+    assert 'agentBareMetal' in platform
+    agent_bare_metal = platform['agentBareMetal']
+
+    api_vip = agent_bare_metal.get('apiVIP')
+    ingress_vip = agent_bare_metal.get('ingressVIP')
+
+    return api_vip, ingress_vip
