@@ -923,6 +923,11 @@ class Cluster:
     def get_worker_ips(client, cluster_id, network):
         return Cluster.get_ips_for_role(client, cluster_id, network, consts.NodeRoles.WORKER)
 
+    @staticmethod
+    def get_vips_from_cluster(client, cluster_id):
+        cluster_info = client.cluster_get(cluster_id)
+        return dict(api_vip=cluster_info.api_vip, ingress_vip=cluster_info.ingress_vip)
+
     def get_host_disks(self, host, filter=None):
         hosts = self.get_hosts()
         selected_host = [h for h in hosts if h["id"] == host["id"]]
