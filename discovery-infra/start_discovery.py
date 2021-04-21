@@ -18,6 +18,7 @@ from test_infra.tools import static_network, terraform_utils
 from test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Platform,
     InstallStrategy, Secret, InfraEnv, Proxy, NMStateConfig,
+    ClusterImageSet, ClusterImageSetReference
 )
 
 import bootstrap_in_place as ibip
@@ -715,6 +716,13 @@ def execute_kube_api_flow():
     )
     secret.apply(pull_secret=args.pull_secret)
 
+    imageSet=ClusterImageSet(
+        kube_api_client=kube_client,
+        name=f"{cluster_name}-image-set",
+    )
+    releaseImage=utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image())
+    imageSet.apply(releaseImage=releaseImage)
+
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     api_vip, ingress_vip = "", ""
@@ -737,6 +745,7 @@ def execute_kube_api_flow():
         ),
         secret=secret,
         base_domain=args.base_dns_domain,
+        imageSetRef=ClusterImageSetReference(name=f"{cluster_name}-image-set"),
     )
     cluster_deployment.wait_for_state(consts.ClusterStatus.INSUFFICIENT)
     apply_static_network_config(

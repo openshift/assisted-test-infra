@@ -12,6 +12,7 @@ from test_infra.helper_classes.kube_helpers import (
     Secret,
     InfraEnv,
     ClusterDeployment,
+    ClusterImageSet,
     NMStateConfig,
 )
 
@@ -107,6 +108,7 @@ def delete_kube_api_resources_for_namespace(
         secret_name=None,
         infraenv_name=None,
         nmstate_name=None,
+        image_set_name=None,
 ):
     CoreV1Api.delete_namespaced_secret = suppress_not_found_error(
         fn=CoreV1Api.delete_namespaced_secret,
@@ -142,4 +144,9 @@ def delete_kube_api_resources_for_namespace(
         kube_api_client=kube_api_client,
         name=nmstate_name or f'{name}-nmstate-config',
         namespace=namespace,
+    ).delete()
+
+    ClusterImageSet(
+        kube_api_client=kube_api_client,
+        name=image_set_name or f'{name}-image-set',
     ).delete()
