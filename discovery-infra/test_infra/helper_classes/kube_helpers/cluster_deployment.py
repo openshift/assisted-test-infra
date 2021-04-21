@@ -328,6 +328,7 @@ class ClusterDeployment(BaseCustomResource):
                     f'{state_info}'
                 )
 
+        logger.info("Waiting till cluster will be in %s state", required_state)
         waiting.wait(
             _has_required_state,
             timeout_seconds=timeout,

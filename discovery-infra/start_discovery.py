@@ -357,7 +357,8 @@ def _create_node_details(cluster_name):
     operators = utils.parse_olm_operators_from_env()
     return {
         "libvirt_worker_memory": utils.resource_param(args.worker_memory, "worker_memory", operators),
-        "libvirt_master_memory": utils.resource_param(args.master_memory if not args.master_count == 1 else args.master_memory * 2, "master_memory", operators),
+        "libvirt_master_memory": utils.resource_param(
+            args.master_memory if not args.master_count == 1 else args.master_memory * 2, "master_memory", operators),
         "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, "worker_vcpu", operators),
         "libvirt_master_vcpu": utils.resource_param(args.master_cpu, "master_vcpu", operators),
         "worker_count": args.number_of_workers,
@@ -508,11 +509,16 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
             )
 
         if is_none_platform_mode() and args.master_count > 1:
-            master_ips = helper_cluster.Cluster.get_master_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_master_ips(client, cluster.id, secondary_cidr)
-            worker_ips = helper_cluster.Cluster.get_worker_ips(client, cluster.id, main_cidr) + helper_cluster.Cluster.get_worker_ips(client, cluster.id, secondary_cidr)
+            master_ips = helper_cluster.Cluster.get_master_ips(client, cluster.id,
+                                                               main_cidr) + helper_cluster.Cluster.get_master_ips(
+                client, cluster.id, secondary_cidr)
+            worker_ips = helper_cluster.Cluster.get_worker_ips(client, cluster.id,
+                                                               main_cidr) + helper_cluster.Cluster.get_worker_ips(
+                client, cluster.id, secondary_cidr)
             if not worker_ips:
                 worker_ips = master_ips
-            load_balancer_ip = _get_host_ip_from_cidr(machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4)
+            load_balancer_ip = _get_host_ip_from_cidr(
+                machine_net.cidr_v6 if machine_net.has_ip_v6 and not machine_net.has_ip_v4 else machine_net.cidr_v4)
             lb_controller = LoadBalancerController(tf)
             lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
@@ -536,6 +542,54 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
             )
             # Validate DNS domains resolvability
             validate_dns(client, cluster.id)
+
+
+# Create vms from downloaded iso that will connect to assisted-service and register
+# If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
+def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment):
+    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+    nodes_details = utils.get_tfvars(tf_folder)
+    tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
+    is_ipv4 = machine_net.has_ip_v4 or not machine_net.has_ip_v6
+    nodes_number = args.master_count + args.number_of_workers
+
+    create_nodes_and_wait_till_registered(
+        inventory_client=None,
+        cluster=None,
+        nodes_details=nodes_details,
+        tf=tf,
+        is_ipv4=is_ipv4,
+        nodes_number=nodes_number,
+        cluster_deployment=cluster_deployment,
+    )
+
+    if cluster_deployment:
+        if args.master_count == 1:
+            set_single_node_ip(
+                client=None,
+                cluster_id=None,
+                main_cidr=args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6,
+                is_ipv4=is_ipv4,
+                cluster_deployment=cluster_deployment,
+                tf=tf,
+            )
+        else:
+            log.info("VIPs already configured")
+
+        kubeapi_utils.set_agents_hostnames(
+            cluster_deployment=cluster_deployment,
+            is_ipv4=is_ipv4,
+            static_network_mode=args.with_static_network_config,
+            tf=tf,
+            nodes_number=nodes_number,
+        )
+
+        if args.install_cluster:
+            install_cluster.run_installation_flow_kube_api(
+                cluster_deployment=cluster_deployment,
+                nodes_number=nodes_number,
+                kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
+            )
 
 
 def set_single_node_ip(
@@ -616,18 +670,7 @@ def apply_static_network_config(cluster_name, kube_client):
     return static_network_config
 
 
-def execute_day1_flow():
-    client, cluster = try_get_cluster()
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-
-    if cluster:
-        args.base_dns_domain = cluster.base_dns_domain
-        cluster_name = cluster.name
-
-    elif args.managed_dns_domains:
-        args.base_dns_domain = args.managed_dns_domains.split(":")[0]
-
-    log.info('Cluster name: %s', cluster_name)
+def set_network_defaults_if_needed():
     if not args.vm_network_cidr:
         net_cidr = IPNetwork('192.168.126.0/24')
         net_cidr += args.ns_index
@@ -641,14 +684,118 @@ def execute_day1_flow():
     if not args.network_bridge:
         args.network_bridge = f'tt{args.ns_index}'
 
+
+def run_nodes_flow(client, cluster_name, cluster, machine_net, image_path, cluster_deployment=None):
+    try:
+        nodes_flow(client, cluster_name, cluster, machine_net, cluster_deployment)
+    finally:
+        if not image_path or args.keep_iso:
+            return
+        log.info('deleting iso: %s', image_path)
+        os.unlink(image_path)
+
+
+def execute_kube_api_flow():
+    log.info("Executing kube-api flow")
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
+    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
+    kube_client = create_kube_api_client()
+    cluster_deployment = ClusterDeployment(
+        kube_api_client=kube_client,
+        name=cluster_name,
+        namespace=args.namespace
+    )
     set_tf_config(cluster_name)
-    image_path = None
-    image_url = None
-    image_type = args.iso_image_type
-    kube_client = None
-    cluster_deployment = None
+
+    secret = Secret(
+        kube_api_client=kube_client,
+        name=cluster_name,
+        namespace=args.namespace,
+    )
+    secret.apply(pull_secret=args.pull_secret)
+
+    ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
+    ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
+    api_vip, ingress_vip = "", ""
+    if args.master_count > 1:
+        api_vip, ingress_vip = _get_vips_ips(machine_net)
+
+    cluster_deployment.apply(
+        platform=Platform(
+            api_vip=api_vip,
+            ingress_vip=ingress_vip,
+        ),
+        install_strategy=InstallStrategy(
+            host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
+            machine_cidr=get_machine_cidr_from_machine_net(machine_net),
+            cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
+            service_cidr=args.service_network if ipv4 else args.service_network6,
+            ssh_public_key=args.ssh_key,
+            control_plane_agents=args.master_count,
+            worker_agents=args.number_of_workers,
+        ),
+        secret=secret,
+        base_domain=args.base_dns_domain,
+    )
+    cluster_deployment.wait_for_state(consts.ClusterStatus.INSUFFICIENT)
+    apply_static_network_config(
+        cluster_name=cluster_name,
+        kube_client=kube_client,
+    )
+
+    image_path = os.path.join(
+        consts.IMAGE_FOLDER,
+        f'{args.namespace}-installer-image.iso'
+    )
+
+    log.info("Creating installenv")
+    http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
+    install_env = InfraEnv(
+        kube_api_client=kube_client,
+        name=f"{cluster_name}-install-env",
+        namespace=args.namespace
+    )
+    install_env.apply(
+        cluster_deployment=cluster_deployment,
+        secret=secret,
+        proxy=Proxy(
+            http_proxy=http_proxy,
+            https_proxy=https_proxy,
+            no_proxy=no_proxy
+        )
+    )
+    install_env.status()
+    image_url = install_env.get_iso_download_url()
+    utils.download_iso(image_url, image_path)
+    try:
+        nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment)
+    finally:
+        if not image_path or args.keep_iso:
+            return
+        log.info('deleting iso: %s', image_path)
+        os.unlink(image_path)
+
+
+def execute_day1_flow():
+    client, cluster = try_get_cluster()
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+
+    if cluster:
+        args.base_dns_domain = cluster.base_dns_domain
+        cluster_name = cluster.name
+
+    elif args.managed_dns_domains:
+        args.base_dns_domain = args.managed_dns_domains.split(":")[0]
+
+    log.info('Cluster name: %s', cluster_name)
 
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
+    image_path = os.path.join(
+        consts.IMAGE_FOLDER,
+        f'{args.namespace}-installer-image.iso'
+    )
+    set_tf_config(cluster_name)
 
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
@@ -658,103 +805,25 @@ def execute_day1_flow():
             )
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
-
-        elif args.kube_api:
-            kube_client = create_kube_api_client()
-            cluster_deployment = ClusterDeployment(
-                kube_api_client=kube_client,
-                name=cluster_name,
-                namespace=args.namespace
-            )
-
-            secret = Secret(
-                kube_api_client=kube_client,
-                name=cluster_name,
-                namespace=args.namespace,
-            )
-            secret.apply(pull_secret=args.pull_secret)
-
-            ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
-            ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
-            api_vip, ingress_vip = "", ""
-
-            if args.master_count > 1:
-                api_vip, ingress_vip = _get_vips_ips(machine_net)
-
-            cluster_deployment.apply(
-                platform=Platform(
-                    api_vip=api_vip,
-                    ingress_vip=ingress_vip,
-                ),
-                install_strategy=InstallStrategy(
-                    host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
-                    machine_cidr=get_machine_cidr_from_machine_net(machine_net) if args.master_count == 1 else None,
-                    cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
-                    service_cidr=args.service_network if ipv4 else args.service_network6,
-                    ssh_public_key=args.ssh_key,
-                    control_plane_agents=args.master_count,
-                    worker_agents=args.number_of_workers,
-                ),
-                secret=secret,
-                base_domain=args.base_dns_domain,
-            )
-            cluster_deployment.wait_for_state("insufficient")
-
         else:
-            cluster = client.create_cluster(
-                cluster_name,
-                ssh_public_key=args.ssh_key, **_cluster_create_params()
-            )
+            cluster = client.create_cluster(cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params())
 
         static_network_config = apply_static_network_config(
             cluster_name=cluster_name,
-            kube_client=kube_client,
+            kube_client=None,
         )
 
-        image_path = os.path.join(
-            consts.IMAGE_FOLDER,
-            f'{args.namespace}-installer-image.iso'
+        client.generate_and_download_image(
+            cluster_id=cluster.id,
+            image_path=image_path,
+            image_type=args.iso_image_type,
+            ssh_key=args.ssh_key,
+            static_network_config=static_network_config,
         )
-
-        if args.kube_api:
-            http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
-            install_env = InfraEnv(
-                kube_api_client=kube_client,
-                name=f"{cluster_name}-install-env",
-                namespace=args.namespace
-            )
-            install_env.apply(
-                cluster_deployment=cluster_deployment,
-                secret=secret,
-                proxy=Proxy(
-                    http_proxy=http_proxy,
-                    https_proxy=https_proxy,
-                    no_proxy=no_proxy
-                )
-            )
-            install_env.status()
-            image_url = install_env.get_iso_download_url()
-            cluster = client.cluster_get(cluster_id=install_env.get_cluster_id())
-            utils.download_iso(image_url, image_path)
-
-        else:
-            client.generate_and_download_image(
-                cluster_id=cluster.id,
-                image_path=image_path,
-                image_type=image_type,
-                ssh_key=args.ssh_key,
-                static_network_config=static_network_config,
-            )
 
     # Iso only, cluster will be up and iso downloaded but vm will not be created
     if not args.iso_only:
-        try:
-            nodes_flow(client, cluster_name, cluster, machine_net, kube_client, cluster_deployment)
-        finally:
-            if not image_path or args.keep_iso:
-                return
-            log.info('deleting iso: %s', image_path)
-            os.unlink(image_path)
+        run_nodes_flow(client, cluster_name, cluster, machine_net, image_path)
 
     return cluster.id
 
@@ -783,6 +852,12 @@ def try_get_cluster():
 
 def main():
     cluster_id = args.cluster_id
+    set_network_defaults_if_needed()
+
+    if args.kube_api:
+        execute_kube_api_flow()
+        return
+
     if args.day1_cluster:
         cluster_id = execute_day1_flow()
 
