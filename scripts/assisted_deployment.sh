@@ -18,6 +18,9 @@ function set_dns() {
       echo IP for interface tt$NAMESPACE_INDEX was not found
       exit 1
     fi
+
+    update_vips
+
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
     if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE

@@ -25,7 +25,7 @@ function print_log() {
 }
 
 function url_reachable() {
-    curl -s $1 --max-time 4 >/dev/null
+    curl -s -k $1 --max-time 4 >/dev/null
     return $?
 }
 
@@ -178,5 +178,39 @@ function configure_none_platform_iptables_rules() {
     iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT --source $sec_network --to-source $ip
 }
 
+function wait_for_resource() {
+    resource=$1
+    condition=$2
+    namespace=${3:-""}
+    selector=${4:-""}
+
+    echo "Waiting for ${resource} to be defined"
+    for i in {1..40}; do
+      oc get --selector=${selector} --namespace=${namespace} ${resource} |& grep -viE "(no resources found|not found)" && break || sleep 10
+    done
+    oc wait --for=condition=${condition} --timeout=300s --selector=${selector} --namespace=${namespace} ${resource} || exit 1
+}
+
+function wait_for_crd() {
+    wait_for_resource "crd/$1" "Established"
+}
+
+function wait_for_operator() {
+    subscription=$1
+    namespace=$2
+    echo "waiting for operator \"${subscription}\" to get installed on namespace \"${namespace}\"..."
+    for _ in $(seq 1 60); do
+        CSV=$(oc -n "${namespace}" get subscription "${subscription}" -o jsonpath='{.status.installedCSV}' || true)
+        if [[ -n "${CSV}" ]]; then
+            if [[ "$(oc -n "${namespace}" get csv "${CSV}" -o jsonpath='{.status.phase}')" == "Succeeded" ]]; then
+                echo "ClusterServiceVersion \"${CSV}\" ready"
+            return 0
+            fi
+        fi
+      sleep 10
+    done
+    echo "Timed out waiting for csv to become ready!"
+    return 1
+}
 
 "$@"

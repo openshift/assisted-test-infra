@@ -34,10 +34,11 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Test installer, controller, `assisted-service` and agent images in the same flow](#test-installer-controller-assisted-service-and-agent-images-in-the-same-flow)
     - [Test infra image](#test-infra-image)
   - [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
-  - [Test with Authentication](#test-with-authentication)
+  - [Test with RHSSO Authentication](#test-with-rhsso-authentication)
   - [Single Node - Bootstrap in place with Assisted Service](#single-node---bootstrap-in-place-with-assisted-service)
   - [Single Node - Bootstrap in place with Assisted Service and IPv6](#single-node---bootstrap-in-place-with-assisted-service-and-ipv6)
   - [On-prem](#on-prem)
+  - [Run operator](#run-operator)
 
 ## Prerequisites
 
@@ -323,7 +324,7 @@ make image_build SERVICE=<assisted service image URL>
 
 To test with Authentication, the following additional environment variables are required:
 
-```
+```bash
 export AUTH_TYPE=rhsso
 export OCM_CLIENT_ID=<SSO Service Account Name>
 export OCM_CLIENT_SECRET=<SSO Service Account Password>
@@ -338,7 +339,7 @@ export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
 
 To test single node bootstrap in place flow with assisted service
 
-```
+```bash
 export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
@@ -349,7 +350,7 @@ make redeploy_all_with_install or if service is up  make redeploy_nodes_with_ins
 
 To test single node bootstrap in place flow with assisted service and ipv6
 
-```
+```bash
 export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
@@ -360,7 +361,7 @@ make run_full_flow IPv6=yes IPv4=no PROXY=yes VIP_DHCP_ALLOCATION=no
 
 To test on-prem in the e2e flow, two additonal environment variables need to be set:
 
-```
+```bash
 export DEPLOY_TARGET=onprem
 export ASSISTED_SERVICE_HOST=<fqdn-or-ip>
 ```
@@ -372,7 +373,7 @@ ASSISTED_SERVICE_HOST defines where the assisted-service will be deployed. For "
 
 Optionally, you can also provide OPENSHIFT_INSTALL_RELEASE_IMAGE and PUBLIC_CONTAINER_REGISTRIES:
 
-```
+```bash
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.7.0-x86_64
 export PUBLIC_CONTAINER_REGISTRIES=quay.io
 ```
@@ -383,12 +384,33 @@ Then run the same commands described in the instructions above to execute the te
 
 To run the full flow:
 
-```
+```bash
 make all
 ```
 
 To cleanup after the full flow:
 
-```
+```bash
 make destroy
+```
+
+## Run operator
+
+```bash
+# Deploy AI with LSO
+OLM_OPERATORS=lso NUM_WORKERS=2 make run_full_flow_with_install
+
+# Deploy AI Operator on top of the new cluster
+export KUBECONFIG=./build/kubeconfig
+make deploy_assisted_operator
+
+# Run installation with the operator
+export INSTALLER_KUBECONFIG=./build/kubeconfig
+export TEST_FUNC=test_kube_api_sno_happy_flow_create_and_install_cluster
+export TEST=./discovery-infra/tests/test_kube_api.py
+export TEST_TEARDOWN=false
+make test
+
+# Clear the operator deployment
+make clear_operator
 ```

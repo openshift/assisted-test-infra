@@ -16,6 +16,7 @@ SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
 SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
+INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/ocpmetal/assisted-service-index:latest)
 
 # assisted-installer
 INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
@@ -122,7 +123,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_operator deploy_assisted_service create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
 
 ###########
 # General #
@@ -231,13 +232,13 @@ set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
 deploy_ui: start_minikube
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_ui.sh
 
 deploy_prometheus_ui:
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_prometheus_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_prometheus_ui.sh
 
 test_ui: deploy_ui
-	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
 
 kill_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(NAMESPACE)'
@@ -356,13 +357,26 @@ redeploy_nodes: destroy_nodes deploy_nodes
 
 redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 
+############
+# Operator #
+############
+
+clear_operator:
+	-kubectl delete namespace assisted-installer
+	-kubectl delete agentserviceconfigs.agent-install.openshift.io agent
+	./scripts/attach_disks.sh clear_disks
+
+deploy_assisted_operator: clear_operator
+	./scripts/attach_disks.sh attach_disks
+	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) ENABLE_KUBE_API=true ./scripts/deploy_assisted_service.sh
+
 #############
 # Inventory #
 #############
 
 deploy_assisted_service: start_minikube bring_assisted_service
 	mkdir -p assisted-service/build
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
+	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
 	@if ! cd assisted-service >/dev/null 2>&1; then \
