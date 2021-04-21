@@ -1,7 +1,9 @@
 import logging
+from typing import Callable
 
 from test_infra import consts
 from test_infra.controllers.node_controllers import ssh
+from test_infra.controllers.node_controllers.disk import Disk
 
 
 class Node:
@@ -113,6 +115,10 @@ class Node:
         logging.info("Setting boot order with cd_first=%s on %s", cd_first, self.name)
         self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first)
 
+    def set_per_device_boot_order(self, key: Callable[[Disk], int]):
+        logging.info("Setting boot order on %s", self.name)
+        self.node_controller.set_per_device_boot_order(node_name=self.name, key=key)
+
     def set_boot_order_flow(self, cd_first=False, start=True):
         logging.info("Setting boot order , cd_first=%s, start=%s", cd_first, start)
         self.shutdown()
@@ -140,6 +146,9 @@ class Node:
 
     def reset_ram_kib(self):
         self.set_ram_kib(self.original_ram_kib)
+
+    def get_disks(self):
+        self.node_controller.list_disks(self.name)
 
     def attach_test_disk(self, disk_size, **kwargs):
         return self.node_controller.attach_test_disk(self.name, disk_size, **kwargs)

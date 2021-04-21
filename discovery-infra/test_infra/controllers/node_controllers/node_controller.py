@@ -1,13 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Callable
 
 import libvirt
+
+from test_infra.controllers.node_controllers.disk import Disk
 from test_infra.controllers.node_controllers.node import Node
 
 
 class NodeController(ABC):
     @abstractmethod
     def list_nodes(self) -> Dict[str, Node]:
+        pass
+
+    @abstractmethod
+    def list_disks(self, node_name: str) -> List[Disk]:
         pass
 
     @abstractmethod
@@ -92,6 +98,17 @@ class NodeController(ABC):
 
     @abstractmethod
     def set_boot_order(self, node_name, cd_first=False) -> None:
+
+        pass
+
+    @abstractmethod
+    def set_per_device_boot_order(self, node_name, key: Callable[[Disk], int]) -> None:
+        """
+        Set the boot priority for every disk
+        It sorts the disk according to the key function result
+        :param node_name: The node to change its boot order
+        :param key: a key function that gets a Disk object and decide it's priority
+        """
         pass
 
     @abstractmethod
