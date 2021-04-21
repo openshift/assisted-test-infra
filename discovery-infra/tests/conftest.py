@@ -54,7 +54,8 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "high_availability_mode": consts.HighAvailabilityMode.FULL,
                  "download_image": bool(util.strtobool(utils.get_env("DOWNLOAD_IMAGE", default="True"))),
                  "is_ipv6": bool(util.strtobool(utils.get_env("IPv6", default="False"))),
-                 "cluster_id": utils.get_env("CLUSTER_ID")
+                 "cluster_id": utils.get_env("CLUSTER_ID"),
+                 "additional_ntp_source": utils.get_env("ADDITIONAL_NTP_SOURCE", consts.DEFAULT_ADDITIONAL_NTP_SOURCE),
                  }
 cluster_mid_name = infra_utils.get_random_name()
 
@@ -121,3 +122,14 @@ def pytest_runtest_makereport(item, call):
     result = outcome.get_result()
 
     setattr(item, "result_" + result.when, result)
+
+
+# Temporary adding env variables the with same pronunciation as in InventoryClient
+# Todo - Replace base_domain, num_nodes, service_cidr, service_cidr, cluster_cidr, host_prefix
+env_variables["base_dns_domain"] = env_variables["base_domain"]
+env_variables["nodes_count"] = env_variables["num_nodes"]
+env_variables["masters_count"] = env_variables["num_masters"]
+env_variables["workers_count"] = env_variables["num_workers"]
+env_variables["service_network_cidr"] = env_variables["service_cidr"]
+env_variables["cluster_network_cidr"] = env_variables["cluster_cidr"]
+env_variables["cluster_network_host_prefix"] = env_variables["host_prefix"]

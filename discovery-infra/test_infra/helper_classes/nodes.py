@@ -20,6 +20,8 @@ class NodeMapping:
 
 
 class Nodes:
+    DEFAULT_STATIC_IP_CONFIG = False
+
     def __init__(self, node_controller: NodeController, private_ssh_key_path):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
@@ -92,7 +94,7 @@ class Nodes:
     def shutdown_all(self):
         self.run_for_all_nodes("shutdown")
 
-    def start_all(self, static_ips_config):
+    def start_all(self, static_ips_config: bool = DEFAULT_STATIC_IP_CONFIG):
         if static_ips_config:
             skip_ips = False
         else:

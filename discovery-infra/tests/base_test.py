@@ -5,9 +5,9 @@ import shutil
 from contextlib import suppress
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional
 
 import pytest
+
 import test_infra.utils as infra_utils
 import waiting
 from assisted_service_client.rest import ApiException
@@ -15,6 +15,7 @@ from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
 from test_infra import consts
+from tests.config import ClusterConfig
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
@@ -66,33 +67,10 @@ class BaseTest:
         clusters = []
 
         @JunitTestCase()
-        def get_cluster_func(cluster_name: Optional[str] = None,
-                             additional_ntp_source: Optional[str] = consts.DEFAULT_ADDITIONAL_NTP_SOURCE,
-                             openshift_version: Optional[str] = env_variables['openshift_version'],
-                             user_managed_networking: Optional[bool] = env_variables["user_managed_networking"],
-                             high_availability_mode=env_variables["high_availability_mode"],
-                             olm_operators=env_variables['olm_operators'],
-                             ssh_public_key=env_variables['ssh_public_key'],
-                             cluster_id=env_variables["cluster_id"],
-                             pull_secret=env_variables['pull_secret'],
-                             base_dns_domain=env_variables['base_domain'],
-                             vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-                             ):
-            if not cluster_name:
-                cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
-            res = Cluster(api_client=api_client,
-                          cluster_name=cluster_name,
-                          additional_ntp_source=additional_ntp_source,
-                          openshift_version=openshift_version,
-                          cluster_id=cluster_id,
-                          user_managed_networking=user_managed_networking,
-                          high_availability_mode=high_availability_mode,
-                          olm_operators=olm_operators,
-                          ssh_public_key=ssh_public_key,
-                          pull_secret=pull_secret,
-                          base_dns_domain=base_dns_domain,
-                          vip_dhcp_allocation=vip_dhcp_allocation
-                          )
+        def get_cluster_func(cluster_config: ClusterConfig = ClusterConfig()):
+            if not cluster_config.cluster_name:
+                cluster_config.cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
+            res = Cluster(api_client=api_client, config=cluster_config)
             clusters.append(res)
             return res
 
@@ -126,7 +104,6 @@ class BaseTest:
             if download_image:
                 cluster.generate_and_download_image(
                     iso_download_path=iso_download_path,
-                    ssh_key=ssh_key
                 )
             nodes.start_given(given_nodes)
             for node in given_nodes:
@@ -235,7 +212,8 @@ class BaseTest:
         log_dir_name = f"{env_variables['log_folder']}/{test.name}"
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
-            download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed)
+            download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed,
+                          pull_secret=env_variables.get("pull_secret"))
         self._collect_virsh_logs(nodes, log_dir_name)
         self._collect_journalctl(nodes, log_dir_name)
 

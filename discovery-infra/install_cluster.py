@@ -145,7 +145,7 @@ def run_installation_flow_rest_api(
     )
 
     if tf is not None:
-        update_vip_from_tf(client, cluster_id, tf)
+        update_vip_from_tf(client, cluster_id, tf, pull_secret)
 
 
 def start_cluster_installation_rest_api(
@@ -185,11 +185,11 @@ def start_cluster_installation_rest_api(
     )
 
 
-def update_vip_from_tf(client, cluster_id, tf):
+def update_vip_from_tf(client, cluster_id, tf, pull_secret):
     cluster_info = client.cluster_get(cluster_id)
     if not cluster_info.api_vip:
         cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(
-            client, cluster_info)
+            client, cluster_info, pull_secret)
 
     log.info("Setting new vip=%s", cluster_info.api_vip)
     tf.set_new_vip(cluster_info.api_vip)

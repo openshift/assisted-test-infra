@@ -45,7 +45,7 @@ def main():
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
         download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
-                      args.must_gather, args.update_by_events)
+                      args.must_gather, args.update_by_events, pull_secret=args.pull_secret)
     else:
         clusters = get_clusters(client, args.download_all)
 
@@ -55,7 +55,8 @@ def main():
 
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
-                download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events)
+                download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events,
+                              pull_secret=args.pull_secret)
 
         print(Counter(map(lambda cluster: cluster['status'], clusters)))
 
@@ -102,7 +103,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
 
 
 def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool = False,
-                  retry_interval: int = RETRY_INTERVAL):
+                  retry_interval: int = RETRY_INTERVAL, pull_secret=""):
     output_folder = get_logs_output_folder(dest, cluster)
     if not is_update_needed(output_folder, update_by_events, client, cluster):
         log.info(f"Skipping, no need to update {output_folder}.")
@@ -167,7 +168,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
             if must_gather:
                 recreate_folder(os.path.join(output_folder, "must-gather"))
                 config_etc_hosts(cluster['name'], cluster['base_dns_domain'],
-                                 helper_cluster.get_api_vip_from_cluster(client, cluster))
+                                 helper_cluster.get_api_vip_from_cluster(client, cluster, pull_secret))
                 download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")
@@ -232,6 +233,7 @@ def handle_arguments():
     parser.add_argument("--download-all", help="Download logs from all clusters", action='store_true')
     parser.add_argument("--must-gather", help="must-gather logs", action='store_true')
     parser.add_argument("--update-by-events", help="Update logs if cluster events were updated", action='store_true')
+    parser.add_argument("-ps", "--pull-secret", help="Pull secret", type=str, default="")
 
     return parser.parse_args()
 
