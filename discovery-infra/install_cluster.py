@@ -205,7 +205,7 @@ def run_installation_flow_kube_api(
         agent.approve()
 
     log.info("Waiting for installation to start")
-    cluster_deployment.wait_for_state(consts.ClusterStatus.INSTALLING)
+    cluster_deployment.wait_to_be_installing()
 
     log.info("Waiting until cluster finishes installation")
     cluster_deployment.wait_to_be_installed()

@@ -14,8 +14,6 @@ DEFAULT_MACHINE_CIDR = env_variables.get('machine_cidr', '')
 DEFAULT_CLUSTER_CIDR = env_variables.get('cluster_cidr', '172.30.0.0/16')
 DEFAULT_SERVICE_CIDR = env_variables.get('service_cidr', '10.128.0.0/14')
 
-FAILURE_STATES = ('error', 'cancelled')
-
 _MINUTE = 60
 _HOUR = 60 * _MINUTE
 

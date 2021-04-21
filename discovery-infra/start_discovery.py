@@ -738,7 +738,8 @@ def execute_kube_api_flow():
         secret=secret,
         base_domain=args.base_dns_domain,
     )
-    cluster_deployment.wait_for_state(consts.ClusterStatus.INSUFFICIENT)
+    cluster_deployment.wait_to_be_ready(False)
+
     apply_static_network_config(
         cluster_name=cluster_name,
         kube_client=kube_client,
