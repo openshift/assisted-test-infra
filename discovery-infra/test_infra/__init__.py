@@ -7,6 +7,8 @@ __displayed_warnings = list()
 
 def warn_deprecate():
     if sys.argv[0] not in __displayed_warnings:
+        if sys.argv[0].endswith("__main__.py"):
+            return 
         warnings.filterwarnings("default", category=PendingDeprecationWarning)
 
         deprecation_format = "\033[93mWARNING {name} module will soon be deprecated." \
