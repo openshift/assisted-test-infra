@@ -20,7 +20,7 @@ from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import NetworkAssets
-from tests.conftest import env_variables, qe_env
+from tests.conftest import env_variables
 
 
 class BaseTest:
@@ -44,9 +44,8 @@ class BaseTest:
         net_asset = None
         needs_nat = node_vars.get("platform") == consts.Platforms.NONE
         try:
-            if not qe_env:
-                net_asset = NetworkAssets()
-                node_vars["net_asset"] = net_asset.get()
+            net_asset = NetworkAssets()
+            node_vars["net_asset"] = net_asset.get()
             controller = setup_node_controller(**node_vars)
             nodes = Nodes(controller, node_vars["private_ssh_key_path"])
             nodes.prepare_nodes()
@@ -59,8 +58,7 @@ class BaseTest:
             if needs_nat:
                 nodes.unconfigure_nat()
         finally:
-            if not qe_env:
-                net_asset.release_all()
+            net_asset.release_all()
 
     @pytest.fixture()
     @JunitFixtureTestCase()
