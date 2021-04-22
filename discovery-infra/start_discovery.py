@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import pathlib
 import argparse
 import distutils.util
 import ipaddress
@@ -564,33 +563,32 @@ def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment):
         cluster_deployment=cluster_deployment,
     )
 
-    if cluster_deployment:
-        if args.master_count == 1:
-            set_single_node_ip(
-                client=None,
-                cluster_id=None,
-                main_cidr=args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6,
-                is_ipv4=is_ipv4,
-                cluster_deployment=cluster_deployment,
-                tf=tf,
-            )
-        else:
-            log.info("VIPs already configured")
-
-        kubeapi_utils.set_agents_hostnames(
-            cluster_deployment=cluster_deployment,
+    if args.master_count == 1:
+        set_single_node_ip(
+            client=None,
+            cluster_id=None,
+            main_cidr=args.vm_network_cidr if is_ipv4 else args.vm_network_cidr6,
             is_ipv4=is_ipv4,
-            static_network_mode=args.with_static_network_config,
+            cluster_deployment=cluster_deployment,
             tf=tf,
-            nodes_number=nodes_number,
         )
+    else:
+        log.info("VIPs already configured")
 
-        if args.install_cluster:
-            install_cluster.run_installation_flow_kube_api(
-                cluster_deployment=cluster_deployment,
-                nodes_number=nodes_number,
-                kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
-            )
+    kubeapi_utils.set_agents_hostnames(
+        cluster_deployment=cluster_deployment,
+        is_ipv4=is_ipv4,
+        static_network_mode=args.with_static_network_config,
+        tf=tf,
+        nodes_number=nodes_number,
+    )
+
+    if args.install_cluster:
+        install_cluster.run_installation_flow_kube_api(
+            cluster_deployment=cluster_deployment,
+            nodes_number=nodes_number,
+            kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
+        )
 
 
 def set_single_node_ip(
