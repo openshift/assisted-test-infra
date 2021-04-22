@@ -76,6 +76,9 @@ class TerraformController(LibvirtController):
                 params[key] = value
         return Munch.fromDict(params)
 
+    def list_nodes(self):
+        return self.list_nodes_with_name_filter(self.cluster_name)
+
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
         logging.info("Creating tfvars")
