@@ -2,18 +2,12 @@ import logging
 import os
 import uuid
 from distutils import util
-from pathlib import Path
 from typing import List
 
 import pytest
 import test_infra.utils as infra_utils
 from test_infra import assisted_service_api, consts, utils
-
-qe_env = False
-
-
-def is_qe_env():
-    return os.environ.get('NODE_ENV') == 'QE_VM'
+from test_infra.controllers.node_controllers.terraform_controller import TerraformController as nodeController
 
 
 def _get_cluster_name():
@@ -23,18 +17,7 @@ def _get_cluster_name():
     return cluster_name
 
 
-# TODO changes it
-if is_qe_env():
-    from test_infra.controllers.node_controllers.qe_vm_controler import \
-        QeVmController as nodeController
-
-    qe_env = True
-else:
-    from test_infra.controllers.node_controllers.terraform_controller import \
-        TerraformController as nodeController
-
-private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key") if not qe_env else \
-    os.path.join(str(Path.home()), ".ssh/id_rsa")
+private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key")
 
 env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "remote_service_url": utils.get_env('REMOTE_SERVICE_URL'),
@@ -73,15 +56,11 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
 cluster_mid_name = infra_utils.get_random_name()
 
 # Tests running on terraform parallel must have unique ISO file
-if not qe_env:
-    image = utils.get_env('ISO',
-                          os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-{cluster_mid_name}-'
-                                                            f'installer-image.iso')).strip()
-    env_variables["kubeconfig_path"] = f'/tmp/test_kubeconfig_{cluster_mid_name}'
-else:
-    image = utils.get_env('ISO',
-                          os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-installer-image.iso')). \
-        strip()
+image = utils.get_env('ISO',
+                      os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-{cluster_mid_name}-'
+                                                        f'installer-image.iso')).strip()
+env_variables["kubeconfig_path"] = f'/tmp/test_kubeconfig_{cluster_mid_name}'
+
 
 env_variables["iso_download_path"] = image
 env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_masters"]
