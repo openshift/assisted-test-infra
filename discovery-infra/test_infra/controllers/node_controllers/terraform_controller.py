@@ -55,7 +55,8 @@ class TerraformController(LibvirtController):
                 kwargs.get("worker_vcpu", 4), consts.OperatorResource.WORKER_VCPU_KEY, operators),
             "libvirt_master_vcpu": utils.resource_param(
                 kwargs.get("master_vcpu", 4), consts.OperatorResource.MASTER_VCPU_KEY, operators),
-            "worker_count": kwargs.get('num_workers', 0),
+            "worker_count": utils.resource_param(
+                kwargs.get('num_workers', 0), consts.OperatorResource.WORKER_COUNT_KEY, operators),
             "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
             "cluster_name": self.cluster_name,
             "cluster_domain": self.cluster_domain,
@@ -64,7 +65,8 @@ class TerraformController(LibvirtController):
             "libvirt_network_mtu": kwargs.get('network_mtu', '1500'),
             # TODO change to namespace index
             "libvirt_network_if": self.network_conf.libvirt_network_if,
-            "libvirt_worker_disk": kwargs.get('worker_disk', '21474836480'),
+            "libvirt_worker_disk": utils.resource_param(
+                kwargs.get('worker_disk', '21474836480'), consts.OperatorResource.WORKER_DISK_KEY, operators),
             "libvirt_master_disk": kwargs.get('master_disk', '128849018880'),
             "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.cluster_suffix,
             "libvirt_storage_pool_path": kwargs.get('storage_pool_path', os.path.join(os.getcwd(), "storage_pool")),
