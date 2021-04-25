@@ -52,21 +52,21 @@ class LibvirtController(NodeController, ABC):
     def list_networks(self):
         return self.libvirt_connection.listAllNetworks()
 
-    @staticmethod
-    def _list_disks(node):
+    @classmethod
+    def _list_disks(cls, node):
         all_disks = minidom.parseString(node.XMLDesc()).getElementsByTagName('disk')
-        return [LibvirtController._disk_xml_to_disk_obj(disk_xml) for disk_xml in all_disks]
+        return [cls._disk_xml_to_disk_obj(disk_xml) for disk_xml in all_disks]
 
-    @staticmethod
-    def _disk_xml_to_disk_obj(disk_xml):
+    @classmethod
+    def _disk_xml_to_disk_obj(cls, disk_xml):
         return Disk(
             # device_type indicates how the disk is to be exposed to the guest OS.
             # Possible values for this attribute are "floppy", "disk", "cdrom", and "lun", defaulting to "disk".
             type=disk_xml.getAttribute('device'),
-            alias=LibvirtController._get_disk_alias(disk_xml),
-            wwn=LibvirtController._get_disk_wwn(disk_xml),
-            **LibvirtController._get_disk_source_attributes(disk_xml),
-            **LibvirtController._get_disk_target_data(disk_xml)
+            alias=cls._get_disk_alias(disk_xml),
+            wwn=cls._get_disk_wwn(disk_xml),
+            **cls._get_disk_source_attributes(disk_xml),
+            **cls._get_disk_target_data(disk_xml)
         )
 
     @staticmethod
@@ -201,13 +201,13 @@ class LibvirtController(NodeController, ABC):
 
         cls.create_disk(disk_path, image_size)
 
-    @staticmethod
-    def _get_all_scsi_disks(node):
-        return (disk for disk in LibvirtController._list_disks(node) if disk.bus == 'scsi')
+    @classmethod
+    def _get_all_scsi_disks(cls, node):
+        return (disk for disk in cls._list_disks(node) if disk.bus == 'scsi')
 
     @classmethod
     def _get_attached_test_disks(cls, node):
-        return (disk for disk in LibvirtController._get_all_scsi_disks(node) if
+        return (disk for disk in cls._get_all_scsi_disks(node) if
                 disk.alias and disk.alias.startswith(cls.TEST_DISKS_PREFIX))
 
     @staticmethod
@@ -438,9 +438,9 @@ class LibvirtController(NodeController, ABC):
         node = self.libvirt_connection.lookupByName(node_name)
         current_xml = node.XMLDesc(0)
         xml = minidom.parseString(current_xml.encode('utf-8'))
-        LibvirtController._clean_domain_os_boot_data(xml)
+        self._clean_domain_os_boot_data(xml)
         disks_xmls = xml.getElementsByTagName('disk')
-        disks_xmls.sort(key=lambda disk: key(LibvirtController._disk_xml_to_disk_obj(disk)))
+        disks_xmls.sort(key=lambda disk: key(self._disk_xml_to_disk_obj(disk)))
 
         for index, disk_xml in enumerate(disks_xmls):
             boot_element = xml.createElement('boot')
@@ -463,7 +463,7 @@ class LibvirtController(NodeController, ABC):
         node = self.libvirt_connection.lookupByName(node_name)
         current_xml = node.XMLDesc(0)
         xml = minidom.parseString(current_xml.encode('utf-8'))
-        LibvirtController._clean_domain_os_boot_data(xml)
+        self._clean_domain_os_boot_data(xml)
         os_element = xml.getElementsByTagName('os')[0]
         # Set boot elements for hd and cdrom
         first = xml.createElement('boot')
