@@ -750,6 +750,14 @@ class Cluster:
             break_statuses=[consts.ClusterStatus.ERROR]
         )
 
+    def wait_for_cluster_to_be_in_status(self,statuses, timeout=consts.ERROR_TIMEOUT):
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=statuses,
+            timeout=timeout,
+        )
+
     @classmethod
     def reset_cluster_and_wait_for_ready(cls, cluster, nodes):
         # Reset cluster install
