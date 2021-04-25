@@ -16,6 +16,10 @@ pipeline {
         OFFLINE_TOKEN = credentials('admin_offline_token')
         JIRA_CREDS = credentials('Ronnie-jira')
         SLACK_TOKEN = credentials('slack-token')
+
+        // Close triage tickets of known issues
+        SIGNATURES_TO_CLOSE = "media_disconnection_signature console_timeout_signature"
+        MESSAGES_TO_CLOSE = "'MGMT-3176:Virtual media disconnection' 'MGMT-4454:Waiting for console timeout'"
     }
     options {
       timeout(time: 90, unit: 'MINUTES')
@@ -45,6 +49,11 @@ pipeline {
         stage('Testgrid failures') {
             steps {
                 sh "skipper run deploymentRepo/assisted-installer-deployment/tools/create_testgrid_tickets.py --user-password ${JIRA_CREDS} -v"
+            }
+        }
+        stage('Close Triage tickets of known issues') {
+            steps {
+                sh "skipper run ./tools/close_by_signature.py -r -up ${JIRA_CREDS} -st ${SIGNATURES_TO_CLOSE} -m ${MESSAGES_TO_CLOSE} -v"
             }
         }
     }
