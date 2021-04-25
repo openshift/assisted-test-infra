@@ -30,7 +30,7 @@ class Nodes:
     @property
     def nodes(self) -> List[Node]:
         if not self._nodes:
-            self._nodes = self._list()
+            self._nodes = self.controller.list_nodes()
         return self._nodes
 
     def __getitem__(self, i):
@@ -77,11 +77,6 @@ class Nodes:
         if not self._nodes_as_dict:
             self._nodes_as_dict = {node.name: node for node in self.nodes}
         return self._nodes_as_dict
-
-    def _list(self):
-        # TODO list_nodes return type is Dict[str, Node] but returns list
-        nodes = self.controller.list_nodes()
-        return [Node(node.name(), self.controller, self.private_ssh_key_path) for node in nodes]
 
     @property
     def setup_time(self):

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Tuple, Callable
+from typing import List, Any, Tuple, Callable
 
 import libvirt
 
@@ -8,8 +8,9 @@ from test_infra.controllers.node_controllers.node import Node
 
 
 class NodeController(ABC):
+
     @abstractmethod
-    def list_nodes(self) -> Dict[str, Node]:
+    def list_nodes(self) -> List[Node]:
         pass
 
     @abstractmethod
