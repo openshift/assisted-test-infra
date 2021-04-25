@@ -53,6 +53,10 @@ class GetProcessedMetadataJson:
         if "validations_info" in self.metadata_json["cluster"]:
             self.metadata_json["cluster"]["validations_info"] = convert_field_to_json(self.metadata_json["cluster"]["validations_info"])
 
+        if "feature_usage" in self.metadata_json["cluster"]:
+            feature_usage = convert_field_to_json(self.metadata_json["cluster"]["feature_usage"])
+            self.metadata_json["cluster"]["feature_usage"] = [feature_usage[feature] for feature in feature_usage]
+
         for host in self.metadata_json["cluster"]["hosts"]:
             if host.get("validations_info", None):
                 host["validations_info"] = convert_field_to_json(host["validations_info"])
