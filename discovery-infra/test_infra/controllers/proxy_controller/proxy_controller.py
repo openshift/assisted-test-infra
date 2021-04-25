@@ -6,11 +6,11 @@ import socket
 from jinja2 import Environment, PackageLoader
 from test_infra import utils
 
-PROXY_USER = 'assisted'
-PROXY_USER_PASS = 'redhat'
-
 
 class ProxyController:
+    PROXY_USER = 'assisted'
+    PROXY_USER_PASS = 'redhat'
+
     def __init__(self, name=None, port=None, denied_port=None, authenticated=False, dir=None):
         if not name:
             self.address = ''
@@ -34,7 +34,7 @@ class ProxyController:
     def _set_server_address(self):
         host_name = socket.gethostname()
         host_ip = socket.gethostbyname(host_name)
-        proxy_user_path = f'{PROXY_USER}:{PROXY_USER_PASS}@' if self.authenticated else ''
+        proxy_user_path = f'{self.PROXY_USER}:{self.PROXY_USER_PASS}@' if self.authenticated else ''
         self.address = f'http://{proxy_user_path}{host_ip}:{self.port}'
 
     def _run_proxy_server(self):
@@ -64,7 +64,8 @@ class ProxyController:
 
     def _create_user_file_for_auth(self):
         if self.authenticated:
-            create_user_file_cmd = f'htpasswd -b -c {self.config_dir_path}/squid-users {PROXY_USER} {PROXY_USER_PASS}'
+            create_user_file_cmd = \
+                f'htpasswd -b -c {self.config_dir_path}/squid-users {self.PROXY_USER} {self.PROXY_USER_PASS}'
             utils.run_command(create_user_file_cmd, shell=True)
 
             self.user_file_path = f'{self.config_dir_path}/squid-users'
