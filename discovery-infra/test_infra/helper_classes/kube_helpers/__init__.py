@@ -13,7 +13,7 @@ def test_kube_api_wait_for_install(kube_api_context):
     cluster_deployment = deploy_default_cluster_deployment(
         kube_api_client, 'test-cluster', **installation_params
     )
-    cluster_deployment.wait_for_state('installing')
+    cluster_deployment.wait_to_be_installing()
 
 An Agent CRD will be created for each registered host. In order to start the
 installation all agents must be approved.

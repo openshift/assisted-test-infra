@@ -20,7 +20,6 @@ from .global_vars import (
     DEFAULT_MACHINE_CIDR,
     DEFAULT_CLUSTER_CIDR,
     DEFAULT_SERVICE_CIDR,
-    FAILURE_STATES,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
@@ -290,51 +289,36 @@ class ClusterDeployment(BaseCustomResource):
             expected_exceptions=KeyError,
         )
 
-    def state(
+    def condition(
             self,
+            cond_type,
             timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> Tuple[str, str]:
-        state, state_info = None, None
         for condition in self.status(timeout).get('conditions', []):
-            reason = condition.get('reason')
+            if cond_type == condition.get('type'):
+                return condition.get('status'), condition.get('reason')
+        return None, None
 
-            if reason == 'AgentPlatformState':
-                state = condition.get('message')
-            elif reason == 'AgentPlatformStateInfo':
-                state_info = condition.get('message')
-
-            if state and state_info:
-                break
-
-        return state, state_info
-
-    def wait_for_state(
+    def wait_for_condition(
             self,
-            required_state: str,
+            cond_type: str,
+            required_status: str,
+            required_reason: str,
             timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-            *,
-            raise_on_states: Iterable[str] = FAILURE_STATES,
     ) -> None:
-        required_state = required_state.lower()
-        raise_on_states = [x.lower() for x in raise_on_states]
-
-        def _has_required_state() -> Optional[bool]:
-            state, state_info = self.state(timeout=0.5)
-            state = state.lower() if state else state
-            if state == required_state:
+        def _has_required_condition() -> Optional[bool]:
+            status, reason = self.condition(cond_type=cond_type, timeout=0.5)
+            if status == required_status:
+                if required_reason:
+                    return required_reason == reason
                 return True
-            elif state in raise_on_states:
-                raise UnexpectedStateError(
-                    f'while waiting for state `{required_state}`, cluster '
-                    f'{self.ref} state changed unexpectedly to `{state}`: '
-                    f'{state_info}'
-                )
+            return False
 
-        logger.info("Waiting till cluster will be in %s state", required_state)
+        logger.info("Waiting till cluster will be in condition %s with status: %s reason: %s ", cond_type, required_status, required_reason)
         waiting.wait(
-            _has_required_state,
+            _has_required_condition,
             timeout_seconds=timeout,
-            waiting_for=f'cluster {self.ref} state to be {required_state}',
+            waiting_for=f'cluster {self.ref} condition {cond_type} to be {required_status}',
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
@@ -357,6 +341,16 @@ class ClusterDeployment(BaseCustomResource):
             timeout_seconds=timeout,
             waiting_for=f'cluster {self.ref} to have {num_agents} agents',
         )
+
+    def wait_to_be_installing(self
+    ) -> None:
+        return self.wait_for_condition("ReadyForInstallation","False","ClusterAlreadyInstalling")
+
+    def wait_to_be_ready(
+            self,
+            ready: bool,
+    ) -> None:
+        return self.wait_for_condition("ReadyForInstallation",str(ready),None)
 
     def wait_to_be_installed(
             self, 

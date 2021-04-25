@@ -745,7 +745,8 @@ def execute_kube_api_flow():
         base_domain=args.base_dns_domain,
         imageSetRef=ClusterImageSetReference(name=f"{cluster_name}-image-set"),
     )
-    cluster_deployment.wait_for_state(consts.ClusterStatus.INSUFFICIENT)
+    cluster_deployment.wait_to_be_ready(False)
+
     apply_static_network_config(
         cluster_name=cluster_name,
         kube_client=kube_client,
