@@ -841,12 +841,12 @@ def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
     return get_env('OPENSHIFT_VERSION', default)
 
 
-def get_openshift_release_image():
+def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):
     release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
 
     if not release_image:
         stdout, _, _ = run_command(
-            f"jq -r '.[] | select(.default == true).release_image' assisted-service/default_ocp_versions.json",
+            f"jq -r '.[\"{ocp_version}\"].release_image' assisted-service/default_ocp_versions.json",
             shell=True)
         return stdout
 
