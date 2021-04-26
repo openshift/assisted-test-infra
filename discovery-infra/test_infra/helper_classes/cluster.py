@@ -143,8 +143,14 @@ class Cluster:
     def set_ocs(self, properties=None):
         self.set_olm_operator('ocs', properties=properties)
 
+    def set_cnv(self, properties=None):
+        self.set_olm_operator('cnv', properties=properties)
+
     def unset_ocs(self):
         self.unset_olm_operator('ocs')
+
+    def unset_cnv(self):
+        self.unset_olm_operator('cnv')
 
     def unset_olm_operator(self, operator_name):
         logging.info(f'Unsetting {operator_name} for cluster: {self.id}')
