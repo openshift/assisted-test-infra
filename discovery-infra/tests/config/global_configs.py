@@ -2,7 +2,7 @@ from typing import Any
 
 from dataclasses import dataclass
 
-from ._env_config import EnvConfig
+from .env_config import EnvConfig
 from test_infra.helper_classes.config import BaseClusterConfig, BaseNodesConfig
 
 

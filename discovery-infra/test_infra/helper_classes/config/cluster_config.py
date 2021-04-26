@@ -3,7 +3,7 @@ from typing import List, Any
 
 from dataclasses import dataclass
 
-from ._base_config import _BaseConfig
+from .base_config import _BaseConfig
 
 
 @dataclass

@@ -1,5 +1,5 @@
-from ._cluster_config import BaseClusterConfig
-from ._nodes_config import BaseNodesConfig
+from .cluster_config import BaseClusterConfig
+from .nodes_config import BaseNodesConfig
 
 
 __all__ = [
