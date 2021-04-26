@@ -718,7 +718,7 @@ def execute_kube_api_flow():
         kube_api_client=kube_client,
         name=f"{cluster_name}-image-set",
     )
-    releaseImage=utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image())
+    releaseImage=utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image("4.8"))
     imageSet.apply(releaseImage=releaseImage)
 
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
