@@ -4,10 +4,12 @@ import logging
 import os
 import shutil
 import uuid
+from typing import List
 
 from munch import Munch
 from test_infra import consts, utils, virsh_cleanup
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from test_infra.controllers.node_controllers.node import Node
 from test_infra.tools import static_network, terraform_utils
 
 
@@ -76,7 +78,7 @@ class TerraformController(LibvirtController):
                 params[key] = value
         return Munch.fromDict(params)
 
-    def list_nodes(self):
+    def list_nodes(self) -> List[Node]:
         return self.list_nodes_with_name_filter(self.cluster_name)
 
     # Run make run terraform -> creates vms

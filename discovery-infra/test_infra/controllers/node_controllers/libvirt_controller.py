@@ -14,6 +14,7 @@ import waiting
 
 from test_infra import consts, utils
 from test_infra.controllers.node_controllers.disk import Disk, DiskSourceType
+from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 
 
@@ -33,20 +34,26 @@ class LibvirtController(NodeController, ABC):
     def setup_time(self):
         return self._setup_timestamp
 
-    def list_nodes(self) -> List[libvirt.virDomain]:
+    def list_nodes(self) -> List[Node]:
         return self.list_nodes_with_name_filter(None)
 
-    def list_nodes_with_name_filter(self, name_filter) -> List[libvirt.virDomain]:
+    def list_nodes_with_name_filter(self, name_filter) -> List[Node]:
         logging.info("Listing current hosts with name filter %s", name_filter)
-        nodes = []
+        vir_domains = list()
+        nodes = list()
+
         domains = self.libvirt_connection.listAllDomains()
         for domain in domains:
             domain_name = domain.name()
             if name_filter and name_filter not in domain_name:
                 continue
             if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
-                nodes.append(domain)
-        logging.info("Found domains %s", nodes)
+                nodes.append(
+                    Node(domain_name, self, self.private_ssh_key_path)
+                )
+                vir_domains.append(domain)
+
+        logging.info("Found domains %s", vir_domains)
         return nodes
 
     def list_networks(self):
