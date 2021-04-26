@@ -94,8 +94,8 @@ class Nodes:
     def shutdown_all(self):
         self.run_for_all_nodes("shutdown")
 
-    def start_all(self, static_ips_config: bool = DEFAULT_STATIC_IP_CONFIG):
-        if static_ips_config:
+    def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IP_CONFIG):
+        if is_static_ip:
             skip_ips = False
         else:
             skip_ips = True
@@ -184,8 +184,8 @@ class Nodes:
         inventory = json.loads(cluster_host_object["inventory"])
         return inventory["hostname"]
 
-    def set_hostnames(self, cluster, nodes_count: int, is_ipv6: bool, static_ips_config=None):
-        if is_ipv6 or static_ips_config:
+    def set_hostnames(self, cluster, nodes_count: int, is_ipv6: bool, is_static_ip: bool = False):
+        if is_ipv6 or is_static_ip:
             # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
             # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be
             # set to valid hostname

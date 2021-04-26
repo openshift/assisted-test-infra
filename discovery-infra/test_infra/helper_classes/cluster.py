@@ -217,16 +217,22 @@ class Cluster:
     def set_network_params(
             self,
             controller,
-            vip_dhcp_allocation,
-            service_network_cidr,
-            cluster_network_cidr,
-            cluster_network_host_prefix
+            vip_dhcp_allocation: bool = None,
+            service_network_cidr: str = None,
+            cluster_network_cidr: str = None,
+            cluster_network_host_prefix: int = None
     ):
+        vip_dhcp_allocation = vip_dhcp_allocation if vip_dhcp_allocation is not None \
+            else self._config.vip_dhcp_allocation
+
         self.api_client.update_cluster(self.id, {
-            "vip_dhcp_allocation": vip_dhcp_allocation,
-            "service_network_cidr": service_network_cidr,
-            "cluster_network_cidr": cluster_network_cidr,
-            "cluster_network_host_prefix": cluster_network_host_prefix,
+            "vip_dhcp_allocation":  vip_dhcp_allocation,
+            "service_network_cidr": service_network_cidr if service_network_cidr is not None
+            else self._config.service_network_cidr,
+            "cluster_network_cidr": cluster_network_cidr if cluster_network_cidr is not None
+            else self._config.cluster_network_cidr,
+            "cluster_network_host_prefix": cluster_network_host_prefix if cluster_network_host_prefix is not None
+            else self._config.cluster_network_host_prefix,
         })
         if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             self.set_machine_cidr(controller.get_machine_cidr())
@@ -371,7 +377,7 @@ class Cluster:
         )
 
     def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self, num_masters: int = None):
-        num_masters = num_masters or self._config.masters_count
+        num_masters = num_masters if num_masters is None else self._config.masters_count
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
@@ -380,7 +386,7 @@ class Cluster:
         )
 
     def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self, num_masters: int = None):
-        num_masters = num_masters or self._config.masters_count
+        num_masters = num_masters if num_masters is None else self._config.masters_count
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
@@ -590,9 +596,9 @@ class Cluster:
                 iso_image_type=self._config.iso_image_type,
                 static_network_config=static_network_config
             )
-        nodes.start_all(self._config.static_ips_config)
+        nodes.start_all(self._config.is_static_ip)
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
-        nodes.set_hostnames(self, self._config.nodes_count, self._config.is_ipv6, self._config.static_ips_config)
+        nodes.set_hostnames(self, self._config.nodes_count, self._config.is_ipv6, self._config.is_static_ip)
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(nodes.get_masters()), len(nodes.get_workers()))
         else:
@@ -609,11 +615,11 @@ class Cluster:
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer(nodes.controller)
 
-    def download_kubeconfig_no_ingress(self, kubeconfig_path):
-        self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
+    def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
+        self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
 
-    def download_kubeconfig(self, kubeconfig_path):
-        self.api_client.download_kubeconfig(self.id, kubeconfig_path)
+    def download_kubeconfig(self, kubeconfig_path: str = None):
+        self.api_client.download_kubeconfig(self.id, kubeconfig_path or self._config.kubeconfig_path)
 
     def download_installation_logs(self, cluster_tar_path):
         self.api_client.download_cluster_logs(self.id, cluster_tar_path)
@@ -652,9 +658,9 @@ class Cluster:
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
-    def setup_nodes(self, nodes, static_ips_config):
+    def setup_nodes(self, nodes, is_static_ip: bool = None):
         self.generate_and_download_image()
-        nodes.start_all(static_ips_config)
+        nodes.start_all(is_static_ip if is_static_ip is not None else self._config.is_static_ip)
         self.wait_until_hosts_are_discovered()
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 

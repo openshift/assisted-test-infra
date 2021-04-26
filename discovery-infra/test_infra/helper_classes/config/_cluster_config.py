@@ -30,8 +30,9 @@ class BaseClusterConfig(_BaseConfig, ABC):
     workers_count: int = None  # Todo - Might change during MGMT-5370
     download_image: bool = None
     platform: str = None
-    static_ips_config: object = None
+    is_static_ip: bool = None
     is_ipv6: bool = None  # Todo - Might change during MGMT-5370
     service_network_cidr: str = None
     cluster_network_cidr: str = None
-    cluster_network_host_prefix: str = None
+    cluster_network_host_prefix: int = None
+    kubeconfig_path: str = None

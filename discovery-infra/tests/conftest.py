@@ -133,3 +133,4 @@ env_variables["workers_count"] = env_variables["num_workers"]
 env_variables["service_network_cidr"] = env_variables["service_cidr"]
 env_variables["cluster_network_cidr"] = env_variables["cluster_cidr"]
 env_variables["cluster_network_host_prefix"] = env_variables["host_prefix"]
+env_variables["is_static_ip"] = bool(util.strtobool(str(utils.get_env("static_ips_config", default="False"))))
