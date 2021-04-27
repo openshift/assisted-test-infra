@@ -353,11 +353,11 @@ def _cluster_create_params():
 def _create_node_details(cluster_name):
     operators = utils.parse_olm_operators_from_env()
     return {
-        "libvirt_worker_memory": utils.resource_param(args.worker_memory, "worker_memory", operators),
+        "libvirt_worker_memory": utils.resource_param(args.worker_memory, consts.OperatorResource.WORKER_MEMORY_KEY, operators),
         "libvirt_master_memory": utils.resource_param(
-            args.master_memory if not args.master_count == 1 else args.master_memory * 2, "master_memory", operators),
-        "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, "worker_vcpu", operators),
-        "libvirt_master_vcpu": utils.resource_param(args.master_cpu, "master_vcpu", operators),
+            args.master_memory if not args.master_count == 1 else args.master_memory * 2, consts.OperatorResource.MASTER_MEMORY_KEY, operators),
+        "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, consts.OperatorResource.WORKER_VCPU_KEY, operators),
+        "libvirt_master_vcpu": utils.resource_param(args.master_cpu, consts.OperatorResource.MASTER_VCPU_KEY, operators),
         "worker_count": args.number_of_workers,
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,

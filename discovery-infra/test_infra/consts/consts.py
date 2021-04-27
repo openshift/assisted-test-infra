@@ -42,23 +42,6 @@ DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BAS
 TEST_TARGET_INTERFACE = "vnet3"
 
 
-# operator resource requirements as coded in assisted service
-OPERATOR_PARAMS = {
-    "cnv": {
-        "worker_memory": 360,
-        "master_memory": 150,
-        "worker_vcpu": 2,
-        "master_vcpu": 4,
-    },
-    "ocs": {
-        "worker_memory": 14000,
-        "master_memory": 24000,
-        "worker_vcpu": 6,
-        "master_vcpu": 8,
-    }
-}
-
-
 class ImageType:
     FULL_ISO = "full-iso"
     MINIMAL_ISO = "minimal-iso"
@@ -107,12 +90,6 @@ class HostsProgressStages:
     JOINED = "Joined"
     CONFIGURING = "Configuring"
     DONE = "Done"
-
-
-class OperatorStatus:
-    FAILED = "failed"
-    PROGRESSING = "progressing"
-    AVAILABLE = "available"
 
 
 all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,
