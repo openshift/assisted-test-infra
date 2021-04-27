@@ -186,18 +186,16 @@ def are_hosts_in_status(
             > 0
     ):
         hosts_in_error = [
-            host for host in hosts if host["status"] == consts.NodesStatus.ERROR
+            (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
+            for host in enumerate(hosts, start=1) if host["status"] == consts.NodesStatus.ERROR
         ]
-        log.error(
-            "Some of the hosts are in insufficient or error status. Hosts in error %s",
-            pformat(hosts_in_error),
-        )
+        log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
         raise Exception("All the nodes must be in valid status, but got some in error")
 
     log.info(
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
         statuses,
-        [(host["id"], host["status"], host["status_info"]) for host in hosts],
+        [(i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"]) for i, host in enumerate(hosts, start=1)],
     )
     return False
 
@@ -242,22 +240,17 @@ def wait_till_hosts_with_macs_are_in_status(
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
 
-    try:
-        waiting.wait(
-            lambda: are_hosts_in_status(
-                get_cluster_hosts_with_mac(client, cluster_id, macs),
-                len(macs),
-                statuses,
-                fall_on_error_status,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="Nodes to be in of the statuses %s" % statuses,
-        )
-    except BaseException:
-        hosts = get_cluster_hosts_with_mac(client, cluster_id, macs)
-        log.info("All nodes: %s", hosts)
-        raise
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            get_cluster_hosts_with_mac(client, cluster_id, macs),
+            len(macs),
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Nodes to be in of the statuses %s" % statuses,
+    )
 
 
 def wait_till_all_operators_are_in_status(
@@ -300,22 +293,17 @@ def wait_till_all_hosts_are_in_status(
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
-    try:
-        waiting.wait(
-            lambda: are_hosts_in_status(
-                client.get_cluster_hosts(cluster_id),
-                nodes_count,
-                statuses,
-                fall_on_error_status,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="Nodes to be in of the statuses %s" % statuses,
-        )
-    except BaseException:
-        hosts = client.get_cluster_hosts(cluster_id)
-        log.info("All nodes: %s", hosts)
-        raise
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            client.get_cluster_hosts(cluster_id),
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Nodes to be in of the statuses %s" % statuses,
+    )
 
 
 def wait_till_at_least_one_host_is_in_status(
@@ -329,23 +317,17 @@ def wait_till_at_least_one_host_is_in_status(
 ):
     log.info("Wait till 1 node is in one of the statuses %s", statuses)
 
-    try:
-        waiting.wait(
-            lambda: are_hosts_in_status(
-                client.get_cluster_hosts(cluster_id),
-                nodes_count,
-                statuses,
-                fall_on_error_status,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="Node to be in of the statuses %s" % statuses,
-        )
-    except BaseException:
-        hosts = client.get_cluster_hosts(cluster_id)
-        log.info("All nodes: %s", hosts)
-        raise
-
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            client.get_cluster_hosts(cluster_id),
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Node to be in of the statuses %s" % statuses,
+    )
 
 def wait_till_specific_host_is_in_status(
         client,
@@ -359,22 +341,17 @@ def wait_till_specific_host_is_in_status(
 ):
     log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
 
-    try:
-        waiting.wait(
-            lambda: are_hosts_in_status(
-                [client.get_host_by_name(cluster_id, host_name)],
-                nodes_count,
-                statuses,
-                fall_on_error_status,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="Node to be in of the statuses %s" % statuses,
-        )
-    except BaseException:
-        hosts = client.get_cluster_hosts(cluster_id)
-        log.info("All nodes: %s", hosts)
-        raise
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            [client.get_host_by_name(cluster_id, host_name)],
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Node to be in of the statuses %s" % statuses,
+    )
 
 
 def wait_till_at_least_one_host_is_in_stage(
