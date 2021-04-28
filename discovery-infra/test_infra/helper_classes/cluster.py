@@ -6,7 +6,7 @@ import random
 import re
 import time
 from collections import Counter
-from typing import List
+from typing import List, Union
 
 import requests
 import waiting
@@ -15,48 +15,66 @@ from assisted_service_client import models
 from junit_report import JunitTestCase
 from netaddr import IPNetwork, IPAddress
 from test_infra import consts, utils
+from test_infra.assisted_service_api import InventoryClient
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
+from test_infra.helper_classes.config import BaseClusterConfig
+from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
-from tests.conftest import env_variables
 
 
 class Cluster:
+    MINIMUM_NODES_TO_WAIT = 1
 
-    def __init__(self, api_client, cluster_name=None, additional_ntp_source=None,
-                 openshift_version="4.7", cluster_id=None, user_managed_networking=False,
-                 high_availability_mode=consts.HighAvailabilityMode.FULL, olm_operators=None):
+    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig):
+        self._config = config
         self.api_client = api_client
 
-        self._high_availability_mode = high_availability_mode
-        if cluster_id:
-            self.id = cluster_id
-            self.name = cluster_name or api_client.cluster_get(cluster_id).name
+        self._high_availability_mode = config.high_availability_mode
+        if config.cluster_id:
+            self.id = config.cluster_id
+            self._update_day2_config(api_client, config.cluster_id)
+            self.name = config.cluster_name
         else:
-            cluster_name = cluster_name or env_variables.get('cluster_name', "test-infra-cluster")
-            self.id = self._create(cluster_name, additional_ntp_source, openshift_version,
-                                   user_managed_networking=user_managed_networking,
-                                   high_availability_mode=high_availability_mode,
-                                   olm_operators=olm_operators).id
-            self.name = cluster_name
+            self.id = self._create().id
+            self.name = config.cluster_name
 
-    def _create(self,
-                cluster_name,
-                additional_ntp_source,
-                openshift_version,
-                user_managed_networking,
-                high_availability_mode,
-                olm_operators):
+    def _update_day2_config(self, api_client: InventoryClient, cluster_id: str):
+        day2_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
+
+        self.update_config(**dict(
+            openshift_version=day2_cluster.openshift_version,
+            cluster_name=day2_cluster.name,
+            additional_ntp_source=day2_cluster.additional_ntp_source,
+            user_managed_networking=day2_cluster.user_managed_networking,
+            high_availability_mode=day2_cluster.high_availability_mode,
+            olm_operators=day2_cluster.monitored_operators,
+            base_dns_domain=day2_cluster.base_dns_domain,
+            vip_dhcp_allocation=day2_cluster.vip_dhcp_allocation
+        ))
+
+    def update_config(self, **kwargs):
+        """
+        Note that kwargs can contain values for overriding BaseClusterConfig arguments.
+        The name (key) of each argument must match to one of the BaseClusterConfig arguments.
+        If key doesn't exists in config - KeyError exception is raised
+        """
+        for k, v in kwargs.items():
+            if not hasattr(self._config, k):
+                raise KeyError(f"The key {k} is not present in {self._config.__class__.__name__}")
+            setattr(self._config, k, v)
+
+    def _create(self):
         return self.api_client.create_cluster(
-            cluster_name,
-            ssh_public_key=env_variables['ssh_public_key'],
-            openshift_version=openshift_version,
-            pull_secret=env_variables['pull_secret'],
-            base_dns_domain=env_variables['base_domain'],
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-            additional_ntp_source=additional_ntp_source,
-            user_managed_networking=user_managed_networking,
-            high_availability_mode=high_availability_mode,
-            olm_operators=olm_operators
+            self._config.cluster_name,
+            ssh_public_key=self._config.ssh_public_key,
+            openshift_version=self._config.openshift_version,
+            pull_secret=self._config.pull_secret,
+            base_dns_domain=self._config.base_dns_domain,
+            vip_dhcp_allocation=self._config.vip_dhcp_allocation,
+            additional_ntp_source=self._config.additional_ntp_source,
+            user_managed_networking=self._config.user_managed_networking,
+            high_availability_mode=self._config.high_availability_mode,
+            olm_operators=self._config.olm_operators
         )
 
     def delete(self):
@@ -84,45 +102,44 @@ class Cluster:
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
-    def generate_image(self, ssh_key=env_variables['ssh_public_key']):
-        self.api_client.generate_image(cluster_id=self.id, ssh_key=ssh_key)
+    def generate_image(self):
+        self.api_client.generate_image(cluster_id=self.id, ssh_key=self._config.ssh_public_key)
 
     @JunitTestCase()
     def generate_and_download_image(
             self,
-            iso_download_path=env_variables['iso_download_path'],
-            ssh_key=env_variables['ssh_public_key'],
+            iso_download_path=None,
             static_network_config=None,
-            iso_image_type=env_variables['iso_image_type']
+            iso_image_type=None,
+            ssh_key=None
     ):
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
-            ssh_key=ssh_key,
-            image_path=iso_download_path,
-            image_type=iso_image_type,
+            ssh_key=ssh_key or self._config.ssh_public_key,
+            image_path=iso_download_path or self._config.iso_download_path,
+            image_type=iso_image_type or self._config.iso_image_type,
             static_network_config=static_network_config,
         )
 
-    def wait_until_hosts_are_disconnected(self, nodes_count=env_variables['num_nodes']):
+    def wait_until_hosts_are_disconnected(self, nodes_count: int = None):
         statuses = [consts.NodesStatus.DISCONNECTED]
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            nodes_count=nodes_count,
+            nodes_count=nodes_count or self._config.nodes_count,
             statuses=statuses,
             timeout=consts.DISCONNECTED_TIMEOUT
         )
 
     @JunitTestCase()
-    def wait_until_hosts_are_discovered(self, nodes_count=env_variables['num_nodes'],
-                                        allow_insufficient=False):
+    def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT)
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            nodes_count=nodes_count,
+            nodes_count=nodes_count or self._config.nodes_count,
             statuses=statuses,
             timeout=consts.NODES_REGISTERED_TIMEOUT
         )
@@ -133,8 +150,9 @@ class Cluster:
                 for h in hosts
                 if host_type in h["requested_hostname"]][:count]
 
-    def set_cluster_name(self, cluster_name):
+    def set_cluster_name(self, cluster_name: str):
         logging.info(f'Setting Cluster Name:{cluster_name} for cluster: {self.id}')
+        self.update_config(cluster_name=cluster_name)
         self.api_client.update_cluster(self.id, {"name": cluster_name})
 
     def select_installation_disk(self, hosts_with_disk_paths):
@@ -178,11 +196,13 @@ class Cluster:
             olm_operators.append({'name': operator.name, 'properties': operator.properties})
         olm_operators.append({'name': operator_name, 'properties': properties})
 
+        self.update_config(olm_operators=olm_operators)
         self.api_client.update_cluster(self.id, {'olm_operators': olm_operators})
 
-    def set_host_roles(self, requested_roles=None):
+    def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
         if requested_roles is None:
-            requested_roles = Counter(master=env_variables['num_masters'], worker=env_variables['num_workers'])
+            requested_roles = Counter(master=num_masters or self._config.masters_count,
+                                      worker=num_workers or self._config.workers_count)
         assigned_roles = self._get_matching_hosts(
             host_type=consts.NodeRoles.MASTER,
             count=requested_roles["master"])
@@ -206,13 +226,27 @@ class Cluster:
     def set_network_params(
             self,
             controller,
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
+            vip_dhcp_allocation: bool = None,
+            service_network_cidr: str = None,
+            cluster_network_cidr: str = None,
+            cluster_network_host_prefix: int = None
     ):
+        self.update_config(
+            vip_dhcp_allocation=vip_dhcp_allocation
+            if vip_dhcp_allocation is not None else self._config.vip_dhcp_allocation,
+            service_network_cidr=service_network_cidr
+            if service_network_cidr is not None else self._config.service_network_cidr,
+            cluster_network_cidr=cluster_network_cidr
+            if cluster_network_cidr is not None else self._config.cluster_network_cidr,
+            cluster_network_host_prefix=cluster_network_host_prefix
+            if cluster_network_host_prefix is not None else self._config.cluster_network_host_prefix
+        )
+
         self.api_client.update_cluster(self.id, {
-            "vip_dhcp_allocation": vip_dhcp_allocation,
-            "service_network_cidr": env_variables['service_cidr'],
-            "cluster_network_cidr": env_variables['cluster_cidr'],
-            "cluster_network_host_prefix": env_variables['host_prefix'],
+            "vip_dhcp_allocation": self._config.vip_dhcp_allocation,
+            "service_network_cidr": self._config.service_network_cidr,
+            "cluster_network_cidr": self._config.cluster_network_cidr,
+            "cluster_network_host_prefix": self._config.cluster_network_host_prefix,
         })
         if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             self.set_machine_cidr(controller.get_machine_cidr())
@@ -227,36 +261,45 @@ class Cluster:
         logging.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, vips)
 
-    def set_ssh_key(self, ssh_key):
+    def set_ssh_key(self, ssh_key: str):
         logging.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
+        self.update_config(ssh_public_key=ssh_key)
         self.api_client.update_cluster(self.id, {"ssh_public_key": ssh_key})
 
-    def set_base_dns_domain(self, base_dns_domain):
+    def set_base_dns_domain(self, base_dns_domain: str):
         logging.info(f"Setting base DNS domain:{base_dns_domain} for cluster: {self.id}")
+        self.update_config(base_dns_domain=base_dns_domain)
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
 
-    def set_advanced_networking(self, cluster_cidr, service_cidr, cluster_host_prefix):
+    def set_advanced_networking(self, cluster_cidr: str, service_cidr: str, cluster_host_prefix: int):
         logging.info(
             f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr}, "
             f"Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+
+        self.update_config(service_network_cidr=service_cidr, cluster_network_cidr=cluster_cidr,
+                           cluster_network_host_prefix=cluster_host_prefix)
         self.api_client.update_cluster(self.id,
                                        {"cluster_network_cidr": cluster_cidr, "service_network_cidr": service_cidr,
                                         "cluster_network_host_prefix": cluster_host_prefix})
 
-    def set_advanced_cluster_cidr(self, cluster_cidr):
+    def set_advanced_cluster_cidr(self, cluster_cidr: str):
         logging.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
+        self.update_config(cluster_network_cidr=cluster_cidr)
         self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr})
 
-    def set_advanced_service_cidr(self, service_cidr):
+    def set_advanced_service_cidr(self, service_cidr: str):
         logging.info(f"Setting Service CIDR: {service_cidr} for cluster: {self.id}")
+        self.update_config(service_network_cidr=service_cidr)
         self.api_client.update_cluster(self.id, {"service_network_cidr": service_cidr})
 
-    def set_advanced_cluster_host_prefix(self, cluster_host_prefix):
+    def set_advanced_cluster_host_prefix(self, cluster_host_prefix: int):
         logging.info(f"Setting Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+        self.update_config(cluster_network_host_prefix=cluster_host_prefix)
         self.api_client.update_cluster(self.id, {"cluster_network_host_prefix": cluster_host_prefix})
 
-    def set_pull_secret(self, pull_secret):
+    def set_pull_secret(self, pull_secret: str):
         logging.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
+        self.update_config(pull_secret=pull_secret)
         self.api_client.update_cluster(self.id, {"pull_secret": pull_secret})
 
     def set_host_name(self, host_id, requested_name):
@@ -273,6 +316,7 @@ class Cluster:
         else:
             raise TypeError(f"ntp_source must be a string or a list of strings, got: {ntp_source},"
                             f" type: {type(ntp_source)}")
+        self.update_config(additional_ntp_source=ntp_source_string)
         self.api_client.update_cluster(self.id, {"additional_ntp_source": ntp_source_string})
 
     def patch_discovery_ignition(self, ignition):
@@ -296,7 +340,7 @@ class Cluster:
             check_host_logs_only=check_host_logs_only,
         )
 
-    def wait_for_installing_in_progress(self, nodes_count=1):
+    def wait_for_installing_in_progress(self, nodes_count: int = MINIMUM_NODES_TO_WAIT):
         utils.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -305,7 +349,7 @@ class Cluster:
             timeout=consts.INSTALLING_IN_PROGRESS_TIMEOUT
         )
 
-    def wait_for_write_image_to_disk(self, nodes_count=1):
+    def wait_for_write_image_to_disk(self, nodes_count: int = MINIMUM_NODES_TO_WAIT):
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
@@ -313,7 +357,7 @@ class Cluster:
             nodes_count=nodes_count,
         )
 
-    def wait_for_host_status(self, statuses, nodes_count=1, fall_on_error_status=True):
+    def wait_for_host_status(self, statuses, fall_on_error_status=True, nodes_count: int = MINIMUM_NODES_TO_WAIT):
         utils.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -322,7 +366,7 @@ class Cluster:
             fall_on_error_status=fall_on_error_status
         )
 
-    def wait_for_specific_host_status(self, host, statuses, nodes_count=1):
+    def wait_for_specific_host_status(self, host, statuses, nodes_count: int = MINIMUM_NODES_TO_WAIT):
         utils.wait_till_specific_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -347,7 +391,7 @@ class Cluster:
             timeout=consts.PENDING_USER_ACTION_TIMEOUT
         )
 
-    def wait_for_at_least_one_host_to_boot_during_install(self, nodes_count=1):
+    def wait_for_at_least_one_host_to_boot_during_install(self, nodes_count: int = MINIMUM_NODES_TO_WAIT):
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
@@ -355,29 +399,31 @@ class Cluster:
             nodes_count=nodes_count
         )
 
-    def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self):
+    def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self, num_masters: int = None):
+        num_masters = num_masters if num_masters is not None else self._config.masters_count
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.CONFIGURING],
-            nodes_count=env_variables['num_masters'] - 1
+            nodes_count=num_masters - 1
         )
 
-    def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self):
+    def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self, num_masters: int = None):
+        num_masters = num_masters if num_masters is not None else self._config.masters_count
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.JOINED],
-            nodes_count=env_variables['num_masters'] - 1
+            nodes_count=num_masters - 1
         )
 
-    def wait_for_hosts_stage(self, stage: str, nodes_count: int = env_variables['num_nodes'], inclusive: bool = True):
+    def wait_for_hosts_stage(self, stage: str, inclusive: bool = True):
         index = consts.all_host_stages.index(stage)
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1:],
-            nodes_count=nodes_count
+            nodes_count=self._config.nodes_count
         )
 
     @JunitTestCase()
@@ -385,11 +431,10 @@ class Cluster:
                                              wait_for_hosts=True,
                                              wait_for_operators=True,
                                              wait_for_cluster_install=True,
-                                             nodes_count=env_variables['num_nodes']
                                              ):
         self.start_install()
         if wait_for_hosts:
-            self.wait_for_hosts_to_install(nodes_count=nodes_count)
+            self.wait_for_hosts_to_install()
         if wait_for_operators:
             self.wait_for_operators_to_finish()
         if wait_for_cluster_install:
@@ -458,7 +503,7 @@ class Cluster:
 
     def wait_for_hosts_to_be_in_wrong_boot_order(
             self,
-            nodes_count=env_variables['num_nodes'],
+            nodes_count,
             timeout=consts.PENDING_USER_ACTION_TIMEOUT,
             fall_on_error_status=True
     ):
@@ -520,24 +565,20 @@ class Cluster:
 
     def wait_for_hosts_to_install(
             self,
-            nodes_count=env_variables['num_nodes'],
             timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-            fall_on_error_status=True
+            fall_on_error_status=True,
+            nodes_count: int = None
     ):
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLED],
-            nodes_count=nodes_count,
+            nodes_count=nodes_count or self._config.nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
         )
 
-    def wait_for_operators_to_finish(
-        self,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True
-    ):
+    def wait_for_operators_to_finish(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True):
         if fall_on_error_status:
             statuses = [consts.OperatorStatus.AVAILABLE]
         else:
@@ -553,14 +594,9 @@ class Cluster:
         )
 
     def is_operator_in_status(self, operator_name, status):
-        return utils.is_operator_in_status(operators=self.get_operators(),
-                                           operator_name=operator_name,
-                                           status=status)
+        return utils.is_operator_in_status(operators=self.get_operators(), operator_name=operator_name, status=status)
 
-    def wait_for_install(
-            self,
-            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT
-    ):
+    def wait_for_install(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -569,54 +605,44 @@ class Cluster:
         )
 
     @JunitTestCase()
-    def prepare_for_install(
-            self,
-            nodes,
-            iso_download_path=env_variables['iso_download_path'],
-            iso_image_type=env_variables['iso_image_type'],
-            ssh_key=env_variables['ssh_public_key'],
-            nodes_count=env_variables['num_nodes'],
-            vip_dhcp_allocation=env_variables['vip_dhcp_allocation'],
-            download_image=True,
-            platform=env_variables['platform']
-    ):
-        if download_image:
-            if env_variables.get('static_network_config'):
+    def prepare_for_installation(self, nodes: Nodes, static_network_config=None, **kwargs):
+        self.update_config(**kwargs)
+
+        if self._config.download_image:
+            if static_network_config:
                 static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
             else:
                 static_network_config = None
 
             self.generate_and_download_image(
-                iso_download_path=iso_download_path,
-                iso_image_type=iso_image_type,
-                ssh_key=ssh_key,
+                iso_download_path=self._config.iso_download_path,
+                iso_image_type=self._config.iso_image_type,
                 static_network_config=static_network_config
             )
-        nodes.start_all()
-        self.wait_until_hosts_are_discovered(nodes_count=nodes_count, allow_insufficient=True)
-        nodes.set_hostnames(self)
+        nodes.start_all(self._config.is_static_ip)
+        self.wait_until_hosts_are_discovered(allow_insufficient=True)
+        nodes.set_hostnames(self, self._config.nodes_count, self._config.is_ipv6, self._config.is_static_ip)
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
-            self.set_host_roles()
+            self.set_host_roles(len(nodes.get_masters()), len(nodes.get_workers()))
         else:
             nodes.set_single_node_ip(self)
         self.set_network_params(
             controller=nodes.controller,
-            vip_dhcp_allocation=vip_dhcp_allocation,
+            vip_dhcp_allocation=self._config.vip_dhcp_allocation,
+            service_network_cidr=self._config.service_network_cidr,
+            cluster_network_cidr=self._config.cluster_network_cidr,
+            cluster_network_host_prefix=self._config.cluster_network_host_prefix
         )
         self.wait_for_ready_to_install()
 
-        if platform == consts.Platforms.NONE:
+        if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer(nodes.controller)
 
-    def download_kubeconfig_no_ingress(
-            self, kubeconfig_path=env_variables['kubeconfig_path']
-    ):
-        self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path)
+    def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
+        self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
 
-    def download_kubeconfig(
-            self, kubeconfig_path=env_variables['kubeconfig_path']
-    ):
-        self.api_client.download_kubeconfig(self.id, kubeconfig_path)
+    def download_kubeconfig(self, kubeconfig_path: str = None):
+        self.api_client.download_kubeconfig(self.id, kubeconfig_path or self._config.kubeconfig_path)
 
     def download_installation_logs(self, cluster_tar_path):
         self.api_client.download_cluster_logs(self.id, cluster_tar_path)
@@ -655,10 +681,10 @@ class Cluster:
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
-    def setup_nodes(self, nodes):
+    def setup_nodes(self, nodes, is_static_ip: bool = None):
         self.generate_and_download_image()
-        nodes.start_all()
-        self.wait_until_hosts_are_discovered(nodes_count=len(nodes))
+        nodes.start_all(is_static_ip if is_static_ip is not None else self._config.is_static_ip)
+        self.wait_until_hosts_are_discovered()
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 
     def wait_for_cluster_validation(
@@ -756,7 +782,7 @@ class Cluster:
             break_statuses=[consts.ClusterStatus.ERROR]
         )
 
-    def wait_for_cluster_to_be_in_status(self,statuses, timeout=consts.ERROR_TIMEOUT):
+    def wait_for_cluster_to_be_in_status(self, statuses, timeout=consts.ERROR_TIMEOUT):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -932,9 +958,7 @@ class Cluster:
                 ip_or_dns = f"[{ip_or_dns}]"
 
         try:
-            response = requests.get(f'https://{ip_or_dns}:6443/readyz',
-                                    verify=False,
-                                    timeout=1)
+            response = requests.get(f'https://{ip_or_dns}:6443/readyz', verify=False, timeout=1)
             return response.ok
         except BaseException:
             return False
@@ -948,8 +972,19 @@ class Cluster:
         selected_node.kill_installer()
 
 
-def get_api_vip_from_cluster(api_client, cluster_info: models.cluster.Cluster):
+def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluster.Cluster], pull_secret):
+    import warnings
+    from tests.config import ClusterConfig
+
+    warnings.warn("Soon get_api_vip_from_cluster will be deprecated. Avoid using or adding new functionality to "
+                  "this function. The function and solution for that case have not been determined yet. It might be "
+                  "on another module, or as a classmethod within Cluster class."
+                  " For more information see https://issues.redhat.com/browse/MGMT-4975",
+                  PendingDeprecationWarning)
+
     if isinstance(cluster_info, dict):
         cluster_info = models.cluster.Cluster(**cluster_info)
-    cluster = Cluster(api_client=api_client, cluster_id=cluster_info.id)
+    cluster = Cluster(api_client=api_client, config=ClusterConfig(pull_secret=pull_secret,
+                                                                  ssh_public_key=cluster_info.ssh_public_key,
+                                                                  cluster_id=cluster_info.id))
     return cluster.get_api_vip(cluster=cluster_info)

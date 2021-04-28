@@ -9,7 +9,6 @@ from test_infra import utils
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
-from tests.conftest import env_variables
 from test_infra.controllers.nat_controller import NatController
 
 
@@ -21,6 +20,8 @@ class NodeMapping:
 
 
 class Nodes:
+    DEFAULT_STATIC_IP_CONFIG = False
+
     def __init__(self, node_controller: NodeController, private_ssh_key_path):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
@@ -88,9 +89,8 @@ class Nodes:
     def shutdown_all(self):
         self.run_for_all_nodes("shutdown")
 
-    def start_all(self):
-        static_ips_config = env_variables.get('static_ips_config')
-        if static_ips_config:
+    def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IP_CONFIG):
+        if is_static_ip:
             skip_ips = False
         else:
             skip_ips = True
@@ -179,17 +179,14 @@ class Nodes:
         inventory = json.loads(cluster_host_object["inventory"])
         return inventory["hostname"]
 
-    def set_hostnames(self, cluster):
-        ipv6 = env_variables.get('ipv6')
-        static_ips_config = env_variables.get('static_ips_config')
-        if ipv6 or static_ips_config:
+    def set_hostnames(self, cluster, nodes_count: int, is_ipv6: bool, is_static_ip: bool = False):
+        if is_ipv6 or is_static_ip:
             # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
             # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be
             # set to valid hostname
             # TODO - NodeController has no `params` and `tf` attributes
             network_name = self.controller.params.libvirt_network_name
             libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
-            nodes_count = env_variables.get('num_nodes')
             utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True,
                                update_roles=(nodes_count != 1))
 
