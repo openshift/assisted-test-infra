@@ -12,7 +12,7 @@ from test_infra.tools.assets import NetworkAssets
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
 
-from download_logs import download_must_gather
+from download_logs import download_must_gather, gather_sosreport_from_node
 from oc_utils import get_operators_status
 
 warn_deprecate()
@@ -30,7 +30,6 @@ MUST_GATHER_DIR = os.path.join(IBIP_DIR, "must-gather")
 INSTALLER_GATHER_DIR = os.path.join(IBIP_DIR, "installer-gather")
 INSTALLER_GATHER_DEBUG_STDOUT = os.path.join(INSTALLER_GATHER_DIR, "gather.stdout.log")
 INSTALLER_GATHER_DEBUG_STDERR = os.path.join(INSTALLER_GATHER_DIR, "gather.stderr.log")
-SOSREPORT_SCRIPT = os.path.join(RESOURCES_DIR, "man_sosreport.sh")
 SSH_KEY = os.path.join("ssh_key", "key")
 
 
@@ -157,13 +156,6 @@ def all_operators_up():
         return False
 
 
-def gather_sosreport_data(node):
-    node.upload_file(SOSREPORT_SCRIPT, "/tmp/man_sosreport.sh")
-    node.run_command("chmod a+x /tmp/man_sosreport.sh")
-    node.run_command("sudo /tmp/man_sosreport.sh")
-    node.download_file("/tmp/sosreport.tar.bz2", IBIP_DIR)
-
-
 # noinspection PyBroadException
 def log_collection(controller, vm_ip):
     etype, _value, _tb = sys.exc_info()
@@ -173,7 +165,7 @@ def log_collection(controller, vm_ip):
     try:
         logging.info("Gathering sosreport data from host...")
         node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
-        gather_sosreport_data(node)
+        gather_sosreport_from_node(node)
     except Exception:
         logging.exception("sosreport gathering failed!")
 
