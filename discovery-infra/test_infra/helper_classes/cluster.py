@@ -28,9 +28,10 @@ class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
     EVENTS_THRESHOLD = 500
 
-    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig):
+    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, nodes: Union[Nodes, None]):
         self._config = config
         self.api_client = api_client
+        self.nodes = nodes
 
         self._high_availability_mode = config.high_availability_mode
         if config.cluster_id:
@@ -620,8 +621,9 @@ class Cluster:
         )
 
     @JunitTestCase()
-    def prepare_for_installation(self, nodes: Nodes, static_network_config=None, **kwargs):
+    def prepare_for_installation(self, nodes: Nodes = None, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
+        nodes = nodes or self.nodes
 
         if self._config.download_image:
             if static_network_config:
@@ -1001,5 +1003,5 @@ def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluste
         cluster_info = models.cluster.Cluster(**cluster_info)
     cluster = Cluster(api_client=api_client, config=ClusterConfig(pull_secret=pull_secret,
                                                                   ssh_public_key=cluster_info.ssh_public_key,
-                                                                  cluster_id=cluster_info.id))
+                                                                  cluster_id=cluster_info.id), nodes=None)
     return cluster.get_api_vip(cluster=cluster_info)

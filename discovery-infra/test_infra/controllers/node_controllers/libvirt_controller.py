@@ -21,9 +21,9 @@ from test_infra.controllers.node_controllers.node_controller import NodeControll
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, **kwargs):
+    def __init__(self, private_ssh_key_path: str):
         self.libvirt_connection = libvirt.open('qemu:///system')
-        self.private_ssh_key_path = kwargs.get("private_ssh_key_path")
+        self.private_ssh_key_path = private_ssh_key_path
         self._setup_timestamp = utils.run_command("date +\"%Y-%m-%d %T\"")[0]
 
     def __del__(self):
