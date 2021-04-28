@@ -187,7 +187,7 @@ def are_hosts_in_status(
     ):
         hosts_in_error = [
             (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
-            for host in enumerate(hosts, start=1) if host["status"] == consts.NodesStatus.ERROR
+            for i, host in enumerate(hosts, start=1) if host["status"] == consts.NodesStatus.ERROR
         ]
         log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
         raise Exception("All the nodes must be in valid status, but got some in error")
