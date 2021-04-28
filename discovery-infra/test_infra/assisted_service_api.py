@@ -102,11 +102,9 @@ class InventoryClient(object):
         return result
 
     def get_cluster_hosts(self, cluster_id):
-        log.info("Getting registered nodes for cluster %s", cluster_id)
         return self.client.list_hosts(cluster_id=cluster_id)
 
     def get_cluster_operators(self, cluster_id):
-        log.info("Getting monitored operators for cluster %s", cluster_id)
         return self.cluster_get(cluster_id=cluster_id).monitored_operators
 
     def get_hosts_in_statuses(self, cluster_id, statuses):
@@ -123,7 +121,6 @@ class InventoryClient(object):
         return self.client.list_clusters(get_unregistered_clusters=True)
 
     def cluster_get(self, cluster_id):
-        log.info("Getting cluster with id %s", cluster_id)
         return self.client.get_cluster(cluster_id=cluster_id)
 
     @classmethod

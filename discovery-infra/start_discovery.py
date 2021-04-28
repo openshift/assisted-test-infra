@@ -9,11 +9,13 @@ import os
 
 import yaml
 import dns.resolver
+from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils, kubeapi_utils, warn_deprecate
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
+
 from test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Platform,
     InstallStrategy, Secret, InfraEnv, Proxy, NMStateConfig,
@@ -259,19 +261,14 @@ def wait_until_nodes_are_registered_rest_api(
 
 
 def set_cluster_vips(client, cluster_id, machine_net):
-    cluster_info = client.cluster_get(cluster_id)
     api_vip, ingress_vip = _get_vips_ips(machine_net)
-    cluster_info.vip_dhcp_allocation = False
-    cluster_info.api_vip = api_vip
-    cluster_info.ingress_vip = ingress_vip
-    client.update_cluster(cluster_id, cluster_info)
+    update_params = models.ClusterUpdateParams(vip_dhcp_allocation=False, api_vip=api_vip, ingress_vip=ingress_vip)
+    client.update_cluster(cluster_id, update_params)
 
 
 def set_cluster_machine_cidr(client, cluster_id, machine_net, set_vip_dhcp_allocation=True):
-    cluster_info = client.cluster_get(cluster_id)
-    cluster_info.vip_dhcp_allocation = set_vip_dhcp_allocation
-    cluster_info.machine_network_cidr = get_machine_cidr_from_machine_net(machine_net)
-    client.update_cluster(cluster_id, cluster_info)
+    update_params = models.ClusterUpdateParams(vip_dhcp_allocation=set_vip_dhcp_allocation, machine_network_cidr=get_machine_cidr_from_machine_net(machine_net))
+    client.update_cluster(cluster_id, update_params)
 
 
 def get_machine_cidr_from_machine_net(machine_net):
