@@ -1,6 +1,6 @@
 class OperatorType:
     CNV = "cnv"
-    OCS = "scs"
+    OCS = "ocs"
 
 
 class OperatorStatus:
