@@ -20,7 +20,7 @@ class BaseClusterConfig(_BaseConfig, ABC):
     additional_ntp_source: str = None
     user_managed_networking: bool = None
     high_availability_mode: str = None
-    olm_operators: List = None
+    olm_operators: List[str] = None
     base_dns_domain: str = None  # Todo - Might change during MGMT-5370
     vip_dhcp_allocation: bool = None
     iso_download_path: str = None  # Todo - Might change during MGMT-5370

@@ -74,7 +74,7 @@ class Cluster:
             additional_ntp_source=self._config.additional_ntp_source,
             user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
-            olm_operators=self._config.olm_operators
+            olm_operators=[{'name': name} for name in self._config.olm_operators],
         )
 
     def delete(self):
