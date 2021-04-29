@@ -1,9 +1,11 @@
 import logging
-
 from pprint import pformat
+from typing import Optional
 
 import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
+from kubernetes.client.rest import ApiException
+from test_infra import utils
 from tests.conftest import env_variables
 
 from .base_resource import BaseResource
@@ -102,3 +104,22 @@ class ClusterImageSet(BaseResource):
         )
 
         logger.info('deleted cluster imageset %s', self.ref)
+
+
+def deploy_default_image_set(
+        kube_api_client: ApiClient,
+        name: str,
+        ignore_conflict: bool = True,
+        release_image: Optional[str] = None
+) -> ClusterImageSetReference:
+    if release_image is None:
+        release_image = utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image("4.8"))
+
+    imageSet = ClusterImageSet(kube_api_client, name)
+
+    try:
+        imageSet.create(release_image)
+    except ApiException as e:
+        if not (e.reason == 'Conflict' and ignore_conflict):
+            raise
+    return ClusterImageSetReference(name)

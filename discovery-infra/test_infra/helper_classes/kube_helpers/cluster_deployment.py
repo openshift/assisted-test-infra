@@ -1,8 +1,7 @@
 import logging
-
-from pprint import pformat
 from base64 import b64decode
-from typing import Optional, Union, Dict, Tuple, List, Iterable
+from pprint import pformat
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import waiting
 import yaml
@@ -10,28 +9,21 @@ from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 from tests.conftest import env_variables
 
-from .global_vars import (
-    CRD_API_GROUP,
-    HIVE_API_GROUP,
-    HIVE_API_VERSION,
-    DEFAULT_API_VIP,
-    DEFAULT_API_VIP_DNS_NAME,
-    DEFAULT_INGRESS_VIP,
-    DEFAULT_MACHINE_CIDR,
-    DEFAULT_CLUSTER_CIDR,
-    DEFAULT_SERVICE_CIDR,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
-    DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
-)
-
-from .common import does_string_contain_value, UnexpectedStateError
-from .base_resource import BaseCustomResource
-from .cluster_image_set import ClusterImageSetReference
-from .secret import deploy_default_secret, Secret
 from .agent import Agent
-
+from .base_resource import BaseCustomResource
+from .cluster_image_set import (ClusterImageSetReference,
+                                deploy_default_image_set)
+from .common import UnexpectedStateError, does_string_contain_value
+from .global_vars import (CRD_API_GROUP, DEFAULT_API_VIP,
+                          DEFAULT_API_VIP_DNS_NAME, DEFAULT_CLUSTER_CIDR,
+                          DEFAULT_INGRESS_VIP, DEFAULT_MACHINE_CIDR,
+                          DEFAULT_SERVICE_CIDR,
+                          DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+                          DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+                          DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+                          DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
+                          HIVE_API_GROUP, HIVE_API_VERSION)
+from .secret import Secret, deploy_default_secret
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +155,7 @@ class ClusterDeployment(BaseCustomResource):
             platform: Platform,
             install_strategy: InstallStrategy,
             secret: Secret,
-            imageSetRef: ClusterImageSetReference,
+            image_set_ref: ClusterImageSetReference,
             base_domain: str = env_variables['base_domain'],
             **kwargs,
     ):
@@ -175,7 +167,7 @@ class ClusterDeployment(BaseCustomResource):
                 'clusterName': self.ref.name,
                 'baseDomain': base_domain,
                 'platform': platform.as_dict(),
-                'provisioning': {'installStrategy': install_strategy.as_dict(), 'imageSetRef': imageSetRef.as_dict()},
+                'provisioning': {'installStrategy': install_strategy.as_dict(), 'imageSetRef': image_set_ref.as_dict()},
                 'pullSecretRef': secret.ref.as_dict(),
             }
         }
@@ -453,6 +445,7 @@ def _create_from_attrs(
         secret: Optional[Secret] = None,
         platform: Optional[Platform] = None,
         install_strategy: Optional[InstallStrategy] = None,
+        image_set_ref: Optional[ClusterImageSetReference] = None,
         **kwargs,
 ) -> None:
     if not secret:
@@ -462,10 +455,18 @@ def _create_from_attrs(
             ignore_conflict=ignore_conflict,
         )
 
+    if not image_set_ref:
+        image_set_ref = deploy_default_image_set(
+            kube_api_client=kube_api_client,
+            name=name,
+            ignore_conflict=ignore_conflict,
+        )
+
     cluster_deployment.create(
         platform=platform or Platform(),
         install_strategy=install_strategy or InstallStrategy(),
         secret=secret,
+        image_set_ref=image_set_ref,
         base_domain=base_domain,
         **kwargs,
     )

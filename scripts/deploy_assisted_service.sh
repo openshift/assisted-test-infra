@@ -145,9 +145,6 @@ spec:
 EOF
 
     wait_for_crd "agentserviceconfigs.agent-install.openshift.io"
-
-    # kubectl patch pod valid-pod -p '{"spec":{"containers":[{"name":"kubernetes-serve-hostname","image":"new image"}]}}'
-
     wait_for_operator "assisted-service-operator" "${NAMESPACE}"
 
     echo "Configuring Assisted service..."

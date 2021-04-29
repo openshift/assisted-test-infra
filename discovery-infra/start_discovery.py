@@ -711,11 +711,11 @@ def execute_kube_api_flow():
     )
     secret.apply(pull_secret=args.pull_secret)
 
-    imageSet=ClusterImageSet(
+    imageSet = ClusterImageSet(
         kube_api_client=kube_client,
         name=f"{cluster_name}-image-set",
     )
-    releaseImage=utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image("4.8"))
+    releaseImage = utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image("4.8"))
     imageSet.apply(releaseImage=releaseImage)
 
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
@@ -740,7 +740,7 @@ def execute_kube_api_flow():
         ),
         secret=secret,
         base_domain=args.base_dns_domain,
-        imageSetRef=ClusterImageSetReference(name=f"{cluster_name}-image-set"),
+        image_set_ref=ClusterImageSetReference(name=f"{cluster_name}-image-set"),
     )
     cluster_deployment.wait_to_be_ready(False)
 
