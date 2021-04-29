@@ -54,7 +54,8 @@ class TerraformController(LibvirtController):
     def _terraform_params(self, **kwargs):
         operators = kwargs.get("olm_operators", [])
         params = {
-            "libvirt_worker_memory": utils.resource_param(kwargs.get("worker_memory"), "worker_memory", operators),
+            "libvirt_worker_memory": utils.resource_param(
+                kwargs.get("worker_memory"), consts.OperatorResource.WORKER_MEMORY_KEY, operators),
             "libvirt_master_memory": utils.resource_param(
                 kwargs.get("master_memory", 16984), consts.OperatorResource.MASTER_MEMORY_KEY, operators),
             "libvirt_worker_vcpu": utils.resource_param(
