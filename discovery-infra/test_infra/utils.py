@@ -29,7 +29,8 @@ from assisted_service_client.models.monitored_operator import MonitoredOperator
 from logger import log
 from retry import retry
 
-from test_infra import consts
+import test_infra.consts as consts
+
 
 conn = libvirt.open("qemu:///system")
 
@@ -923,11 +924,13 @@ def download_iso(image_url, image_path):
         for chunk in image.iter_content(chunk_size=1024):
             out.write(chunk)
 
+
 def parse_olm_operators_from_env():
     return get_env("OLM_OPERATORS", default="").lower().split()
 
-def resource_param(value, param_name, operators):
+
+def resource_param(base_value: int, resource_name: str, operators: List):
     try:
-        return sum((consts.OPERATOR_PARAMS[operator][param_name] for operator in operators), value)
+        return sum((consts.OperatorResource.values()[operator][resource_name] for operator in operators), base_value)
     except KeyError as e:
         raise ValueError(f"Unknown operator name {e.args[0]}")

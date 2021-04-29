@@ -159,16 +159,16 @@ class Cluster:
         self.api_client.select_installation_disk(self.id, hosts_with_disk_paths)
 
     def set_ocs(self, properties=None):
-        self.set_olm_operator('ocs', properties=properties)
+        self.set_olm_operator(consts.OperatorType.OCS, properties=properties)
 
     def set_cnv(self, properties=None):
-        self.set_olm_operator('cnv', properties=properties)
+        self.set_olm_operator(consts.OperatorType.CNV, properties=properties)
 
     def unset_ocs(self):
-        self.unset_olm_operator('ocs')
+        self.unset_olm_operator(consts.OperatorType.OCS)
 
     def unset_cnv(self):
-        self.unset_olm_operator('cnv')
+        self.unset_olm_operator(consts.OperatorType.CNV)
 
     def unset_olm_operator(self, operator_name):
         logging.info(f'Unsetting {operator_name} for cluster: {self.id}')
