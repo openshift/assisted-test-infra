@@ -96,8 +96,7 @@ class BaseTest:
                 given_nodes,
                 iptables_rules,
                 download_image=True,
-                iso_download_path=env_variables['iso_download_path'],
-                ssh_key=env_variables['ssh_public_key']
+                iso_download_path=env_variables['iso_download_path']
         ):
 
             given_node_ips = []
