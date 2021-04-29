@@ -523,3 +523,15 @@ class LibvirtController(NodeController, ABC):
         dom = self.libvirt_connection.lookupByName(node_name)
         current_xml = dom.XMLDesc(0)
         return minidom.parseString(current_xml.encode('utf-8'))
+
+    def format_node_disk(self, node_name: str) -> None:
+        raise NotImplementedError
+
+    def get_ingress_and_api_vips(self) -> dict:
+        raise NotImplementedError
+
+    def get_cluster_network(self) -> str:
+        raise NotImplementedError
+
+    def get_machine_cidr(self) -> str:
+        raise NotImplementedError

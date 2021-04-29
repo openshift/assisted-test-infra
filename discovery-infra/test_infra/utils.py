@@ -16,9 +16,8 @@ from contextlib import contextmanager
 from distutils.dir_util import copy_tree
 from functools import wraps
 from pathlib import Path
-from pprint import pformat
 from string import ascii_lowercase
-from typing import Dict, List
+from typing import List
 
 import filelock
 import libvirt
