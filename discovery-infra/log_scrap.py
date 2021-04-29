@@ -29,7 +29,7 @@ from test_infra.assisted_service_api import InventoryClient, create_client
 warn_deprecate()
 
 RETRY_INTERVAL = 60 * 5
-MAX_EVENTS = 1000
+MAX_EVENTS = 5000
 INDEX = "assisted-service-events"
 
 FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
