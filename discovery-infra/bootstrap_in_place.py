@@ -165,7 +165,7 @@ def log_collection(controller, vm_ip):
     try:
         logging.info("Gathering sosreport data from host...")
         node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
-        gather_sosreport_from_node(node)
+        gather_sosreport_from_node(node, IBIP_DIR)
     except Exception:
         logging.exception("sosreport gathering failed!")
 
