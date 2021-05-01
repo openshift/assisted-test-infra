@@ -9,10 +9,9 @@ import waiting
 import yaml
 from test_infra import utils, consts, warn_deprecate
 from test_infra.tools.assets import NetworkAssets
-from test_infra.helper_classes.nodes import Nodes
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
 
-from download_logs import download_must_gather, gather_sosreport_from_node
+from download_logs import download_must_gather, gather_sosreport_data
 from oc_utils import get_operators_status
 
 warn_deprecate()
@@ -157,15 +156,14 @@ def all_operators_up():
 
 
 # noinspection PyBroadException
-def log_collection(controller, vm_ip):
+def log_collection(vm_ip):
     etype, _value, _tb = sys.exc_info()
 
     logging.info(f"Collecting logs after a {('failed', 'successful')[etype is None]} installation")
 
     try:
         logging.info("Gathering sosreport data from host...")
-        node = Nodes(controller, private_ssh_key_path=SSH_KEY)[0]
-        gather_sosreport_from_node(node, IBIP_DIR)
+        gather_sosreport_data(output_dir=IBIP_DIR, private_ssh_key_path=SSH_KEY)
     except Exception:
         logging.exception("sosreport gathering failed!")
 
@@ -201,7 +199,7 @@ def waiting_for_installation_completion(controller):
                      waiting_for="all operators to get up")
         logging.info("Installation completed successfully!")
     finally:
-        log_collection(controller, vm_ip)
+        log_collection(vm_ip)
 
 
 def execute_ibip_flow(args):

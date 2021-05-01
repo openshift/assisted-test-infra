@@ -237,11 +237,12 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
         log.warning(f"Failed to run must gather: {ex}")
 
 
-def gather_sosreport_data(output_dir: str):
+def gather_sosreport_data(output_dir: str,
+                          private_ssh_key_path: str=private_ssh_key_path_default):
     sosreport_output = os.path.join(output_dir, "sosreport")
     recreate_folder(sosreport_output)
 
-    controller = LibvirtController(private_ssh_key_path=private_ssh_key_path_default)
+    controller = LibvirtController(private_ssh_key_path=private_ssh_key_path)
     run_concurrently(
         jobs=[(gather_sosreport_from_node, node, sosreport_output)
               for node in controller.list_nodes()],
