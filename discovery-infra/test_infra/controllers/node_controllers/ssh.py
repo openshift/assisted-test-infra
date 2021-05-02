@@ -30,7 +30,7 @@ class SshConnection:
             self._ssh_client.close()
             self._ssh_client = None
 
-    def connect(self, timeout=10):
+    def connect(self, timeout=60):
         logging.info("Going to connect to ip %s", self._ip)
         self.wait_for_tcp_server()
         self._ssh_client = paramiko.SSHClient()
