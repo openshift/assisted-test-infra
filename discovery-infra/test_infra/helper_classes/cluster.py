@@ -24,6 +24,7 @@ from test_infra.tools import static_network, terraform_utils
 
 class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
+    EVENTS_THRESHOLD = 500
 
     def __init__(self, api_client: InventoryClient, config: BaseClusterConfig):
         self._config = config
