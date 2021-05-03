@@ -45,7 +45,7 @@ class TerraformController(LibvirtController):
 
     # TODO move all those to conftest and pass it as kwargs
     def _terraform_params(self, **kwargs):
-        operators = [o['name'] for o in kwargs.get("olm_operators", [])]
+        operators = kwargs.get("olm_operators", [])
         params = {
             "libvirt_worker_memory": utils.resource_param(
                 kwargs.get("worker_memory"), consts.OperatorResource.WORKER_MEMORY_KEY, operators),

@@ -27,6 +27,7 @@ class InventoryClient(object):
         self.events = api.EventsApi(api_client=self.api)
         self.versions = api.VersionsApi(api_client=self.api)
         self.domains = api.ManagedDomainsApi(api_client=self.api)
+        self.operators = api.OperatorsApi(api_client=self.api)
 
     @classmethod
     def set_config_auth(cls, c, offline_token):
@@ -402,6 +403,9 @@ class InventoryClient(object):
 
     def get_openshift_versions(self):
         return self.versions.list_supported_openshift_versions()
+
+    def get_supported_operators(self):
+        return self.operators.list_supported_operators()
 
     def get_host_requirements(self):
         return self.client.get_host_requirements()
