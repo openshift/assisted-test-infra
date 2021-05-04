@@ -410,7 +410,10 @@ export TEST_FUNC=test_kube_api_sno_happy_flow_create_and_install_cluster
 export TEST=./discovery-infra/tests/test_kube_api.py
 export TEST_TEARDOWN=false
 make test
+```
 
-# Clear the operator deployment
+Clear the operator deployment
+
+```bash
 make clear_operator
 ```

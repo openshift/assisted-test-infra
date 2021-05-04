@@ -20,13 +20,11 @@ export OPENSHIFT_VERSIONS_CMD=""
 
 if [[ "${ENABLE_KUBE_API}" == "true" && -z "${OPENSHIFT_VERSIONS}" ]]; then
     # Supporting version 4.8 for kube-api
-    supported_version=$(cat assisted-service/default_ocp_versions.json |
-        jq -rc 'with_entries(.key = "4.8")')
+    OPENSHIFT_VERSIONS=$(cat assisted-service/default_ocp_versions.json | jq -rc 'with_entries(.key = "4.8")')
         # TODO: include only 'rhcos_image' and 'rhcos_version' when custom
         #       OCP version is supported in assisted-service (MGMT-4554)
     json_template=\''%s'\'
-    OPENSHIFT_VERSIONS=$(printf "$json_template" "$supported_version")
-    OPENSHIFT_VERSIONS_CMD="OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS}"
+    OPENSHIFT_VERSIONS_CMD="OPENSHIFT_VERSIONS=$(printf "${json_template}" "${OPENSHIFT_VERSIONS}")"
 fi
 
 mkdir -p build
@@ -73,105 +71,17 @@ elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
 
     wait_for_url_and_run "$SERVICE_BASE_URL" "spawn_port_forwarding_command $SERVICE_NAME $OCP_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $OCP_KUBECONFIG ocp $CLUSTER_VIP $SERVICE_NODEPORT"
     print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL}"
-elif [ "${ENABLE_KUBE_API}" == "true" ]; then
-    echo "Installing Hive..."
-    cat << EOF | kubectl apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: hive-operator
-  namespace: openshift-operators
-spec:
-  channel: alpha
-  installPlanApproval: Automatic
-  name: hive-operator
-  source: community-operators
-  sourceNamespace: openshift-marketplace
-EOF
-
-    wait_for_operator "hive-operator" "openshift-operators"
-    wait_for_crd "clusterdeployments.hive.openshift.io"
-
+elif [ "${DEPLOY_TARGET}" == "operator" ]; then
     add_firewalld_port ${OCP_SERVICE_PORT}
-    SERVICE_BASE_URL=https://${SERVICE_URL}:${OCP_SERVICE_PORT}
 
-    echo "Installing Assisted Installer Operator..."
-    cat << EOF | kubectl apply -f -
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ${NAMESPACE}
-  labels:
-    name: ${NAMESPACE}
----
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-    name: assisted-installer-group
-    namespace: ${NAMESPACE}
-spec:
-  targetNamespaces:
-    - ${NAMESPACE}
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: assisted-service-catalog
-  namespace: openshift-marketplace
-spec:
-  sourceType: grpc
-  image: ${INDEX_IMAGE}
-  displayName: Assisted Test Registry
-  publisher: Assisted Developer
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: assisted-service-operator
-  namespace: ${NAMESPACE}
-spec:
-  installPlanApproval: Automatic
-  name: assisted-service-operator
-  source: assisted-service-catalog
-  sourceNamespace: openshift-marketplace
-  config:
-    env:
-    - name: SERVICE_IMAGE
-      value: ${SERVICE}
-    - name: OPENSHIFT_VERSIONS
-      value: ${OPENSHIFT_VERSIONS}
-    - name: SERVICE_BASE_URL
-      value: ${SERVICE_BASE_URL}
-EOF
+    export SERVICE_BASE_URL=https://${SERVICE_URL}:${OCP_SERVICE_PORT}
+    export DISKS="${OPERATOR_DISKS:-}"
+    export ASSISTED_NAMESPACE=${NAMESPACE}
+    export SERVICE_IMAGE=${SERVICE}
+    export STORAGE_CLASS_NAME="localblock-sc"
 
-    wait_for_crd "agentserviceconfigs.agent-install.openshift.io"
-    wait_for_operator "assisted-service-operator" "${NAMESPACE}"
+    INSTALL_LSO=false ./assisted-service/deploy/operator/deploy.sh
 
-    echo "Configuring Assisted service..."
-    cat << EOF | kubectl apply -f -
-apiVersion: agent-install.openshift.io/v1beta1
-kind: AgentServiceConfig
-metadata:
- name: agent
- namespace: ${NAMESPACE}
-spec:
- databaseStorage:
-  storageClassName: "localblock-sc"
-  accessModes:
-  - ReadWriteOnce
-  resources:
-   requests:
-    storage: 8Gi
- filesystemStorage:
-  storageClassName: "localblock-sc"
-  accessModes:
-  - ReadWriteOnce
-  resources:
-   requests:
-    storage: 8Gi
-EOF
-
-    wait_for_resource "pod" "Ready" "${NAMESPACE}" "app=${SERVICE_NAME}"
     CLUSTER_VIP=$(sudo virsh net-dhcp-leases test-infra-net-${NAMESPACE} | grep ingress | awk '{print $5}' | cut -d"/" -f1)
     SERVICE_NODEPORT=$(kubectl get svc/${SERVICE_NAME} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
     wait_for_url_and_run "${SERVICE_BASE_URL}" "spawn_port_forwarding_command ${SERVICE_NAME} ${OCP_SERVICE_PORT} ${NAMESPACE} ${NAMESPACE_INDEX} '' ocp ${CLUSTER_VIP} ${SERVICE_NODEPORT}"
