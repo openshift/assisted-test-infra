@@ -21,9 +21,8 @@ export OPENSHIFT_VERSIONS_CMD=""
 if [[ "${ENABLE_KUBE_API}" == "true" && -z "${OPENSHIFT_VERSIONS}" ]]; then
     # Supporting version 4.8 for kube-api
     supported_version=$(cat assisted-service/default_ocp_versions.json |
-        jq -rc 'with_entries(.key = "4.8")')
-        # TODO: include only 'rhcos_image' and 'rhcos_version' when custom
-        #       OCP version is supported in assisted-service (MGMT-4554)
+       jq -rc 'with_entries(.key = "4.8") | with_entries(
+           {key: .key, value: {rhcos_image: .value.rhcos_image, rhcos_version: .value.rhcos_version}})')
     json_template=\''%s'\'
     OPENSHIFT_VERSIONS=$(printf "$json_template" "$supported_version")
     OPENSHIFT_VERSIONS_CMD="OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS}"
