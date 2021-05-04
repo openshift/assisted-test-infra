@@ -525,7 +525,7 @@ class Cluster:
             timeout=consts.READY_TIMEOUT
         )
         # This code added due to BZ:1909997, temporarily checking if help to prevent unexpected failure
-        time.sleep(90)
+        time.sleep(10)
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
