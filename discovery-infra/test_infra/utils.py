@@ -257,29 +257,34 @@ def wait_till_all_operators_are_in_status(
         client,
         cluster_id,
         operators_count,
+        operator_types,
         statuses,
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
         fall_on_error_status=False,
         interval=5,
 ):
-    log.info("Wait till %s operators are in one of the statuses %s", operators_count, statuses)
+    log.info(f"Wait till {operators_count} {operator_types} operators are in one of the statuses {statuses}")
 
     try:
         waiting.wait(
             lambda: are_operators_in_status(
-                client.get_cluster_operators(cluster_id),
+                filter_operators_by_type(client.get_cluster_operators(cluster_id), operator_types),
                 operators_count,
                 statuses,
                 fall_on_error_status,
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for="Monitored operators to be in of the statuses %s" % statuses,
+            waiting_for=f"Monitored {operator_types} operators to be in of the statuses {statuses}",
         )
     except BaseException:
         operators = client.get_cluster_operators(cluster_id)
         log.info("All operators: %s", operators)
         raise
+
+
+def filter_operators_by_type(operators: List[MonitoredOperator], operator_types: List[str]) -> List[MonitoredOperator]:
+    return list(filter(lambda operator: operator.operator_type in operator_types, operators))
 
 
 def wait_till_all_hosts_are_in_status(
