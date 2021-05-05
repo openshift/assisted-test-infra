@@ -357,7 +357,7 @@ def _create_node_details(cluster_name):
         "libvirt_master_memory": utils.resource_param(
             args.master_memory if not args.master_count == 1 else args.master_memory * 2, consts.OperatorResource.MASTER_MEMORY_KEY, operators),
         "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, consts.OperatorResource.WORKER_VCPU_KEY, operators),
-        "libvirt_master_vcpu": utils.resource_param(args.master_cpu, consts.OperatorResource.MASTER_VCPU_KEY, operators),
+        "libvirt_master_vcpu": utils.resource_param(args.master_cpu if not args.master_count == 1 else 8, consts.OperatorResource.MASTER_VCPU_KEY, operators),
         "worker_count": utils.resource_param(args.number_of_workers, consts.OperatorResource.WORKER_COUNT_KEY, operators),
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
