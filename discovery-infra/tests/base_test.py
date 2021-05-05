@@ -29,12 +29,14 @@ from test_infra.controllers.node_controllers import TerraformController
 class BaseTest:
 
     @pytest.fixture(scope="function")
-    @JunitFixtureTestCase()
     def get_nodes(self) -> Callable:
         """ Currently support only single instance of nodes """
         nodes_data = dict()
 
+        @JunitTestCase()
         def get_nodes_func(config: TerraformConfig = TerraformConfig()):
+            if "nodes" in nodes_data:
+                return nodes_data["nodes"]
 
             nodes_data["needs_nat"] = config.platform == consts.Platforms.NONE
             nodes_data["net_asset"] = NetworkAssets()
