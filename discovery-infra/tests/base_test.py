@@ -65,7 +65,10 @@ class BaseTest:
     @pytest.fixture()
     @JunitFixtureTestCase()
     def get_cluster(self, api_client, request, get_nodes) -> Callable:
-        clusters = []
+        """ Do not use get_nodes fixture in this fixture. It's here only to force pytest teardown
+        nodes after cluster """
+
+        clusters = list()
 
         @JunitTestCase()
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig = ClusterConfig()):
