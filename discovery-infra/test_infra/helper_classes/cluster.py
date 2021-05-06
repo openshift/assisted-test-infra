@@ -21,6 +21,8 @@ from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
 
+from assisted_service_client.models.operator_type import OperatorType
+
 
 class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
@@ -177,7 +179,7 @@ class Cluster:
 
         olm_operators = []
         for operator in cluster.monitored_operators:
-            if operator.name == operator_name or operator.operator_type == 'builtin':
+            if operator.name == operator_name or operator.operator_type == OperatorType.BUILTIN:
                 continue
             olm_operators.append({'name': operator.name, 'properties': operator.properties})
 
@@ -192,7 +194,7 @@ class Cluster:
 
         olm_operators = []
         for operator in cluster.monitored_operators:
-            if operator.operator_type == 'builtin':
+            if operator.operator_type == OperatorType.BUILTIN:
                 continue
             olm_operators.append({'name': operator.name, 'properties': operator.properties})
         olm_operators.append({'name': operator_name, 'properties': properties})
@@ -580,6 +582,8 @@ class Cluster:
         )
 
     def wait_for_operators_to_finish(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True):
+        operators = self.get_operators()
+
         if fall_on_error_status:
             statuses = [consts.OperatorStatus.AVAILABLE]
         else:
@@ -588,8 +592,18 @@ class Cluster:
         utils.wait_till_all_operators_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            operators_count=len(self.get_operators()),
+            operators_count=len(utils.filter_operators_by_type(operators, OperatorType.BUILTIN)),
+            operator_types=[OperatorType.BUILTIN],
             statuses=statuses,
+            timeout=timeout,
+            fall_on_error_status=False,
+        )
+        utils.wait_till_all_operators_are_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            operators_count=len(utils.filter_operators_by_type(operators, OperatorType.OLM)),
+            operator_types=[OperatorType.OLM],
+            statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
         )

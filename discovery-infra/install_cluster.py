@@ -9,6 +9,8 @@ from test_infra import assisted_service_api, consts, utils, warn_deprecate
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import terraform_utils
 
+from assisted_service_client.models.operator_type import OperatorType
+
 import oc_utils
 from logger import log
 
@@ -64,6 +66,7 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             client=client,
             cluster_id=cluster.id,
             operators_count=len(cluster.monitored_operators),
+            operator_types=[OperatorType.BUILTIN, OperatorType.OLM],
             statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
             timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
             fall_on_error_status=False,
