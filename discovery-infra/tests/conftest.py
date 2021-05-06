@@ -12,7 +12,7 @@ from test_infra import assisted_service_api, consts, utils
 def _get_cluster_name():
     cluster_name = utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')
     if cluster_name == consts.CLUSTER_PREFIX:
-        cluster_name = cluster_name + '-' + str(uuid.uuid4())[:8]
+        cluster_name = cluster_name + '-' + str(uuid.uuid4())[:consts.SUFFIX_LENGTH]
     return cluster_name
 
 

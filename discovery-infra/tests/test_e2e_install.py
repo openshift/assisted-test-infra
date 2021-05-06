@@ -19,8 +19,9 @@ class TestInstall(BaseTest):
     @JunitTestSuite()
     # TODO: Fix OCS
     # @pytest.mark.parametrize("olm_operator", get_api_client().get_supported_operators())
-    def test_olm_operator(self, get_nodes, cluster, olm_operator):
-        new_cluster = cluster(cluster_config=ClusterConfig(olm_operators=[olm_operator]),
-                              nodes=get_nodes(TerraformConfig(olm_operators=["lso", "cnv"])))
+    def test_olm_operator(self, get_nodes, get_cluster):
+        olm_operators = ["lso", "cnv"]
+        new_cluster = get_cluster(cluster_config=ClusterConfig(olm_operators=olm_operators),
+                                  nodes=get_nodes(TerraformConfig(olm_operators=olm_operators)))
         new_cluster.prepare_for_installation()
         new_cluster.start_install_and_wait_for_installed()

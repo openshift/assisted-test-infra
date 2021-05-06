@@ -29,9 +29,12 @@ class TerraformController(LibvirtController):
         self.master_ips = None
 
     def _get_cluster_suffix(self, cluster_name: str):
+        """ Try to get suffix from the cluster name so TF network, Cluster and Nodes will
+        have the same suffix per cluster  """
+
         try:
             cluster_suffix = cluster_name.split("-")[-1]
-            assert len(cluster_suffix) == 8
+            assert len(cluster_suffix) == consts.SUFFIX_LENGTH
         except (IndexError, AssertionError):
             cluster_suffix = self._get_random_name()
 

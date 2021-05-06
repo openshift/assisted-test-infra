@@ -6,7 +6,7 @@ import random
 import re
 import time
 from collections import Counter
-from typing import List, Union
+from typing import List, Union, Optional
 
 import requests
 import waiting
@@ -28,7 +28,7 @@ class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
     EVENTS_THRESHOLD = 500
 
-    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, nodes: Union[Nodes, None]):
+    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, nodes: Optional[Nodes] = None):
         self._config = config
         self.api_client = api_client
         self.nodes = nodes
@@ -622,6 +622,7 @@ class Cluster:
 
     @JunitTestCase()
     def prepare_for_installation(self, nodes: Nodes = None, static_network_config=None, **kwargs):
+        """ Note that nodes exist here only for backward compatibility. """
         self.update_config(**kwargs)
         nodes = nodes or self.nodes
 

@@ -59,7 +59,8 @@ class BaseTest:
             if nodes_data.get("needs_nat"):
                 nodes_data.get("nodes").unconfigure_nat()
         finally:
-            nodes_data.get("net_asset").release_all()
+            if "net_asset" in nodes_data:
+                nodes_data.get("net_asset").release_all()
 
     @pytest.fixture()
     @JunitFixtureTestCase()
