@@ -27,6 +27,7 @@ function set_dns() {
     fi
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
+    echo "server=/.apps.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     sudo systemctl reload NetworkManager
 
     echo "Finished setting dns"
@@ -34,10 +35,12 @@ function set_dns() {
 
 function update_vips() {
     API_VIP=$(sudo virsh net-dhcp-leases test-infra-net-${NAMESPACE} | grep api | awk '{print $5}' | cut -d"/" -f1)
+    INGRESS_VIP=$(sudo virsh net-dhcp-leases test-infra-net-${NAMESPACE} | grep ingress | awk '{print $5}' | cut -d"/" -f1)
+ 
     virsh net-update test-infra-net-${NAMESPACE} delete dns-host "<host ip='192.168.126.100'><hostname>api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}</hostname></host>"
     virsh net-update test-infra-net-${NAMESPACE} add dns-host "<host ip='${API_VIP}'><hostname>api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}</hostname></host>"
+    virsh net-update test-infra-net-${NAMESPACE} add dns-host "<host ip='${INGRESS_VIP}'><hostname>assisted-service-assisted-installer.apps.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}</hostname></host>"
 }
-
 
 # Delete after pushing fix to dev-scripts
 function wait_for_cluster() {

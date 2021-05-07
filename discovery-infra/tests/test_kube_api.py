@@ -27,33 +27,15 @@ PROXY_PORT = 3129
 logger = logging.getLogger(__name__)
 
 
-class TestKubeAPISNO(BaseTest):
+class TestKubeAPI(BaseTest):
 
     @pytest.mark.kube_api
-    def test_kube_api_sno_happy_flow_create_and_install_cluster(
-        self,
-        _sno_environment_variables,
-        kube_api_context,
-        nodes
-    ):
+    def test_kube_api_ipv4(self, _sno_environment_variables, kube_api_context, nodes):
         sno_kube_api_test(kube_api_context, nodes)
 
     @pytest.mark.kube_api_local
-    def test_kube_api_ipv6_sno_happy_flow_create_and_install_cluster(
-        self,
-        _sno_ipv6_environment_variables,
-        _sno_environment_variables,
-        kube_api_context,
-        proxy_server,
-        nodes,
-    ):
-        sno_kube_api_test(
-            kube_api_context,
-            nodes,
-            proxy_server,
-            is_ipv4=False,
-            is_disconnected=False
-        )
+    def test_kube_api_ipv6(self, _sno_ipv6_environment_variables, _sno_environment_variables, kube_api_context, proxy_server, nodes):
+        sno_kube_api_test(kube_api_context, nodes, proxy_server, is_ipv4=False, is_disconnected=False)
 
     @pytest.fixture(scope='function')
     def _sno_environment_variables(self):
@@ -84,19 +66,12 @@ class TestKubeAPISNO(BaseTest):
         env_variables.update(orig)
 
 
-def sno_kube_api_test(
-    kube_api_context,
-    nodes,
-    proxy_server=None,
-    *,
-    is_ipv4=True,
-    is_disconnected=False
-):
+def sno_kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = nodes.controller.cluster_name
     deployment_file = os.environ.get('CLUSTER_DEPLOYMENT_FILE')
-    installenv_file = os.environ.get('INSTALLENV_FILE')
+    infraenv_file = os.environ.get('INFRAENV_FILE')
 
-    for crd_file in (deployment_file, installenv_file):
+    for crd_file in (deployment_file, infraenv_file):
         if not crd_file:
             continue
         logger.info('using crd file: %s', crd_file)
@@ -119,7 +94,7 @@ def sno_kube_api_test(
     )
 
     if is_disconnected:
-        logger.info('getting igntion and install config override for disconected install')
+        logger.info('getting igntion and install config override for disconnected install')
         ca_bundle = get_ca_bundle_from_hub()
         patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
         ignition_config_override = get_ignition_config_override(ca_bundle)
@@ -128,20 +103,17 @@ def sno_kube_api_test(
 
     proxy = setup_proxy(machine_cidr, cluster_name, proxy_server)
 
-    installenv = deploy_default_infraenv(
+    infraenv = deploy_default_infraenv(
         kube_api_client=kube_api_context.api_client,
-        name=f'{cluster_name}-installenv',
+        name=f'{cluster_name}-infraenv',
         cluster_deployment=cluster_deployment,
         sshAuthorizedKey=env_variables['ssh_public_key'],
         ignition_config_override=ignition_config_override,
-        **{'proxy': proxy} if proxy and not installenv_file else {},
-        **{'filepath': installenv_file} if installenv_file else {}
+        **{'proxy': proxy} if proxy and not infraenv_file else {},
+        **{'filepath': infraenv_file} if infraenv_file else {}
     )
 
-    download_iso_from_installenv(installenv)
-
-    # todo: remove when installenv will stop spam the logs
-    # installenv.delete()
+    download_iso_from_infraenv(infraenv)
 
     logger.info('iso downloaded, starting nodes')
     nodes.start_all()
@@ -229,9 +201,9 @@ def scan_for_free_port():
     )
 
 
-def download_iso_from_installenv(installenv):
+def download_iso_from_infraenv(infraenv):
     logger.info('getting iso download url')
-    iso_download_url = installenv.get_iso_download_url()
+    iso_download_url = infraenv.get_iso_download_url()
     logger.info('downloading iso from url=%s', iso_download_url)
     download_iso(iso_download_url, env_variables['iso_download_path'])
     assert os.path.isfile(env_variables['iso_download_path'])
@@ -270,23 +242,23 @@ def patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle):
 def get_ignition_config_override(ca_bundle):
     ca_bundle_b64 = base64.b64encode(ca_bundle.encode()).decode()
     ignition_config_override = {
-            "ignition": {
-                "version": "3.1.0"
-            },
-            "storage": {
-                "files": [
-                    {
-                        "path": "/etc/pki/ca-trust/source/anchors/domain.crt",
-                        "mode": 420,
-                        "overwrite": True,
-                        "user": {
-                            "name": "root"
-                        },
-                        "contents": {
-                            "source": f"data:text/plain;base64,{ca_bundle_b64}"
-                        }
+        "ignition": {
+            "version": "3.1.0"
+        },
+        "storage": {
+            "files": [
+                {
+                    "path": "/etc/pki/ca-trust/source/anchors/domain.crt",
+                    "mode": 420,
+                    "overwrite": True,
+                    "user": {
+                        "name": "root"
+                    },
+                    "contents": {
+                        "source": f"data:text/plain;base64,{ca_bundle_b64}"
                     }
-                ]
-            }
+                }
+            ]
+        }
     }
     return json.dumps(ignition_config_override)

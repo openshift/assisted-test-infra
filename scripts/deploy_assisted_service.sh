@@ -18,7 +18,7 @@ export ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=${ENABLE_KUBE_API}"
 export OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS:-}
 export OPENSHIFT_VERSIONS_CMD=""
 
-if [[ "${ENABLE_KUBE_API}" == "true" && -z "${OPENSHIFT_VERSIONS}" ]]; then
+if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" && -z "${OPENSHIFT_VERSIONS}" ]]; then
     # Supporting version 4.8 for kube-api
     OPENSHIFT_VERSIONS=$(cat assisted-service/default_ocp_versions.json | jq -rc 'with_entries(.key = "4.8")')
         # TODO: include only 'rhcos_image' and 'rhcos_version' when custom
@@ -74,8 +74,8 @@ elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
 elif [ "${DEPLOY_TARGET}" == "operator" ]; then
     add_firewalld_port ${OCP_SERVICE_PORT}
 
-    export SERVICE_BASE_URL=https://${SERVICE_URL}:${OCP_SERVICE_PORT}
-    export DISKS="${OPERATOR_DISKS:-}"
+    unset SERVICE_BASE_URL
+    export DISKS="${LSO_DISKS:-}"
     export ASSISTED_NAMESPACE=${NAMESPACE}
     export SERVICE_IMAGE=${SERVICE}
     export STORAGE_CLASS_NAME="localblock-sc"
@@ -84,7 +84,6 @@ elif [ "${DEPLOY_TARGET}" == "operator" ]; then
 
     CLUSTER_VIP=$(sudo virsh net-dhcp-leases test-infra-net-${NAMESPACE} | grep ingress | awk '{print $5}' | cut -d"/" -f1)
     SERVICE_NODEPORT=$(kubectl get svc/${SERVICE_NAME} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
-    wait_for_url_and_run "${SERVICE_BASE_URL}" "spawn_port_forwarding_command ${SERVICE_NAME} ${OCP_SERVICE_PORT} ${NAMESPACE} ${NAMESPACE_INDEX} '' ocp ${CLUSTER_VIP} ${SERVICE_NODEPORT}"
 
     echo "Installation of Assisted Install operator passed successfully!"
 else

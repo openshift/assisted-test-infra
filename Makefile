@@ -110,7 +110,7 @@ CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-con
 PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 SERVICE_REPLICAS_COUNT := 3
-OPERATOR_DISKS := $(shell echo sd{b..c})
+LSO_DISKS := $(shell echo sd{b..c})
 AUTH_TYPE := $(or ${AUTH_TYPE},none)
 ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},no)
 KUBE_API := $(or ${KUBE_API},no)
@@ -363,10 +363,10 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 ############
 
 clear_operator:
-	DISKS="${OPERATOR_DISKS}" ./assisted-service/deploy/operator/destroy.sh
+	DISKS="${LSO_DISKS}" ./assisted-service/deploy/operator/destroy.sh
 
 deploy_assisted_operator: clear_operator
-	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) ENABLE_KUBE_API=true DEPLOY_TARGET=operator ./scripts/deploy_assisted_service.sh
+	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_TARGET=operator ./scripts/deploy_assisted_service.sh
 
 #############
 # Inventory #

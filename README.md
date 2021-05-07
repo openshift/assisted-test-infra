@@ -396,6 +396,12 @@ make destroy
 
 ## Run operator
 
+The current implementation installs an OCP cluster using assisted service on minikube.
+Afterwards, we install the assisted-service-operator on top of that cluster.
+The first step would be removed once we could either:
+- Have an OCP cluster easily (i.e. [CRC](https://developers.redhat.com/products/codeready-containers/overview))
+- Install the assisted-service operator on top of pure-k8s cluster. (At the moment there are some OCP component prerequisites)
+
 ```bash
 # Deploy AI with LSO
 OLM_OPERATORS=lso NUM_WORKERS=2 make run_full_flow_with_install
@@ -406,7 +412,7 @@ make deploy_assisted_operator
 
 # Run installation with the operator
 export INSTALLER_KUBECONFIG=./build/kubeconfig
-export TEST_FUNC=test_kube_api_sno_happy_flow_create_and_install_cluster
+export TEST_FUNC=test_kube_api
 export TEST=./discovery-infra/tests/test_kube_api.py
 export TEST_TEARDOWN=false
 make test

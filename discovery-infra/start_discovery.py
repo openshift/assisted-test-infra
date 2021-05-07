@@ -357,7 +357,7 @@ def _create_node_details(cluster_name):
         "libvirt_master_memory": utils.resource_param(
             args.master_memory if not args.master_count == 1 else args.master_memory * 2, consts.OperatorResource.MASTER_MEMORY_KEY, operators),
         "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, consts.OperatorResource.WORKER_VCPU_KEY, operators),
-        "libvirt_master_vcpu": utils.resource_param(args.master_cpu if not args.master_count == 1 else 8, consts.OperatorResource.MASTER_VCPU_KEY, operators),
+        "libvirt_master_vcpu": utils.resource_param(args.master_cpu, consts.OperatorResource.MASTER_VCPU_KEY, operators),
         "worker_count": utils.resource_param(args.number_of_workers, consts.OperatorResource.WORKER_COUNT_KEY, operators),
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
@@ -754,14 +754,14 @@ def execute_kube_api_flow():
         f'{args.namespace}-installer-image.iso'
     )
 
-    log.info("Creating installenv")
+    log.info("Creating infraenv")
     http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
-    install_env = InfraEnv(
+    infra_env = InfraEnv(
         kube_api_client=kube_client,
         name=f"{cluster_name}-install-env",
         namespace=args.namespace
     )
-    install_env.apply(
+    infra_env.apply(
         cluster_deployment=cluster_deployment,
         secret=secret,
         proxy=Proxy(
@@ -770,8 +770,8 @@ def execute_kube_api_flow():
             no_proxy=no_proxy
         )
     )
-    install_env.status()
-    image_url = install_env.get_iso_download_url()
+    infra_env.status()
+    image_url = infra_env.get_iso_download_url()
     utils.download_iso(image_url, image_path)
     try:
         nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment)
