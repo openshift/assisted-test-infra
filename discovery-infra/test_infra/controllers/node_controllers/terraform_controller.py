@@ -77,7 +77,8 @@ class TerraformController(LibvirtController):
             "libvirt_network_if": self.config.net_asset.libvirt_network_if,
             "libvirt_worker_disk": utils.resource_param(
                 kwargs.get("worker_disk", 21474836480), consts.OperatorResource.WORKER_DISK_KEY, operators),
-            "libvirt_master_disk": kwargs.get("master_disk", 128849018880),
+            "libvirt_master_disk": utils.resource_param(
+                kwargs.get("master_disk", 128849018880), consts.OperatorResource.MASTER_DISK_KEY, operators),
             "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.cluster_suffix,
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
             # TODO change to namespace index
@@ -85,6 +86,10 @@ class TerraformController(LibvirtController):
             "provisioning_cidr": self.config.net_asset.provisioning_cidr,
             "running": True,
             "single_node_ip": kwargs.get("single_node_ip", ''),
+            "master_disk_count": utils.resource_param(
+                kwargs.get("master_disk_count", 1), consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
+            "worker_disk_count": utils.resource_param(
+                kwargs.get("worker_disk_count", 1), consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
         }
         for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
                     "libvirt_secondary_worker_ips"]:

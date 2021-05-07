@@ -22,6 +22,8 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     network_mtu: int = None
     worker_disk: int = None
     master_disk: int = None
+    master_disk_count: int = None
+    worker_disk_count: int = None
     storage_pool_path: str = None
     # running: bool = True
     single_node_ip: str = None
