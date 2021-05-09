@@ -13,6 +13,7 @@ from kubernetes.client.rest import ApiException
 from tests.conftest import env_variables
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
+from .idict import IDict
 from .secret import deploy_default_secret, Secret
 from .global_vars import (
     CRD_API_GROUP,
@@ -31,7 +32,7 @@ ISO_URL_PATTERN = re.compile(
 )
 
 
-class Proxy:
+class Proxy(IDict):
     """Proxy settings for the installation.
 
     Args:
@@ -50,9 +51,6 @@ class Proxy:
         self.http_proxy = http_proxy
         self.https_proxy = https_proxy
         self.no_proxy = no_proxy
-
-    def __repr__(self) -> str:
-        return str(self.as_dict())
 
     def as_dict(self) -> dict:
         return {

@@ -29,6 +29,7 @@ from .global_vars import (
 from .common import does_string_contain_value, UnexpectedStateError
 from .base_resource import BaseCustomResource
 from .cluster_image_set import ClusterImageSetReference
+from .idict import IDict
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
 
@@ -36,7 +37,7 @@ from .agent import Agent
 logger = logging.getLogger(__name__)
 
 
-class Platform:
+class Platform(IDict):
     """
     A class that represents the configuration for the specific platform upon
     which to perform the installation.
@@ -54,9 +55,6 @@ class Platform:
         self.ingress_vip = ingress_vip
         self.agent_selector = agent_selector
 
-    def __repr__(self) -> str:
-        return str(self.as_dict())
-
     def as_dict(self) -> dict:
         data = {
             'agentBareMetal': {
@@ -72,7 +70,7 @@ class Platform:
         return data
 
 
-class InstallStrategy:
+class InstallStrategy(IDict):
     """
     A class that provides platform agnostic configuration for the use of
     alternate install strategies.
@@ -95,9 +93,6 @@ class InstallStrategy:
         self.control_plane_agents = control_plane_agents
         self.worker_agents = worker_agents
         self.ssh_public_key = ssh_public_key
-
-    def __repr__(self) -> str:
-        return str(self.as_dict())
 
     def as_dict(self) -> dict:
         data = {

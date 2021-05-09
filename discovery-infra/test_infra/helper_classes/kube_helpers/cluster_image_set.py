@@ -2,16 +2,16 @@ import logging
 
 from pprint import pformat
 
-import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
 from tests.conftest import env_variables
 
 from .base_resource import BaseResource
+from .idict import IDict
 
 logger = logging.getLogger(__name__)
 
 
-class ClusterImageSetReference:
+class ClusterImageSetReference(IDict):
     """
     A CRD that represents a reference for a ClusterImageSet resource.
     The reference contains only the name of the ClusterImageSet,
@@ -22,9 +22,6 @@ class ClusterImageSetReference:
             name: str,
     ):
         self.name = name
-
-    def __repr__(self) -> str:
-        return str(self.as_dict())
 
     def as_dict(self) -> dict:
         return {'name': self.name}
