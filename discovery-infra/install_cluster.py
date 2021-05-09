@@ -238,7 +238,8 @@ def main():
     # if not cluster id is given, reads it from latest run
     tf = None
     if not args.cluster_id:
-        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+        cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-' \
+                       f'{args.namespace}-{args.cluster_index}'
         tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
         args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
@@ -297,6 +298,12 @@ if __name__ == "__main__":
         help='Where assisted-service is deployed',
         type=str,
         default='minikube'
+    )
+    parser.add_argument(
+        '--cluster-index',
+        help='Cluster index in the given namespace',
+        type=int,
+        default=0,
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

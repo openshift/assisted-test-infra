@@ -10,9 +10,10 @@ class NatController:
     """
 
     @staticmethod
-    def _build_mark(ns_index):
+    def _build_mark(ns_index, cluster_index):
         """ Build iptables mark """
-        return 555 + int(ns_index)
+        mark = 555 + int(ns_index)
+        return int(str(mark) + str(cluster_index))
 
     @staticmethod
     def _get_default_interfaces():
@@ -78,20 +79,20 @@ class NatController:
             cls._delete_rule(rule_suffix)
 
     @classmethod
-    def add_nat_rules(cls, input_interfaces, ns_index):
+    def add_nat_rules(cls, input_interfaces, ns_index, cluster_index=0):
         """" Add rules for the input interfaces and output interfaces """
         logging.info("Adding nat rules for interfaces %s", input_interfaces)
-        mark = cls._build_mark(ns_index)
+        mark = cls._build_mark(ns_index, cluster_index)
         for output_interface in cls._get_default_interfaces():
             cls._add_rule(cls._build_nat_string(output_interface, mark))
         for input_interface in input_interfaces:
             cls._add_rule(cls._build_mark_string(input_interface, mark))
 
     @classmethod
-    def remove_nat_rules(cls, input_interfaces, ns_index):
+    def remove_nat_rules(cls, input_interfaces, ns_index, cluster_index=0):
         """  Delete nat rules """
         logging.info("Deleting nat rules for interfaces %s", input_interfaces)
-        mark = cls._build_mark(ns_index)
+        mark = cls._build_mark(ns_index, cluster_index)
         for input_interface in input_interfaces:
             cls._remove_rule(cls._build_mark_string(input_interface, mark))
         for output_interface in cls._get_default_interfaces():

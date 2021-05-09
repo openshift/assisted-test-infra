@@ -27,7 +27,10 @@ def execute_day2_ocp_flow(cluster_id, args, has_ipv4):
 
 
 def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
-    utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
+    image_folder = os.path.join(
+        consts.IMAGE_FOLDER, args.namespace, str(args.cluster_index)
+    )
+    utils.recreate_folder(image_folder, force_recreate=False)
     client = assisted_service_api.create_client(
         url=utils.get_assisted_service_url_by_args(args=args)
     )
@@ -50,7 +53,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
 
     config_etc_hosts(api_vip_ip, api_vip_dnsname)
     image_path = os.path.join(
-        consts.IMAGE_FOLDER,
+        image_folder,
         f'{args.namespace}-installer-image.iso'
     )
 

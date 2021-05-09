@@ -160,7 +160,8 @@ def main():
         delete_clusters_from_all_namespaces()
         return
 
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-' \
+                   f'{args.namespace}-{args.cluster_index}'
     delete_cluster(cluster_name, args.namespace)
 
 
@@ -220,6 +221,12 @@ if __name__ == "__main__":
         nargs='?',
         const=True,
         default=False,
+    )
+    parser.add_argument(
+        '--cluster-index',
+        help='Cluster index in the given namespace',
+        type=int,
+        default=0,
     )
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()

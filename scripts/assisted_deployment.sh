@@ -6,16 +6,18 @@ function destroy_all() {
 
 function set_dns() {
     NAMESPACE_INDEX=${1:-0}
+    CLUSTER_INDEX=${2:-0}
+    NETWORK_BRIDGE=tt${NAMESPACE_INDEX}-${CLUSTER_INDEX}
     if [ "${BASE_DNS_DOMAINS}" != '""' ]; then
         echo "DNS registration should be handled by assisted-service"
         exit 0
     fi
-    NAMESERVER_IP=$(ip route show dev tt$NAMESPACE_INDEX | cut -d\  -f7)
+    NAMESERVER_IP=$(ip route show dev $NETWORK_BRIDGE | cut -d\  -f7)
     if [ -z "${NAMESERVER_IP}" ] ; then
-      NAMESERVER_IP=$(ip -o -6 address show dev tt$NAMESPACE_INDEX | awk '!/ fe80/ {e=index($4,"/"); print substr($4, 0, e-1);}')
+      NAMESERVER_IP=$(ip -o -6 address show dev $NETWORK_BRIDGE | awk '!/ fe80/ {e=index($4,"/"); print substr($4, 0, e-1);}')
     fi
     if [ -z "${NAMESERVER_IP}" ] ; then
-      echo IP for interface tt$NAMESPACE_INDEX was not found
+      echo IP for interface $NETWORK_BRIDGE was not found
       exit 1
     fi
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
@@ -23,7 +25,7 @@ function set_dns() {
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
     fi
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
-    echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
+    echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}-${CLUSTER_INDEX}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     sudo systemctl reload NetworkManager
 
     echo "Finished setting dns"

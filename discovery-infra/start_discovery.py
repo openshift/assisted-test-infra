@@ -36,17 +36,31 @@ warn_deprecate()
 class MachineNetwork(object):
     YES_VALUES = ['yes', 'true', 'y']
 
-    def __init__(self, ip_v4, ip_v6, machine_cidr_4, machine_cidr_6, ns_index):
+    def __init__(
+            self,
+            ip_v4,
+            ip_v6,
+            machine_cidr_4,
+            machine_cidr_6,
+            ns_index,
+            cluster_index
+    ):
+
         self.has_ip_v4 = ip_v4.lower() in MachineNetwork.YES_VALUES
         self.has_ip_v6 = ip_v6.lower() in MachineNetwork.YES_VALUES
 
         if not (self.has_ip_v4 or self.has_ip_v6):
             raise Exception("At least one of IPv4 or IPv6 must be enabled")
 
-        self.cidr_v4 = machine_cidr_4
-        self.cidr_v6 = machine_cidr_6
-        self.provisioning_cidr_v4 = _get_provisioning_cidr(machine_cidr_4, ns_index)
-        self.provisioning_cidr_v6 = _get_provisioning_cidr6(machine_cidr_6, ns_index)
+        cidr_ipv4 = IPNetwork(machine_cidr_4)
+        cidr_ipv4 = incr_cidr_ip_by_indexes(cidr_ipv4, ns_index, cluster_index)
+        cidr_ipv6 = IPNetwork(machine_cidr_6)
+        cidr_ipv6 = incr_cidr_ip_by_indexes(cidr_ipv6, ns_index, cluster_index, is_ipv6=True)
+
+        self.cidr_v4 = str(cidr_ipv4)
+        self.cidr_v6 = str(cidr_ipv6)
+        self.provisioning_cidr_v4 = _get_provisioning_cidr(cidr_ipv4)
+        self.provisioning_cidr_v6 = _get_provisioning_cidr6(cidr_ipv6)
 
         self.machine_cidr_addresses = []
         self.provisioning_cidr_addresses = []
@@ -67,8 +81,18 @@ def set_tf_config(cluster_name):
 
     utils.copy_template_tree(tf_folder, is_none_platform_mode())
 
-    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
-    default_image_path = os.path.join(consts.IMAGE_FOLDER, f'{args.namespace}-installer-image.iso')
+    machine_net = MachineNetwork(
+        ip_v4=args.ipv4,
+        ip_v6=args.ipv6,
+        machine_cidr_4=args.vm_network_cidr,
+        machine_cidr_6=args.vm_network_cidr6,
+        ns_index=args.ns_index,
+        cluster_index=args.cluster_index,
+    )
+    default_image_path = os.path.join(
+        consts.IMAGE_FOLDER, args.namespace, str(args.cluster_index),
+        f'{args.namespace}-installer-image.iso'
+    )
     fill_tfvars(
         image_path=args.image or default_image_path,
         storage_path=args.storage_path,
@@ -250,7 +274,11 @@ def wait_until_nodes_are_registered_rest_api(
     if is_ipv4 and is_none_platform_mode() and nodes_details['master_count'] > 1:
         input_interfaces = [args.network_bridge, f"s{args.network_bridge}"]
         nat_controller = NatController()
-        nat_controller.add_nat_rules(input_interfaces, args.ns_index)
+        nat_controller.add_nat_rules(
+            input_interfaces=input_interfaces,
+            ns_index=args.ns_index,
+            cluster_index=args.cluster_index,
+        )
 
     utils.wait_till_all_hosts_are_in_status(
         client=inventory_client,
@@ -361,26 +389,26 @@ def _create_node_details(cluster_name):
         "worker_count": utils.resource_param(args.number_of_workers, consts.OperatorResource.WORKER_COUNT_KEY, operators),
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
-        "libvirt_network_name": consts.TEST_NETWORK + args.namespace,
+        "libvirt_network_name": f'{consts.TEST_NETWORK}{args.namespace}-{args.cluster_index}',
         "libvirt_network_mtu": args.network_mtu,
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": utils.resource_param(args.worker_disk, consts.OperatorResource.WORKER_DISK_KEY, operators),
         "libvirt_master_disk": args.master_disk,
-        "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
+        "libvirt_secondary_network_name": f'{consts.TEST_SECONDARY_NETWORK}{args.namespace}-{args.cluster_index}',
         "libvirt_secondary_network_if": f's{args.network_bridge}',
         "bootstrap_in_place": args.master_count == 1,
     }
 
 
-def _get_provisioning_cidr(cidr, ns_index):
+def _get_provisioning_cidr(cidr):
     provisioning_cidr = IPNetwork(cidr)
-    provisioning_cidr += ns_index + consts.NAMESPACE_POOL_SIZE
+    provisioning_cidr += consts.NAMESPACE_POOL_SIZE
     return str(provisioning_cidr)
 
 
-def _get_provisioning_cidr6(cidr, ns_index):
+def _get_provisioning_cidr6(cidr):
     provisioning_cidr = IPNetwork(cidr)
-    provisioning_cidr += ns_index
+    provisioning_cidr += consts.NAMESPACE_POOL_SIZE
     for _ in range(4):
         provisioning_cidr += (1 << 63)
     return str(provisioning_cidr)
@@ -669,16 +697,37 @@ def apply_static_network_config(cluster_name, kube_client):
 def set_network_defaults_if_needed():
     if not args.vm_network_cidr:
         net_cidr = IPNetwork('192.168.126.0/24')
-        net_cidr += args.ns_index
+        net_cidr = incr_cidr_ip_by_indexes(
+            ip=net_cidr,
+            ns_index=args.ns_index,
+            cluster_index=args.cluster_index,
+        )
         args.vm_network_cidr = str(net_cidr)
 
     if not args.vm_network_cidr6:
         net_cidr = IPNetwork('1001:db8::/120')
-        net_cidr += args.ns_index
+        net_cidr = incr_cidr_ip_by_indexes(
+            ip=net_cidr,
+            ns_index=args.ns_index,
+            cluster_index=args.cluster_index,
+            is_ipv6=True
+        )
         args.vm_network_cidr6 = str(net_cidr)
 
     if not args.network_bridge:
-        args.network_bridge = f'tt{args.ns_index}'
+        args.network_bridge = f'tt{args.ns_index}-{args.cluster_index}'
+
+    args.storage_path = os.path.join(
+        args.storage_path, args.namespace, str(args.cluster_index)
+    )
+
+
+def incr_cidr_ip_by_indexes(ip, ns_index, cluster_index, *, is_ipv6=False):
+    # for ip=x0.x1.x2.x3/16 cidr=x0+NS_INDEX.x1+CLUSTER_INDEX.0.0/16
+    # for ip=x0:x1:x2:x3/120 cidr=x0:x1:x2:NS_INDEX*100:CLUSTER_INDEX*100/120
+    bit_range = consts.RANGE_16BIT if is_ipv6 else consts.RANGE_8BIT
+    ip += ns_index * bit_range + cluster_index
+    return ip
 
 
 def run_nodes_flow(client, cluster_name, cluster, machine_net, image_path, cluster_deployment=None):
@@ -693,9 +742,20 @@ def run_nodes_flow(client, cluster_name, cluster, machine_net, image_path, clust
 
 def execute_kube_api_flow():
     log.info("Executing kube-api flow")
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
-    utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
-    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-' \
+                   f'{args.namespace}-{args.cluster_index}'
+    utils.recreate_folder(
+        os.path.join(consts.IMAGE_FOLDER, args.namespace, str(args.cluster_index)),
+        force_recreate=False
+    )
+    machine_net = MachineNetwork(
+        ip_v4=args.ipv4,
+        ip_v6=args.ipv6,
+        machine_cidr_4=args.vm_network_cidr,
+        machine_cidr_6=args.vm_network_cidr6,
+        ns_index=args.ns_index,
+        cluster_index=args.cluster_index,
+    )
     kube_client = create_kube_api_client()
     cluster_deployment = ClusterDeployment(
         kube_api_client=kube_client,
@@ -750,7 +810,7 @@ def execute_kube_api_flow():
     )
 
     image_path = os.path.join(
-        consts.IMAGE_FOLDER,
+        consts.IMAGE_FOLDER, args.namespace, str(args.cluster_index),
         f'{args.namespace}-installer-image.iso'
     )
 
@@ -784,7 +844,8 @@ def execute_kube_api_flow():
 
 def execute_day1_flow():
     client, cluster = try_get_cluster()
-    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
+    cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}' \
+                   f'-{args.namespace}-{args.cluster_index}'
 
     if cluster:
         args.base_dns_domain = cluster.base_dns_domain
@@ -795,15 +856,24 @@ def execute_day1_flow():
 
     log.info('Cluster name: %s', cluster_name)
 
-    machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
+    machine_net = MachineNetwork(
+        ip_v4=args.ipv4,
+        ip_v6=args.ipv6,
+        machine_cidr_4=args.vm_network_cidr,
+        machine_cidr_6=args.vm_network_cidr6,
+        ns_index=args.ns_index,
+        cluster_index=args.cluster_index,
+    )
+    image_folder = os.path.join(
+        consts.IMAGE_FOLDER, args.namespace, str(args.cluster_index)
+    )
     image_path = os.path.join(
-        consts.IMAGE_FOLDER,
-        f'{args.namespace}-installer-image.iso'
+        image_folder, f'{args.namespace}-installer-image.iso'
     )
     set_tf_config(cluster_name)
 
     if not args.image:
-        utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
+        utils.recreate_folder(image_folder, force_recreate=False)
         if not client:
             client = assisted_service_api.create_client(
                 url=utils.get_assisted_service_url_by_args(args=args)
@@ -1104,6 +1174,12 @@ if __name__ == "__main__":
         help='Namespace index',
         type=int,
         required=True
+    )
+    parser.add_argument(
+        '--cluster-index',
+        help='Cluster index in the given namespace',
+        type=int,
+        default=0,
     )
     parser.add_argument(
         '--keep-iso',
