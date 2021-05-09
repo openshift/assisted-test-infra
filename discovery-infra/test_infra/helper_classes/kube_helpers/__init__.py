@@ -21,16 +21,8 @@ When a ClusterDeployment has sufficient data and the assigned agents are
 approved, installation will be started automatically.
 """
 
-from .cluster_deployment import (
-    deploy_default_cluster_deployment,
-    Platform,
-    InstallStrategy,
-    ClusterDeployment
-)
-from .cluster_image_set import (
-    ClusterImageSet,
-    ClusterImageSetReference
-)
+from .cluster_deployment import deploy_default_cluster_deployment, Platform, InstallStrategy, ClusterDeployment
+from .cluster_image_set import ClusterImageSet, ClusterImageSetReference
 from .agent import Agent
 from .nmstate_config import NMStateConfig
 from .secret import deploy_default_secret, Secret
@@ -41,25 +33,25 @@ from .common import (
     suppress_not_found_error,
     UnexpectedStateError,
     KubeAPIContext,
-    ObjectReference
+    ObjectReference,
 )
 
 __all__ = (
-    'deploy_default_cluster_deployment',
-    'deploy_default_secret',
-    'deploy_default_infraenv',
-    'create_kube_api_client',
-    'delete_all_resources',
-    'suppress_not_found_error',
-    'Platform',
-    'InstallStrategy',
-    'ClusterDeployment',
-    'Secret',
-    'Agent',
-    'KubeAPIContext',
-    'ObjectReference',
-    'InfraEnv',
-    'Proxy',
-    'NMStateConfig',
-    'UnexpectedStateError',
+    "deploy_default_cluster_deployment",
+    "deploy_default_secret",
+    "deploy_default_infraenv",
+    "create_kube_api_client",
+    "delete_all_resources",
+    "suppress_not_found_error",
+    "Platform",
+    "InstallStrategy",
+    "ClusterDeployment",
+    "Secret",
+    "Agent",
+    "KubeAPIContext",
+    "ObjectReference",
+    "InfraEnv",
+    "Proxy",
+    "NMStateConfig",
+    "UnexpectedStateError",
 )
