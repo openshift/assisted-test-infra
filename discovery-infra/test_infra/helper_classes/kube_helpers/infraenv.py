@@ -27,8 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 ISO_URL_PATTERN = re.compile(
-    r'(?P<api_url>.+)/api/assisted-install/v1/clusters/'
-    r'(?P<cluster_id>[0-9a-z-]+)/downloads/image'
+    r"(?P<api_url>.+)/api/assisted-install/v1/clusters/" r"(?P<cluster_id>[0-9a-z-]+)/downloads/image"
 )
 
 
@@ -43,10 +42,10 @@ class Proxy(IDict):
     """
 
     def __init__(
-            self,
-            http_proxy: str,
-            https_proxy: str,
-            no_proxy: str,
+        self,
+        http_proxy: str,
+        https_proxy: str,
+        no_proxy: str,
     ):
         self.http_proxy = http_proxy
         self.https_proxy = https_proxy
@@ -54,9 +53,9 @@ class Proxy(IDict):
 
     def as_dict(self) -> dict:
         return {
-            'httpProxy': self.http_proxy,
-            'httpsProxy': self.https_proxy,
-            'noProxy': self.no_proxy,
+            "httpProxy": self.http_proxy,
+            "httpsProxy": self.https_proxy,
+            "noProxy": self.no_proxy,
         }
 
 
@@ -66,13 +65,14 @@ class InfraEnv(BaseCustomResource):
     Image is automatically generated on CRD deployment, after InfraEnv is
     reconciled. Image download url will be exposed in the status.
     """
-    _plural = 'infraenvs'
+
+    _plural = "infraenvs"
 
     def __init__(
-            self,
-            kube_api_client: ApiClient,
-            name: str,
-            namespace: str = env_variables['namespace'],
+        self,
+        kube_api_client: ApiClient,
+        name: str,
+        namespace: str = env_variables["namespace"],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -86,40 +86,35 @@ class InfraEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info(
-            'created infraEnv %s: %s', self.ref, pformat(yaml_data)
-        )
+        logger.info("created infraEnv %s: %s", self.ref, pformat(yaml_data))
 
     def create(
-            self,
-            cluster_deployment: ClusterDeployment,
-            secret: Secret,
-            proxy: Optional[Proxy] = None,
-            label_selector: Optional[Dict[str, str]] = None,
-            ignition_config_override: Optional[str] = None,
-            nmstate_label: Optional[str] = None,
-            **kwargs,
+        self,
+        cluster_deployment: ClusterDeployment,
+        secret: Secret,
+        proxy: Optional[Proxy] = None,
+        label_selector: Optional[Dict[str, str]] = None,
+        ignition_config_override: Optional[str] = None,
+        nmstate_label: Optional[str] = None,
+        **kwargs,
     ) -> None:
         body = {
-            'apiVersion': f'{CRD_API_GROUP}/{CRD_API_VERSION}',
-            'kind': 'InfraEnv',
-            'metadata': self.ref.as_dict(),
-            'spec': {
-                'clusterRef': cluster_deployment.ref.as_dict(),
-                'pullSecretRef': secret.ref.as_dict(),
-                'nmStateConfigLabelSelector': {
-                    'matchLabels': {
-                        f'{CRD_API_GROUP}/selector-nmstate-config-name':
-                            nmstate_label or ''
-                    }
+            "apiVersion": f"{CRD_API_GROUP}/{CRD_API_VERSION}",
+            "kind": "InfraEnv",
+            "metadata": self.ref.as_dict(),
+            "spec": {
+                "clusterRef": cluster_deployment.ref.as_dict(),
+                "pullSecretRef": secret.ref.as_dict(),
+                "nmStateConfigLabelSelector": {
+                    "matchLabels": {f"{CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label or ""}
                 },
-                'agentLabelSelector': {'matchLabels': label_selector or {}},
-                'ignitionConfigOverride': ignition_config_override or '',
-            }
+                "agentLabelSelector": {"matchLabels": label_selector or {}},
+                "ignitionConfigOverride": ignition_config_override or "",
+            },
         }
-        spec = body['spec']
+        spec = body["spec"]
         if proxy:
-            spec['proxy'] = proxy.as_dict()
+            spec["proxy"] = proxy.as_dict()
         spec.update(kwargs)
         self.crd_api.create_namespaced_custom_object(
             group=CRD_API_GROUP,
@@ -129,44 +124,42 @@ class InfraEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info(
-            'created infraEnv %s: %s', self.ref, pformat(body)
-        )
+        logger.info("created infraEnv %s: %s", self.ref, pformat(body))
 
     def patch(
-            self,
-            cluster_deployment: Optional[ClusterDeployment],
-            secret: Optional[Secret],
-            proxy: Optional[Proxy] = None,
-            label_selector: Optional[Dict[str, str]] = None,
-            ignition_config_override: Optional[str] = None,
-            nmstate_label: Optional[str] = None,
-            **kwargs,
+        self,
+        cluster_deployment: Optional[ClusterDeployment],
+        secret: Optional[Secret],
+        proxy: Optional[Proxy] = None,
+        label_selector: Optional[Dict[str, str]] = None,
+        ignition_config_override: Optional[str] = None,
+        nmstate_label: Optional[str] = None,
+        **kwargs,
     ) -> None:
-        body = {'spec': kwargs}
+        body = {"spec": kwargs}
 
-        spec = body['spec']
+        spec = body["spec"]
         if cluster_deployment:
-            spec['clusterRef'] = cluster_deployment.ref.as_dict()
+            spec["clusterRef"] = cluster_deployment.ref.as_dict()
 
         if secret:
-            spec['pullSecretRef'] = secret.ref.as_dict()
+            spec["pullSecretRef"] = secret.ref.as_dict()
 
         if proxy:
-            spec['proxy'] = proxy.as_dict()
+            spec["proxy"] = proxy.as_dict()
 
         if label_selector:
-            spec['agentLabelSelector'] = {'matchLabels': label_selector}
+            spec["agentLabelSelector"] = {"matchLabels": label_selector}
 
         if nmstate_label:
-            spec['nmStateConfigLabelSelector'] = {
-                'matchLabels': {
-                    f'{CRD_API_GROUP}/selector-nmstate-config-name': nmstate_label,
+            spec["nmStateConfigLabelSelector"] = {
+                "matchLabels": {
+                    f"{CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label,
                 }
             }
 
         if ignition_config_override:
-            spec['ignitionConfigOverride'] = ignition_config_override
+            spec["ignitionConfigOverride"] = ignition_config_override
 
         self.crd_api.patch_namespaced_custom_object(
             group=CRD_API_GROUP,
@@ -177,9 +170,7 @@ class InfraEnv(BaseCustomResource):
             body=body,
         )
 
-        logger.info(
-            'patching infraEnv %s: %s', self.ref, pformat(body)
-        )
+        logger.info("patching infraEnv %s: %s", self.ref, pformat(body))
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
@@ -199,11 +190,11 @@ class InfraEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info('deleted infraEnv %s', self.ref)
+        logger.info("deleted infraEnv %s", self.ref)
 
     def status(
-            self,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+        self,
+        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     ) -> dict:
         """
         Status is a section in the CRD that is created after registration to
@@ -213,54 +204,54 @@ class InfraEnv(BaseCustomResource):
         """
 
         def _attempt_to_get_status() -> dict:
-            return self.get()['status']
+            return self.get()["status"]
 
         return waiting.wait(
             _attempt_to_get_status,
             sleep_seconds=0.5,
             timeout_seconds=timeout,
-            waiting_for=f'infraEnv {self.ref} status',
+            waiting_for=f"infraEnv {self.ref} status",
             expected_exceptions=KeyError,
         )
 
     def get_iso_download_url(
-            self,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
+        self,
+        timeout: Union[int, float] = DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
     ):
         def _attempt_to_get_image_url() -> str:
-            return self.get()['status']['isoDownloadURL']
+            return self.get()["status"]["isoDownloadURL"]
 
         return waiting.wait(
             _attempt_to_get_image_url,
             sleep_seconds=3,
             timeout_seconds=timeout,
-            waiting_for='image to be created',
+            waiting_for="image to be created",
             expected_exceptions=KeyError,
         )
 
     def get_cluster_id(self):
         iso_download_url = self.get_iso_download_url()
-        return ISO_URL_PATTERN.match(iso_download_url).group('cluster_id')
+        return ISO_URL_PATTERN.match(iso_download_url).group("cluster_id")
 
 
 def deploy_default_infraenv(
-        kube_api_client: ApiClient,
-        name: str,
-        ignore_conflict: bool = True,
-        cluster_deployment: Optional[ClusterDeployment] = None,
-        secret: Optional[Secret] = None,
-        proxy: Optional[Proxy] = None,
-        label_selector: Optional[Dict[str, str]] = None,
-        ignition_config_override: Optional[str] = None,
-        **kwargs,
+    kube_api_client: ApiClient,
+    name: str,
+    ignore_conflict: bool = True,
+    cluster_deployment: Optional[ClusterDeployment] = None,
+    secret: Optional[Secret] = None,
+    proxy: Optional[Proxy] = None,
+    label_selector: Optional[Dict[str, str]] = None,
+    ignition_config_override: Optional[str] = None,
+    **kwargs,
 ) -> InfraEnv:
 
     infra_env = InfraEnv(kube_api_client, name)
     try:
-        if 'filepath' in kwargs:
+        if "filepath" in kwargs:
             _create_infraenv_from_yaml_file(
                 infra_env=infra_env,
-                filepath=kwargs['filepath'],
+                filepath=kwargs["filepath"],
             )
         else:
             _create_infraenv_from_attrs(
@@ -276,7 +267,7 @@ def deploy_default_infraenv(
                 **kwargs,
             )
     except ApiException as e:
-        if not (e.reason == 'Conflict' and ignore_conflict):
+        if not (e.reason == "Conflict" and ignore_conflict):
             raise
 
     # wait until install-env will have status (i.e until resource will be
@@ -287,8 +278,8 @@ def deploy_default_infraenv(
 
 
 def _create_infraenv_from_yaml_file(
-        infra_env: InfraEnv,
-        filepath: str,
+    infra_env: InfraEnv,
+    filepath: str,
 ) -> None:
     with open(filepath) as fp:
         yaml_data = yaml.safe_load(fp)
@@ -297,14 +288,14 @@ def _create_infraenv_from_yaml_file(
 
 
 def _create_infraenv_from_attrs(
-        kube_api_client: ApiClient,
-        infra_env: InfraEnv,
-        cluster_deployment: ClusterDeployment,
-        secret: Optional[Secret] = None,
-        proxy: Optional[Proxy] = None,
-        label_selector: Optional[Dict[str, str]] = None,
-        ignition_config_override: Optional[str] = None,
-        **kwargs,
+    kube_api_client: ApiClient,
+    infra_env: InfraEnv,
+    cluster_deployment: ClusterDeployment,
+    secret: Optional[Secret] = None,
+    proxy: Optional[Proxy] = None,
+    label_selector: Optional[Dict[str, str]] = None,
+    ignition_config_override: Optional[str] = None,
+    **kwargs,
 ) -> None:
     if not secret:
         secret = deploy_default_secret(

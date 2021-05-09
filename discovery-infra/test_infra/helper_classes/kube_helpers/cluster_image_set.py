@@ -17,14 +17,15 @@ class ClusterImageSetReference(IDict):
     The reference contains only the name of the ClusterImageSet,
     so the assisted-service could fetch the resource accordingly.
     """
+
     def __init__(
-            self,
-            name: str,
+        self,
+        name: str,
     ):
         self.name = name
 
     def as_dict(self) -> dict:
-        return {'name': self.name}
+        return {"name": self.name}
 
 
 class ClusterImageSet(BaseResource):
@@ -34,15 +35,15 @@ class ClusterImageSet(BaseResource):
     from the image set.
     """
 
-    _api_group = 'hive.openshift.io'
-    _api_version = 'v1'
-    _plural = 'clusterimagesets'
+    _api_group = "hive.openshift.io"
+    _api_version = "v1"
+    _plural = "clusterimagesets"
 
     def __init__(
-            self,
-            kube_api_client: ApiClient,
-            name: str,
-            namespace: str = env_variables['namespace'],
+        self,
+        kube_api_client: ApiClient,
+        name: str,
+        namespace: str = env_variables["namespace"],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -55,21 +56,16 @@ class ClusterImageSet(BaseResource):
             body=yaml_data,
         )
 
-        logger.info(
-            'created cluster imageset %s: %s', self.ref, pformat(yaml_data)
-        )
+        logger.info("created cluster imageset %s: %s", self.ref, pformat(yaml_data))
 
-    def create(
-            self,
-            releaseImage: str
-    ):
+    def create(self, releaseImage: str):
         body = {
-            'apiVersion': f'{self._api_group}/{self._api_version}',
-            'kind': 'ClusterImageSet',
-            'metadata': self.ref.as_dict(),
-            'spec': {
-                'releaseImage': releaseImage,
-            }
+            "apiVersion": f"{self._api_group}/{self._api_version}",
+            "kind": "ClusterImageSet",
+            "metadata": self.ref.as_dict(),
+            "spec": {
+                "releaseImage": releaseImage,
+            },
         }
         self.crd_api.create_cluster_custom_object(
             group=self._api_group,
@@ -78,9 +74,7 @@ class ClusterImageSet(BaseResource):
             body=body,
         )
 
-        logger.info(
-            'created cluster imageset %s: %s', self.ref, pformat(body)
-        )
+        logger.info("created cluster imageset %s: %s", self.ref, pformat(body))
 
     def get(self) -> dict:
         return self.crd_api.get_cluster_custom_object(
@@ -98,4 +92,4 @@ class ClusterImageSet(BaseResource):
             name=self.ref.name,
         )
 
-        logger.info('deleted cluster imageset %s', self.ref)
+        logger.info("deleted cluster imageset %s", self.ref)

@@ -12,7 +12,7 @@ from test_infra.helper_classes.kube_helpers.idict import IDict
 from tests.conftest import env_variables
 
 # silence kubernetes debug messages.
-logging.getLogger('kubernetes').setLevel(logging.INFO)
+logging.getLogger("kubernetes").setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +27,18 @@ class KubeAPIContext:
     custom resources. It provides a contextmanager responsible for cleanup of
     all the resources created within it.
     """
+
     resources = set()
 
     def __init__(self, kube_api_client: Optional[ApiClient] = None):
         self.api_client = kube_api_client
 
     def __enter__(self):
-        logger.info('entering kube api context')
+        logger.info("entering kube api context")
         self.resources.clear()
 
     def __exit__(self, *_):
-        logger.info('exiting kube api context')
+        logger.info("exiting kube api context")
         delete_all_resources(self)
 
 
@@ -51,35 +52,32 @@ class ObjectReference(IDict):
         self.name = name
         self.namespace = namespace
 
-    def __eq__(self, other: 'ObjectReference') -> bool:
+    def __eq__(self, other: "ObjectReference") -> bool:
         return other.name == self.name and other.namespace == self.namespace
 
     def as_dict(self) -> dict:
-        return {'name': self.name, 'namespace': self.namespace}
+        return {"name": self.name, "namespace": self.namespace}
 
 
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
     if not kubeconfig_path:
-        kubeconfig_path = env_variables['installer_kubeconfig_path']
+        kubeconfig_path = env_variables["installer_kubeconfig_path"]
 
-    logger.info('creating kube client with config file: %s', kubeconfig_path)
+    logger.info("creating kube client with config file: %s", kubeconfig_path)
 
     conf = Configuration()
     load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
     return ApiClient(configuration=conf)
 
 
-def delete_all_resources(
-        kube_api_context: KubeAPIContext,
-        ignore_not_found: bool = True
-) -> None:
-    logger.info('deleting all resources')
+def delete_all_resources(kube_api_context: KubeAPIContext, ignore_not_found: bool = True) -> None:
+    logger.info("deleting all resources")
 
     for resource in kube_api_context.resources:
         try:
             resource.delete()
         except ApiException as e:
-            if not (e.reason == 'Not Found' and ignore_not_found):
+            if not (e.reason == "Not Found" and ignore_not_found):
                 raise
 
 
@@ -93,7 +91,8 @@ def suppress_not_found_error(fn):
         try:
             return fn(*args, **kwargs)
         except ApiException as e:
-            if e.reason == 'Not Found':
+            if e.reason == "Not Found":
                 return
             raise
+
     return decorator

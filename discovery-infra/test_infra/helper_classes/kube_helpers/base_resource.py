@@ -12,6 +12,7 @@ class BaseResource(abc.ABC):
     a shared KubeAPIContext. Any sub instance of this class will be added to the
     shared context.
     """
+
     context = KubeAPIContext()
 
     def __init__(self, name: str, namespace: str):

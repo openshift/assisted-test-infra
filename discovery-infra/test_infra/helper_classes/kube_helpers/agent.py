@@ -23,23 +23,24 @@ class Agent(BaseCustomResource):
     resource and assign it to the relevant cluster.
     In oder to start the installation, all assigned agents must be approved.
     """
-    _plural = 'agents'
+
+    _plural = "agents"
 
     def __init__(
-            self,
-            kube_api_client: ApiClient,
-            name: str,
-            namespace: str = env_variables['namespace'],
+        self,
+        kube_api_client: ApiClient,
+        name: str,
+        namespace: str = env_variables["namespace"],
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
 
     @classmethod
     def list(
-            cls,
-            crd_api: CustomObjectsApi,
-            cluster_deployment: 'ClusterDeployment',
-    ) -> List['Agent']:
+        cls,
+        crd_api: CustomObjectsApi,
+        cluster_deployment: "ClusterDeployment",
+    ) -> List["Agent"]:
         resources = crd_api.list_namespaced_custom_object(
             group=CRD_API_GROUP,
             version=CRD_API_VERSION,
@@ -47,26 +48,24 @@ class Agent(BaseCustomResource):
             namespace=cluster_deployment.ref.namespace,
         )
         assigned_agents = []
-        for item in resources.get('items', []):
+        for item in resources.get("items", []):
             assigned_cluster_ref = ObjectReference(
-                name=item['spec']['clusterDeploymentName']['name'],
-                namespace=item['spec']['clusterDeploymentName']['namespace'],
+                name=item["spec"]["clusterDeploymentName"]["name"],
+                namespace=item["spec"]["clusterDeploymentName"]["namespace"],
             )
             if assigned_cluster_ref == cluster_deployment.ref:
                 assigned_agents.append(
                     cls(
                         kube_api_client=cluster_deployment.crd_api.api_client,
-                        name=item['metadata']['name'],
-                        namespace=item['metadata']['namespace'],
+                        name=item["metadata"]["name"],
+                        namespace=item["metadata"]["namespace"],
                     )
                 )
 
         return assigned_agents
 
     def create(self):
-        raise RuntimeError(
-            'agent resource must be created by the assisted-installer operator'
-        )
+        raise RuntimeError("agent resource must be created by the assisted-installer operator")
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
@@ -78,7 +77,7 @@ class Agent(BaseCustomResource):
         )
 
     def patch(self, **kwargs) -> None:
-        body = {'spec': kwargs}
+        body = {"spec": kwargs}
 
         self.crd_api.patch_namespaced_custom_object(
             group=CRD_API_GROUP,
@@ -89,9 +88,7 @@ class Agent(BaseCustomResource):
             body=body,
         )
 
-        logger.info(
-            'patching agent %s: %s', self.ref, pformat(body)
-        )
+        logger.info("patching agent %s: %s", self.ref, pformat(body))
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
@@ -102,24 +99,21 @@ class Agent(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info('deleted agent %s', self.ref)
+        logger.info("deleted agent %s", self.ref)
 
-    def status(
-            self,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
-    ) -> dict:
+    def status(self, timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
-            return self.get()['status']
+            return self.get()["status"]
 
         return waiting.wait(
             _attempt_to_get_status,
             sleep_seconds=0.5,
             timeout_seconds=timeout,
-            waiting_for=f'agent {self.ref} status',
-            expected_exceptions=KeyError
+            waiting_for=f"agent {self.ref} status",
+            expected_exceptions=KeyError,
         )
 
     def approve(self) -> None:
         self.patch(approved=True)
 
-        logger.info('approved agent %s', self.ref)
+        logger.info("approved agent %s", self.ref)
