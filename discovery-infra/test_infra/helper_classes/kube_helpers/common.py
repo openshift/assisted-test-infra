@@ -8,6 +8,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration
 
+from test_infra.helper_classes.kube_helpers.idict import IDict
 from tests.conftest import env_variables
 
 # silence kubernetes debug messages.
@@ -40,7 +41,7 @@ class KubeAPIContext:
         delete_all_resources(self)
 
 
-class ObjectReference:
+class ObjectReference(IDict):
     """
     A class that contains the information required to let you locate a
     referenced Kube API resource.
@@ -49,9 +50,6 @@ class ObjectReference:
     def __init__(self, name: str, namespace: str):
         self.name = name
         self.namespace = namespace
-
-    def __repr__(self) -> str:
-        return str(self.as_dict())
 
     def __eq__(self, other: 'ObjectReference') -> bool:
         return other.name == self.name and other.namespace == self.namespace
