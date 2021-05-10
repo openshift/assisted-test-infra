@@ -3,7 +3,7 @@ from typing import Any
 from dataclasses import dataclass
 
 from .env_config import EnvConfig
-from test_infra.helper_classes.config import BaseClusterConfig, BaseNodesConfig
+from test_infra.helper_classes.config import BaseClusterConfig, BaseTerraformConfig
 
 
 @dataclass
@@ -16,7 +16,7 @@ class ClusterConfig(BaseClusterConfig):
 
 
 @dataclass
-class NodesConfig(BaseNodesConfig):
+class TerraformConfig(BaseTerraformConfig):
     """ A Nodes configuration with defaults that obtained from EnvConfig """
 
     @staticmethod

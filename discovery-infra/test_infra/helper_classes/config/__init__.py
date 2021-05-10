@@ -1,8 +1,8 @@
 from .cluster_config import BaseClusterConfig
-from .nodes_config import BaseNodesConfig
+from .nodes_config import BaseTerraformConfig
 
 
 __all__ = [
     "BaseClusterConfig",
-    "BaseNodesConfig"
+    "BaseTerraformConfig"
 ]

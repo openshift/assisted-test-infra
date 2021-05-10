@@ -4,39 +4,48 @@ import logging
 import os
 import shutil
 import uuid
+import warnings
 from typing import List
 
 from munch import Munch
 from test_infra import consts, utils, virsh_cleanup
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.controllers.node_controllers.node import Node
+from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.tools import static_network, terraform_utils
 
 
 class TerraformController(LibvirtController):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.cluster_suffix = kwargs.get('cluster_suffix', self._get_random_name())
-        self.cluster_name = kwargs.get('cluster_name', f'{consts.CLUSTER_PREFIX}' + "-" + self.cluster_suffix)
-        self.network_name = kwargs.get('network_name', consts.TEST_NETWORK) + self.cluster_suffix
-        self.network_conf = kwargs.get('net_asset')
-        self.platform = kwargs.get('platform', consts.Platforms.BARE_METAL)
-        self.cluster_domain = kwargs.get('base_domain', consts.DEFAULT_BASE_DNS_DOMAIN)
-        self.ipv6 = kwargs.get('ipv6')
-        self.params = self._terraform_params(**kwargs)
-        tf_folder = kwargs.get('tf_folder')
-        self.tf_folder = tf_folder if tf_folder else self._create_tf_folder()
-        self.image_path = kwargs["iso_download_path"]
-        self.bootstrap_in_place = kwargs.get('bootstrap_in_place', False)
+    def __init__(self, config: BaseTerraformConfig):
+        super().__init__(config.private_ssh_key_path)
+        self.config = config
+        self.cluster_suffix = self._get_cluster_suffix(config.cluster_name)
+        self.cluster_name = config.cluster_name
+        self.network_name = config.network_name + self.cluster_suffix
+        self.tf_folder = config.tf_folder or self._create_tf_folder(self.cluster_name, config.platform)
+        self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
         self.master_ips = None
 
-    def _create_tf_folder(self):
-        tf_folder = utils.get_tf_folder(self.cluster_name)
+    def _get_cluster_suffix(self, cluster_name: str):
+        """ Try to get suffix from the cluster name so TF network, Cluster and Nodes will
+        have the same suffix per cluster  """
+
+        try:
+            cluster_suffix = cluster_name.split("-")[-1]
+            assert len(cluster_suffix) == consts.SUFFIX_LENGTH
+        except (IndexError, AssertionError):
+            cluster_suffix = self._get_random_name()
+
+        return cluster_suffix
+
+    @classmethod
+    def _create_tf_folder(cls, cluster_name: str, platform: str):
+        tf_folder = utils.get_tf_folder(cluster_name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder, none_platform_mode=self.platform == consts.Platforms.NONE)
+        utils.copy_template_tree(tf_folder, none_platform_mode=platform == consts.Platforms.NONE)
         return tf_folder
 
     @classmethod
@@ -44,6 +53,7 @@ class TerraformController(LibvirtController):
         return uuid.uuid4().hex[:8].lower()
 
     # TODO move all those to conftest and pass it as kwargs
+    # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
     def _terraform_params(self, **kwargs):
         operators = kwargs.get("olm_operators", [])
         params = {
@@ -56,26 +66,26 @@ class TerraformController(LibvirtController):
             "libvirt_master_vcpu": utils.resource_param(
                 kwargs.get("master_vcpu", 4), consts.OperatorResource.MASTER_VCPU_KEY, operators),
             "worker_count": utils.resource_param(
-                kwargs.get('num_workers', 0), consts.OperatorResource.WORKER_COUNT_KEY, operators),
-            "master_count": kwargs.get('num_masters', consts.NUMBER_OF_MASTERS),
+                kwargs.get("workers_count", 0), consts.OperatorResource.WORKER_COUNT_KEY, operators),
+            "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
             "cluster_name": self.cluster_name,
-            "cluster_domain": self.cluster_domain,
+            "cluster_domain": self.config.base_dns_domain,
             "machine_cidr": self.get_machine_cidr(),
             "libvirt_network_name": self.network_name,
-            "libvirt_network_mtu": kwargs.get('network_mtu', 1500),
+            "libvirt_network_mtu": kwargs.get("network_mtu", 1500),
             # TODO change to namespace index
-            "libvirt_network_if": self.network_conf.libvirt_network_if,
+            "libvirt_network_if": self.config.net_asset.libvirt_network_if,
             "libvirt_worker_disk": utils.resource_param(
-                kwargs.get('worker_disk', 21474836480), consts.OperatorResource.WORKER_DISK_KEY, operators),
-            "libvirt_master_disk": kwargs.get('master_disk', 128849018880),
+                kwargs.get("worker_disk", 21474836480), consts.OperatorResource.WORKER_DISK_KEY, operators),
+            "libvirt_master_disk": kwargs.get("master_disk", 128849018880),
             "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.cluster_suffix,
-            "libvirt_storage_pool_path": kwargs.get('storage_pool_path', os.path.join(os.getcwd(), "storage_pool")),
+            "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
             # TODO change to namespace index
-            "libvirt_secondary_network_if": self.network_conf.libvirt_secondary_network_if,
-            "provisioning_cidr": self.network_conf.provisioning_cidr,
+            "libvirt_secondary_network_if": self.config.net_asset.libvirt_secondary_network_if,
+            "provisioning_cidr": self.config.net_asset.provisioning_cidr,
             "running": True,
-            "single_node_ip": kwargs.get('single_node_ip', ''),
-            }
+            "single_node_ip": kwargs.get("single_node_ip", ''),
+        }
         for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
                     "libvirt_secondary_worker_ips"]:
             value = kwargs.get(key)
@@ -90,7 +100,7 @@ class TerraformController(LibvirtController):
     def _create_nodes(self, running=True):
         logging.info("Creating tfvars")
 
-        self._fill_tfvars()
+        self._fill_tfvars(running)
         logging.info('Start running terraform')
         self.tf.apply()
         if self.params.running:
@@ -123,7 +133,7 @@ class TerraformController(LibvirtController):
             + 10
             + int(tfvars["master_count"])
         )
-        tfvars['image_path'] = self.image_path
+        tfvars['image_path'] = self.config.iso_download_path
         tfvars['master_count'] = self.params.master_count
         self.master_ips = tfvars['libvirt_master_ips'] = self._create_address_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
@@ -133,9 +143,9 @@ class TerraformController(LibvirtController):
         )
         tfvars['machine_cidr_addresses'] = [machine_cidr]
         tfvars['provisioning_cidr_addresses'] = [provisioning_cidr]
-        tfvars['bootstrap_in_place'] = self.bootstrap_in_place
+        tfvars['bootstrap_in_place'] = self.config.bootstrap_in_place
         tfvars['api_vip'] = self.get_ingress_and_api_vips()["api_vip"]
-        tfvars['running'] = self.params.running
+        tfvars['running'] = running
         tfvars['libvirt_master_macs'] = static_network.generate_macs(self.params.master_count)
         tfvars['libvirt_worker_macs'] = static_network.generate_macs(self.params.worker_count)
         tfvars.update(self.params)
@@ -191,24 +201,24 @@ class TerraformController(LibvirtController):
             )
             + 100
         )
-        ips = utils.create_ip_address_list(
-            2, starting_ip_addr=str(ipaddress.ip_address(network_subnet_starting_ip))
-        )
+        ips = utils.create_ip_address_list(2, starting_ip_addr=str(ipaddress.ip_address(network_subnet_starting_ip)))
         return {"api_vip": ips[0], "ingress_vip": ips[1]}
 
-    @utils.on_exception(
-        message='Failed to run terraform delete',
-        silent=True
-    )
+    @utils.on_exception(message='Failed to run terraform delete', silent=True)
     def _create_address_list(self, num, starting_ip_addr):
-        return utils.create_empty_nested_list(num) \
-            if self.ipv6 else utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
+        if self.config.is_ipv6:
+            return utils.create_empty_nested_list(num)
+        return utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
     def get_machine_cidr(self):
-        return self.network_conf.machine_cidr6 if self.ipv6 else self.network_conf.machine_cidr
+        if self.config.is_ipv6:
+            return self.config.net_asset.machine_cidr6
+        return self.config.net_asset.machine_cidr
 
     def get_provisioning_cidr(self):
-        return self.network_conf.provisioning_cidr6 if self.ipv6 else self.network_conf.provisioning_cidr
+        if self.config.is_ipv6:
+            return self.config.net_asset.provisioning_cidr6
+        return self.config.net_asset.provisioning_cidr
 
     def _try_to_delete_nodes(self):
         logging.info('Start running terraform delete')
@@ -245,13 +255,85 @@ class TerraformController(LibvirtController):
     def prepare_nodes(self):
         logging.info("Preparing nodes")
         self.destroy_all_nodes()
-        if not os.path.exists(self.image_path):
-            utils.recreate_folder(os.path.dirname(self.image_path), force_recreate=False)
+        if not os.path.exists(self.config.iso_download_path):
+            utils.recreate_folder(os.path.dirname(self.config.iso_download_path), force_recreate=False)
             # if file not exist lets create dummy
-            utils.touch(self.image_path)
+            utils.touch(self.config.iso_download_path)
         self.params.running = False
         self._create_nodes()
 
     def get_cluster_network(self):
         logging.info(f'Cluster network name: {self.network_name}')
         return self.network_name
+
+    @property
+    def network_conf(self):
+        warnings.warn("network_conf will soon be deprecated. Use controller.config.net_asset instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        return self.config.net_asset
+
+    @network_conf.setter
+    def network_conf(self, network_conf):
+        warnings.warn("network_conf will soon be deprecated. Use controller.config.net_asset instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        self.config.net_asset = network_conf
+
+    @property
+    def platform(self):
+        warnings.warn("platform will soon be deprecated. Use controller.config.platform instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        return self.config.platform
+
+    @platform.setter
+    def platform(self, platform):
+        warnings.warn("platform will soon be deprecated. Use controller.config.platform instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        self.config.platform = platform
+
+    @property
+    def cluster_domain(self):
+        warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        return self.config.base_dns_domain
+
+    @cluster_domain.setter
+    def cluster_domain(self, cluster_domain):
+        warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        self.config.base_dns_domain = cluster_domain
+
+    @property
+    def ipv6(self):
+        warnings.warn("ipv6 will soon be deprecated. Use controller.config.is_ipv6 instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        return self.config.is_ipv6
+
+    @ipv6.setter
+    def ipv6(self, ipv6):
+        warnings.warn("ipv6 will soon be deprecated. Use controller.config.is_ipv6 instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        self.config.is_ipv6 = ipv6
+
+    @property
+    def image_path(self):
+        warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        return self.config.iso_download_path
+
+    @image_path.setter
+    def image_path(self, image_path):
+        warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        self.config.iso_download_path = image_path
+
+    @property
+    def bootstrap_in_place(self):
+        warnings.warn("bootstrap_in_place will soon be deprecated. Use controller.config.bootstrap_in_place instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        return self.config.bootstrap_in_place
+
+    @bootstrap_in_place.setter
+    def bootstrap_in_place(self, bootstrap_in_place):
+        warnings.warn("bootstrap_in_place will soon be deprecated. Use controller.config.bootstrap_in_place instead. "
+                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        self.config.bootstrap_in_place = bootstrap_in_place

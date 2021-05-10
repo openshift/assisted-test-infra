@@ -2,8 +2,8 @@ import json
 import logging
 import os
 import shutil
+from collections import Callable
 from contextlib import suppress
-from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -15,62 +15,66 @@ from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
 from test_infra import consts
-from tests.config import ClusterConfig
+from tests.config import ClusterConfig, EnvConfig
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import NetworkAssets
+from tests.config import TerraformConfig
 from tests.conftest import env_variables
+from test_infra.controllers.node_controllers import TerraformController
 
 
 class BaseTest:
-    @staticmethod
-    def override_node_parameters(**kwargs):
-        _vars = deepcopy(env_variables)
-        for key, value in kwargs.items():
-            _vars[key] = value
-
-        _vars['num_nodes'] = _vars['num_workers'] + _vars['num_masters']
-
-        return _vars
 
     @pytest.fixture(scope="function")
-    @JunitFixtureTestCase()
-    def nodes(self, setup_node_controller, request):
-        if hasattr(request, 'param'):
-            node_vars = self.override_node_parameters(**request.param)
-        else:
-            node_vars = env_variables
-        net_asset = None
-        needs_nat = node_vars.get("platform") == consts.Platforms.NONE
-        try:
-            net_asset = NetworkAssets()
-            node_vars["net_asset"] = net_asset.get()
-            controller = setup_node_controller(**node_vars)
-            nodes = Nodes(controller, node_vars["private_ssh_key_path"])
+    def get_nodes(self) -> Callable:
+        """ Currently support only single instance of nodes """
+        nodes_data = dict()
+
+        @JunitTestCase()
+        def get_nodes_func(config: TerraformConfig = TerraformConfig()):
+            if "nodes" in nodes_data:
+                return nodes_data["nodes"]
+
+            nodes_data["needs_nat"] = config.platform == consts.Platforms.NONE
+            nodes_data["net_asset"] = NetworkAssets()
+            config.net_asset = nodes_data["net_asset"].get()
+
+            nodes = Nodes(TerraformController(config), config.private_ssh_key_path)
             nodes.prepare_nodes()
-            if needs_nat:
+            if nodes_data["needs_nat"]:
                 nodes.configure_nat()
-            yield nodes
-            if env_variables['test_teardown']:
+
+            nodes_data["nodes"] = nodes
+            return nodes
+
+        yield get_nodes_func
+
+        try:
+            if EnvConfig.get("test_teardown"):
                 logging.info('--- TEARDOWN --- node controller\n')
-                nodes.destroy_all_nodes()
-            if needs_nat:
-                nodes.unconfigure_nat()
+                nodes_data.get("nodes").destroy_all_nodes()
+            if nodes_data.get("needs_nat"):
+                nodes_data.get("nodes").unconfigure_nat()
         finally:
-            net_asset.release_all()
+            if "net_asset" in nodes_data:
+                nodes_data.get("net_asset").release_all()
 
     @pytest.fixture()
     @JunitFixtureTestCase()
-    def cluster(self, api_client, request, nodes):
-        clusters = []
+    def get_cluster(self, api_client, request, get_nodes) -> Callable:
+        """ Do not use get_nodes fixture in this fixture. It's here only to force pytest teardown
+        nodes after cluster """
+
+        clusters = list()
 
         @JunitTestCase()
-        def get_cluster_func(cluster_config: ClusterConfig = ClusterConfig()):
+        def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig = ClusterConfig()):
             if not cluster_config.cluster_name:
                 cluster_config.cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
-            res = Cluster(api_client=api_client, config=cluster_config)
+            res = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
             clusters.append(res)
             return res
 
@@ -78,7 +82,7 @@ class BaseTest:
         for cluster in clusters:
             if request.node.result_call.failed:
                 logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
-                self.collect_test_logs(cluster, api_client, request.node, nodes)
+                self.collect_test_logs(cluster, api_client, request.node, cluster.nodes)
             if env_variables['test_teardown']:
                 if cluster.is_installing() or cluster.is_finalizing():
                     cluster.cancel_install()
@@ -207,7 +211,7 @@ class BaseTest:
         assert len(string) == expected_len, "Expected len string of: " + str(expected_len) + \
                                             " rather than: " + str(len(string)) + " String value: " + string
 
-    def collect_test_logs(self, cluster, api_client, test, nodes):
+    def collect_test_logs(self, cluster, api_client, test: pytest.Function, nodes: Nodes):
         log_dir_name = f"{env_variables['log_folder']}/{test.name}"
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
@@ -217,7 +221,7 @@ class BaseTest:
         self._collect_journalctl(nodes, log_dir_name)
 
     @classmethod
-    def _collect_virsh_logs(cls, nodes, log_dir_name):
+    def _collect_virsh_logs(cls, nodes: Nodes, log_dir_name):
         logging.info('Collecting virsh logs\n')
         os.makedirs(log_dir_name, exist_ok=True)
         virsh_log_path = os.path.join(log_dir_name, "libvirt_logs")
@@ -251,7 +255,7 @@ class BaseTest:
                                 f"-u libvirtd -D /run/log/journal >> {libvird_log_path}", shell=True)
 
     @staticmethod
-    def _collect_journalctl(nodes, log_dir_name):
+    def _collect_journalctl(nodes: Nodes, log_dir_name):
         logging.info('Collecting journalctl\n')
         infra_utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
         journal_ctl_path = Path(log_dir_name) / 'nodes_journalctl'

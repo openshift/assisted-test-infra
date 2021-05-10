@@ -7,13 +7,12 @@ from typing import List
 import pytest
 import test_infra.utils as infra_utils
 from test_infra import assisted_service_api, consts, utils
-from test_infra.controllers.node_controllers.terraform_controller import TerraformController as nodeController
 
 
 def _get_cluster_name():
     cluster_name = utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')
     if cluster_name == consts.CLUSTER_PREFIX:
-        cluster_name = cluster_name + '-' + str(uuid.uuid4())[:8]
+        cluster_name = cluster_name + '-' + str(uuid.uuid4())[:consts.SUFFIX_LENGTH]
     return cluster_name
 
 
@@ -109,13 +108,6 @@ def get_available_openshift_versions() -> List[str]:
     return available_versions
 
 
-@pytest.fixture(scope="session")
-def setup_node_controller():
-    logging.info('--- SETUP --- node controller\n')
-    yield nodeController
-    logging.info('--- TEARDOWN --- node controller\n')
-
-
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
@@ -134,3 +126,10 @@ env_variables["service_network_cidr"] = env_variables["service_cidr"]
 env_variables["cluster_network_cidr"] = env_variables["cluster_cidr"]
 env_variables["cluster_network_host_prefix"] = env_variables["host_prefix"]
 env_variables["is_static_ip"] = bool(util.strtobool(str(utils.get_env("static_ips_config", default="False"))))
+
+# Node controller parameters
+# Todo - will be moved later on refactoring env_variables
+env_variables["network_name"] = env_variables.get("network_name", consts.TEST_NETWORK)
+env_variables["net_asset"] = env_variables.get("net_asset")
+env_variables["bootstrap_in_place"] = env_variables.get("bootstrap_in_place", False)
+env_variables["single_node_ip"] = env_variables.get("single_node_ip", "")

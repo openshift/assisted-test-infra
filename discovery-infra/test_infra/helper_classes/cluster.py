@@ -6,7 +6,7 @@ import random
 import re
 import time
 from collections import Counter
-from typing import List, Union
+from typing import List, Union, Optional
 
 import requests
 import waiting
@@ -28,9 +28,10 @@ class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
     EVENTS_THRESHOLD = 500
 
-    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig):
+    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, nodes: Optional[Nodes] = None):
         self._config = config
         self.api_client = api_client
+        self.nodes = nodes
 
         self._high_availability_mode = config.high_availability_mode
         if config.cluster_id:
@@ -491,9 +492,9 @@ class Cluster:
             statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION]
         )
 
-    def reboot_required_nodes_into_iso_after_reset(self, nodes):
+    def reboot_required_nodes_into_iso_after_reset(self):
         hosts_to_reboot = self.get_reboot_required_hosts()
-        nodes.run_for_given_nodes_by_cluster_hosts(cluster_hosts=hosts_to_reboot, func_name="reset")
+        self.nodes.run_for_given_nodes_by_cluster_hosts(cluster_hosts=hosts_to_reboot, func_name="reset")
 
     def wait_for_one_host_to_be_in_wrong_boot_order(self, fall_on_error_status=True):
         utils.wait_till_at_least_one_host_is_in_status(
@@ -620,12 +621,13 @@ class Cluster:
         )
 
     @JunitTestCase()
-    def prepare_for_installation(self, nodes: Nodes, static_network_config=None, **kwargs):
+    def prepare_for_installation(self, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
 
         if self._config.download_image:
             if static_network_config:
-                static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
+                static_network_config = static_network.\
+                    generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
             else:
                 static_network_config = None
 
@@ -634,15 +636,15 @@ class Cluster:
                 iso_image_type=self._config.iso_image_type,
                 static_network_config=static_network_config
             )
-        nodes.start_all(self._config.is_static_ip)
+        self.nodes.start_all(self._config.is_static_ip)
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
-        nodes.set_hostnames(self, self._config.nodes_count, self._config.is_ipv6, self._config.is_static_ip)
+        self.nodes.set_hostnames(self, self._config.nodes_count, self._config.is_ipv6, self._config.is_static_ip)
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
-            self.set_host_roles(len(nodes.get_masters()), len(nodes.get_workers()))
+            self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
         else:
-            nodes.set_single_node_ip(self)
+            self.nodes.set_single_node_ip(self)
         self.set_network_params(
-            controller=nodes.controller,
+            controller=self.nodes.controller,
             vip_dhcp_allocation=self._config.vip_dhcp_allocation,
             service_network_cidr=self._config.service_network_cidr,
             cluster_network_cidr=self._config.cluster_network_cidr,
@@ -651,7 +653,7 @@ class Cluster:
         self.wait_for_ready_to_install()
 
         if self._config.platform == consts.Platforms.NONE:
-            self._configure_load_balancer(nodes.controller)
+            self._configure_load_balancer(self.nodes.controller)
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
@@ -806,12 +808,12 @@ class Cluster:
         )
 
     @classmethod
-    def reset_cluster_and_wait_for_ready(cls, cluster, nodes):
+    def reset_cluster_and_wait_for_ready(cls, cluster):
         # Reset cluster install
         cluster.reset_install()
         assert cluster.is_in_insufficient_status()
         # Reboot required nodes into ISO
-        cluster.reboot_required_nodes_into_iso_after_reset(nodes=nodes)
+        cluster.reboot_required_nodes_into_iso_after_reset()
         # Wait for hosts to be rediscovered
         cluster.wait_until_hosts_are_discovered()
         cluster.wait_for_ready_to_install()
@@ -978,12 +980,12 @@ class Cluster:
         except BaseException:
             return False
 
-    def wait_and_kill_installer(self, nodes, host):
+    def wait_and_kill_installer(self, host):
         # Wait for specific host to be in installing in progress
         self.wait_for_specific_host_status(host=host,
                                            statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
         # Kill installer to simulate host error
-        selected_node = nodes.get_node_from_cluster_host(host)
+        selected_node = self.nodes.get_node_from_cluster_host(host)
         selected_node.kill_installer()
 
 
@@ -1001,5 +1003,5 @@ def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluste
         cluster_info = models.cluster.Cluster(**cluster_info)
     cluster = Cluster(api_client=api_client, config=ClusterConfig(pull_secret=pull_secret,
                                                                   ssh_public_key=cluster_info.ssh_public_key,
-                                                                  cluster_id=cluster_info.id))
+                                                                  cluster_id=cluster_info.id), nodes=None)
     return cluster.get_api_vip(cluster=cluster_info)
