@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from pprint import pformat
 from typing import Optional, Union, Tuple, List
@@ -229,6 +230,84 @@ class ClusterDeployment(BaseCustomResource):
             waiting_for=f"cluster {self.ref} to have {num_agents} agents",
         )
 
+    @classmethod
+    def deploy_default_cluster_deployment(
+        cls,        kube_api_client: ApiClient,
+        name: str,
+        ignore_conflict: bool = True,
+        base_domain: str = env_variables["base_domain"],
+        secret: Optional[Secret] = None,
+        **kwargs,
+    ) -> "ClusterDeployment":
+        cluster_deployment = ClusterDeployment(kube_api_client, name)
+        try:
+            if "filepath" in kwargs:
+                cls._create_from_yaml_file(
+                    kube_api_client=kube_api_client,
+                    ignore_conflict=ignore_conflict,
+                    cluster_deployment=cluster_deployment,
+                    filepath=kwargs["filepath"],
+                )
+            else:
+                cls._create_from_attrs(
+                    kube_api_client=kube_api_client,
+                    name=name,
+                    ignore_conflict=ignore_conflict,
+                    cluster_deployment=cluster_deployment,
+                    base_domain=base_domain,
+                    secret=secret,
+                    **kwargs,
+                )
+        except ApiException as e:
+            if not (e.reason == "Conflict" and ignore_conflict):
+                raise
+
+        # wait until cluster will have status (i.e until resource will be
+        # processed in assisted-service).
+        cluster_deployment.status()
+
+        return cluster_deployment
+
+    @staticmethod
+    def _create_from_yaml_file(
+        kube_api_client: ApiClient,
+        ignore_conflict: bool,
+        cluster_deployment: "ClusterDeployment",
+        filepath: str,
+    ) -> None:
+        with open(filepath) as fp:
+            yaml_data = yaml.safe_load(fp)
+
+        deploy_default_secret(
+            kube_api_client=kube_api_client,
+            name=yaml_data["spec"]["pullSecretRef"]["name"],
+            ignore_conflict=ignore_conflict,
+        )
+        cluster_deployment.create_from_yaml(yaml_data)
+
+    @staticmethod
+    def _create_from_attrs(
+        kube_api_client: ApiClient,
+        name: str,
+        ignore_conflict: bool,
+        cluster_deployment: "ClusterDeployment",
+        base_domain: str,
+        secret: Optional[Secret] = None,
+        **kwargs,
+    ) -> None:
+        if not secret:
+            secret = deploy_default_secret(
+                kube_api_client=kube_api_client,
+                name=name,
+                ignore_conflict=ignore_conflict,
+            )
+
+        cluster_deployment.create(
+            secret=secret,
+            base_domain=base_domain,
+            **kwargs,
+        )
+
 
 def deploy_default_cluster_deployment(
     kube_api_client: ApiClient,
@@ -238,71 +317,12 @@ def deploy_default_cluster_deployment(
     secret: Optional[Secret] = None,
     **kwargs,
 ) -> ClusterDeployment:
-    cluster_deployment = ClusterDeployment(kube_api_client, name)
-    try:
-        if "filepath" in kwargs:
-            _create_from_yaml_file(
-                kube_api_client=kube_api_client,
-                ignore_conflict=ignore_conflict,
-                cluster_deployment=cluster_deployment,
-                filepath=kwargs["filepath"],
-            )
-        else:
-            _create_from_attrs(
-                kube_api_client=kube_api_client,
-                name=name,
-                ignore_conflict=ignore_conflict,
-                cluster_deployment=cluster_deployment,
-                base_domain=base_domain,
-                secret=secret,
-                **kwargs,
-            )
-    except ApiException as e:
-        if not (e.reason == "Conflict" and ignore_conflict):
-            raise
-
-    # wait until cluster will have status (i.e until resource will be
-    # processed in assisted-service).
-    cluster_deployment.status()
-
-    return cluster_deployment
-
-
-def _create_from_yaml_file(
-    kube_api_client: ApiClient,
-    ignore_conflict: bool,
-    cluster_deployment: ClusterDeployment,
-    filepath: str,
-) -> None:
-    with open(filepath) as fp:
-        yaml_data = yaml.safe_load(fp)
-
-    deploy_default_secret(
-        kube_api_client=kube_api_client,
-        name=yaml_data["spec"]["pullSecretRef"]["name"],
-        ignore_conflict=ignore_conflict,
+    warnings.filterwarnings("default", category=DeprecationWarning)
+    warnings.warn(
+        "deploy_default_cluster_deployment is deprecated. Use "
+        "ClusterDeployment.deploy_default_cluster_deployment instead",
+        DeprecationWarning,
     )
-    cluster_deployment.create_from_yaml(yaml_data)
-
-
-def _create_from_attrs(
-    kube_api_client: ApiClient,
-    name: str,
-    ignore_conflict: bool,
-    cluster_deployment: ClusterDeployment,
-    base_domain: str,
-    secret: Optional[Secret] = None,
-    **kwargs,
-) -> None:
-    if not secret:
-        secret = deploy_default_secret(
-            kube_api_client=kube_api_client,
-            name=name,
-            ignore_conflict=ignore_conflict,
-        )
-
-    cluster_deployment.create(
-        secret=secret,
-        base_domain=base_domain,
-        **kwargs,
+    return ClusterDeployment.deploy_default_cluster_deployment(
+        kube_api_client, name, ignore_conflict, base_domain, secret, **kwargs
     )

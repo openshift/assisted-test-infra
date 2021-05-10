@@ -10,7 +10,7 @@ Example of usage:
 
 def test_kube_api_wait_for_install(kube_api_context):
     kube_api_client = kube_api_context.api_client
-    cluster_deployment = deploy_default_cluster_deployment(
+    cluster_deployment = ClusterDeployment.deploy_default_cluster_deployment(
         kube_api_client, "test-cluster", **installation_params
     )
     cluster_deployment.wait_to_be_installing()
