@@ -45,7 +45,7 @@ class BaseTest:
             nodes = Nodes(TerraformController(config), config.private_ssh_key_path)
             nodes.prepare_nodes()
             if nodes_data["needs_nat"]:
-                nodes_data["nodes"].configure_nat()
+                nodes.configure_nat()
 
             nodes_data["nodes"] = nodes
             return nodes
