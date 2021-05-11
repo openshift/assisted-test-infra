@@ -1,5 +1,7 @@
 import logging
 import re
+import warnings
+
 import yaml
 
 import waiting
@@ -241,6 +243,81 @@ class InfraEnv(BaseCustomResource):
         iso_download_url = self.get_iso_download_url()
         return ISO_URL_PATTERN.match(iso_download_url).group("cluster_id")
 
+    @classmethod
+    def deploy_default_infraenv(
+        cls,
+        kube_api_client: ApiClient,
+        name: str,
+        ignore_conflict: bool = True,
+        cluster_deployment: Optional[ClusterDeployment] = None,
+        secret: Optional[Secret] = None,
+        proxy: Optional[Proxy] = None,
+        label_selector: Optional[Dict[str, str]] = None,
+        ignition_config_override: Optional[str] = None,
+        **kwargs,
+    ) -> "InfraEnv":
+
+        infra_env = InfraEnv(kube_api_client, name)
+        try:
+            if "filepath" in kwargs:
+                infra_env._create_infraenv_from_yaml_file(
+                    filepath=kwargs["filepath"],
+                )
+            else:
+                infra_env._create_infraenv_from_attrs(
+                    kube_api_client=kube_api_client,
+                    name=name,
+                    ignore_conflict=ignore_conflict,
+                    cluster_deployment=cluster_deployment,
+                    secret=secret,
+                    proxy=proxy,
+                    label_selector=label_selector,
+                    ignition_config_override=ignition_config_override,
+                    **kwargs,
+                )
+        except ApiException as e:
+            if not (e.reason == "Conflict" and ignore_conflict):
+                raise
+
+        # wait until install-env will have status (i.e until resource will be
+        # processed in assisted-service).
+        infra_env.status()
+
+        return infra_env
+
+    def _create_infraenv_from_yaml_file(
+        self,
+        filepath: str,
+    ) -> None:
+        with open(filepath) as fp:
+            yaml_data = yaml.safe_load(fp)
+
+        self.create_from_yaml(yaml_data)
+
+    def _create_infraenv_from_attrs(
+        self,
+        kube_api_client: ApiClient,
+        cluster_deployment: ClusterDeployment,
+        secret: Optional[Secret] = None,
+        proxy: Optional[Proxy] = None,
+        label_selector: Optional[Dict[str, str]] = None,
+        ignition_config_override: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        if not secret:
+            secret = deploy_default_secret(
+                kube_api_client=kube_api_client,
+                name=cluster_deployment.ref.name,
+            )
+        self.create(
+            cluster_deployment=cluster_deployment,
+            secret=secret,
+            proxy=proxy,
+            label_selector=label_selector,
+            ignition_config_override=ignition_config_override,
+            **kwargs,
+        )
+
 
 def deploy_default_infraenv(
     kube_api_client: ApiClient,
@@ -252,69 +329,18 @@ def deploy_default_infraenv(
     label_selector: Optional[Dict[str, str]] = None,
     ignition_config_override: Optional[str] = None,
     **kwargs,
-) -> InfraEnv:
+) -> "InfraEnv":
+    warnings.warn("deploy_default_infraenv is deprecated. Use InfraEnv.deploy_default_infraenv instead.",
+                  DeprecationWarning)
 
-    infra_env = InfraEnv(kube_api_client, name)
-    try:
-        if "filepath" in kwargs:
-            _create_infraenv_from_yaml_file(
-                infra_env=infra_env,
-                filepath=kwargs["filepath"],
-            )
-        else:
-            _create_infraenv_from_attrs(
-                kube_api_client=kube_api_client,
-                name=name,
-                ignore_conflict=ignore_conflict,
-                infra_env=infra_env,
-                cluster_deployment=cluster_deployment,
-                secret=secret,
-                proxy=proxy,
-                label_selector=label_selector,
-                ignition_config_override=ignition_config_override,
-                **kwargs,
-            )
-    except ApiException as e:
-        if not (e.reason == "Conflict" and ignore_conflict):
-            raise
-
-    # wait until install-env will have status (i.e until resource will be
-    # processed in assisted-service).
-    infra_env.status()
-
-    return infra_env
-
-
-def _create_infraenv_from_yaml_file(
-    infra_env: InfraEnv,
-    filepath: str,
-) -> None:
-    with open(filepath) as fp:
-        yaml_data = yaml.safe_load(fp)
-
-    infra_env.create_from_yaml(yaml_data)
-
-
-def _create_infraenv_from_attrs(
-    kube_api_client: ApiClient,
-    infra_env: InfraEnv,
-    cluster_deployment: ClusterDeployment,
-    secret: Optional[Secret] = None,
-    proxy: Optional[Proxy] = None,
-    label_selector: Optional[Dict[str, str]] = None,
-    ignition_config_override: Optional[str] = None,
-    **kwargs,
-) -> None:
-    if not secret:
-        secret = deploy_default_secret(
-            kube_api_client=kube_api_client,
-            name=cluster_deployment.ref.name,
-        )
-    infra_env.create(
-        cluster_deployment=cluster_deployment,
-        secret=secret,
-        proxy=proxy,
-        label_selector=label_selector,
-        ignition_config_override=ignition_config_override,
-        **kwargs,
+    return InfraEnv.deploy_default_infraenv(
+        kube_api_client,
+        name,
+        ignore_conflict,
+        cluster_deployment,
+        secret,
+        proxy,
+        label_selector,
+        ignition_config_override,
+        **kwargs
     )
