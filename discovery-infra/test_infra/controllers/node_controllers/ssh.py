@@ -1,6 +1,7 @@
 import logging
 import socket
 import time
+from ipaddress import IPv4Address, ip_address
 
 import paramiko
 import scp
@@ -58,7 +59,12 @@ class SshConnection:
 
     @classmethod
     def _raw_tcp_connect(cls, tcp_endpoint):
-        s = socket.socket()
+        if isinstance(ip_address(tcp_endpoint[0]), IPv4Address):
+            family = socket.AF_INET
+        else:
+            family = socket.AF_INET6
+
+        s = socket.socket(family=family)
         try:
             s.connect(tcp_endpoint)
             return True
