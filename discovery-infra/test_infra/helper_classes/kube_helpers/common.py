@@ -1,13 +1,12 @@
 import logging
+import warnings
 
 from typing import Optional
-from functools import wraps
 
 from kubernetes.client import ApiClient
 from kubernetes.client.rest import ApiException
-from kubernetes.config import load_kube_config
-from kubernetes.config.kube_config import Configuration
 
+from test_infra.assisted_service_api import ClientFactory
 from test_infra.helper_classes.kube_helpers.idict import IDict
 from tests.conftest import env_variables
 
@@ -39,7 +38,17 @@ class KubeAPIContext:
 
     def __exit__(self, *_):
         logger.info("exiting kube api context")
-        delete_all_resources(self)
+        self._delete_all_resources()
+
+    def _delete_all_resources(self, ignore_not_found: bool = True) -> None:
+        logger.info("deleting all resources")
+
+        for resource in self.resources:
+            try:
+                resource.delete()
+            except ApiException as e:
+                if not (e.reason == "Not Found" and ignore_not_found):
+                    raise
 
 
 class ObjectReference(IDict):
@@ -60,39 +69,10 @@ class ObjectReference(IDict):
 
 
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
-    if not kubeconfig_path:
-        kubeconfig_path = env_variables["installer_kubeconfig_path"]
-
-    logger.info("creating kube client with config file: %s", kubeconfig_path)
-
-    conf = Configuration()
-    load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
-    return ApiClient(configuration=conf)
-
-
-def delete_all_resources(kube_api_context: KubeAPIContext, ignore_not_found: bool = True) -> None:
-    logger.info("deleting all resources")
-
-    for resource in kube_api_context.resources:
-        try:
-            resource.delete()
-        except ApiException as e:
-            if not (e.reason == "Not Found" and ignore_not_found):
-                raise
+    warnings.warn("create_kube_api_client is deprecated. Use ClientFactory.create_kube_api_client instead.",
+                  DeprecationWarning)
+    return ClientFactory.create_kube_api_client(kubeconfig_path or env_variables["installer_kubeconfig_path"])
 
 
 def does_string_contain_value(s: Optional[str]) -> bool:
     return s and s != '""'
-
-
-def suppress_not_found_error(fn):
-    @wraps(fn)
-    def decorator(*args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except ApiException as e:
-            if e.reason == "Not Found":
-                return
-            raise
-
-    return decorator

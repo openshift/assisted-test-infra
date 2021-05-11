@@ -29,8 +29,6 @@ from .secret import deploy_default_secret, Secret
 from .infraenv import deploy_default_infraenv, InfraEnv, Proxy
 from .common import (
     create_kube_api_client,
-    delete_all_resources,
-    suppress_not_found_error,
     UnexpectedStateError,
     KubeAPIContext,
     ObjectReference,
@@ -41,8 +39,6 @@ __all__ = (
     "deploy_default_secret",
     "deploy_default_infraenv",
     "create_kube_api_client",
-    "delete_all_resources",
-    "suppress_not_found_error",
     "Platform",
     "InstallStrategy",
     "ClusterDeployment",

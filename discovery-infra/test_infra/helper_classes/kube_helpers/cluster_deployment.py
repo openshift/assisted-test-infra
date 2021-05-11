@@ -26,13 +26,12 @@ from .global_vars import (
     DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
 )
 
-from .common import does_string_contain_value, UnexpectedStateError
+from .common import does_string_contain_value
 from .base_resource import BaseCustomResource
 from .cluster_image_set import ClusterImageSetReference
 from .idict import IDict
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
-
 
 logger = logging.getLogger(__name__)
 

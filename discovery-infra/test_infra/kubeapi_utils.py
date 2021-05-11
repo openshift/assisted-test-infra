@@ -4,11 +4,10 @@ import functools
 import waiting
 
 from ipaddress import IPv4Interface, IPv6Interface
-from kubernetes.client import CoreV1Api, CustomObjectsApi
+from kubernetes.client import CoreV1Api, CustomObjectsApi, ApiException
 
 from test_infra import utils
 from test_infra.helper_classes.kube_helpers import (
-    suppress_not_found_error,
     Secret,
     InfraEnv,
     ClusterDeployment,
@@ -98,6 +97,19 @@ def get_hostname_for_agent(agent, nodes_details):
         for interface in inventory.get('interfaces', []):
             if interface['macAddress'].lower() == mac_address:
                 return node_metadata['name']
+
+
+def suppress_not_found_error(fn):
+    @functools.wraps(fn)
+    def decorator(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except ApiException as e:
+            if e.reason == "Not Found":
+                return
+            raise
+
+    return decorator
 
 
 def delete_kube_api_resources_for_namespace(
