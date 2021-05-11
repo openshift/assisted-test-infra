@@ -1,8 +1,7 @@
 import logging
 
 from pprint import pformat
-from base64 import b64decode
-from typing import Optional, Union, Dict, Tuple, List, Iterable
+from typing import Optional, Union, Tuple, List
 
 import waiting
 import yaml
@@ -10,119 +9,20 @@ from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 from tests.conftest import env_variables
 
+from .common import ObjectReference
 from .global_vars import (
     CRD_API_GROUP,
     HIVE_API_GROUP,
     HIVE_API_VERSION,
-    DEFAULT_API_VIP,
-    DEFAULT_API_VIP_DNS_NAME,
-    DEFAULT_INGRESS_VIP,
-    DEFAULT_MACHINE_CIDR,
-    DEFAULT_CLUSTER_CIDR,
-    DEFAULT_SERVICE_CIDR,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
-    DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
 )
-
-from .common import does_string_contain_value
 from .base_resource import BaseCustomResource
-from .cluster_image_set import ClusterImageSetReference
-from .idict import IDict
 from .secret import deploy_default_secret, Secret
 from .agent import Agent
 
 logger = logging.getLogger(__name__)
-
-
-class Platform(IDict):
-    """
-    A class that represents the configuration for the specific platform upon
-    which to perform the installation.
-    """
-
-    def __init__(
-        self,
-        api_vip: str = DEFAULT_API_VIP,
-        api_vip_dns_name: str = DEFAULT_API_VIP_DNS_NAME,
-        ingress_vip: str = DEFAULT_INGRESS_VIP,
-        agent_selector: Optional[Dict[str, str]] = None,
-    ):
-        self.api_vip = api_vip
-        self.api_vip_dns_name = api_vip_dns_name
-        self.ingress_vip = ingress_vip
-        self.agent_selector = agent_selector
-
-    def as_dict(self) -> dict:
-        data = {
-            "agentBareMetal": {
-                "apiVIP": self.api_vip,
-                "ingressVIP": self.ingress_vip,
-                "agentSelector": self.agent_selector or {},
-            }
-        }
-
-        if self.api_vip_dns_name:
-            data["agentBareMetal"]["apiVIPDNSName"] = self.api_vip_dns_name
-
-        return data
-
-
-class InstallStrategy(IDict):
-    """
-    A class that provides platform agnostic configuration for the use of
-    alternate install strategies.
-    """
-
-    def __init__(
-        self,
-        host_prefix: int = env_variables["host_prefix"],
-        machine_cidr: str = DEFAULT_MACHINE_CIDR,
-        cluster_cidr: str = DEFAULT_CLUSTER_CIDR,
-        service_cidr: str = DEFAULT_SERVICE_CIDR,
-        ssh_public_key: str = env_variables["ssh_public_key"],
-        control_plane_agents: int = 1,
-        worker_agents: int = 0,
-    ):
-        self.host_prefix = host_prefix
-        self.machine_cidr = machine_cidr
-        self.cluster_cidr = cluster_cidr
-        self.service_cidr = service_cidr
-        self.control_plane_agents = control_plane_agents
-        self.worker_agents = worker_agents
-        self.ssh_public_key = ssh_public_key
-
-    def as_dict(self) -> dict:
-        data = {
-            "agent": {
-                "networking": {
-                    "clusterNetwork": [
-                        {
-                            "cidr": self.cluster_cidr,
-                            "hostPrefix": self.host_prefix,
-                        }
-                    ],
-                    "serviceNetwork": [self.service_cidr],
-                },
-                "provisionRequirements": {
-                    "controlPlaneAgents": self.control_plane_agents,
-                    "workerAgents": self.worker_agents,
-                },
-            }
-        }
-
-        if does_string_contain_value(self.ssh_public_key):
-            data["agent"]["sshPublicKey"] = self.ssh_public_key
-
-        if does_string_contain_value(self.machine_cidr):
-            data["agent"]["networking"]["machineNetwork"] = [
-                {
-                    "cidr": self.machine_cidr,
-                }
-            ]
-
-        return data
 
 
 class ClusterDeployment(BaseCustomResource):
@@ -134,6 +34,7 @@ class ClusterDeployment(BaseCustomResource):
     """
 
     _plural = "clusterdeployments"
+    _platform_field = {"platform": {"agentBareMetal": {"agentSelector": {}}}}
 
     def __init__(
         self,
@@ -156,13 +57,11 @@ class ClusterDeployment(BaseCustomResource):
         logger.info("created cluster deployment %s: %s", self.ref, pformat(yaml_data))
 
     def create(
-        self,
-        platform: Platform,
-        install_strategy: InstallStrategy,
-        secret: Secret,
-        imageSetRef: ClusterImageSetReference,
-        base_domain: str = env_variables["base_domain"],
-        **kwargs,
+            self,
+            secret: Secret,
+            base_domain: str = env_variables["base_domain"],
+            agent_cluster_install_ref: Optional[ObjectReference] = None,
+            **kwargs,
     ):
         body = {
             "apiVersion": f"{HIVE_API_GROUP}/{HIVE_API_VERSION}",
@@ -171,11 +70,14 @@ class ClusterDeployment(BaseCustomResource):
             "spec": {
                 "clusterName": self.ref.name,
                 "baseDomain": base_domain,
-                "platform": platform.as_dict(),
-                "provisioning": {"installStrategy": install_strategy.as_dict(), "imageSetRef": imageSetRef.as_dict()},
                 "pullSecretRef": secret.ref.as_dict(),
-            },
+            }
         }
+        body["spec"].update(self._platform_field)
+
+        if agent_cluster_install_ref:
+            body["spec"]["clusterInstallRef"] = agent_cluster_install_ref.as_dict()
+
         body["spec"].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
             group=HIVE_API_GROUP,
@@ -189,22 +91,20 @@ class ClusterDeployment(BaseCustomResource):
 
     def patch(
         self,
-        platform: Optional[Platform] = None,
-        install_strategy: Optional[InstallStrategy] = None,
         secret: Optional[Secret] = None,
         **kwargs,
     ) -> None:
         body = {"spec": kwargs}
+        body["spec"]["platform"] = {"agentBareMetal": {}}
 
         spec = body["spec"]
-        if platform:
-            spec["platform"] = platform.as_dict()
-
-        if install_strategy:
-            spec["provisioning"] = {"installStrategy": install_strategy.as_dict()}
+        body["spec"].update(self._platform_field)
 
         if secret:
             spec["pullSecretRef"] = secret.ref.as_dict()
+
+        if "agent_cluster_install_ref" in kwargs:
+            spec["clusterInstallRef"] = kwargs["agent_cluster_install_ref"].as_dict()
 
         self.crd_api.patch_namespaced_custom_object(
             group=HIVE_API_GROUP,
@@ -274,10 +174,10 @@ class ClusterDeployment(BaseCustomResource):
         )
 
     def condition(
-        self,
-        cond_type,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    ) -> Tuple[str, str]:
+            self,
+            cond_type,
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+    ) -> Tuple[Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
                 return condition.get("status"), condition.get("reason")
@@ -287,7 +187,7 @@ class ClusterDeployment(BaseCustomResource):
         self,
         cond_type: str,
         required_status: str,
-        required_reason: str,
+        required_reason: Optional[str] = None,
         timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         def _has_required_condition() -> Optional[bool]:
@@ -299,15 +199,14 @@ class ClusterDeployment(BaseCustomResource):
             return False
 
         logger.info(
-            "Waiting till cluster will be in condition %s with status: %s reason: %s ",
-            cond_type,
-            required_status,
-            required_reason,
+            "Waiting till cluster will be in condition %s with status: %s "
+            "reason: %s", cond_type, required_status, required_reason
         )
+
         waiting.wait(
             _has_required_condition,
             timeout_seconds=timeout,
-            waiting_for=f"cluster {self.ref} condition {cond_type} to be {required_status}",
+            waiting_for=f"cluster {self.ref} condition {cond_type} to be in {required_status}",
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
@@ -330,59 +229,12 @@ class ClusterDeployment(BaseCustomResource):
             waiting_for=f"cluster {self.ref} to have {num_agents} agents",
         )
 
-    def wait_to_be_installing(self) -> None:
-        return self.wait_for_condition("ReadyForInstallation", "False", "ClusterAlreadyInstalling")
-
-    def wait_to_be_ready(
-        self,
-        ready: bool,
-    ) -> None:
-        return self.wait_for_condition("ReadyForInstallation", str(ready), None)
-
-    def wait_to_be_installed(
-        self,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
-    ) -> None:
-
-        waiting.wait(
-            lambda: self.get()["spec"].get("installed") is True,
-            timeout_seconds=timeout,
-            waiting_for=f"cluster {self.ref} state installed",
-            expected_exceptions=waiting.exceptions.TimeoutExpired,
-        )
-
-    def download_kubeconfig(self, kubeconfig_path):
-        def _get_kubeconfig_secret() -> dict:
-            return self.get()["spec"]["clusterMetadata"]["adminKubeconfigSecretRef"]
-
-        secret_ref = waiting.wait(
-            _get_kubeconfig_secret,
-            sleep_seconds=1,
-            timeout_seconds=240,
-            expected_exceptions=KeyError,
-            waiting_for=f"kubeconfig secret creation for cluster {self.ref}",
-        )
-
-        kubeconfig_data = (
-            Secret(
-                kube_api_client=self.crd_api.api_client,
-                **secret_ref,
-            )
-            .get()
-            .data["kubeconfig"]
-        )
-
-        with open(kubeconfig_path, "wt") as kubeconfig_file:
-            kubeconfig_file.write(b64decode(kubeconfig_data).decode())
-
 
 def deploy_default_cluster_deployment(
     kube_api_client: ApiClient,
     name: str,
     ignore_conflict: bool = True,
     base_domain: str = env_variables["base_domain"],
-    platform: Optional[Platform] = None,
-    install_strategy: Optional[InstallStrategy] = None,
     secret: Optional[Secret] = None,
     **kwargs,
 ) -> ClusterDeployment:
@@ -403,8 +255,6 @@ def deploy_default_cluster_deployment(
                 cluster_deployment=cluster_deployment,
                 base_domain=base_domain,
                 secret=secret,
-                platform=platform,
-                install_strategy=install_strategy,
                 **kwargs,
             )
     except ApiException as e:
@@ -442,8 +292,6 @@ def _create_from_attrs(
     cluster_deployment: ClusterDeployment,
     base_domain: str,
     secret: Optional[Secret] = None,
-    platform: Optional[Platform] = None,
-    install_strategy: Optional[InstallStrategy] = None,
     **kwargs,
 ) -> None:
     if not secret:
@@ -454,8 +302,6 @@ def _create_from_attrs(
         )
 
     cluster_deployment.create(
-        platform=platform or Platform(),
-        install_strategy=install_strategy or InstallStrategy(),
         secret=secret,
         base_domain=base_domain,
         **kwargs,

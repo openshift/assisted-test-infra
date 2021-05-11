@@ -96,6 +96,7 @@ class InfraEnv(BaseCustomResource):
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
+        ssh_pub_key: Optional[str] = None,
         **kwargs,
     ) -> None:
         body = {
@@ -115,6 +116,9 @@ class InfraEnv(BaseCustomResource):
         spec = body["spec"]
         if proxy:
             spec["proxy"] = proxy.as_dict()
+        if ssh_pub_key:
+            spec["sshAuthorizedKey"] = ssh_pub_key
+
         spec.update(kwargs)
         self.crd_api.create_namespaced_custom_object(
             group=CRD_API_GROUP,
@@ -134,6 +138,7 @@ class InfraEnv(BaseCustomResource):
         label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
+        ssh_pub_key: Optional[str] = None,
         **kwargs,
     ) -> None:
         body = {"spec": kwargs}
@@ -160,6 +165,9 @@ class InfraEnv(BaseCustomResource):
 
         if ignition_config_override:
             spec["ignitionConfigOverride"] = ignition_config_override
+
+        if ssh_pub_key:
+            spec["sshAuthorizedKey"] = ssh_pub_key
 
         self.crd_api.patch_namespaced_custom_object(
             group=CRD_API_GROUP,

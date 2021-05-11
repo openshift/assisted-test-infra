@@ -97,6 +97,7 @@ def run_install_flow(
         pull_secret,
         tf,
         cluster_deployment=None,
+        agent_cluster_install=None,
         nodes_number=None,
 ):
     if cluster_deployment is None:
@@ -110,6 +111,7 @@ def run_install_flow(
     else:
         run_installation_flow_kube_api(
             cluster_deployment=cluster_deployment,
+            agent_cluster_install=agent_cluster_install,
             nodes_number=nodes_number,
             kubeconfig_path=kubeconfig_path,
         )
@@ -200,6 +202,7 @@ def update_vip_from_tf(client, cluster_id, tf, pull_secret):
 
 def run_installation_flow_kube_api(
         cluster_deployment,
+        agent_cluster_install,
         nodes_number,
         kubeconfig_path,
 ):
@@ -208,13 +211,13 @@ def run_installation_flow_kube_api(
         agent.approve()
 
     log.info("Waiting for installation to start")
-    cluster_deployment.wait_to_be_installing()
+    agent_cluster_install.wait_to_be_installing()
 
     log.info("Waiting until cluster finishes installation")
-    cluster_deployment.wait_to_be_installed()
+    agent_cluster_install.wait_to_be_installed()
 
     log.info("Download kubeconfig-noingress")
-    cluster_deployment.download_kubeconfig(kubeconfig_path=kubeconfig_path)
+    agent_cluster_install.download_kubeconfig(kubeconfig_path=kubeconfig_path)
 
 
 def download_logs_from_all_hosts(client, cluster_id, output_folder):

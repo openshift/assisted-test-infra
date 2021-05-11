@@ -20,7 +20,7 @@ class ClusterImageSetReference(IDict):
 
     def __init__(
         self,
-        name: str,
+        name: str = "",
     ):
         self.name = name
 

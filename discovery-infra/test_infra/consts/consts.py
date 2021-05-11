@@ -1,4 +1,4 @@
-from .time import MINUTE, HOUR
+from .durations import MINUTE, HOUR
 
 
 TF_FOLDER = "build/terraform"
