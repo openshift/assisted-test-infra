@@ -57,15 +57,38 @@ class ObjectReference(IDict):
     referenced Kube API resource.
     """
 
-    def __init__(self, name: str, namespace: str):
+    def __init__(
+            self,
+            name: str,
+            namespace: str,
+            kind: Optional[str] = None,
+            group: Optional[str] = None,
+            version: Optional[str] = None,
+    ):
         self.name = name
         self.namespace = namespace
+        self.kind = kind
+        self.group = group
+        self.version = version
 
     def __eq__(self, other: "ObjectReference") -> bool:
-        return other.name == self.name and other.namespace == self.namespace
+        return all((
+            other.name == self.name,
+            other.namespace == self.namespace,
+            other.kind == self.kind,
+            other.group == self.group,
+            other.version == self.version,
+        ))
 
     def as_dict(self) -> dict:
-        return {"name": self.name, "namespace": self.namespace}
+        dct = {"name": self.name, "namespace": self.namespace}
+        if self.kind:
+            dct["kind"] = self.kind
+        if self.version:
+            dct["version"] = self.version
+        if self.group:
+            dct["group"] = self.group
+        return dct
 
 
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
@@ -73,6 +96,3 @@ def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
                   DeprecationWarning)
     return ClientFactory.create_kube_api_client(kubeconfig_path or env_variables["installer_kubeconfig_path"])
 
-
-def does_string_contain_value(s: Optional[str]) -> bool:
-    return s and s != '""'

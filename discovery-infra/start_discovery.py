@@ -17,9 +17,9 @@ from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
 
 from test_infra.helper_classes.kube_helpers import (
-    create_kube_api_client, ClusterDeployment, Platform,
-    InstallStrategy, Secret, InfraEnv, Proxy, NMStateConfig,
-    ClusterImageSet, ClusterImageSetReference
+    create_kube_api_client, ClusterDeployment, Secret, InfraEnv, Proxy,
+    NMStateConfig, ClusterImageSet, ClusterImageSetReference,
+    AgentClusterInstall,
 )
 
 import bootstrap_in_place as ibip
@@ -419,7 +419,14 @@ def validate_dns(client, cluster_id):
 
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
-def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, cluster_deployment=None):
+def nodes_flow(
+        client, 
+        cluster_name, 
+        cluster, 
+        machine_net,
+        cluster_deployment=None,
+        agent_cluster_install=None,
+):
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     nodes_details = utils.get_tfvars(tf_folder)
     if cluster:
@@ -536,6 +543,7 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
                 pull_secret=args.pull_secret,
                 tf=tf,
                 cluster_deployment=cluster_deployment,
+                agent_cluster_install=agent_cluster_install,
                 nodes_number=nodes_number,
             )
             # Validate DNS domains resolvability
@@ -544,7 +552,7 @@ def nodes_flow(client, cluster_name, cluster, machine_net, kube_client=None, clu
 
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
-def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment):
+def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment, agent_cluster_install):
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     nodes_details = utils.get_tfvars(tf_folder)
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
@@ -584,6 +592,7 @@ def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment):
     if args.install_cluster:
         install_cluster.run_installation_flow_kube_api(
             cluster_deployment=cluster_deployment,
+            agent_cluster_install=agent_cluster_install,
             nodes_number=nodes_number,
             kubeconfig_path=consts.DEFAULT_CLUSTER_KUBECONFIG_PATH,
         )
@@ -682,9 +691,17 @@ def set_network_defaults_if_needed():
         args.network_bridge = f'tt{args.ns_index}'
 
 
-def run_nodes_flow(client, cluster_name, cluster, machine_net, image_path, cluster_deployment=None):
+def run_nodes_flow(
+        client, 
+        cluster_name, 
+        cluster, 
+        machine_net,
+        image_path,
+        cluster_deployment=None, 
+        agent_cluster_install=None,
+):
     try:
-        nodes_flow(client, cluster_name, cluster, machine_net, cluster_deployment)
+        nodes_flow(client, cluster_name, cluster, machine_net, cluster_deployment, agent_cluster_install)
     finally:
         if not image_path or args.keep_iso:
             return
@@ -725,25 +742,32 @@ def execute_kube_api_flow():
     if args.master_count > 1:
         api_vip, ingress_vip = _get_vips_ips(machine_net)
 
+    agent_cluster_install = AgentClusterInstall(
+        kube_api_client=kube_client,
+        name=f'{cluster_name}-agent-cluster-install',
+    )
+
+    image_set_ref = ClusterImageSetReference(name=f'{cluster_name}-image-set')
     cluster_deployment.apply(
-        platform=Platform(
-            api_vip=api_vip,
-            ingress_vip=ingress_vip,
-        ),
-        install_strategy=InstallStrategy(
-            host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
-            machine_cidr=get_machine_cidr_from_machine_net(machine_net),
-            cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
-            service_cidr=args.service_network if ipv4 else args.service_network6,
-            ssh_public_key=args.ssh_key,
-            control_plane_agents=args.master_count,
-            worker_agents=args.number_of_workers,
-        ),
         secret=secret,
         base_domain=args.base_dns_domain,
-        imageSetRef=ClusterImageSetReference(name=f"{cluster_name}-image-set"),
+        agent_cluster_install_ref=agent_cluster_install.ref,
     )
-    cluster_deployment.wait_to_be_ready(False)
+
+    agent_cluster_install.apply(
+        cluster_deployment_ref=cluster_deployment.ref,
+        api_vip=api_vip,
+        ingress_vip=ingress_vip,
+        image_set_ref=image_set_ref,
+        cluster_cidr=args.cluster_network if ipv4 else args.cluster_network6,
+        host_prefix=args.host_prefix if ipv4 else args.host_prefix6,
+        service_network=args.service_network if ipv4 else args.service_network6,
+        ssh_pub_key=args.ssh_key,
+        control_plane_agents=args.master_count,
+        worker_agents=args.number_of_workers,
+        machine_cidr=get_machine_cidr_from_machine_net(machine_net),
+    )
+    agent_cluster_install.wait_to_be_ready(False)
 
     apply_static_network_config(
         cluster_name=cluster_name,
@@ -755,27 +779,28 @@ def execute_kube_api_flow():
         f'{args.namespace}-installer-image.iso'
     )
 
-    log.info("Creating installenv")
+    log.info("Creating infraEnv")
     http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
-    install_env = InfraEnv(
+    infra_env = InfraEnv(
         kube_api_client=kube_client,
-        name=f"{cluster_name}-install-env",
+        name=f"{cluster_name}-infra-env",
         namespace=args.namespace
     )
-    install_env.apply(
+    infra_env.apply(
         cluster_deployment=cluster_deployment,
         secret=secret,
         proxy=Proxy(
             http_proxy=http_proxy,
             https_proxy=https_proxy,
             no_proxy=no_proxy
-        )
+        ),
+        ssh_pub_key=args.ssh_key,
     )
-    install_env.status()
-    image_url = install_env.get_iso_download_url()
+    infra_env.status()
+    image_url = infra_env.get_iso_download_url()
     utils.download_iso(image_url, image_path)
     try:
-        nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment)
+        nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment, agent_cluster_install)
     finally:
         if not image_path or args.keep_iso:
             return
