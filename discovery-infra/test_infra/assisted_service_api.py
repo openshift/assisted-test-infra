@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import time
+import warnings
 
 import requests
 import waiting
@@ -11,6 +12,9 @@ from assisted_service_client import ApiClient, Configuration, api, models
 from logger import log
 from retry import retry
 from test_infra import consts, utils
+from kubernetes.config.kube_config import Configuration as KubeConfiguration
+from kubernetes.config import load_kube_config
+from kubernetes.client import ApiClient as KubeApiClient
 
 
 class InventoryClient(object):
@@ -417,6 +421,31 @@ class InventoryClient(object):
         return self.domains.list_managed_domains()
 
 
+class ClientFactory:
+
+    @staticmethod
+    def create_client(
+            url,
+            offline_token,
+            pull_secret="",
+            wait_for_api=True,
+            timeout=consts.WAIT_FOR_BM_API
+    ):
+        log.info('Creating assisted-service client for url: %s', url)
+        c = InventoryClient(url, offline_token, pull_secret)
+        if wait_for_api:
+            c.wait_for_api_readiness(timeout)
+        return c
+
+    @staticmethod
+    def create_kube_api_client(kubeconfig_path: str) -> ApiClient:
+        log.info("creating kube client with config file: %s", kubeconfig_path)
+
+        conf = KubeConfiguration()
+        load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
+        return KubeApiClient(configuration=conf)
+
+
 def create_client(
         url,
         offline_token=utils.get_env('OFFLINE_TOKEN'),
@@ -424,8 +453,5 @@ def create_client(
         wait_for_api=True,
         timeout=consts.WAIT_FOR_BM_API
 ):
-    log.info('Creating assisted-service client for url: %s', url)
-    c = InventoryClient(url, offline_token, pull_secret)
-    if wait_for_api:
-        c.wait_for_api_readiness(timeout)
-    return c
+    warnings.warn("create_client is deprecated. Use ClientFactory.create_client instead.", DeprecationWarning)
+    return ClientFactory.create_client(url, offline_token, pull_secret, wait_for_api, timeout)
