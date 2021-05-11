@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import warnings
 
 from typing import Optional
 
@@ -54,26 +55,34 @@ class Secret(BaseResource):
             pretty=True,
         )
 
+    @classmethod
+    def deploy_default_secret(
+        cls, kube_api_client: ApiClient, name: str, pull_secret: str, ignore_conflict: bool = True
+    ) -> "Secret":
+        cls._validate_pull_secret(pull_secret)
+        secret = Secret(kube_api_client, name)
+        try:
+            secret.create(pull_secret)
+        except ApiException as e:
+            if not (e.reason == "Conflict" and ignore_conflict):
+                raise
+        return secret
+
+    @staticmethod
+    def _validate_pull_secret(pull_secret: str) -> None:
+        if not pull_secret:
+            return
+        try:
+            json.loads(pull_secret)
+        except json.JSONDecodeError:
+            raise ValueError(f"invalid pull secret {pull_secret}")
+
 
 def deploy_default_secret(
     kube_api_client: ApiClient, name: str, ignore_conflict: bool = True, pull_secret: Optional[str] = None
 ) -> Secret:
+    warnings.warn("deploy_default_secret is deprecated. Use Secret.deploy_default_secret instead."
+                  "Note that pull_secret argument is now mandatory.", DeprecationWarning)
     if pull_secret is None:
         pull_secret = os.environ.get("PULL_SECRET", "")
-    _validate_pull_secret(pull_secret)
-    secret = Secret(kube_api_client, name)
-    try:
-        secret.create(pull_secret)
-    except ApiException as e:
-        if not (e.reason == "Conflict" and ignore_conflict):
-            raise
-    return secret
-
-
-def _validate_pull_secret(pull_secret: str) -> None:
-    if not pull_secret:
-        return
-    try:
-        json.loads(pull_secret)
-    except json.JSONDecodeError:
-        raise ValueError(f"invalid pull secret {pull_secret}")
+    return Secret.deploy_default_secret(kube_api_client, name, pull_secret, ignore_conflict)
