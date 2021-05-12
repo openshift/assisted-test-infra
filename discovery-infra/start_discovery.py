@@ -366,10 +366,12 @@ def _create_node_details(cluster_name):
         "libvirt_network_mtu": args.network_mtu,
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": utils.resource_param(args.worker_disk, consts.OperatorResource.WORKER_DISK_KEY, operators),
-        "libvirt_master_disk": args.master_disk,
+        "libvirt_master_disk": utils.resource_param(args.master_disk, consts.OperatorResource.MASTER_DISK_KEY, operators),
         "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
         "libvirt_secondary_network_if": f's{args.network_bridge}',
         "bootstrap_in_place": args.master_count == 1,
+        "master_disk_count": utils.resource_param(args.master_disk_count, consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
+        "worker_disk_count": utils.resource_param(args.worker_disk_count, consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
     }
 
 
@@ -964,6 +966,20 @@ if __name__ == "__main__":
         help="Worker cpu count",
         type=int,
         default=consts.WORKER_CPU,
+    )
+    parser.add_argument(
+        "-mdc",
+        "--master-disk-count",
+        help="Master disk count",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "-wdc",
+        "--worker-disk-count",
+        help="Worker disk count",
+        type=int,
+        default=1,
     )
     parser.add_argument(
         "-nw", "--number-of-workers", help="Workers count to spawn", type=int, default=0

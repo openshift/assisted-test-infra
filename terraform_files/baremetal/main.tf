@@ -8,18 +8,29 @@ resource "libvirt_pool" "storage_pool" {
   path = "${var.libvirt_storage_pool_path}/${var.cluster_name}"
 }
 
+locals {
+  worker_names = [
+    for pair in setproduct(range(var.worker_count), range(var.worker_disk_count)) :
+      "${var.cluster_name}-worker-${pair[0]}-disk-${pair[1]}"
+  ]
+  master_names = [
+    for pair in setproduct(range(var.master_count), range(var.master_disk_count)) :
+      "${var.cluster_name}-master-${pair[0]}-disk-${pair[1]}"
+  ]
+}
+
 resource "libvirt_volume" "master" {
-  count          = var.master_count
-  name           = "${var.cluster_name}-master-${count.index}"
+  for_each       = {for idx, obj in local.master_names: idx => obj}
+  name           = each.value
   pool           = libvirt_pool.storage_pool.name
   size           =  var.libvirt_master_disk
 }
 
 resource "libvirt_volume" "worker" {
-  count          = var.worker_count
-  name           = "${var.cluster_name}-worker-${count.index}"
+  for_each       = {for idx, obj in local.worker_names: idx => obj}
+  name           = each.value
   pool           = libvirt_pool.storage_pool.name
-  size           =  var.libvirt_worker_disk
+  size           = var.libvirt_worker_disk
 }
 
 resource "libvirt_network" "net" {
@@ -77,10 +88,15 @@ resource "libvirt_domain" "master" {
   vcpu   = var.libvirt_master_vcpu
   running = var.running
 
-  disk {
-    volume_id = element(libvirt_volume.master.*.id, count.index)
-
+  dynamic "disk" {
+    for_each = {
+      for idx, disk in libvirt_volume.master : idx => disk.id if length(regexall(".*-master-${count.index}-disk-.*", disk.name)) > 0
+    }
+    content {
+      volume_id = disk.value
+    }
   }
+
   disk {
     file = var.image_path
   }
@@ -126,8 +142,13 @@ resource "libvirt_domain" "worker" {
   vcpu   = var.libvirt_worker_vcpu
   running = var.running
 
-  disk {
-    volume_id = element(libvirt_volume.worker.*.id, count.index)
+  dynamic "disk" {
+    for_each = {
+      for idx, disk in libvirt_volume.worker : idx => disk.id if length(regexall(".*-worker-${count.index}-disk-.*", disk.name)) > 0
+    }
+    content {
+      volume_id = disk.value
+    }
   }
 
   disk {

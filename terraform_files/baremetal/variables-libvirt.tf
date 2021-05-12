@@ -13,6 +13,16 @@ variable "worker_count" {
   description = "Number of workers."
 }
 
+variable "master_disk_count" {
+  type        = number
+  description = "Number of master disks."
+}
+
+variable "worker_disk_count" {
+  type        = number
+  description = "Number of worker disks."
+}
+
 variable "cluster_domain" {
   type        = string
   description = "Cluster domain"
