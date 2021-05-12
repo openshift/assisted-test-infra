@@ -71,8 +71,8 @@ class BaseTest:
         try:
             if _nodes and global_variables.test_teardown:
                 logging.info('--- TEARDOWN --- node controller\n')
-                _nodes.destroy_all_nodes()
-
+                if _nodes:
+                    _nodes.destroy_all_nodes()
                 if _nat:
                     _nat.remove_nat_rules()
         finally:
