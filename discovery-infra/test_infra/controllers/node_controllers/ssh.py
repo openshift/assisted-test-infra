@@ -54,7 +54,7 @@ class SshConnection:
             if self._raw_tcp_connect((self._ip, self._port)):
                 return
             time.sleep(interval)
-        raise TimeoutError("SSH TCP Server '%(hostname)s:%(port)s' did not respond within timeout" % dict(
+        raise TimeoutError("SSH TCP Server '[%(hostname)s]:%(port)s' did not respond within timeout" % dict(
             hostname=self._ip, port=self._port))
 
     @classmethod

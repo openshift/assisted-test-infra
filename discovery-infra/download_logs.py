@@ -69,7 +69,8 @@ def main():
                 download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events,
                               pull_secret=args.pull_secret)
 
-        print(Counter(map(lambda cluster: cluster['status'], clusters)))
+        log.info("Cluster installation statuses: %s",
+                 dict(Counter(cluster["status"] for cluster in clusters).items()))
 
 
 def get_clusters(client, all_cluster):

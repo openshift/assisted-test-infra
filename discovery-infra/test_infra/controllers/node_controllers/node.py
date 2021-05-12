@@ -1,6 +1,8 @@
 import logging
 from typing import Callable
 
+from scp import SCPException
+
 from test_infra import consts
 from test_infra.controllers.node_controllers import ssh
 from test_infra.controllers.node_controllers.disk import Disk
@@ -49,9 +51,26 @@ class Node:
 
     @property
     def ssh_connection(self):
-        return ssh.SshConnection(self.ips[0],
-                                 private_ssh_key_path=self.private_ssh_key_path,
-                                 username=self.username)
+        if not self.ips:
+            raise RuntimeError(f"No available IPs for node {self.name}")
+
+        logging.info("Trying to access through IP addresses: %s", ", ".join(self.ips))
+        for ip in self.ips:
+            exception = None
+            try:
+                connection = ssh.SshConnection(
+                    ip,
+                    private_ssh_key_path=self.private_ssh_key_path,
+                    username=self.username)
+                connection.connect()
+                return connection
+
+            except (TimeoutError, SCPException) as e:
+                logging.warning("Could not SSH through IP %s: %s", ip, str(e))
+                exception = e
+
+        if exception is not None:
+            raise exception
 
     def upload_file(self, local_source_path, remote_target_path):
         with self.ssh_connection as _ssh:
