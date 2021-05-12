@@ -164,16 +164,17 @@ function config_nginx() {
   echo "Config nginx"
 
   # Create a container image to be used as the load balancer.  Initially, it starts nginx that opens a stream includes all conf files
-  # in directory /etc/nginx/stream.d. The nginx is refreshed every 60 seconds
+  # in directory /etc/nginx/conf.d. The nginx is refreshed every 60 seconds
   cat <<EOF | sudo podman build --tag load_balancer:latest -
 FROM quay.io/centos/centos:8.3.2011
 RUN dnf install -y nginx
 RUN sed -i -e '/^http {/,\$d'  /etc/nginx/nginx.conf
-RUN sed -i -e '\$a stream {\ninclude /etc/nginx/stream.d/*.conf;\n}' -e '/^stream {/,\$d' /etc/nginx/nginx.conf
+RUN sed -i -e '\$a http {\n    include /etc/nginx/conf.d/http*.conf;\n}' -e '/^http {/,\$d' /etc/nginx/nginx.conf
+RUN sed -i -e '\$a stream {\n    include /etc/nginx/conf.d/stream*.conf;\n}' -e '/^stream {/,\$d' /etc/nginx/nginx.conf
 CMD ["bash", "-c", "while /bin/true ; do (ps -ef | grep -v grep | grep -q nginx && nginx -s reload) || nginx ; sleep 60 ; done"]
 EOF
   sudo podman rm -f load_balancer || /bin/true
-  sudo mkdir -p $HOME/.test-infra/etc/nginx/stream.d
+  sudo mkdir -p $HOME/.test-infra/etc/nginx/{stream,http}.d
   sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
   sudo firewall-cmd --zone=libvirt --add-port=22623/tcp
   sudo firewall-cmd --zone=libvirt --add-port=443/tcp

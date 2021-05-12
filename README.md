@@ -34,10 +34,11 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Test installer, controller, `assisted-service` and agent images in the same flow](#test-installer-controller-assisted-service-and-agent-images-in-the-same-flow)
     - [Test infra image](#test-infra-image)
   - [In case you would like to build the image with a different `assisted-service` client](#in-case-you-would-like-to-build-the-image-with-a-different-assisted-service-client)
-  - [Test with Authentication](#test-with-authentication)
+  - [Test with RHSSO Authentication](#test-with-rhsso-authentication)
   - [Single Node - Bootstrap in place with Assisted Service](#single-node---bootstrap-in-place-with-assisted-service)
   - [Single Node - Bootstrap in place with Assisted Service and IPv6](#single-node---bootstrap-in-place-with-assisted-service-and-ipv6)
   - [On-prem](#on-prem)
+  - [Run operator](#run-operator)
 
 ## Prerequisites
 
@@ -391,4 +392,28 @@ To cleanup after the full flow:
 
 ```
 make destroy
+```
+
+## Run operator
+
+The current implementation installs an OCP cluster using assisted service on minikube.
+Afterwards, we install the assisted-service-operator on top of that cluster.
+The first step would be removed once we could either:
+
+- Have an OCP cluster easily (i.e. [CRC](https://developers.redhat.com/products/codeready-containers/overview))
+- Install the assisted-service operator on top of pure-k8s cluster. (At the moment there are some OCP component prerequisites)
+
+```bash
+# Deploy AI with LSO
+OLM_OPERATORS=lso make run_full_flow_with_install
+
+# Deploy AI Operator on top of the new cluster
+export KUBECONFIG=./build/kubeconfig
+make deploy_assisted_operator
+```
+
+Clear the operator deployment
+
+```bash
+make clear_operator
 ```

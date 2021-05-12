@@ -16,6 +16,7 @@ SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
 SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
+INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/ocpmetal/assisted-service-index:latest)
 
 # assisted-installer
 INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
@@ -109,6 +110,7 @@ CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-con
 PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 SERVICE_REPLICAS_COUNT := 3
+LSO_DISKS := $(shell echo sd{b..c})
 AUTH_TYPE := $(or ${AUTH_TYPE},none)
 ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},no)
 KUBE_API := $(or ${KUBE_API},no)
@@ -122,7 +124,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service deploy_assisted_operator create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
 
 ###########
 # General #
@@ -174,12 +176,22 @@ delete_podman_localhost:
 # Load balancer    #
 ####################
 
-# Start load balancer if it does not already exist.  Map the directory $(HOME)/.test-infra/etc/nginx/stream.d to be /etc/nginx/stream.d so it will be used by the python code to fill up load balancing definitions
+# Start load balancer if it does not already exist.
+# Map the directory $(HOME)/.test-infra/etc/nginx/conf.d to be /etc/nginx/conf.d
+# so it will be used by the python code to fill up load balancing definitions
 start_load_balancer:
-	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ] ; then id=`podman ps --quiet --filter "name=load_balancer"` ; ( test -z "$$id" && echo "Staring load balancer ..." && podman run -d --rm --net=host --name=load_balancer -v $(HOME)/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d load_balancer:latest ) || ! test -z "$$id" ; fi
+	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
+		id=`podman ps --quiet --filter "name=load_balancer"`; \
+		( test -z "$$id" && echo "Staring load balancer ..." && \
+		podman run -d --rm --net=host --name=load_balancer \
+			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
+			load_balancer:latest ) || ! test -z "$$id"; \
+	fi
 
 stop_load_balancer:
-	@id=`podman ps --quiet --filter "name=load_balancer"`; test ! -z "$$id"  && podman rm -f load_balancer ; rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
+	@id=`podman ps --quiet --filter "name=load_balancer"`; \
+	test ! -z "$$id"  && podman rm -f load_balancer; \
+	rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
 
 
 #############
@@ -355,6 +367,17 @@ endif
 redeploy_nodes: destroy_nodes deploy_nodes
 
 redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
+
+############
+# Operator #
+############
+
+clear_operator:
+	DISKS="${LSO_DISKS}" ./assisted-service/deploy/operator/destroy.sh
+
+deploy_assisted_operator: clear_operator
+	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
+	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_TARGET=operator ./scripts/deploy_assisted_service.sh
 
 #############
 # Inventory #

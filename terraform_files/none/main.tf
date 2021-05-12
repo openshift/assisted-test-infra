@@ -107,7 +107,7 @@ data "libvirt_network_dns_host_template" "masters_oauth" {
 resource "local_file" "load_balancer_config" {
   count    = var.load_balancer_ip != "" && var.load_balancer_config_file != "" ? 1 : 0
   content  = var.load_balancer_config_file
-  filename = format("/etc/nginx/stream.d/%s.conf", replace(var.load_balancer_ip,"/[:.]/" , "_"))
+  filename = format("/etc/nginx/conf.d/stream_%s.conf", replace(var.load_balancer_ip,"/[:.]/" , "_"))
 }
 
 resource "libvirt_domain" "master" {
