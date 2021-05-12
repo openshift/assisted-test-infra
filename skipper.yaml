@@ -22,7 +22,7 @@ volumes:
   - /var/ai-logs:/var/ai-logs
 
   # sockets
-  - $HOME/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d
+  - $HOME/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d
 
   # cache
   - $HOME/.cache/go-build/:/go/pkg/mod/
