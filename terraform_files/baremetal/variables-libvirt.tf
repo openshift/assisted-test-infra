@@ -226,3 +226,9 @@ variable "provisioning_cidr6" {
   type = string
   default = ""
 }
+
+variable "libvirt_dns_records" {
+  type        = map(string)
+  description = "DNS records to be added to the libvirt network"
+  default = {}
+}

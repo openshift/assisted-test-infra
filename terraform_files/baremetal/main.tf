@@ -57,6 +57,14 @@ resource "libvirt_network" "net" {
         ip       = hosts.value.ip
       }
     }
+
+    dynamic "hosts" {
+      for_each = var.libvirt_dns_records
+      content {
+        hostname = hosts.key
+        ip       = hosts.value
+      }
+    }
   }
 
   xml {
