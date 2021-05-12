@@ -55,7 +55,9 @@ class BaseTest:
         try:
             if EnvConfig.get("test_teardown"):
                 logging.info('--- TEARDOWN --- node controller\n')
-                nodes_data.get("nodes").destroy_all_nodes()
+                nodes = nodes_data.get("nodes")
+                if nodes:
+                    nodes.destroy_all_nodes()
             if nodes_data.get("needs_nat"):
                 nodes_data.get("nodes").unconfigure_nat()
         finally:
