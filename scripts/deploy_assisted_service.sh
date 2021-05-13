@@ -22,7 +22,9 @@ if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" && -z "
     # Supporting version 4.8 for kube-api
     OPENSHIFT_VERSIONS=$(cat assisted-service/default_ocp_versions.json |
        jq -rc 'with_entries(.key = "4.8") | with_entries(
-           {key: .key, value: {rhcos_image: .value.rhcos_image, rhcos_version: .value.rhcos_version}})')
+           {key: .key, value: {rhcos_image: .value.rhcos_image,
+           rhcos_version: .value.rhcos_version, 
+           rhcos_rootfs: .value.rhcos_rootfs}})')
     json_template=\''%s'\'
     OPENSHIFT_VERSIONS_CMD="OPENSHIFT_VERSIONS=$(printf "${json_template}" "${OPENSHIFT_VERSIONS}")"
 fi
