@@ -135,3 +135,5 @@ env_variables["network_name"] = env_variables.get("network_name", consts.TEST_NE
 env_variables["net_asset"] = env_variables.get("net_asset")
 env_variables["bootstrap_in_place"] = env_variables.get("bootstrap_in_place", False)
 env_variables["single_node_ip"] = env_variables.get("single_node_ip", "")
+env_variables["worker_cpu_mode"] = env_variables.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE)
+env_variables["master_cpu_mode"] = env_variables.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)

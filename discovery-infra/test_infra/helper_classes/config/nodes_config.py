@@ -19,6 +19,8 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     master_vcpu: int = None
     workers_count: int = None
     masters_count: int = None
+    worker_cpu_mode: str = None
+    master_cpu_mode: str = None
     network_mtu: int = None
     worker_disk: int = None
     master_disk: int = None

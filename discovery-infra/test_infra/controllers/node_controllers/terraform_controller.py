@@ -90,6 +90,8 @@ class TerraformController(LibvirtController):
                 kwargs.get("master_disk_count", 1), consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
             "worker_disk_count": utils.resource_param(
                 kwargs.get("worker_disk_count", 1), consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
+            "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
+            "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)
         }
         for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
                     "libvirt_secondary_worker_ips"]:
