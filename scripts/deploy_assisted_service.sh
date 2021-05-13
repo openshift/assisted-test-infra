@@ -20,7 +20,7 @@ export OPENSHIFT_VERSIONS_CMD=""
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" && -z "${OPENSHIFT_VERSIONS}" ]]; then
     # Supporting version 4.8 for kube-api
-    OPENSHIFT_VERSIONS=$(cat assisted-service/default_ocp_versions.json |
+    OPENSHIFT_VERSIONS=$(cat assisted-service/data/default_ocp_versions.json |
        jq -rc 'with_entries(.key = "4.8") | with_entries(
            {key: .key, value: {rhcos_image: .value.rhcos_image,
            rhcos_version: .value.rhcos_version, 
@@ -32,8 +32,8 @@ fi
 mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
-    ./assisted-service/tools/handle_ocp_versions.py --src ./assisted-service/default_ocp_versions.json \
-        --dest ./assisted-service/default_ocp_versions.json --ocp-override ${OPENSHIFT_INSTALL_RELEASE_IMAGE}
+    ./assisted-service/tools/handle_ocp_versions.py --src ./assisted-service/data/default_ocp_versions.json \
+        --dest ./assisted-service/data/default_ocp_versions.json --ocp-override ${OPENSHIFT_INSTALL_RELEASE_IMAGE}
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         if [ -x "$(command -v docker)" ]; then

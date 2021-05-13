@@ -828,7 +828,7 @@ def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):
 
     if not release_image:
         stdout, _, _ = run_command(
-            f"jq -r '.[\"{ocp_version}\"].release_image' assisted-service/default_ocp_versions.json",
+            f"jq -r '.[\"{ocp_version}\"].release_image' assisted-service/data/default_ocp_versions.json",
             shell=True)
         return stdout
 
