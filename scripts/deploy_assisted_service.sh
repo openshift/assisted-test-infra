@@ -60,7 +60,14 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         sed -i "s|PUBLIC_CONTAINER_REGISTRIES=.*|PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/onprem-environment
     fi
     sed -i "s/SERVICE_BASE_URL=http:\/\/127.0.0.1/SERVICE_BASE_URL=http:\/\/${ASSISTED_SERVICE_HOST}/" assisted-service/onprem-environment
-    echo "HW_VALIDATOR_MIN_DISK_SIZE_GIB=20" >> assisted-service/onprem-environment
+
+    # deprecated; remove when support is removed from assisted-service
+    echo $'\nHW_VALIDATOR_MIN_DISK_SIZE_GIB=20'>> assisted-service/onprem-environment
+
+    validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/onprem-environment | cut -d '=' -f2)
+    HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb) |= 20' | tr -d "\n\t ")
+    sed -i "s|HW_VALIDATOR_REQUIREMENTS=.*|HW_VALIDATOR_REQUIREMENTS=${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}|" assisted-service/onprem-environment
+
     make -C assisted-service/ deploy-onprem
 elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
     print_log "Starting port forwarding for deployment/$SERVICE_NAME on port $OCP_SERVICE_PORT"
