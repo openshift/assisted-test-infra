@@ -259,7 +259,7 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
         node.download_file(f"/tmp/sosreport.tar.bz2",
                            os.path.join(destination_dir, f"sosreport-{node.name}.tar.bz2"))
 
-    except (TimeoutError, IndexError, SSHException):
+    except (TimeoutError, RuntimeError, SSHException):
         log.exception("Failed accessing node %s for sosreport data gathering", node)
 
 
