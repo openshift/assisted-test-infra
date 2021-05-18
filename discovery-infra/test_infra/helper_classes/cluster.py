@@ -445,6 +445,7 @@ class Cluster:
         wait_for_hosts=True,
         wait_for_operators=True,
         wait_for_cluster_install=True,
+        download_kubeconfig=True,
     ):
         self.start_install()
         if wait_for_hosts:
@@ -453,6 +454,8 @@ class Cluster:
             self.wait_for_operators_to_finish()
         if wait_for_cluster_install:
             self.wait_for_install()
+        if download_kubeconfig:
+            self.download_kubeconfig()
 
     def disable_worker_hosts(self):
         hosts = self.get_hosts_by_role(consts.NodeRoles.WORKER)
