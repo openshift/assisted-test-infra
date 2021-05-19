@@ -22,12 +22,8 @@ function download_service_logs() {
     done
   else
     ${KUBECTL} cluster-info
-    ${KUBECTL} get pods -n ${NAMESPACE} || true
-
-    for service in "assisted-service" "postgres" "scality" "createimage"; do
-      ${KUBECTL} get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} > ${LOGS_DEST}/k8s_{}.log" || true
-    done
-
+    ${KUBECTL} get node,pod,svc,deployment,pv,pvc -n ${NAMESPACE} -o wide || true
+    ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/k8s_{}.log" || true
     ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp > ${LOGS_DEST}/k8s_events.log || true
   fi
 }
