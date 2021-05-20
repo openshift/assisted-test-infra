@@ -1,3 +1,6 @@
+from pprint import pformat
+from typing import List, Union
+
 import waiting
 
 from typing import List, Union
@@ -5,15 +8,10 @@ from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from tests.conftest import env_variables
-
-from .common import logger, ObjectReference
+from test_infra import consts
+from ...consts.kube_api import CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
 from .base_resource import BaseCustomResource
-from .global_vars import (
-    CRD_API_GROUP,
-    CRD_API_VERSION,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-)
+from .common import ObjectReference, logger
 
 
 class Agent(BaseCustomResource):
@@ -30,7 +28,7 @@ class Agent(BaseCustomResource):
         self,
         kube_api_client: ApiClient,
         name: str,
-        namespace: str = env_variables["namespace"],
+        namespace: str = consts.DEFAULT_NAMESPACE,
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -115,5 +113,4 @@ class Agent(BaseCustomResource):
 
     def approve(self) -> None:
         self.patch(approved=True)
-
         logger.info("approved agent %s", self.ref)

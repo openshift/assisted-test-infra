@@ -3,10 +3,10 @@ import logging
 from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
-from tests.conftest import env_variables
 
 from .base_resource import BaseResource
 from .idict import IDict
+from test_infra import consts
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class ClusterImageSet(BaseResource):
         self,
         kube_api_client: ApiClient,
         name: str,
-        namespace: str = env_variables["namespace"],
+        namespace: str = consts.DEFAULT_NAMESPACE,
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
