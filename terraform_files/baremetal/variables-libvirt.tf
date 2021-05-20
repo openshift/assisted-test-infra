@@ -129,6 +129,18 @@ variable "libvirt_master_vcpu" {
   default     = "4"
 }
 
+variable "master_cpu_mode" {
+  type        = string
+  description = "CPUs virtualization flag"
+  default     = "host-passthrough"
+}
+
+variable "worker_cpu_mode" {
+  type        = string
+  description = "CPUs virtualization flag"
+  default     = "host-passthrough"
+}
+
 variable "libvirt_worker_vcpu" {
   type        = string
   description = "CPUs allocated to workers"

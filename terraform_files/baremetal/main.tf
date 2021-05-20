@@ -107,7 +107,7 @@ resource "libvirt_domain" "master" {
   }
 
   cpu = {
-    mode = "host-passthrough"
+    mode = var.master_cpu_mode
   }
 
   network_interface {
@@ -161,7 +161,7 @@ resource "libvirt_domain" "worker" {
   }
 
   cpu = {
-    mode = "host-passthrough"
+    mode = var.worker_cpu_mode
   }
 
   network_interface {
