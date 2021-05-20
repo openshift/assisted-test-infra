@@ -57,10 +57,10 @@
 
 			<script>
 				$(document).ready(function () {
-					var str = window.location.pathname;
-					var res = str.split("_");
-					var uuid = res[2].split("/");
-					filename = "cluster_" + uuid[0] + "_events.json";
+					var full_path = window.location.pathname;
+					var dirname = full_path.split("/").reverse()[1];
+					var uuid = dirname.split("_")[2];  // dirname is of the form: <date>_<time>_<uuid>
+					filename = "cluster_" + uuid + "_events.json";
 					// FETCHING DATA FROM JSON FILE
 					$.getJSON(filename,
 						function (data) {
