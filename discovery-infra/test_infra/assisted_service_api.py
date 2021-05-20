@@ -417,6 +417,9 @@ class InventoryClient(object):
     def get_cluster_host_requirements(self, cluster_id):
         return self.client.get_cluster_host_requirements(cluster_id=cluster_id)
 
+    def get_preflight_requirements(self, cluster_id):
+        return self.client.get_preflight_requirements(cluster_id=cluster_id)
+
     def get_managed_domains(self):
         return self.domains.list_managed_domains()
 
