@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-import xml.dom.minidom as md
+import warnings
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
 from functools import wraps
@@ -20,7 +20,6 @@ from string import ascii_lowercase
 from typing import List
 
 import filelock
-import libvirt
 import oc_utils
 import requests
 import waiting
@@ -31,7 +30,8 @@ from retry import retry
 import test_infra.consts as consts
 
 
-conn = libvirt.open("qemu:///system")
+# TODO - Remove after deleting all libvirt methods from utils.py
+from test_infra.utils import libvirt_utils
 
 
 def run_command(command, shell=False, raise_errors=True, env=None):
@@ -71,64 +71,6 @@ def run_command_with_output(command, env=None):
 
     if p.returncode != 0:
         raise subprocess.CalledProcessError(p.returncode, p.args)
-
-
-def wait_till_nodes_are_ready(nodes_count, network_name):
-    log.info("Wait till %s nodes will be ready and have ips", nodes_count)
-    try:
-        waiting.wait(
-            lambda: len(get_network_leases(network_name)) >= nodes_count,
-            timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,
-            sleep_seconds=10,
-            waiting_for="Nodes to have ips",
-        )
-        log.info("All nodes have booted and got ips")
-    except BaseException:
-        log.error(
-            "Not all nodes are ready. Current dhcp leases are %s",
-            get_network_leases(network_name),
-        )
-        raise
-
-
-# Require wait_till_nodes_are_ready has finished and all nodes are up
-def get_libvirt_nodes_mac_role_ip_and_name(network_name):
-    nodes_data = {}
-    try:
-        leases = get_network_leases(network_name)
-        for lease in leases:
-            nodes_data[lease["mac"]] = {
-                "ip": lease["ipaddr"],
-                "name": lease["hostname"],
-                "role": consts.NodeRoles.WORKER
-                if consts.NodeRoles.WORKER in lease["hostname"]
-                else consts.NodeRoles.MASTER,
-            }
-        return nodes_data
-    except BaseException:
-        log.error(
-            "Failed to get nodes macs from libvirt. Output is %s",
-            get_network_leases(network_name),
-        )
-        raise
-
-
-def get_libvirt_nodes_macs(network_name):
-    return [lease["mac"] for lease in get_network_leases(network_name)]
-
-
-def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
-    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    return all(
-        mac.lower() in map(str.lower, itertools.chain(*hosts_macs.values()))
-        for mac in get_libvirt_nodes_macs(network_name)
-    )
-
-
-def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
-    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    num_macs = len([mac for mac in hosts_macs if mac != ''])
-    return num_macs >= num_nodes
 
 
 def get_cluster_hosts_macs(client, cluster_id):
@@ -690,31 +632,10 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
         lock.release()
 
 
-def _get_hosts_from_network(net):
-    desc = md.parseString(net.XMLDesc())
-    try:
-        hosts = desc.getElementsByTagName("network")[0]. \
-            getElementsByTagName("ip")[0]. \
-            getElementsByTagName("dhcp")[0]. \
-            getElementsByTagName("host")
-        return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"),
-                                      "hostname": host.getAttribute("name")}, hosts))
-    except IndexError:
-        return []
-
-
 def _merge(leases, hosts):
     lips = [ls["ipaddr"] for ls in leases]
     ret = leases + [h for h in hosts if h["ipaddr"] not in lips]
     return ret
-
-
-def get_network_leases(network_name):
-    with file_lock_context():
-        net = conn.networkLookupByName(network_name)
-        leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
-        hosts = _get_hosts_from_network(net)
-        return _merge(leases, hosts)
 
 
 def create_ip_address_list(node_count, starting_ip_addr):
@@ -730,34 +651,15 @@ def create_empty_nested_list(node_count):
 
 
 def get_libvirt_nodes_from_tf_state(network_names, tf_state):
-    nodes = extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
-    nodes.update(extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
-    return nodes
+    warnings.warn("get_libvirt_nodes_from_tf_state will be deleted soon. Use "
+                  "libvirt_utils.get_libvirt_nodes_from_tf_state instead", DeprecationWarning)
+    return libvirt_utils.get_libvirt_nodes_from_tf_state(network_names, tf_state)
 
 
 def extract_nodes_from_tf_state(tf_state, network_names, role):
-    data = {}
-    for domains in [r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and role in r["name"]]:
-        for d in domains:
-            for nic in d["attributes"]["network_interface"]:
-
-                if nic["network_name"] not in network_names:
-                    continue
-
-                data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
-
-    return data
-
-
-def set_hosts_roles_based_on_requested_name(client, cluster_id):
-    hosts = client.get_cluster_hosts(cluster_id=cluster_id)
-    hosts_with_roles = []
-
-    for host in hosts:
-        role = consts.NodeRoles.MASTER if "master" in host["requested_hostname"] else consts.NodeRoles.WORKER
-        hosts_with_roles.append({"id": host["id"], "role": role})
-
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
+    warnings.warn("extract_nodes_from_tf_state will be deleted soon. Use "
+                  "libvirt_utils.extract_nodes_from_tf_state instead", DeprecationWarning)
+    return libvirt_utils.extract_nodes_from_tf_state(tf_state, network_names, role)
 
 
 def get_env(env, default=None):
@@ -864,49 +766,6 @@ def extract_installer(release_image, dest):
     logging.info("Extracting installer from %s to %s", release_image, dest)
     with pull_secret_file() as pull_secret:
         run_command(f"oc adm release extract --registry-config '{pull_secret}' --command=openshift-install --to={dest} {release_image}")
-
-
-def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
-    """
-    Update names and/or roles of the hosts in a cluster from a dictionary of libvirt nodes.
-
-    An entry from the dictionary is matched to a host by the host's MAC address (of any NIC).
-    Entries that do not match any host in the cluster are ignored.
-
-    Arguments:
-        client -- An assisted service client
-        cluster_id -- ID of the cluster to update
-        libvirt_nodes -- A dictionary that may contain data about cluster hosts
-        update_hostnames -- Whether hostnames must be set (default False)
-        update_roles -- Whether host roles must be set (default True)
-    """
-
-    if not update_hostnames and not update_roles:
-        logging.info("Skipping update roles and hostnames")
-        return
-
-    roles = []
-    hostnames = []
-    inventory_hosts = client.get_cluster_hosts(cluster_id)
-
-    for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
-        for host in inventory_hosts:
-            inventory = json.loads(host["inventory"])
-
-            if libvirt_mac.lower() in map(
-                    lambda interface: interface["mac_address"].lower(),
-                    inventory["interfaces"],
-            ):
-                roles.append({"id": host["id"], "role": libvirt_metadata["role"]})
-                hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
-
-    if not update_hostnames:
-        hostnames = None
-
-    if not update_roles:
-        roles = None
-
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
 
 
 def get_assisted_controller_status(kubeconfig):

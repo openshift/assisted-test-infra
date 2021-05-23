@@ -111,7 +111,7 @@ class TerraformController(LibvirtController):
         logging.info('Start running terraform')
         self.tf.apply()
         if self.params.running:
-            utils.wait_till_nodes_are_ready(
+            utils.libvirt_utils.wait_till_nodes_are_ready(
                 nodes_count=self.params.worker_count + self.params.master_count,
                 network_name=self.params.libvirt_network_name
             )

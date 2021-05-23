@@ -10,6 +10,7 @@ from test_infra import assisted_service_api, utils, consts, warn_deprecate
 from test_infra.tools import static_network, terraform_utils
 
 from logger import log
+from test_infra.utils import libvirt_utils
 
 warn_deprecate()
 
@@ -108,12 +109,12 @@ def day2_nodes_flow(client,
         num_nodes_to_wait = num_worker_nodes
         installed_status = consts.NodesStatus.DAY2_INSTALLED
 
-    utils.wait_till_nodes_are_ready(
+    libvirt_utils.wait_till_nodes_are_ready(
         nodes_count=num_nodes_to_wait, network_name=tf_network_name
     )
 
     waiting.wait(
-        lambda: utils.are_libvirt_nodes_in_cluster_hosts(
+        lambda: libvirt_utils.are_libvirt_nodes_in_cluster_hosts(
             client, cluster.id, num_nodes_to_wait
         ),
         timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
@@ -169,8 +170,8 @@ def day2_nodes_flow(client,
 
 def set_hostnames_from_tf(client, cluster_id, tf_folder, network_name):
     tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
-    libvirt_nodes = utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
-    utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
+    libvirt_nodes = libvirt_utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
+    libvirt_utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
 
 
 def set_day2_tf_configuration(tf_folder, num_worker_nodes, api_vip_ip, api_vip_dnsname):
@@ -308,9 +309,9 @@ def set_nodes_hostnames_if_needed(client,
                                   cluster_id):
     if not has_ipv_4 or with_static_network_config:
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
-        libvirt_nodes = utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
+        libvirt_nodes = libvirt_utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
         log.info(
             "Set hostnames of day2 cluster %s in case of static network configuration or "
             "to work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts",
             cluster_id)
-        utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
+        libvirt_utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)

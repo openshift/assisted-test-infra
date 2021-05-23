@@ -72,7 +72,7 @@ def get_nodes_details(cluster_name, namespace, tf):
         tf_vars['libvirt_network_name'],
         tf_vars['libvirt_secondary_network_name'],
     )
-    return utils.get_libvirt_nodes_from_tf_state(
+    return utils.libvirt_utils.get_libvirt_nodes_from_tf_state(
         network_names=networks_names,
         tf_state=tf.get_state(),
     )
