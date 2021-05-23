@@ -48,11 +48,11 @@ warn_deprecate()
 
 def main():
     args = handle_arguments()
-    client = create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT)
 
     if args.sosreport:
         gather_sosreport_data(output_dir=args.dest)
 
+    client = create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT)
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
         download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
