@@ -229,6 +229,7 @@ class AgentClusterInstall(BaseCustomResource):
 
         def _has_required_condition() -> Optional[bool]:
             status, reason = self.condition(cond_type=cond_type, timeout=0.5)
+            logger.info(f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason}")
             if status == required_status:
                 if required_reason:
                     return required_reason == reason
@@ -238,6 +239,7 @@ class AgentClusterInstall(BaseCustomResource):
             _has_required_condition,
             timeout_seconds=timeout,
             waiting_for=f"agentclusterinstall {self.ref} condition " f"{cond_type} to be {required_status}",
+            sleep_seconds=10,
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
