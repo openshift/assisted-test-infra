@@ -8,7 +8,6 @@ from kubernetes.client.rest import ApiException
 
 from test_infra.assisted_service_api import ClientFactory
 from test_infra.helper_classes.kube_helpers.idict import IDict
-from tests.conftest import env_variables
 
 # silence kubernetes debug messages.
 logging.getLogger("kubernetes").setLevel(logging.INFO)
@@ -94,5 +93,4 @@ class ObjectReference(IDict):
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
     warnings.warn("create_kube_api_client is deprecated. Use ClientFactory.create_kube_api_client instead.",
                   DeprecationWarning)
-    return ClientFactory.create_kube_api_client(kubeconfig_path or env_variables["installer_kubeconfig_path"])
-
+    return ClientFactory.create_kube_api_client(kubeconfig_path)

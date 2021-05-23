@@ -1,16 +1,11 @@
-import logging
-import os
 import json
-
-from typing import Optional
+import logging
 
 from kubernetes.client import ApiClient, CoreV1Api
 from kubernetes.client.rest import ApiException
 
-from tests.conftest import env_variables
-
+from test_infra import consts
 from .base_resource import BaseResource
-
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +19,11 @@ class Secret(BaseResource):
     _secret_type = "kubernetes.io/dockerconfigjson"
     _docker_config_json_key = ".dockerconfigjson"
 
-    def __init__(self, kube_api_client: ApiClient, name: str, namespace: str = env_variables["namespace"]):
+    def __init__(self, kube_api_client: ApiClient, name: str, namespace: str = consts.DEFAULT_NAMESPACE):
         super().__init__(name, namespace)
         self.v1_api = CoreV1Api(kube_api_client)
 
-    def create(self, pull_secret: str = env_variables["pull_secret"]):
+    def create(self, pull_secret: str):
         self.v1_api.create_namespaced_secret(
             body={
                 "type": self._secret_type,
@@ -56,12 +51,10 @@ class Secret(BaseResource):
 
 
 def deploy_default_secret(
-    kube_api_client: ApiClient, name: str, ignore_conflict: bool = True, pull_secret: Optional[str] = None
+    kube_api_client: ApiClient, name: str, namespace: str, pull_secret: str, ignore_conflict: bool = True
 ) -> Secret:
-    if pull_secret is None:
-        pull_secret = os.environ.get("PULL_SECRET", "")
     _validate_pull_secret(pull_secret)
-    secret = Secret(kube_api_client, name)
+    secret = Secret(kube_api_client, name, namespace)
     try:
         secret.create(pull_secret)
     except ApiException as e:

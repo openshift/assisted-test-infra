@@ -18,7 +18,8 @@ from test_infra.tools import static_network, terraform_utils
 
 from test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Secret, InfraEnv, Proxy,
-    NMStateConfig, ClusterImageSet, ClusterImageSetReference,
+    NMStateConfig,
+    ClusterImageSet, ClusterImageSetReference,
     AgentClusterInstall,
 )
 
@@ -29,6 +30,7 @@ import oc_utils
 from logger import log
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
 from test_infra.controllers.nat_controller import NatController
+from tests.conftest import env_variables
 
 warn_deprecate()
 
@@ -734,6 +736,7 @@ def execute_kube_api_flow():
     imageSet=ClusterImageSet(
         kube_api_client=kube_client,
         name=f"{cluster_name}-image-set",
+        namespace=args.namespace
     )
     releaseImage=utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image("4.8"))
     imageSet.apply(releaseImage=releaseImage)
@@ -747,6 +750,7 @@ def execute_kube_api_flow():
     agent_cluster_install = AgentClusterInstall(
         kube_api_client=kube_client,
         name=f'{cluster_name}-agent-cluster-install',
+        namespace=args.namespace
     )
 
     image_set_ref = ClusterImageSetReference(name=f'{cluster_name}-image-set')

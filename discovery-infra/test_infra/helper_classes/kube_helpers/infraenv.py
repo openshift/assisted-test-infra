@@ -12,18 +12,13 @@ from pprint import pformat
 from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 
-from tests.conftest import env_variables
+from test_infra import consts
+from ...consts.kube_api import (CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+                                DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT)
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
 from .idict import IDict
-from .secret import deploy_default_secret, Secret
-from .global_vars import (
-    CRD_API_GROUP,
-    CRD_API_VERSION,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
-)
-
+from .secret import Secret, deploy_default_secret
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +69,7 @@ class InfraEnv(BaseCustomResource):
         self,
         kube_api_client: ApiClient,
         name: str,
-        namespace: str = env_variables["namespace"],
+        namespace: str = consts.DEFAULT_NAMESPACE,
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -248,6 +243,8 @@ class InfraEnv(BaseCustomResource):
         cls,
         kube_api_client: ApiClient,
         name: str,
+        namespace: str,
+        pull_secret: str,
         ignore_conflict: bool = True,
         cluster_deployment: Optional[ClusterDeployment] = None,
         secret: Optional[Secret] = None,
@@ -257,7 +254,7 @@ class InfraEnv(BaseCustomResource):
         **kwargs,
     ) -> "InfraEnv":
 
-        infra_env = InfraEnv(kube_api_client, name)
+        infra_env = InfraEnv(kube_api_client, name, namespace)
         try:
             if "filepath" in kwargs:
                 infra_env._create_infraenv_from_yaml_file(
@@ -268,6 +265,7 @@ class InfraEnv(BaseCustomResource):
                     kube_api_client=kube_api_client,
                     name=name,
                     ignore_conflict=ignore_conflict,
+                    pull_secret=pull_secret,
                     cluster_deployment=cluster_deployment,
                     secret=secret,
                     proxy=proxy,
@@ -298,6 +296,7 @@ class InfraEnv(BaseCustomResource):
         self,
         kube_api_client: ApiClient,
         cluster_deployment: ClusterDeployment,
+        pull_secret: str,
         secret: Optional[Secret] = None,
         proxy: Optional[Proxy] = None,
         label_selector: Optional[Dict[str, str]] = None,
@@ -308,6 +307,8 @@ class InfraEnv(BaseCustomResource):
             secret = deploy_default_secret(
                 kube_api_client=kube_api_client,
                 name=cluster_deployment.ref.name,
+                namespace=self._reference.namespace,
+                pull_secret=pull_secret
             )
         self.create(
             cluster_deployment=cluster_deployment,
@@ -322,6 +323,8 @@ class InfraEnv(BaseCustomResource):
 def deploy_default_infraenv(
     kube_api_client: ApiClient,
     name: str,
+    namespace: str,
+    pull_secret: str,
     ignore_conflict: bool = True,
     cluster_deployment: Optional[ClusterDeployment] = None,
     secret: Optional[Secret] = None,
@@ -336,6 +339,8 @@ def deploy_default_infraenv(
     return InfraEnv.deploy_default_infraenv(
         kube_api_client,
         name,
+        namespace,
+        pull_secret,
         ignore_conflict,
         cluster_deployment,
         secret,

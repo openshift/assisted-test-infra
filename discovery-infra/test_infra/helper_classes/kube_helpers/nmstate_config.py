@@ -5,13 +5,9 @@ from pprint import pformat
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from tests.conftest import env_variables
+from test_infra import consts
+from ...consts.kube_api import CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
 from .base_resource import BaseCustomResource
-from .global_vars import (
-    CRD_API_GROUP,
-    CRD_API_VERSION,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +21,7 @@ class NMStateConfig(BaseCustomResource):
         self,
         kube_api_client: ApiClient,
         name: str,
-        namespace: str = env_variables["namespace"],
+        namespace: str = consts.DEFAULT_NAMESPACE,
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)

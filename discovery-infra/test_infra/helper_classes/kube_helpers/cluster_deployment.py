@@ -1,5 +1,4 @@
 import logging
-
 from pprint import pformat
 from typing import Optional, Union, Tuple, List
 
@@ -7,20 +6,14 @@ import waiting
 import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
-from tests.conftest import env_variables
 
-from .common import ObjectReference
-from .global_vars import (
-    CRD_API_GROUP,
-    HIVE_API_GROUP,
-    HIVE_API_VERSION,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
-)
-from .base_resource import BaseCustomResource
-from .secret import deploy_default_secret, Secret
+from test_infra import consts
+from ...consts.kube_api import (CRD_API_GROUP, DEFAULT_WAIT_FOR_AGENTS_TIMEOUT, DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+                                DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT, HIVE_API_GROUP, HIVE_API_VERSION)
 from .agent import Agent
+from .base_resource import BaseCustomResource
+from .common import ObjectReference
+from .secret import Secret, deploy_default_secret
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +33,7 @@ class ClusterDeployment(BaseCustomResource):
         self,
         kube_api_client: ApiClient,
         name: str,
-        namespace: str = env_variables["namespace"],
+        namespace: str = consts.DEFAULT_NAMESPACE,
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -57,11 +50,11 @@ class ClusterDeployment(BaseCustomResource):
         logger.info("created cluster deployment %s: %s", self.ref, pformat(yaml_data))
 
     def create(
-            self,
-            secret: Secret,
-            base_domain: str = env_variables["base_domain"],
-            agent_cluster_install_ref: Optional[ObjectReference] = None,
-            **kwargs,
+        self,
+        secret: Secret,
+        base_domain: str = consts.DEFAULT_BASE_DNS_DOMAIN,
+        agent_cluster_install_ref: Optional[ObjectReference] = None,
+        **kwargs,
     ):
         body = {
             "apiVersion": f"{HIVE_API_GROUP}/{HIVE_API_VERSION}",
@@ -199,8 +192,10 @@ class ClusterDeployment(BaseCustomResource):
             return False
 
         logger.info(
-            "Waiting till cluster will be in condition %s with status: %s "
-            "reason: %s", cond_type, required_status, required_reason
+            "Waiting till cluster will be in condition %s with status: %s " "reason: %s",
+            cond_type,
+            required_status,
+            required_reason,
         )
 
         waiting.wait(
@@ -233,12 +228,13 @@ class ClusterDeployment(BaseCustomResource):
 def deploy_default_cluster_deployment(
     kube_api_client: ApiClient,
     name: str,
+    namespace: str,
     ignore_conflict: bool = True,
-    base_domain: str = env_variables["base_domain"],
+    base_domain: str = consts.DEFAULT_BASE_DNS_DOMAIN,
     secret: Optional[Secret] = None,
     **kwargs,
 ) -> ClusterDeployment:
-    cluster_deployment = ClusterDeployment(kube_api_client, name)
+    cluster_deployment = ClusterDeployment(kube_api_client, name, namespace)
     try:
         if "filepath" in kwargs:
             _create_from_yaml_file(
@@ -299,6 +295,8 @@ def _create_from_attrs(
             kube_api_client=kube_api_client,
             name=name,
             ignore_conflict=ignore_conflict,
+            namespace=cluster_deployment._reference.namespace,
+            pull_secret=pull_secret
         )
 
     cluster_deployment.create(

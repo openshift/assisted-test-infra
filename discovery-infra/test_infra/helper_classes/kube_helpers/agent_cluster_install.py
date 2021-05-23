@@ -1,24 +1,17 @@
 import logging
+from base64 import b64decode
+from pprint import pformat
+from typing import Optional, Tuple, Union
 
 import waiting
-
-from typing import Union, Optional, Tuple
-from pprint import pformat
-
-from base64 import b64decode
-
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from tests.conftest import env_variables
+from test_infra import consts
+from ...consts.kube_api import (DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT, DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
+                                DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT)
 from .base_resource import BaseCustomResource, ObjectReference
-from .secret import Secret
 from .cluster_image_set import ClusterImageSetReference
-from .global_vars import (
-    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
-    DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT,
-)
-
+from .secret import Secret
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +37,7 @@ class AgentClusterInstall(BaseCustomResource):
         self,
         kube_api_client: ApiClient,
         name: str,
-        namespace: str = env_variables["namespace"],
+        namespace: str = consts.DEFAULT_NAMESPACE,
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
@@ -72,7 +65,7 @@ class AgentClusterInstall(BaseCustomResource):
                 service_network=service_network,
                 control_plane_agents=control_plane_agents,
                 **kwargs,
-            )
+            ),
         }
 
         self.crd_api.create_namespaced_custom_object(
@@ -83,9 +76,7 @@ class AgentClusterInstall(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info(
-            "created agentclusterinstall %s: %s", self.ref, pformat(body)
-        )
+        logger.info("created agentclusterinstall %s: %s", self.ref, pformat(body))
 
     def patch(
             self,
@@ -114,9 +105,7 @@ class AgentClusterInstall(BaseCustomResource):
             body=body,
         )
 
-        logger.info(
-            "patching agentclusterinstall %s: %s", self.ref, pformat(body)
-        )
+        logger.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
 
     @staticmethod
     def _get_spec_dict(
@@ -155,9 +144,7 @@ class AgentClusterInstall(BaseCustomResource):
             spec["sshPublicKey"] = kwargs.pop("ssh_pub_key")
 
         if "machine_cidr" in kwargs:
-            spec["networking"]["machineNetwork"] = [
-                {"cidr": kwargs.pop("machine_cidr")}
-            ]
+            spec["networking"]["machineNetwork"] = [{"cidr": kwargs.pop("machine_cidr")}]
 
         spec.update(kwargs)
         return spec
@@ -182,10 +169,7 @@ class AgentClusterInstall(BaseCustomResource):
 
         logger.info("deleted agentclusterinstall %s", self.ref)
 
-    def status(
-            self,
-            timeout: Union[int] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT
-    ) -> dict:
+    def status(self, timeout: Union[int] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
             return self.get()["status"]
 
@@ -253,8 +237,7 @@ class AgentClusterInstall(BaseCustomResource):
         waiting.wait(
             _has_required_condition,
             timeout_seconds=timeout,
-            waiting_for=f"agentclusterinstall {self.ref} condition "
-                        f"{cond_type} to be {required_status}",
+            waiting_for=f"agentclusterinstall {self.ref} condition " f"{cond_type} to be {required_status}",
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
@@ -281,10 +264,15 @@ class AgentClusterInstall(BaseCustomResource):
             waiting_for=f"kubeconfig secret creation for cluster {self.ref}",
         )
 
-        kubeconfig_data = Secret(
-            kube_api_client=self.crd_api.api_client,
-            **secret_ref,
-        ).get().data["kubeconfig"]
+        kubeconfig_data = (
+            Secret(
+                kube_api_client=self.crd_api.api_client,
+                namespace=self._reference.namespace,
+                **secret_ref,
+            )
+            .get()
+            .data["kubeconfig"]
+        )
 
         with open(kubeconfig_path, "wt") as kubeconfig_file:
             kubeconfig_file.write(b64decode(kubeconfig_data).decode())

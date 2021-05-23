@@ -161,4 +161,5 @@ def delete_kube_api_resources_for_namespace(
     ClusterImageSet(
         kube_api_client=kube_api_client,
         name=image_set_name or f'{name}-image-set',
+        namespace=namespace
     ).delete()
