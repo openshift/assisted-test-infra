@@ -424,9 +424,9 @@ def validate_dns(client, cluster_id):
 # Create vms from downloaded iso that will connect to assisted-service and register
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
 def nodes_flow(
-        client, 
-        cluster_name, 
-        cluster, 
+        client,
+        cluster_name,
+        cluster,
         machine_net,
         cluster_deployment=None,
         agent_cluster_install=None,
@@ -696,12 +696,12 @@ def set_network_defaults_if_needed():
 
 
 def run_nodes_flow(
-        client, 
-        cluster_name, 
-        cluster, 
+        client,
+        cluster_name,
+        cluster,
         machine_net,
         image_path,
-        cluster_deployment=None, 
+        cluster_deployment=None,
         agent_cluster_install=None,
 ):
     try:
@@ -801,6 +801,7 @@ def execute_kube_api_flow():
             no_proxy=no_proxy
         ),
         ssh_pub_key=args.ssh_key,
+        nmstate_label=cluster_name,
     )
     infra_env.status()
     image_url = infra_env.get_iso_download_url()
