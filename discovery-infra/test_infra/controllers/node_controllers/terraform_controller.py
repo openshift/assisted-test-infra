@@ -197,9 +197,9 @@ class TerraformController(LibvirtController):
         else:
             return super().start_all_nodes()
 
-    def format_node_disk(self, node_name):
+    def format_node_disk(self, node_name: str, disk_index: int = 0):
         logging.info("Formating disk for %s", node_name)
-        self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}')
+        self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}-disk-{disk_index}')
 
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(

@@ -107,8 +107,8 @@ class Node:
         self.format_disk()
         self.start()
 
-    def format_disk(self):
-        self.node_controller.format_node_disk(self.name)
+    def format_disk(self, disk_index: int = 0):
+        self.node_controller.format_node_disk(self.name, disk_index)
 
     def kill_installer(self):
         self.kill_podman_container_by_name("assisted-installer")

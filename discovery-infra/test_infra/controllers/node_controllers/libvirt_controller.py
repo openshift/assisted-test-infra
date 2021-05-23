@@ -524,7 +524,7 @@ class LibvirtController(NodeController, ABC):
         current_xml = dom.XMLDesc(0)
         return minidom.parseString(current_xml.encode('utf-8'))
 
-    def format_node_disk(self, node_name: str) -> None:
+    def format_node_disk(self, node_name: str, disk_index: int = 0) -> None:
         raise NotImplementedError
 
     def get_ingress_and_api_vips(self) -> dict:
