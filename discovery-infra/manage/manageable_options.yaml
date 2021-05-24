@@ -1,0 +1,5 @@
+deregister_clusters:
+  method: delete_cluster
+  measure_field: updated_at
+  days_back: 20
+

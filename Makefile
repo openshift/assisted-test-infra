@@ -71,6 +71,10 @@ ES_USER := $(or $(ES_USER), "")
 ES_PASS := $(or $(ES_PASS), "")
 BACKUP_DESTINATION := $(or $(BACKUP_DESTINATION), "")
 
+# manage
+offline_token := $(or $(OFFLINE_TOKEN), "")
+
+
 # deploy
 IMAGE_TAG := latest
 
@@ -419,6 +423,16 @@ scrape_service_events:
 
 deploy_elasticsearch:
 	docker-compose -f discovery-infra/monitoring/docker-compose.yml up -d
+
+##########
+# manage #
+##########
+
+_manage_deployment:
+	discovery-infra/manage.py --inventory-url=$(REMOTE_SERVICE_URL) --type deregister_clusters --offline-token=$(OFFLINE_TOKEN)
+
+manage_deployment:
+	skipper make $(SKIPPER_PARAMS) _manage_deployment
 
 #######
 # ISO #
