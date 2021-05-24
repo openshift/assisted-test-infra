@@ -304,8 +304,17 @@ class InventoryClient(object):
             _file.write(response.data)
 
     def get_events(self, cluster_id, host_id=''):
+        # Get users events
         response = self.events.list_events(
             cluster_id=cluster_id, host_id=host_id, _preload_content=False
+        )
+
+        return json.loads(response.data)
+
+    def get_all_events(self, cluster_id, host_id=''):
+        # Get all events, user and internal
+        response = self.events.list_events(
+            cluster_id=cluster_id, host_id=host_id, _preload_content=False, categories=["user", "metrics"]
         )
 
         return json.loads(response.data)
@@ -314,7 +323,7 @@ class InventoryClient(object):
         log.info("Downloading cluster events to %s", output_file)
 
         with open(output_file, "wb") as _file:
-            _file.write(json.dumps(self.get_events(cluster_id), indent=4).encode())
+            _file.write(json.dumps(self.get_all_events(cluster_id), indent=4).encode())
 
     def download_host_logs(self, cluster_id, host_id, output_file):
         log.info("Downloading host logs to %s", output_file)
