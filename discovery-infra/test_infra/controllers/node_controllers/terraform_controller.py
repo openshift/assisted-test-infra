@@ -13,6 +13,7 @@ from test_infra.controllers.node_controllers.libvirt_controller import LibvirtCo
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.tools import static_network, terraform_utils
+from test_infra.utils import operators_utils
 
 
 class TerraformController(LibvirtController):
@@ -57,15 +58,15 @@ class TerraformController(LibvirtController):
     def _terraform_params(self, **kwargs):
         operators = kwargs.get("olm_operators", [])
         params = {
-            "libvirt_worker_memory": utils.resource_param(
+            "libvirt_worker_memory": operators_utils.resource_param(
                 kwargs.get("worker_memory"), consts.OperatorResource.WORKER_MEMORY_KEY, operators),
-            "libvirt_master_memory": utils.resource_param(
+            "libvirt_master_memory": operators_utils.resource_param(
                 kwargs.get("master_memory", 16984), consts.OperatorResource.MASTER_MEMORY_KEY, operators),
-            "libvirt_worker_vcpu": utils.resource_param(
+            "libvirt_worker_vcpu": operators_utils.resource_param(
                 kwargs.get("worker_vcpu", 4), consts.OperatorResource.WORKER_VCPU_KEY, operators),
-            "libvirt_master_vcpu": utils.resource_param(
+            "libvirt_master_vcpu": operators_utils.resource_param(
                 kwargs.get("master_vcpu", 4), consts.OperatorResource.MASTER_VCPU_KEY, operators),
-            "worker_count": utils.resource_param(
+            "worker_count": operators_utils.resource_param(
                 kwargs.get("workers_count", 0), consts.OperatorResource.WORKER_COUNT_KEY, operators),
             "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
             "cluster_name": self.cluster_name,
@@ -75,9 +76,9 @@ class TerraformController(LibvirtController):
             "libvirt_network_mtu": kwargs.get("network_mtu", 1500),
             # TODO change to namespace index
             "libvirt_network_if": self.config.net_asset.libvirt_network_if,
-            "libvirt_worker_disk": utils.resource_param(
+            "libvirt_worker_disk": operators_utils.resource_param(
                 kwargs.get("worker_disk", 21474836480), consts.OperatorResource.WORKER_DISK_KEY, operators),
-            "libvirt_master_disk": utils.resource_param(
+            "libvirt_master_disk": operators_utils.resource_param(
                 kwargs.get("master_disk", 128849018880), consts.OperatorResource.MASTER_DISK_KEY, operators),
             "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.cluster_suffix,
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
@@ -86,9 +87,9 @@ class TerraformController(LibvirtController):
             "provisioning_cidr": self.config.net_asset.provisioning_cidr,
             "running": True,
             "single_node_ip": kwargs.get("single_node_ip", ''),
-            "master_disk_count": utils.resource_param(
+            "master_disk_count": operators_utils.resource_param(
                 kwargs.get("master_disk_count", 1), consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
-            "worker_disk_count": utils.resource_param(
+            "worker_disk_count": operators_utils.resource_param(
                 kwargs.get("worker_disk_count", 1), consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)
