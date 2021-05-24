@@ -48,8 +48,8 @@ def _try_remove_nat(tfvars):
     if primary_interface is None:
         raise Exception("Could not get primary interface")
     secondary_interface = tfvars.get('libvirt_secondary_network_if', f's{primary_interface}')
-    nat_controller = NatController()
-    nat_controller.remove_nat_rules([primary_interface, secondary_interface], _get_namespace_index(primary_interface))
+    nat_controller = NatController([primary_interface, secondary_interface], _get_namespace_index(primary_interface))
+    nat_controller.remove_nat_rules()
 
 def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     """ Runs terraform destroy and then cleans it with virsh cleanup to delete

@@ -251,8 +251,8 @@ def wait_until_nodes_are_registered_rest_api(
 
     if is_ipv4 and is_none_platform_mode() and nodes_details['master_count'] > 1:
         input_interfaces = [args.network_bridge, f"s{args.network_bridge}"]
-        nat_controller = NatController()
-        nat_controller.add_nat_rules(input_interfaces, args.ns_index)
+        nat_controller = NatController(input_interfaces, args.ns_index)
+        nat_controller.add_nat_rules()
 
     utils.wait_till_all_hosts_are_in_status(
         client=inventory_client,
