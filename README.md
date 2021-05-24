@@ -404,8 +404,8 @@ The first step would be removed once we could either:
 - Install the assisted-service operator on top of pure-k8s cluster. (At the moment there are some OCP component prerequisites)
 
 ```bash
-# Deploy AI with LSO
-OLM_OPERATORS=lso make run_full_flow_with_install
+# Deploy AI
+make run_full_flow_with_install
 
 # Deploy AI Operator on top of the new cluster
 export KUBECONFIG=./build/kubeconfig

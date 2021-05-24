@@ -110,9 +110,8 @@ EOF
     export DISKS="${LSO_DISKS:-}"
     export ASSISTED_NAMESPACE=${NAMESPACE}
     export SERVICE_IMAGE=${SERVICE}
-    export STORAGE_CLASS_NAME="localblock-sc"
 
-    INSTALL_LSO=false ./assisted-service/deploy/operator/deploy.sh
+    ./assisted-service/deploy/operator/deploy.sh
     echo "Installation of Assisted Install operator passed successfully!"
 else
     print_log "Updating assisted_service params"
