@@ -219,12 +219,13 @@ class Cluster:
 
     def set_network_params(
         self,
-        controller,
+        controller=None,  # Here only for backward compatibility TODO - Remove after QE refactor all e2e tests
         vip_dhcp_allocation: bool = None,
         service_network_cidr: str = None,
         cluster_network_cidr: str = None,
         cluster_network_host_prefix: int = None,
     ):
+        controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
         self.update_config(
             vip_dhcp_allocation=vip_dhcp_allocation
             if vip_dhcp_allocation is not None
@@ -651,7 +652,7 @@ class Cluster:
         self.wait_for_ready_to_install()
 
         if self._config.platform == consts.Platforms.NONE:
-            self._configure_load_balancer(self.nodes.controller)
+            self._configure_load_balancer()
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
@@ -810,9 +811,9 @@ class Cluster:
     def get_events(self, host_id=""):
         return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
 
-    def _configure_load_balancer(self, controller):
-        main_cidr = controller.get_machine_cidr()
-        secondary_cidr = controller.get_provisioning_cidr()
+    def _configure_load_balancer(self):
+        main_cidr = self.nodes.controller.get_machine_cidr()
+        secondary_cidr = self.nodes.controller.get_provisioning_cidr()
 
         master_ips = self.get_master_ips(self.api_client, self.id, main_cidr) + self.get_master_ips(
             self.api_client, self.id, secondary_cidr
@@ -821,7 +822,7 @@ class Cluster:
 
         load_balancer_ip = str(IPNetwork(main_cidr).ip + 1)
 
-        tf = terraform_utils.TerraformUtils(working_dir=controller.tf_folder)
+        tf = terraform_utils.TerraformUtils(working_dir=self.nodes.controller.tf_folder)
         lb_controller = LoadBalancerController(tf)
         lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
