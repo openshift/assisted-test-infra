@@ -13,6 +13,7 @@ from assisted_service_client.models.operator_type import OperatorType
 
 import oc_utils
 from logger import log
+from test_infra.utils import operators_utils
 
 warn_deprecate()
 
@@ -62,7 +63,7 @@ def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
             timeout=timeout,
             interval=60,
         )
-        utils.wait_till_all_operators_are_in_status(
+        operators_utils.wait_till_all_operators_are_in_status(
             client=client,
             cluster_id=cluster.id,
             operators_count=len(cluster.monitored_operators),

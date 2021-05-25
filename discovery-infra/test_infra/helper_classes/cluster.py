@@ -21,6 +21,7 @@ from test_infra.controllers.load_balancer_controller import LoadBalancerControll
 from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
+from test_infra.utils import operators_utils
 
 
 class Cluster:
@@ -589,19 +590,19 @@ class Cluster:
         else:
             statuses = [consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED]
 
-        utils.wait_till_all_operators_are_in_status(
+        operators_utils.wait_till_all_operators_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            operators_count=len(utils.filter_operators_by_type(operators, OperatorType.BUILTIN)),
+            operators_count=len(operators_utils.filter_operators_by_type(operators, OperatorType.BUILTIN)),
             operator_types=[OperatorType.BUILTIN],
             statuses=statuses,
             timeout=timeout,
             fall_on_error_status=False,
         )
-        utils.wait_till_all_operators_are_in_status(
+        operators_utils.wait_till_all_operators_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            operators_count=len(utils.filter_operators_by_type(operators, OperatorType.OLM)),
+            operators_count=len(operators_utils.filter_operators_by_type(operators, OperatorType.OLM)),
             operator_types=[OperatorType.OLM],
             statuses=[consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED],
             timeout=timeout,
@@ -609,7 +610,8 @@ class Cluster:
         )
 
     def is_operator_in_status(self, operator_name, status):
-        return utils.is_operator_in_status(operators=self.get_operators(), operator_name=operator_name, status=status)
+        return operators_utils.is_operator_in_status(
+            operators=self.get_operators(), operator_name=operator_name, status=status)
 
     def wait_for_install(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
         utils.wait_till_cluster_is_in_status(

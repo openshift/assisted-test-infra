@@ -24,12 +24,10 @@ import libvirt
 import oc_utils
 import requests
 import waiting
-from assisted_service_client.models.monitored_operator import MonitoredOperator
 from logger import log
 from retry import retry
 
 import test_infra.consts as consts
-
 
 conn = libvirt.open("qemu:///system")
 
@@ -183,35 +181,6 @@ def are_hosts_in_status(
     return False
 
 
-def are_operators_in_status(operators: List[MonitoredOperator], operators_count: int, statuses: List[str], fall_on_error_status: bool) -> bool:
-    log.info(
-        "Asked operators to be in one of the statuses from %s and currently operators statuses are %s",
-        statuses,
-        [(operator.name, operator.status, operator.status_info) for operator in operators],
-    )
-
-    if len([operator for operator in operators if operator.status in statuses]) >= operators_count:
-        return True
-
-    if fall_on_error_status:
-        for operator in operators:
-            if operator.status == consts.OperatorStatus.FAILED:
-                raise ValueError(f"Operator {operator.name} status is {consts.OperatorStatus.FAILED} with info {operator.status_info}")
-
-    return False
-
-
-def is_operator_in_status(operators: List[MonitoredOperator], operator_name: str, status: str) -> bool:
-    log.info(
-        f"Asked operator %s to be in status: %s, and currently operators statuses are %s",
-        operator_name,
-        status,
-        [(operator.name, operator.status, operator.status_info) for operator in operators],
-    )
-    return any(operator.status == status for operator in operators
-               if operator.name == operator_name)
-
-
 def wait_till_hosts_with_macs_are_in_status(
         client,
         cluster_id,
@@ -234,40 +203,6 @@ def wait_till_hosts_with_macs_are_in_status(
         sleep_seconds=interval,
         waiting_for="Nodes to be in of the statuses %s" % statuses,
     )
-
-
-def wait_till_all_operators_are_in_status(
-        client,
-        cluster_id,
-        operators_count,
-        operator_types,
-        statuses,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=False,
-        interval=5,
-):
-    log.info(f"Wait till {operators_count} {operator_types} operators are in one of the statuses {statuses}")
-
-    try:
-        waiting.wait(
-            lambda: are_operators_in_status(
-                filter_operators_by_type(client.get_cluster_operators(cluster_id), operator_types),
-                operators_count,
-                statuses,
-                fall_on_error_status,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for=f"Monitored {operator_types} operators to be in of the statuses {statuses}",
-        )
-    except BaseException:
-        operators = client.get_cluster_operators(cluster_id)
-        log.info("All operators: %s", operators)
-        raise
-
-
-def filter_operators_by_type(operators: List[MonitoredOperator], operator_types: List[str]) -> List[MonitoredOperator]:
-    return list(filter(lambda operator: operator.operator_type in operator_types, operators))
 
 
 def wait_till_all_hosts_are_in_status(
@@ -895,14 +830,3 @@ def download_iso(image_url, image_path):
             open(image_path, "wb") as out:
         for chunk in image.iter_content(chunk_size=1024):
             out.write(chunk)
-
-
-def parse_olm_operators_from_env():
-    return get_env("OLM_OPERATORS", default="").lower().split()
-
-
-def resource_param(base_value: int, resource_name: str, operators: List):
-    try:
-        return sum((consts.OperatorResource.values()[operator][resource_name] for operator in operators), base_value)
-    except KeyError as e:
-        raise ValueError(f"Unknown operator name {e.args[0]}")

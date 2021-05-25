@@ -32,6 +32,7 @@ from logger import log
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
 from test_infra.controllers.nat_controller import NatController
 from tests.conftest import env_variables
+from test_infra.utils import operators_utils
 
 warn_deprecate()
 
@@ -347,34 +348,34 @@ def _cluster_create_params():
         "additional_ntp_source": ntp_source,
         "user_managed_networking": user_managed_networking,
         "high_availability_mode": consts.HighAvailabilityMode.NONE if args.master_count == 1 else consts.HighAvailabilityMode.FULL,
-        "olm_operators": [{'name': name} for name in utils.parse_olm_operators_from_env()]
+        "olm_operators": [{'name': name} for name in operators_utils.parse_olm_operators_from_env()]
     }
     return params
 
 
 # convert params from args to terraform tfvars
 def _create_node_details(cluster_name):
-    operators = utils.parse_olm_operators_from_env()
+    operators = operators_utils.parse_olm_operators_from_env()
     return {
-        "libvirt_worker_memory": utils.resource_param(args.worker_memory, consts.OperatorResource.WORKER_MEMORY_KEY, operators),
-        "libvirt_master_memory": utils.resource_param(
+        "libvirt_worker_memory": operators_utils.resource_param(args.worker_memory, consts.OperatorResource.WORKER_MEMORY_KEY, operators),
+        "libvirt_master_memory": operators_utils.resource_param(
             args.master_memory if not args.master_count == 1 else args.master_memory * 2, consts.OperatorResource.MASTER_MEMORY_KEY, operators),
-        "libvirt_worker_vcpu": utils.resource_param(args.worker_cpu, consts.OperatorResource.WORKER_VCPU_KEY, operators),
-        "libvirt_master_vcpu": utils.resource_param(args.master_cpu if not args.master_count == 1 else args.master_cpu * 2,
+        "libvirt_worker_vcpu": operators_utils.resource_param(args.worker_cpu, consts.OperatorResource.WORKER_VCPU_KEY, operators),
+        "libvirt_master_vcpu": operators_utils.resource_param(args.master_cpu if not args.master_count == 1 else args.master_cpu * 2,
                                                     consts.OperatorResource.MASTER_VCPU_KEY, operators),
-        "worker_count": utils.resource_param(args.number_of_workers, consts.OperatorResource.WORKER_COUNT_KEY, operators),
+        "worker_count": operators_utils.resource_param(args.number_of_workers, consts.OperatorResource.WORKER_COUNT_KEY, operators),
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
         "libvirt_network_name": consts.TEST_NETWORK + args.namespace,
         "libvirt_network_mtu": args.network_mtu,
         "libvirt_network_if": args.network_bridge,
-        "libvirt_worker_disk": utils.resource_param(args.worker_disk, consts.OperatorResource.WORKER_DISK_KEY, operators),
-        "libvirt_master_disk": utils.resource_param(args.master_disk, consts.OperatorResource.MASTER_DISK_KEY, operators),
+        "libvirt_worker_disk": operators_utils.resource_param(args.worker_disk, consts.OperatorResource.WORKER_DISK_KEY, operators),
+        "libvirt_master_disk": operators_utils.resource_param(args.master_disk, consts.OperatorResource.MASTER_DISK_KEY, operators),
         "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
         "libvirt_secondary_network_if": f's{args.network_bridge}',
         "bootstrap_in_place": args.master_count == 1,
-        "master_disk_count": utils.resource_param(args.master_disk_count, consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
-        "worker_disk_count": utils.resource_param(args.worker_disk_count, consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
+        "master_disk_count": operators_utils.resource_param(args.master_disk_count, consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
+        "worker_disk_count": operators_utils.resource_param(args.worker_disk_count, consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
     }
 
 
