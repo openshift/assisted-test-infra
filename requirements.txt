@@ -1,4 +1,4 @@
-boto3==1.17.78
+boto3==1.17.80
 dnspython==2.1.0
 ipython==7.11.1
 ipdb==0.13.7
@@ -15,7 +15,7 @@ waiting==1.4.1
 netaddr==0.8.0
 pytest==6.2.3
 python-dateutil==2.8.1
-jira==2.0.0
+jira==3.0.1
 tabulate==0.8.9
 paramiko==2.7.2
 scp==0.13.3
