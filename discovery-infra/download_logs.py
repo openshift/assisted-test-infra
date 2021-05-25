@@ -25,9 +25,8 @@ from test_infra.consts import ClusterStatus, HostsProgressStages
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.logs_utils import verify_logs_uploaded
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
-                              recreate_folder, run_command)
+                              recreate_folder, run_command, verify_logs_uploaded)
 
 from logger import log, suppressAndLog
 

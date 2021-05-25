@@ -9,12 +9,11 @@ import json
 import pytest
 import openshift as oc
 
-from copy import deepcopy
 from netaddr import IPNetwork
 
 from tests.config import TerraformConfig
-from test_infra.utils import download_iso, get_openshift_release_image, run_command
-from test_infra.kubeapi_utils import get_ip_for_single_node
+from test_infra.utils import download_iso, get_openshift_release_image
+from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from tests.base_test import BaseTest
 from tests.conftest import env_variables
 from test_infra.helper_classes.kube_helpers import (
