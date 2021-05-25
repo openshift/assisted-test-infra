@@ -19,8 +19,6 @@ function set_dns() {
       exit 1
     fi
 
-    update_vips
-
     FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
     if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
@@ -32,15 +30,6 @@ function set_dns() {
     sudo systemctl reload NetworkManager
 
     echo "Finished setting dns"
-}
-
-function update_vips() {
-    API_VIP=$(sudo virsh net-dhcp-leases test-infra-net-${NAMESPACE} | grep api | awk '{print $5}' | cut -d"/" -f1)
-    INGRESS_VIP=$(sudo virsh net-dhcp-leases test-infra-net-${NAMESPACE} | grep ingress | awk '{print $5}' | cut -d"/" -f1)
-
-    virsh net-update test-infra-net-${NAMESPACE} delete dns-host "<host ip='192.168.126.100'><hostname>api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}</hostname></host>"
-    virsh net-update test-infra-net-${NAMESPACE} add dns-host "<host ip='${API_VIP}'><hostname>api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}</hostname></host>"
-    virsh net-update test-infra-net-${NAMESPACE} add dns-host "<host ip='${INGRESS_VIP}'><hostname>assisted-service-assisted-installer.apps.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}</hostname></host>"
 }
 
 # Delete after pushing fix to dev-scripts
