@@ -131,10 +131,6 @@ def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
     return num_macs >= num_nodes
 
 
-def get_cluster_hosts_macs(client, cluster_id):
-    return client.get_hosts_id_with_macs(cluster_id)
-
-
 def get_cluster_hosts_with_mac(client, cluster_id, macs):
     return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
 
@@ -159,19 +155,6 @@ def set_tfvars(tf_folder, tfvars_json):
     tf_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
     with open(tf_json_file, "w") as _file:
         json.dump(tfvars_json, _file)
-
-
-def get_tf_main(tf_folder):
-    tf_file = os.path.join(tf_folder, consts.TF_MAIN_JSON_NAME)
-    with open(tf_file) as _file:
-        main_str = _file.read()
-    return main_str
-
-
-def set_tf_main(tf_folder, main_str):
-    tf_file = os.path.join(tf_folder, consts.TF_MAIN_JSON_NAME)
-    with open(tf_file, "w") as _file:
-        _main_str = _file.write(main_str)
 
 
 def are_hosts_in_status(
@@ -520,10 +503,6 @@ def folder_exists(file_path):
     return True
 
 
-def file_exists(file_path):
-    return Path(file_path).exists()
-
-
 def recreate_folder(folder, with_chmod=True, force_recreate=True):
     is_exists = os.path.isdir(folder)
     if is_exists and force_recreate:
@@ -747,17 +726,6 @@ def extract_nodes_from_tf_state(tf_state, network_names, role):
                 data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
 
     return data
-
-
-def set_hosts_roles_based_on_requested_name(client, cluster_id):
-    hosts = client.get_cluster_hosts(cluster_id=cluster_id)
-    hosts_with_roles = []
-
-    for host in hosts:
-        role = consts.NodeRoles.MASTER if "master" in host["requested_hostname"] else consts.NodeRoles.WORKER
-        hosts_with_roles.append({"id": host["id"], "role": role})
-
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=hosts_with_roles)
 
 
 def get_env(env, default=None):
