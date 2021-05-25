@@ -38,29 +38,29 @@ class BaseTest:
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
-            nodes_data["needs_nat"] = config.platform == consts.Platforms.NONE
-            nodes_data["net_asset"] = NetworkAssets()
-            config.net_asset = nodes_data["net_asset"].get()
+            net_asset = NetworkAssets()
+            config.net_asset = net_asset.get()
 
-            nodes = Nodes(TerraformController(config), config.private_ssh_key_path)
+            nodes = Nodes(TerraformController(config),
+                          config.private_ssh_key_path,
+                          net_asset,
+                          config.platform == consts.Platforms.NONE)
+
             nodes.prepare_nodes()
-            if nodes_data["needs_nat"]:
-                nodes.configure_nat()
-
             nodes_data["nodes"] = nodes
             return nodes
 
         yield get_nodes_func
 
+        _nodes: Nodes = nodes_data.get("nodes")
         try:
             if EnvConfig.get("test_teardown"):
                 logging.info('--- TEARDOWN --- node controller\n')
-                nodes_data.get("nodes").destroy_all_nodes()
-            if nodes_data.get("needs_nat"):
-                nodes_data.get("nodes").unconfigure_nat()
+                _nodes.destroy_all_nodes()
+            if _nodes.is_nat_active():
+                _nodes.unconfigure_nat()
         finally:
-            if "net_asset" in nodes_data:
-                nodes_data.get("net_asset").release_all()
+            _nodes.release_net_asset()
 
     @pytest.fixture()
     @JunitFixtureTestCase()
