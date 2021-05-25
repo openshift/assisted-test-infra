@@ -62,7 +62,7 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     sed -i "s/SERVICE_BASE_URL=http:\/\/127.0.0.1/SERVICE_BASE_URL=http:\/\/${ASSISTED_SERVICE_HOST}/" assisted-service/onprem-environment
 
     validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/onprem-environment | cut -d '=' -f2)
-    HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb) |= 20' | tr -d "\n\t ")
+    HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb, .[].sno.disk_size_gb) |= 20' | tr -d "\n\t ")
     sed -i "s|HW_VALIDATOR_REQUIREMENTS=.*|HW_VALIDATOR_REQUIREMENTS=${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}|" assisted-service/onprem-environment
 
     make -C assisted-service/ deploy-onprem
