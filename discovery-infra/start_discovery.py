@@ -12,7 +12,8 @@ import dns.resolver
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from netaddr import IPNetwork
-from test_infra import assisted_service_api, consts, utils, kubeapi_utils, warn_deprecate
+from test_infra import assisted_service_api, consts, utils, warn_deprecate
+from test_infra.utils import kubeapi_utils
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
 
