@@ -54,10 +54,17 @@ DEFAULT_WORKER_REQUIREMENTS = {
     "disk_size_gb": 10,
     "installation_disk_speed_threshold_ms": 10
 }
+DEFAULT_SNO_REQUIREMENTS = {
+    "cpu_cores": 8,
+    "ram_mib": 32768,
+    "disk_size_gb": 10,
+    "installation_disk_speed_threshold_ms": 10
+}
 DEFAULT_REQUIREMENTS = [{
     "version": "default",
     "master": DEFAULT_MASTER_REQUIREMENTS,
-    "worker": DEFAULT_WORKER_REQUIREMENTS
+    "worker": DEFAULT_WORKER_REQUIREMENTS,
+    "sno": DEFAULT_SNO_REQUIREMENTS
 }]
 
 
@@ -88,6 +95,7 @@ def update_requirements(requirements_json):
         if version_requirements["version"] == "default":
             version_requirements["master"] = DEFAULT_MASTER_REQUIREMENTS
             version_requirements["worker"] = DEFAULT_WORKER_REQUIREMENTS
+            version_requirements["sno"] = DEFAULT_SNO_REQUIREMENTS
 
     return json.dumps(requirements)
 
