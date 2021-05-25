@@ -24,7 +24,18 @@ class OperatorResource:
     WORKER_COUNT_KEY: str = "num_workers"
 
     @classmethod
-    def _get_resource_dict(cls, master_memory: int, worker_memory: int, master_vcpu: int, worker_vcpu: int, master_disk: int, worker_disk: int, master_disk_count: int, worker_disk_count: int, worker_count: int):
+    def _get_resource_dict(
+        cls,
+        master_memory: int = 0,
+        worker_memory: int = 0,
+        master_vcpu: int = 0,
+        worker_vcpu: int = 0,
+        master_disk: int = 0,
+        worker_disk: int = 0,
+        master_disk_count: int = 0,
+        worker_disk_count: int = 0,
+        worker_count: int = 0,
+    ):
         return {
             cls.MASTER_MEMORY_KEY: master_memory,
             cls.WORKER_MEMORY_KEY: worker_memory,
@@ -40,10 +51,19 @@ class OperatorResource:
     @classmethod
     def values(cls) -> dict:
         return {
-            OperatorType.CNV:
-                cls._get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2, master_disk=0, worker_disk=0, master_disk_count=0, worker_disk_count=0, worker_count=0),
-            OperatorType.OCS:
-                cls._get_resource_dict(master_memory=24000, worker_memory=24000, master_vcpu=8, worker_vcpu=8, master_disk=10737418240, worker_disk=5368709120, master_disk_count=1, worker_disk_count=1, worker_count=4),
-            OperatorType.LSO:
-                cls._get_resource_dict(master_memory=0, worker_memory=0, master_vcpu=0, worker_vcpu=0, master_disk=0, worker_disk=0, master_disk_count=0, worker_disk_count=0, worker_count=0),
+            OperatorType.CNV: cls._get_resource_dict(
+                master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2
+            ),
+            OperatorType.OCS: cls._get_resource_dict(
+                master_memory=24000,
+                worker_memory=24000,
+                master_vcpu=8,
+                worker_vcpu=8,
+                master_disk=10737418240,
+                worker_disk=5368709120,
+                master_disk_count=1,
+                worker_disk_count=1,
+                worker_count=4,
+            ),
+            OperatorType.LSO: cls._get_resource_dict(),
         }
