@@ -46,7 +46,7 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
-    def format_node_disk(self, node_name: str) -> None:
+    def format_node_disk(self, node_name: str, disk_index: int = 0) -> None:
         pass
 
     @abstractmethod
