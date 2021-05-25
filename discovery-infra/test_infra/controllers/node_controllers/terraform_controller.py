@@ -73,6 +73,7 @@ class TerraformController(LibvirtController):
             "machine_cidr": self.get_machine_cidr(),
             "libvirt_network_name": self.network_name,
             "libvirt_network_mtu": kwargs.get("network_mtu", 1500),
+            "libvirt_dns_records": kwargs.get("dns_records", {}),
             # TODO change to namespace index
             "libvirt_network_if": self.config.net_asset.libvirt_network_if,
             "libvirt_worker_disk": utils.resource_param(

@@ -1,7 +1,7 @@
 from abc import ABC
-from typing import List
+from typing import Dict, List
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from munch import Munch
 
 from .base_config import _BaseConfig
@@ -29,12 +29,13 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     storage_pool_path: str = None
     # running: bool = True
     single_node_ip: str = None
-    olm_operators: List = None
+    olm_operators: List[str] = None
+    dns_records: Dict[str, str] = field(default_factory=dict)
 
-    libvirt_master_ips: List = None
-    libvirt_secondary_master_ips: List = None
-    libvirt_worker_ips: List = None
-    libvirt_secondary_worker_ips: List = None
+    libvirt_master_ips: List[str] = None
+    libvirt_secondary_master_ips: List[str] = None
+    libvirt_worker_ips: List[str] = None
+    libvirt_secondary_worker_ips: List[str] = None
 
     private_ssh_key_path: str = None
     cluster_name: str = None
