@@ -139,7 +139,7 @@ class LibvirtController(NodeController, ABC):
         return self._list_disks(node)
 
     def list_leases(self, network_name):
-        return self.libvirt_connection.networkLookupByName(network_name).DHCPLeases()
+        return utils.get_network_leases(network_name)
 
     def shutdown_node(self, node_name):
         logging.info("Going to shutdown %s", node_name)
