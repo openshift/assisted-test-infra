@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import warnings
 import xml.dom.minidom as md
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
@@ -28,6 +29,7 @@ from logger import log
 from retry import retry
 
 import test_infra.consts as consts
+from test_infra.utils import logs_utils
 
 conn = libvirt.open("qemu:///system")
 
@@ -135,11 +137,6 @@ def get_cluster_hosts_with_mac(client, cluster_id, macs):
 
 def to_utc(timestr):
     return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
-
-
-def get_logs_collected_at(client, cluster_id):
-    hosts = client.get_cluster_hosts(cluster_id)
-    return [to_utc(host["logs_collected_at"]) for host in hosts]
 
 
 def get_tfvars(tf_folder):
@@ -316,46 +313,6 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
         f"Asked {nodes_count} hosts to be in one of the statuses from {stages} and currently "
         f"hosts statuses are {host_info}")
     return False
-
-
-def wait_for_logs_complete(
-        client, cluster_id, timeout, interval=60, check_host_logs_only=False
-):
-    log.info("wait till logs of cluster %s are collected (or timed-out)", cluster_id)
-    statuses=["completed", "timeout"]
-    try:
-        waiting.wait(
-        lambda: are_logs_in_status(
-            client=client,
-            cluster_id=cluster_id,
-            statuses=statuses,
-            check_host_logs_only=check_host_logs_only
-        ),
-        timeout_seconds=timeout,
-        sleep_seconds=interval,
-        waiting_for="Logs to be in status %s" % statuses,
-        )
-        log.info("logs are in expected state")
-    except BaseException:
-        log.error("waiting for logs expired after %d", timeout)
-        raise
-
-
-def are_logs_in_status(client, cluster_id, statuses, check_host_logs_only=False):
-    try:
-        cluster = client.cluster_get(cluster_id)
-        hosts = client.get_cluster_hosts(cluster_id)
-        cluster_logs_status = cluster.logs_info
-        host_logs_statuses = [host.get("logs_info", "") for host in hosts]
-        if all(s in statuses for s in host_logs_statuses) and (check_host_logs_only or (cluster_logs_status in statuses)):
-            log.info("found expected state. cluster logs: %s, host logs: %s", cluster_logs_status, host_logs_statuses)
-            return True
-
-        log.info("Cluster logs not yet in their required state. %s, host logs: %s", cluster_logs_status, host_logs_statuses)
-        return False
-    except:
-        log.exception("Failed to get cluster %s log info", cluster_id)
-        return False
 
 
 def wait_till_cluster_is_in_status(
@@ -830,3 +787,17 @@ def download_iso(image_url, image_path):
             open(image_path, "wb") as out:
         for chunk in image.iter_content(chunk_size=1024):
             out.write(chunk)
+
+
+# Deprecated functions
+
+def get_logs_collected_at(client, cluster_id):
+    warnings.warn("get_logs_collected_at is deprecated and will be deleted soon."
+                  "Use test_infra.utils.logs_utils instead", DeprecationWarning)
+    logs_utils.get_logs_collected_at(client, cluster_id)
+
+
+def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_logs_only=False):
+    warnings.warn("wait_for_logs_complete is deprecated and will be deleted soon."
+                  "Use test_infra.utils.wait_for_logs_complete instead", DeprecationWarning)
+    return logs_utils.wait_for_logs_complete(client, cluster_id, timeout, interval, check_host_logs_only)

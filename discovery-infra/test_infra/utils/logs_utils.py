@@ -4,6 +4,8 @@ import tarfile
 import time
 from tempfile import TemporaryDirectory
 
+import waiting
+from logger import log
 from test_infra.consts import NUMBER_OF_MASTERS
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
@@ -43,6 +45,44 @@ def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path):
         _verify_oc_logs_uploaded(cluster_tar_path)
     except BaseException as err:
         logging.exception("oc logs were not uploaded")
+        raise
+
+
+def verify_logs_are_current(started_cluster_install_at, logs_collected_at):
+    for collected_at in logs_collected_at:
+        # if host timestamp is set at all- check that the timestamp is from the last installation
+        if collected_at > time.time() - 86400000:
+            assert collected_at > started_cluster_install_at, (
+                f"logs collected at {collected_at}" f" before start time {started_cluster_install_at}"
+            )
+
+
+def to_utc(timestr):
+    # TODO - temporary import!! Delete after deprecating utils.get_logs_collected_at to avoid cyclic import
+    import datetime
+    return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
+
+
+def get_logs_collected_at(client, cluster_id):
+    hosts = client.get_cluster_hosts(cluster_id)
+    return [to_utc(host["logs_collected_at"]) for host in hosts]
+
+
+def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_logs_only=False):
+    log.info("wait till logs of cluster %s are collected (or timed-out)", cluster_id)
+    statuses = ["completed", "timeout"]
+    try:
+        waiting.wait(
+            lambda: _are_logs_in_status(
+                client=client, cluster_id=cluster_id, statuses=statuses, check_host_logs_only=check_host_logs_only
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Logs to be in status %s" % statuses,
+        )
+        log.info("logs are in expected state")
+    except BaseException:
+        log.error("waiting for logs expired after %d", timeout)
         raise
 
 
@@ -105,10 +145,22 @@ def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, v
     gz.close()
 
 
-def verify_logs_are_current(started_cluster_install_at, logs_collected_at):
-    for collected_at in logs_collected_at:
-        # if host timestamp is set at all- check that the timestamp is from the last installation
-        if collected_at > time.time() - 86400000:
-            assert collected_at > started_cluster_install_at, (
-                f"logs collected at {collected_at}" f" before start time {started_cluster_install_at}"
-            )
+def _are_logs_in_status(client, cluster_id, statuses, check_host_logs_only=False):
+    try:
+        cluster = client.cluster_get(cluster_id)
+        hosts = client.get_cluster_hosts(cluster_id)
+        cluster_logs_status = cluster.logs_info
+        host_logs_statuses = [host.get("logs_info", "") for host in hosts]
+        if all(s in statuses for s in host_logs_statuses) and (
+            check_host_logs_only or (cluster_logs_status in statuses)
+        ):
+            log.info("found expected state. cluster logs: %s, host logs: %s", cluster_logs_status, host_logs_statuses)
+            return True
+
+        log.info(
+            "Cluster logs not yet in their required state. %s, host logs: %s", cluster_logs_status, host_logs_statuses
+        )
+        return False
+    except BaseException:
+        log.exception("Failed to get cluster %s log info", cluster_id)
+        return False

@@ -21,7 +21,7 @@ from test_infra.controllers.load_balancer_controller import LoadBalancerControll
 from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils import operators_utils
+from test_infra.utils import operators_utils, logs_utils
 
 
 class Cluster:
@@ -347,7 +347,7 @@ class Cluster:
         self.api_client.install_cluster(cluster_id=self.id)
 
     def wait_for_logs_complete(self, timeout, interval=60, check_host_logs_only=False):
-        utils.wait_for_logs_complete(
+        logs_utils.wait_for_logs_complete(
             client=self.api_client,
             cluster_id=self.id,
             timeout=timeout,
