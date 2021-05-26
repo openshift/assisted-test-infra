@@ -112,12 +112,10 @@ def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, i
     logger.info('waiting for host agent')
     for agent in cluster_deployment.wait_for_agents(len(nodes)):
         agent.approve()
+        set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently supports only single-node
 
-    if len(hosts) == 1:
+    if len(nodes) == 1:
         set_single_node_ip(cluster_deployment, nodes, is_ipv4)
-
-    for node in nodes:
-        set_agent_hostname(node, agent, is_ipv4)
 
     agent_cluster_install.wait_to_be_ready(True)
 
