@@ -22,8 +22,6 @@ warn_deprecate()
 
 CM_PATH = "assisted-service/deploy/assisted-service-configmap.yaml"
 ENVS = [
-    ("HW_VALIDATOR_MIN_CPU_CORES", "2"),
-    ("HW_VALIDATOR_MIN_RAM_GIB", "3"),
     ("INSTALLER_IMAGE", ""),
     ("CONTROLLER_IMAGE", ""),
     ("SERVICE_BASE_URL", ""),
