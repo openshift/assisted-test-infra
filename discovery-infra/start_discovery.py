@@ -348,6 +348,7 @@ def _cluster_create_params():
         "additional_ntp_source": ntp_source,
         "user_managed_networking": user_managed_networking,
         "high_availability_mode": consts.HighAvailabilityMode.NONE if args.master_count == 1 else consts.HighAvailabilityMode.FULL,
+        "hyperthreading": args.hyperthreading,
         "olm_operators": [{'name': name} for name in operators_utils.parse_olm_operators_from_env()]
     }
     return params
@@ -774,6 +775,7 @@ def execute_kube_api_flow():
         control_plane_agents=args.master_count,
         worker_agents=args.number_of_workers,
         machine_cidr=get_machine_cidr_from_machine_net(machine_net),
+        hyperthreading=args.hyperthreading,
     )
     agent_cluster_install.wait_to_be_ready(False)
 
@@ -1221,6 +1223,14 @@ if __name__ == "__main__":
         nargs='?',
         const=True,
         default=False,
+    )
+    parser.add_argument(
+        "--hyperthreading",
+        help="nodes cpu hyperthreading mode",
+        type=str,
+        nargs='?',
+        const='all',
+        default=None,
     )
     parser.add_argument(
         "--kube-api",
