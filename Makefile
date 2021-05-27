@@ -231,11 +231,11 @@ validate_namespace:
 
 run: validate_namespace deploy_assisted_service deploy_ui
 
-run_full_flow: run deploy_nodes set_dns
+run_full_flow: run deploy_nodes
 
 redeploy_all: destroy run_full_flow
 
-run_full_flow_with_install: run deploy_nodes_with_install set_dns
+run_full_flow_with_install: run deploy_nodes_with_install
 
 redeploy_all_with_install: destroy run_full_flow_with_install
 
@@ -318,7 +318,7 @@ _deploy_nodes:
 deploy_nodes_with_install: start_load_balancer
 	bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG)
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" $(SKIPPER_PARAMS) DAY1_PARAMS=--day1-cluster
-
+	$(MAKE) set_dns
 
 deploy_static_network_config_nodes_with_install:
 	make deploy_nodes_with_install ADDITIONAL_PARAMS="'--with-static-network-config'"
