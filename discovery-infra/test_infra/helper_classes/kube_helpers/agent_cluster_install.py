@@ -228,8 +228,8 @@ class AgentClusterInstall(BaseCustomResource):
         )
 
         def _has_required_condition() -> Optional[bool]:
-            status, reason = self.condition(cond_type=cond_type, timeout=0.5)
-            logger.info(f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason}")
+            status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
+            logger.info(f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason} {message}")
             if status == required_status:
                 if required_reason:
                     return required_reason == reason
@@ -250,7 +250,7 @@ class AgentClusterInstall(BaseCustomResource):
     ) -> Tuple[Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
-                return condition.get("status"), condition.get("reason")
+                return condition.get("status"), condition.get("reason"), condition.get("message")
 
         return None, None
 
