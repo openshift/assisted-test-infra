@@ -635,7 +635,7 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
     )
 
     # don't set roles in bip role
-    if machine_net.has_ip_v4:
+    if not machine_net.has_ip_v6:
         libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
         libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
         if static_network_mode:
@@ -644,7 +644,7 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
         else:
             update_hostnames = False
     else:
-        log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts")
+        log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6 hosts")
         libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
         update_hostnames = True
 
@@ -904,11 +904,11 @@ def main():
     elif is_none_platform_mode():
         raise NotImplementedError("None platform currently not supporting day2")
 
-    has_ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
+    has_ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     if args.day2_cloud_cluster:
-        day2.execute_day2_cloud_flow(cluster_id, args, has_ipv4)
+        day2.execute_day2_cloud_flow(cluster_id, args, has_ipv6)
     if args.day2_ocp_cluster:
-        day2.execute_day2_ocp_flow(cluster_id, args, has_ipv4)
+        day2.execute_day2_ocp_flow(cluster_id, args, has_ipv6)
     if args.bootstrap_in_place:
         ibip.execute_ibip_flow(args)
 
