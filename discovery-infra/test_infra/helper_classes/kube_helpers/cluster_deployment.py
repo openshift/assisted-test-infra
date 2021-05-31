@@ -173,7 +173,7 @@ class ClusterDeployment(BaseCustomResource):
     ) -> Tuple[Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
-                return condition.get("status"), condition.get("reason")
+                return condition.get("status"), condition.get("reason"), condition.get("message")
         return None, None
 
     def wait_for_condition(
@@ -184,7 +184,8 @@ class ClusterDeployment(BaseCustomResource):
         timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         def _has_required_condition() -> Optional[bool]:
-            status, reason = self.condition(cond_type=cond_type, timeout=0.5)
+            status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
+            logger.info(f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason} {message}")
             if status == required_status:
                 if required_reason:
                     return required_reason == reason
@@ -202,6 +203,7 @@ class ClusterDeployment(BaseCustomResource):
             _has_required_condition,
             timeout_seconds=timeout,
             waiting_for=f"cluster {self.ref} condition {cond_type} to be in {required_status}",
+            sleep_seconds=10,
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
