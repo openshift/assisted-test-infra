@@ -72,7 +72,9 @@ ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 ES_SERVER := $(or $(ES_SERVER), "")
 ES_USER := $(or $(ES_USER), "")
 ES_PASS := $(or $(ES_PASS), "")
+ES_INDEX := $(or $(ES_INDEX), "")
 BACKUP_DESTINATION := $(or $(BACKUP_DESTINATION), "")
+OFFLINE_TOKEN := $(or $(OFFLINE_TOKEN), "")
 
 # deploy
 IMAGE_TAG := latest
@@ -415,7 +417,7 @@ download_cluster_logs:
 ##############
 
 _scrape_service_events:
-	discovery-infra/log_scrap.py $(REMOTE_SERVICE_URL) -es $(ES_SERVER) -eu $(ES_USER) -ep $(ES_PASS) --backup-destination $(BACKUP_DESTINATION)
+	discovery-infra/log_scrap.py --inventory-url $(REMOTE_SERVICE_URL) --offline-token $(OFFLINE_TOKEN) --index $(ES_INDEX) -es $(ES_SERVER) -eu $(ES_USER) -ep $(ES_PASS) --backup-destination $(BACKUP_DESTINATION)
 
 scrape_service_events:
 	skipper make $(SKIPPER_PARAMS) _scrape_service_events

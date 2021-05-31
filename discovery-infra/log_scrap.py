@@ -4,35 +4,29 @@ import re
 import os
 import time
 import json
-import yaml
 import random
 import urllib3
 import logging
 import hashlib
 import tempfile
+import contextlib
 import elasticsearch
 
 from logger import log
-from shutil import copyfile
-from datetime import datetime
-from filelock import FileLock
 from monitoring import process
 from contextlib import suppress
 from argparse import ArgumentParser
-from contextlib import contextmanager
+from test_infra.assisted_service_api import ClientFactory
 
 import assisted_service_client
 
 from test_infra import warn_deprecate
-from test_infra.assisted_service_api import InventoryClient, create_client
 
 warn_deprecate()
 
 RETRY_INTERVAL = 60 * 5
 MAX_EVENTS = 5000
-INDEX = "assisted-service-events"
 
-FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
 UUID_REGEX = r'[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}'
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -41,10 +35,11 @@ es_logger = logging.getLogger('elasticsearch')
 es_logger.setLevel(logging.WARNING)
 
 class ScrapeEvents:
-    def __init__(self, inventory_url: str, es_server: str, es_user:str, es_pass:str, backup_destination: str):
-        self.client = create_client(url=inventory_url)
+    def __init__(self, inventory_url: str, offline_token: str, index: str, es_server: str, es_user:str, es_pass:str, backup_destination: str):
 
-        self.index = INDEX
+        self.client = ClientFactory.create_client(url=inventory_url, offline_token=offline_token)
+
+        self.index = index
         self.es = elasticsearch.Elasticsearch(es_server, http_auth=(es_user, es_pass))
 
         self.backup_destination = backup_destination
@@ -82,6 +77,14 @@ class ScrapeEvents:
 
         self.elastefy_events(cluster, event_list)
 
+    @contextlib.contextmanager
+    def enrich_event(self, event, cluster_bash_data):
+        if "props" in event:
+            cluster_bash_data["event.props"] = json.loads(event["props"])
+        yield
+        if "props" in event:
+            del cluster_bash_data["event.props"]
+
     def elastefy_events(self, cluster, event_list):
 
         cluster_id = cluster["id"]
@@ -105,7 +108,8 @@ class ScrapeEvents:
             doc_id = get_doc_id(event)
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
             process_event_doc(event, cluster_bash_data)
-            ret = self.log_doc(cluster_bash_data, doc_id)
+            with self.enrich_event(event, cluster_bash_data):
+                ret = self.log_doc(cluster_bash_data, doc_id)
             if not ret:
                 break
 
@@ -135,7 +139,7 @@ class ScrapeEvents:
             self.client.download_cluster_events(cluster['id'], output_file)
 
     def get_clusters(self):
-        return self.client.get_all_clusters()
+        return self.client.clusters_list()
 
 def get_no_name_message(event_message: str, event_names: list):
     event_message = re.sub(r"^Host \S+:", "", event_message)
@@ -166,12 +170,15 @@ def process_event_doc(event_data, cluster_bash_data):
     cluster_bash_data.update(event_data)
 
 
+
 def handle_arguments():
     parser = ArgumentParser(description="Elastify events")
-    parser.add_argument("inventory_url", help="URL of remote inventory", type=str)
+    parser.add_argument("--inventory-url", help="URL of remote inventory", type=str)
+    parser.add_argument("--offline-token", help="offline token", type=str)
     parser.add_argument("-es", "--es_server", help="Elasticsearch server", type=str)
     parser.add_argument("-eu", "--es_user", help="Elasticsearch user", type=str)
     parser.add_argument("-ep", "--es_pass", help="Elasticsearch password", type=str)
+    parser.add_argument("--index", help="Index", type=str)
     parser.add_argument("--backup-destination", help="Path to save backup, if empty no back up saved", default=None, type=str)
 
     return parser.parse_args()
@@ -182,6 +189,8 @@ def main():
     while True:
         try:
             scrape_events = ScrapeEvents(inventory_url=args.inventory_url,
+                                         offline_token=args.offline_token,
+                                         index=args.index,
                                          es_server=args.es_server,
                                          es_user = args.es_user,
                                          es_pass = args.es_pass,
