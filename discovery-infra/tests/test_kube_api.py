@@ -1,30 +1,26 @@
-import os
-import logging
-import uuid
-import socket
-import errno
 import base64
+import errno
 import json
+import logging
+import os
+import socket
+import uuid
 
-import pytest
 import openshift as oc
-
+import pytest
+from junit_report import JunitTestSuite
 from netaddr import IPNetwork
-
-from tests.config import TerraformConfig
+from test_infra.helper_classes.kube_helpers import (AgentClusterInstall,
+                                                    ClusterDeployment,
+                                                    ClusterImageSet,
+                                                    ClusterImageSetReference,
+                                                    InfraEnv, Proxy, Secret)
 from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
+
 from tests.base_test import BaseTest
+from tests.config import ClusterConfig, TerraformConfig
 from tests.conftest import env_variables
-from test_infra.helper_classes.kube_helpers import (
-    ClusterDeployment,
-    Secret,
-    AgentClusterInstall,
-    ClusterImageSet,
-    ClusterImageSetReference,
-    Proxy,
-    InfraEnv,
-)
 
 PROXY_PORT = 3129
 
@@ -33,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class TestKubeAPISNO(BaseTest):
 
+    @JunitTestSuite()
     @pytest.mark.kube_api
     def test_kube_api_ipv4(self, kube_api_context, get_nodes):
         tf_config = TerraformConfig(
@@ -42,9 +39,29 @@ class TestKubeAPISNO(BaseTest):
             master_vcpu=8,
             master_memory=35840
         )
-        kube_api_test(kube_api_context, get_nodes(tf_config))
+        cluster_config = ClusterConfig()
+        kube_api_test(kube_api_context, get_nodes(tf_config), cluster_config)
 
-def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_kube_api_ipv6(self, kube_api_context, proxy_server, get_nodes):
+        tf_config = TerraformConfig(
+            masters_count=1,
+            workers_count=0,
+            master_vcpu=8,
+            master_memory=35840,
+            is_ipv6=True
+        )
+        cluster_config = ClusterConfig(
+            service_network_cidr='2003:db8::/112',
+            cluster_network_cidr='2002:db8::/53',
+            cluster_network_host_prefix=64,
+            is_ipv6=True,
+        )
+
+        kube_api_test(kube_api_context, get_nodes(tf_config), cluster_config, proxy_server, is_ipv4=False)
+
+def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = nodes.controller.cluster_name
 
     machine_cidr = nodes.controller.get_machine_cidr()
@@ -58,7 +75,7 @@ def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, i
         kube_api_client=kube_api_context.api_client,
         name=f'{cluster_name}-secret',
     )
-    secret.create(pull_secret=env_variables['pull_secret'])
+    secret.create(pull_secret=cluster_config.pull_secret)
 
     cluster_deployment = ClusterDeployment(
         kube_api_client=kube_api_context.api_client,
@@ -72,10 +89,10 @@ def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, i
     agent_cluster_install.create(
         cluster_deployment_ref=cluster_deployment.ref,
         image_set_ref=deploy_image_set(cluster_name, kube_api_context),
-        cluster_cidr=env_variables['cluster_cidr'],
-        host_prefix=env_variables['host_prefix'],
-        service_network=env_variables['service_cidr'],
-        ssh_pub_key=env_variables['ssh_public_key'],
+        cluster_cidr=cluster_config.cluster_network_cidr,
+        host_prefix=cluster_config.cluster_network_host_prefix,
+        service_network=cluster_config.service_network_cidr,
+        ssh_pub_key=cluster_config.ssh_public_key,
         control_plane_agents=nodes.controller.params.master_count,
         worker_agents=nodes.controller.params.worker_count,
         machine_cidr=machine_cidr,
@@ -90,7 +107,7 @@ def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, i
     else:
         ignition_config_override = None
 
-    proxy = setup_proxy(machine_cidr, cluster_name, proxy_server)
+    proxy = setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server)
 
     infra_env = InfraEnv(
         kube_api_client=kube_api_context.api_client,
@@ -101,10 +118,10 @@ def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, i
         ignition_config_override=ignition_config_override,
         secret=secret,
         proxy=proxy,
-        ssh_pub_key=env_variables['ssh_public_key'],
+        ssh_pub_key=cluster_config.ssh_public_key,
     )
     infra_env.status()
-    download_iso_from_infra_env(infra_env)
+    download_iso_from_infra_env(infra_env, cluster_config)
 
     logger.info('iso downloaded, starting nodes')
     nodes.start_all()
@@ -112,7 +129,7 @@ def kube_api_test(kube_api_context, nodes, proxy_server=None, *, is_ipv4=True, i
     logger.info('waiting for host agent')
     for agent in cluster_deployment.wait_for_agents(len(nodes)):
         agent.approve()
-        set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently supports only single-node
+        set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
 
     if len(nodes) == 1:
         set_single_node_ip(cluster_deployment, nodes, is_ipv4)
@@ -142,7 +159,7 @@ def deploy_image_set(cluster_name, kube_api_context):
     return ClusterImageSetReference(image_set_name)
 
 
-def setup_proxy(machine_cidr, cluster_name, proxy_server=None):
+def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
     if not proxy_server:
         return
     logger.info('setting cluster proxy details')
@@ -154,8 +171,8 @@ def setup_proxy(machine_cidr, cluster_name, proxy_server=None):
     no_proxy = ','.join(
         [
             machine_cidr,
-            env_variables['service_cidr'],
-            env_variables['cluster_cidr'],
+            cluster_config.service_network_cidr,
+            cluster_config.cluster_network_cidr,
             f'.{cluster_name}.redhat.com'
         ]
     )
@@ -184,12 +201,12 @@ def scan_for_free_port():
     )
 
 
-def download_iso_from_infra_env(infra_env):
+def download_iso_from_infra_env(infra_env, cluster_config):
     logger.info('getting iso download url')
     iso_download_url = infra_env.get_iso_download_url()
     logger.info('downloading iso from url=%s', iso_download_url)
-    download_iso(iso_download_url, env_variables['iso_download_path'])
-    assert os.path.isfile(env_variables['iso_download_path'])
+    download_iso(iso_download_url, cluster_config.iso_download_path)
+    assert os.path.isfile(cluster_config.iso_download_path)
 
 
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
