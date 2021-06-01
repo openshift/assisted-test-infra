@@ -38,7 +38,6 @@ class TestKubeAPISNO(BaseTest):
         tf_config = TerraformConfig(
             masters_count=1,
             workers_count=0,
-            bootstrap_in_place=True,
             master_vcpu=8,
             master_memory=35840
         )
@@ -195,7 +194,10 @@ def download_iso_from_infra_env(infra_env):
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
     logger.info('waiting to have host single node ip')
     single_node_ip = get_ip_for_single_node(cluster_deployment, is_ipv4)
-    nodes.controller.tf.change_variables({'single_node_ip': single_node_ip})
+    nodes.controller.tf.change_variables({
+        'single_node_ip': single_node_ip,
+        'bootstrap_in_place': True,
+    })
     logger.info('single node ip=%s', single_node_ip)
 
 
