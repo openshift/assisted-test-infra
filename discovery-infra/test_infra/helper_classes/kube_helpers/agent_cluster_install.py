@@ -1,7 +1,7 @@
 import logging
 from base64 import b64decode
 from pprint import pformat
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Dict, Any
 
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
@@ -107,8 +107,8 @@ class AgentClusterInstall(BaseCustomResource):
 
         logger.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
 
-    @staticmethod
     def _get_spec_dict(
+        self,
         cluster_deployment_ref: ObjectReference,
         cluster_cidr: str,
         host_prefix: int,
@@ -146,8 +146,31 @@ class AgentClusterInstall(BaseCustomResource):
         if "machine_cidr" in kwargs:
             spec["networking"]["machineNetwork"] = [{"cidr": kwargs.pop("machine_cidr")}]
 
+        if "hyperthreading" in kwargs:
+            self._set_hyperthreading(spec=spec, mode=kwargs.pop("hyperthreading"))
+
         spec.update(kwargs)
         return spec
+
+    def _set_hyperthreading(self, spec: Dict[str, Any], mode: str) -> None:
+        # if hypethreading is not configured, let the service choose the default setup
+        if not mode:
+            return
+
+        mastersMode, workersMode = "Enabled", "Enabled"
+        if mode == "none" or mode == "workers":
+            mastersMode = "Disabled"
+        if mode == "none" or mode == "masters":
+            workersMode = "Disabled"
+
+        spec["controlPlane"] = {
+            "hyperthreading": mastersMode,
+            "name": "master",
+        }
+        spec["compute"] = [{
+            "hyperthreading": workersMode,
+            "name": "worker",
+        }]
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(

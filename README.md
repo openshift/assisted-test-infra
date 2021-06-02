@@ -97,6 +97,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | OFFLINE_TOKEN               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)                          |
 | OPENSHIFT_VERSION           | OpenShift version to install, default: "4.7"                                                                                                |
 | PROXY                       | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR       |
+| HYPERTHREADING              | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all                                                 |
 | PULL_SECRET                 | pull secret to use for cluster installation command, no option to install cluster without it.                                               |
 | PULL_SECRET_FILE            | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it.      |
 | REMOTE_SERVICE_URL          | URL to remote assisted-service - run infra on existing deployment                                                                           |
