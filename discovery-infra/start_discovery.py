@@ -542,6 +542,10 @@ def nodes_flow(
                 statuses=[consts.NodesStatus.KNOWN],
             )
 
+            if args.vip_dhcp_allocation:
+                vips_info = helper_cluster.Cluster.get_vips_from_cluster(client, cluster.id)
+                tf.set_new_vip(vips_info["api_vip"])
+
         if args.install_cluster:
             install_cluster.run_install_flow(
                 client=client,
