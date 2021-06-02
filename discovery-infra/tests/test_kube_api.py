@@ -21,6 +21,7 @@ from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, TerraformConfig
 from tests.conftest import env_variables
+from download_logs import collect_debug_info_from_cluster
 
 PROXY_PORT = 3129
 
@@ -139,10 +140,13 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
     logger.info('waiting for agent-cluster-install to be in installing state')
     agent_cluster_install.wait_to_be_installing()
 
-    logger.info('installation started, waiting for completion')
-    agent_cluster_install.wait_to_be_installed()
-
-    logger.info('installation completed successfully')
+    try:
+        logger.info('installation started, waiting for completion')
+        agent_cluster_install.wait_to_be_installed()
+        logger.info('installation completed successfully')
+    except Exception:
+        logger.exception(f"Failure during kube-api installation flow:")
+        collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install)
 
 
 def deploy_image_set(cluster_name, kube_api_context):

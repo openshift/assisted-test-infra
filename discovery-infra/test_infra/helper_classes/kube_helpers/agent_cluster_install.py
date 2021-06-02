@@ -241,6 +241,8 @@ class AgentClusterInstall(BaseCustomResource):
             cond_type=self._completed_condition_name,
             required_status="True",
             required_reason="InstallationCompleted",
+            exception_status="False",
+            exception_reason="InstallationFailed",
             timeout=timeout,
         )
 
@@ -249,6 +251,8 @@ class AgentClusterInstall(BaseCustomResource):
         cond_type: str,
         required_status: str,
         required_reason: Optional[str] = None,
+        exception_status: Optional[str] = None,
+        exception_reason: Optional[str] = None,
         timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
 
@@ -268,6 +272,8 @@ class AgentClusterInstall(BaseCustomResource):
                 if required_reason:
                     return required_reason == reason
                 return True
+            elif status == exception_status and reason == exception_reason:
+                raise Exception(f"Unexpected status and reason: {exception_status} {exception_reason}")
 
         waiting.wait(
             _has_required_condition,

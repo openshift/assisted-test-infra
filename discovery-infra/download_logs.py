@@ -26,7 +26,7 @@ from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
-                              recreate_folder, run_command, verify_logs_uploaded)
+                              recreate_folder, run_command, verify_logs_uploaded, fetch_url)
 
 from logger import log, suppressAndLog
 
@@ -260,6 +260,32 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
 
     except (TimeoutError, RuntimeError, SSHException):
         log.exception("Failed accessing node %s for sosreport data gathering", node)
+
+
+def collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install):
+    cluster_name = cluster_deployment.ref.name
+    output_folder = f'build/{cluster_name}'
+    recreate_folder(output_folder)
+    aci = agent_cluster_install.get()
+    debug_info = aci['status']['debugInfo']
+
+    try:
+        log.info("Collecting debugInfo (events/logs) from cluster")
+        fetch_url_and_write_to_file('eventsURL', 'events.json', debug_info, output_folder)
+        fetch_url_and_write_to_file('logsURL', 'logs.tar', debug_info, output_folder)
+    except Exception as err:
+        log.warning(f"Failed to collect debug info for cluster {cluster_name} ({err})")
+
+
+def fetch_url_and_write_to_file(url_key, file_name, debug_info, output_folder):
+    if url_key in debug_info:
+        logsURL = debug_info[url_key]
+        content = fetch_url(logsURL)
+        output_file = os.path.join(output_folder, file_name)
+        with open(output_file, "wb") as _file:
+            _file.write(content)
+    else:
+        log.warning(f"{url_key} is not available")
 
 
 def handle_arguments():
