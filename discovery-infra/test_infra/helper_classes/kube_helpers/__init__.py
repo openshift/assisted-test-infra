@@ -22,7 +22,7 @@ approved, installation will be started automatically.
 """
 
 from .cluster_image_set import ClusterImageSet, ClusterImageSetReference
-from .cluster_deployment import deploy_default_cluster_deployment, ClusterDeployment
+from .cluster_deployment import ClusterDeployment
 from .agent import Agent
 from .nmstate_config import NMStateConfig
 from .secret import deploy_default_secret, Secret
@@ -47,7 +47,6 @@ __all__ = (
     "InfraEnv",
     "NMStateConfig",
     "UnexpectedStateError",
-    "deploy_default_cluster_deployment",
     "deploy_default_secret",
     "deploy_default_infraenv",
     "create_kube_api_client",

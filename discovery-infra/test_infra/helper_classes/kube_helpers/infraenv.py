@@ -13,8 +13,12 @@ from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 
 from test_infra import consts
-from ...consts.kube_api import (CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-                                DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT)
+from test_infra.consts.kube_api import (
+    CRD_API_GROUP,
+    CRD_API_VERSION,
+    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
+)
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
 from .idict import IDict
@@ -308,7 +312,7 @@ class InfraEnv(BaseCustomResource):
                 kube_api_client=kube_api_client,
                 name=cluster_deployment.ref.name,
                 namespace=self._reference.namespace,
-                pull_secret=pull_secret
+                pull_secret=pull_secret,
             )
         self.create(
             cluster_deployment=cluster_deployment,
@@ -333,8 +337,9 @@ def deploy_default_infraenv(
     ignition_config_override: Optional[str] = None,
     **kwargs,
 ) -> "InfraEnv":
-    warnings.warn("deploy_default_infraenv is deprecated. Use InfraEnv.deploy_default_infraenv instead.",
-                  DeprecationWarning)
+    warnings.warn(
+        "deploy_default_infraenv is deprecated. Use InfraEnv.deploy_default_infraenv instead.", DeprecationWarning
+    )
 
     return InfraEnv.deploy_default_infraenv(
         kube_api_client,
@@ -347,5 +352,5 @@ def deploy_default_infraenv(
         proxy,
         label_selector,
         ignition_config_override,
-        **kwargs
+        **kwargs,
     )

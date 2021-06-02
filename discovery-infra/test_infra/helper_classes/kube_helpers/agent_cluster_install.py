@@ -7,8 +7,11 @@ import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
 from test_infra import consts
-from ...consts.kube_api import (DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT, DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
-                                DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT)
+from test_infra.consts.kube_api import (
+    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+    DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
+    DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT,
+)
 from .base_resource import BaseCustomResource, ObjectReference
 from .cluster_image_set import ClusterImageSetReference
 from .secret import Secret
@@ -17,14 +20,14 @@ logger = logging.getLogger(__name__)
 
 
 class AgentClusterInstall(BaseCustomResource):
-    """ This CRD represents a request to provision an agent based cluster.
-        In the AgentClusterInstall, the user can specify requirements like
-        networking, number of control plane and workers nodes and more.
-        The installation will start automatically if the required number of
-        hosts is available, the hosts are ready to be installed and the Agents
-        are approved.
-        The AgentClusterInstall reflects the ClusterDeployment/Installation
-        status through Conditions."""
+    """This CRD represents a request to provision an agent based cluster.
+    In the AgentClusterInstall, the user can specify requirements like
+    networking, number of control plane and workers nodes and more.
+    The installation will start automatically if the required number of
+    hosts is available, the hosts are ready to be installed and the Agents
+    are approved.
+    The AgentClusterInstall reflects the ClusterDeployment/Installation
+    status through Conditions."""
 
     _api_group = "extensions.hive.openshift.io"
     _api_version = "v1beta1"
@@ -79,22 +82,24 @@ class AgentClusterInstall(BaseCustomResource):
         logger.info("created agentclusterinstall %s: %s", self.ref, pformat(body))
 
     def patch(
-            self,
-            cluster_deployment_ref: ObjectReference,
-            cluster_cidr: str,
-            host_prefix: int,
-            service_network: str,
-            control_plane_agents: int,
-            **kwargs,
+        self,
+        cluster_deployment_ref: ObjectReference,
+        cluster_cidr: str,
+        host_prefix: int,
+        service_network: str,
+        control_plane_agents: int,
+        **kwargs,
     ) -> None:
-        body = {"spec": self._get_spec_dict(
-            cluster_deployment_ref=cluster_deployment_ref,
-            cluster_cidr=cluster_cidr,
-            host_prefix=host_prefix,
-            service_network=service_network,
-            control_plane_agents=control_plane_agents,
-            **kwargs,
-        )}
+        body = {
+            "spec": self._get_spec_dict(
+                cluster_deployment_ref=cluster_deployment_ref,
+                cluster_cidr=cluster_cidr,
+                host_prefix=host_prefix,
+                service_network=service_network,
+                control_plane_agents=control_plane_agents,
+                **kwargs,
+            )
+        }
 
         self.crd_api.patch_namespaced_custom_object(
             group=self._api_group,
@@ -117,21 +122,21 @@ class AgentClusterInstall(BaseCustomResource):
         **kwargs,
     ) -> dict:
         spec = {
-                "clusterDeploymentRef": cluster_deployment_ref.as_dict(),
-                "imageSetRef": kwargs.pop(
-                    "image_set_ref", ClusterImageSetReference()
-                ).as_dict(),
-                "networking": {
-                    "clusterNetwork": [{
+            "clusterDeploymentRef": cluster_deployment_ref.as_dict(),
+            "imageSetRef": kwargs.pop("image_set_ref", ClusterImageSetReference()).as_dict(),
+            "networking": {
+                "clusterNetwork": [
+                    {
                         "cidr": cluster_cidr,
                         "hostPrefix": host_prefix,
-                    }],
-                    "serviceNetwork": [service_network],
-                },
-                "provisionRequirements": {
-                    "controlPlaneAgents": control_plane_agents,
-                    "workerAgents": kwargs.pop("worker_agents", 0),
-                }
+                    }
+                ],
+                "serviceNetwork": [service_network],
+            },
+            "provisionRequirements": {
+                "controlPlaneAgents": control_plane_agents,
+                "workerAgents": kwargs.pop("worker_agents", 0),
+            },
         }
 
         if "api_vip" in kwargs:
@@ -167,10 +172,12 @@ class AgentClusterInstall(BaseCustomResource):
             "hyperthreading": mastersMode,
             "name": "master",
         }
-        spec["compute"] = [{
-            "hyperthreading": workersMode,
-            "name": "worker",
-        }]
+        spec["compute"] = [
+            {
+                "hyperthreading": workersMode,
+                "name": "worker",
+            }
+        ]
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
@@ -205,9 +212,9 @@ class AgentClusterInstall(BaseCustomResource):
         )
 
     def wait_to_be_ready(
-            self,
-            ready: bool,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        self,
+        ready: bool,
+        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         return self.wait_for_condition(
             cond_type=self._requirements_met_condition_name,
@@ -246,13 +253,17 @@ class AgentClusterInstall(BaseCustomResource):
     ) -> None:
 
         logger.info(
-            "waiting for agentclusterinstall %s condition %s to be in status "
-            "%s", self.ref, cond_type, required_status
+            "waiting for agentclusterinstall %s condition %s to be in status " "%s",
+            self.ref,
+            cond_type,
+            required_status,
         )
 
         def _has_required_condition() -> Optional[bool]:
             status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
-            logger.info(f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason} {message}")
+            logger.info(
+                f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason} {message}"
+            )
             if status == required_status:
                 if required_reason:
                     return required_reason == reason
@@ -270,12 +281,12 @@ class AgentClusterInstall(BaseCustomResource):
         self,
         cond_type,
         timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
                 return condition.get("status"), condition.get("reason"), condition.get("message")
 
-        return None, None
+        return None, None, None
 
     def download_kubeconfig(self, kubeconfig_path):
         def _get_kubeconfig_secret() -> dict:
