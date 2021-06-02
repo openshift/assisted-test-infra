@@ -1,19 +1,23 @@
 import logging
 from pprint import pformat
-from typing import Optional, Union, Tuple, List
+from typing import List, Optional, Tuple, Union, Any
 
 import waiting
-import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
-from kubernetes.client.rest import ApiException
-
 from test_infra import consts
-from ...consts.kube_api import (CRD_API_GROUP, DEFAULT_WAIT_FOR_AGENTS_TIMEOUT, DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-                                DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT, HIVE_API_GROUP, HIVE_API_VERSION)
+
+from test_infra.consts.kube_api import (
+    CRD_API_GROUP,
+    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+    HIVE_API_GROUP,
+    HIVE_API_VERSION,
+)
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .common import ObjectReference
-from .secret import Secret, deploy_default_secret
+from .secret import Secret
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +68,7 @@ class ClusterDeployment(BaseCustomResource):
                 "clusterName": self.ref.name,
                 "baseDomain": base_domain,
                 "pullSecretRef": secret.ref.as_dict(),
-            }
+            },
         }
         body["spec"].update(self._platform_field)
 
@@ -167,14 +171,14 @@ class ClusterDeployment(BaseCustomResource):
         )
 
     def condition(
-            self,
-            cond_type,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    ) -> Tuple[Optional[str], Optional[str]]:
+        self,
+        cond_type,
+        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
                 return condition.get("status"), condition.get("reason"), condition.get("message")
-        return None, None
+        return None, None, None
 
     def wait_for_condition(
         self,
@@ -185,7 +189,10 @@ class ClusterDeployment(BaseCustomResource):
     ) -> None:
         def _has_required_condition() -> Optional[bool]:
             status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
-            logger.info(f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason} {message}")
+            logger.info(
+                f"waiting for condition <{cond_type}> to be in status <{required_status}>. "
+                f"actual status is: {status} {reason} {message}"
+            )
             if status == required_status:
                 if required_reason:
                     return required_reason == reason
@@ -225,84 +232,3 @@ class ClusterDeployment(BaseCustomResource):
             timeout_seconds=timeout,
             waiting_for=f"cluster {self.ref} to have {num_agents} agents",
         )
-
-
-def deploy_default_cluster_deployment(
-    kube_api_client: ApiClient,
-    name: str,
-    namespace: str,
-    ignore_conflict: bool = True,
-    base_domain: str = consts.DEFAULT_BASE_DNS_DOMAIN,
-    secret: Optional[Secret] = None,
-    **kwargs,
-) -> ClusterDeployment:
-    cluster_deployment = ClusterDeployment(kube_api_client, name, namespace)
-    try:
-        if "filepath" in kwargs:
-            _create_from_yaml_file(
-                kube_api_client=kube_api_client,
-                ignore_conflict=ignore_conflict,
-                cluster_deployment=cluster_deployment,
-                filepath=kwargs["filepath"],
-            )
-        else:
-            _create_from_attrs(
-                kube_api_client=kube_api_client,
-                name=name,
-                ignore_conflict=ignore_conflict,
-                cluster_deployment=cluster_deployment,
-                base_domain=base_domain,
-                secret=secret,
-                **kwargs,
-            )
-    except ApiException as e:
-        if not (e.reason == "Conflict" and ignore_conflict):
-            raise
-
-    # wait until cluster will have status (i.e until resource will be
-    # processed in assisted-service).
-    cluster_deployment.status()
-
-    return cluster_deployment
-
-
-def _create_from_yaml_file(
-    kube_api_client: ApiClient,
-    ignore_conflict: bool,
-    cluster_deployment: ClusterDeployment,
-    filepath: str,
-) -> None:
-    with open(filepath) as fp:
-        yaml_data = yaml.safe_load(fp)
-
-    deploy_default_secret(
-        kube_api_client=kube_api_client,
-        name=yaml_data["spec"]["pullSecretRef"]["name"],
-        ignore_conflict=ignore_conflict,
-    )
-    cluster_deployment.create_from_yaml(yaml_data)
-
-
-def _create_from_attrs(
-    kube_api_client: ApiClient,
-    name: str,
-    ignore_conflict: bool,
-    cluster_deployment: ClusterDeployment,
-    base_domain: str,
-    secret: Optional[Secret] = None,
-    **kwargs,
-) -> None:
-    if not secret:
-        secret = deploy_default_secret(
-            kube_api_client=kube_api_client,
-            name=name,
-            ignore_conflict=ignore_conflict,
-            namespace=cluster_deployment._reference.namespace,
-            pull_secret=pull_secret
-        )
-
-    cluster_deployment.create(
-        secret=secret,
-        base_domain=base_domain,
-        **kwargs,
-    )

@@ -57,12 +57,12 @@ class ObjectReference(IDict):
     """
 
     def __init__(
-            self,
-            name: str,
-            namespace: str,
-            kind: Optional[str] = None,
-            group: Optional[str] = None,
-            version: Optional[str] = None,
+        self,
+        name: str,
+        namespace: str,
+        kind: Optional[str] = None,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
     ):
         self.name = name
         self.namespace = namespace
@@ -71,13 +71,15 @@ class ObjectReference(IDict):
         self.version = version
 
     def __eq__(self, other: "ObjectReference") -> bool:
-        return all((
-            other.name == self.name,
-            other.namespace == self.namespace,
-            other.kind == self.kind,
-            other.group == self.group,
-            other.version == self.version,
-        ))
+        return all(
+            (
+                other.name == self.name,
+                other.namespace == self.namespace,
+                other.kind == self.kind,
+                other.group == self.group,
+                other.version == self.version,
+            )
+        )
 
     def as_dict(self) -> dict:
         dct = {"name": self.name, "namespace": self.namespace}
@@ -91,6 +93,7 @@ class ObjectReference(IDict):
 
 
 def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
-    warnings.warn("create_kube_api_client is deprecated. Use ClientFactory.create_kube_api_client instead.",
-                  DeprecationWarning)
+    warnings.warn(
+        "create_kube_api_client is deprecated. Use ClientFactory.create_kube_api_client instead.", DeprecationWarning
+    )
     return ClientFactory.create_kube_api_client(kubeconfig_path)
