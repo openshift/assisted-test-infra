@@ -116,6 +116,9 @@ podman ps | awk '$1!="CONTAINER" {print $1}' | while read id; do podman inspect 
 echo -e "Gathering logs..."
 cp -a /var/log/{containers*,message*,secure*,boot*,cron*,yum*,Xorg*,sa,rhsm,audit,dmesg} ./var/log/ 2>> error_log
 cp -a /etc/*syslog.conf ./etc/ 2>> error_log
+journalctl -u kubelet.service > ./var/log/kubelet.log 2>> error_log
+journalctl -u bootkube.service > ./var/log/bootkube.log 2>> error_log
+journalctl -u crio.service > ./var/log/crio.log 2>> error_log
 
 echo -e "Gathering Openshift data..."
 export KUBECONFIG=/etc/kubernetes/bootstrap-secrets/kubeconfig
