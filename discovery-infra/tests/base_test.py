@@ -11,10 +11,10 @@ import pytest
 import test_infra.utils as infra_utils
 import waiting
 from assisted_service_client.rest import ApiException
+
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
-from test_infra import consts
 from tests.config import ClusterConfig, EnvConfig
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
@@ -23,6 +23,7 @@ from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import NetworkAssets
 from tests.config import TerraformConfig
 from tests.conftest import env_variables
+from test_infra.controllers.nat_controller import NatController
 from test_infra.controllers.node_controllers import TerraformController
 
 
@@ -40,27 +41,41 @@ class BaseTest:
 
             net_asset = NetworkAssets()
             config.net_asset = net_asset.get()
-
-            nodes = Nodes(TerraformController(config),
-                          config.private_ssh_key_path,
-                          net_asset,
-                          config.platform == consts.Platforms.NONE)
+            controller = TerraformController(config)
+            nodes = Nodes(controller, config.private_ssh_key_path)
 
             nodes.prepare_nodes()
+            interfaces = BaseTest.nat_interfaces(config)
+            nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
+            nat.add_nat_rules()
+
             nodes_data["nodes"] = nodes
+            nodes_data["config"] = config
+            nodes_data["net_asset"] = net_asset
+            nodes_data["nat"] = nat
             return nodes
 
         yield get_nodes_func
 
         _nodes: Nodes = nodes_data.get("nodes")
+        _config: TerraformConfig = nodes_data["config"]
+        _nat: NatController = nodes_data["nat"]
+        net_asset: NetworkAssets = nodes_data["net_asset"]
+
         try:
             if EnvConfig.get("test_teardown"):
                 logging.info('--- TEARDOWN --- node controller\n')
                 _nodes.destroy_all_nodes()
-            if _nodes.is_nat_active():
-                _nodes.unconfigure_nat()
+
+                if _nat:
+                    _nat.remove_nat_rules()
         finally:
-            _nodes.release_net_asset()
+            if net_asset:
+                net_asset.release_all()
+
+    @classmethod
+    def nat_interfaces(cls, config: TerraformConfig):
+        return config.net_asset.libvirt_network_if, config.net_asset.libvirt_secondary_network_if
 
     @pytest.fixture()
     @JunitFixtureTestCase()
