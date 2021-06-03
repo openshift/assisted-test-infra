@@ -1,20 +1,28 @@
 import logging
 import os
-import uuid
 from distutils import util
+from pathlib import Path
 from typing import List
 
 import pytest
-import test_infra.utils as infra_utils
+
 from test_infra import assisted_service_api, consts, utils
 from test_infra.utils import operators_utils
+from test_infra.utils.cluster_name import ClusterName
 
 
-def _get_cluster_name():
-    cluster_name = utils.get_env('CLUSTER_NAME', f'{consts.CLUSTER_PREFIX}')
-    if cluster_name == consts.CLUSTER_PREFIX:
-        cluster_name = cluster_name + '-' + str(uuid.uuid4())[:consts.SUFFIX_LENGTH]
-    return cluster_name
+cluster_name = ClusterName()
+
+
+def get_kubeconfig_path():
+    kubeconfig_dir = Path("/build/kubeconfig")
+    default = kubeconfig_dir.joinpath(f"kubeconfig_{cluster_name}")
+    kubeconfig_path = utils.get_env('KUBECONFIG', str(default))
+
+    if kubeconfig_path == str(default):
+        kubeconfig_dir.mkdir(parents=True, exist_ok=True)
+
+    return kubeconfig_path
 
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key")
@@ -37,9 +45,9 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "master_disk_count": int(utils.get_env('MASTER_DISK_COUNT', '1')),
                  "worker_disk_count": int(utils.get_env('WORKER_DISK_COUNT', '1')),
                  "storage_pool_path": utils.get_env('STORAGE_POOL_PATH', os.path.join(os.getcwd(), "storage_pool")),
-                 "cluster_name": _get_cluster_name(),
+                 "cluster_name": cluster_name.get(),
                  "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default),
-                 "kubeconfig_path": utils.get_env('KUBECONFIG', ''),
+                 "kubeconfig_path": get_kubeconfig_path(),
                  "installer_kubeconfig_path": utils.get_env('INSTALLER_KUBECONFIG', None),
                  "log_folder": utils.get_env('LOG_FOLDER', consts.LOG_FOLDER),
                  "service_cidr": utils.get_env('SERVICE_CIDR', '172.30.0.0/16'),
@@ -60,16 +68,13 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "cluster_id": utils.get_env("CLUSTER_ID"),
                  "additional_ntp_source": utils.get_env("ADDITIONAL_NTP_SOURCE", consts.DEFAULT_ADDITIONAL_NTP_SOURCE),
                  }
-cluster_mid_name = infra_utils.get_random_name()
 
 # Tests running on terraform parallel must have unique ISO file
-image = utils.get_env('ISO',
-                      os.path.join(consts.IMAGE_FOLDER, f'{env_variables["cluster_name"]}-{cluster_mid_name}-'
-                                                        f'installer-image.iso')).strip()
-env_variables["kubeconfig_path"] = f'/tmp/test_kubeconfig_{cluster_mid_name}'
+env_variables["iso_download_path"] = utils.get_env('ISO',
+                                                   os.path.join(consts.IMAGE_FOLDER,
+                                                                f'{env_variables["cluster_name"]}-{cluster_name.suffix}'
+                                                                f'-installer-image.iso')).strip()
 
-
-env_variables["iso_download_path"] = image
 env_variables["num_nodes"] = env_variables["num_workers"] + env_variables["num_masters"]
 
 

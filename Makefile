@@ -86,7 +86,6 @@ IMAGE_NAME=test-infra
 IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 
 # oc deploy
-KUBECONFIG := $(or $(KUBECONFIG),${HOME}/.kube/config)
 ifneq ($(or $(OC_MODE),),)
         OC_FLAG := --oc-mode
         OC_TOKEN := $(or $(OC_TOKEN),"")
