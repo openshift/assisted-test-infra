@@ -18,15 +18,15 @@ def set_cluster_pull_secret(client, cluster_id, pull_secret):
     client.set_pull_secret(cluster_id, pull_secret)
 
 
-def execute_day2_cloud_flow(cluster_id, args, has_ipv4):
-    execute_day2_flow(cluster_id, args, "cloud", has_ipv4)
+def execute_day2_cloud_flow(cluster_id, args, has_ipv6):
+    execute_day2_flow(cluster_id, args, "cloud", has_ipv6)
 
 
-def execute_day2_ocp_flow(cluster_id, args, has_ipv4):
-    execute_day2_flow(cluster_id, args, "ocp", has_ipv4)
+def execute_day2_ocp_flow(cluster_id, args, has_ipv6):
+    execute_day2_flow(cluster_id, args, "ocp", has_ipv6)
 
 
-def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
+def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
     client = assisted_service_api.create_client(
         url=utils.get_assisted_service_url_by_args(args=args)
@@ -73,7 +73,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv4):
         terraform_cluster_dir_prefix,
         tf_folder,
         cluster,
-        has_ipv4,
+        has_ipv6,
         args.number_of_day2_workers,
         api_vip_ip,
         api_vip_dnsname,
@@ -87,7 +87,7 @@ def day2_nodes_flow(client,
                     terraform_cluster_dir_prefix,
                     tf_folder,
                     cluster,
-                    has_ipv_4,
+                    has_ipv_6,
                     num_worker_nodes,
                     api_vip_ip,
                     api_vip_dnsname,
@@ -124,7 +124,7 @@ def day2_nodes_flow(client,
     set_nodes_hostnames_if_needed(client,
                                   tf_folder,
                                   with_static_network_config,
-                                  has_ipv_4,
+                                  has_ipv_6,
                                   tf_network_name,
                                   cluster.id)
 
@@ -303,14 +303,14 @@ def set_cluster_proxy(client, cluster_id, copy_proxy_from_cluster, args):
 def set_nodes_hostnames_if_needed(client,
                                   tf_folder,
                                   with_static_network_config,
-                                  has_ipv_4,
+                                  has_ipv_6,
                                   network_name,
                                   cluster_id):
-    if not has_ipv_4 or with_static_network_config:
+    if has_ipv_6 or with_static_network_config:
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
         libvirt_nodes = utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
         log.info(
             "Set hostnames of day2 cluster %s in case of static network configuration or "
-            "to work around libvirt for Terrafrom not setting hostnames of IPv6-only hosts",
+            "to work around libvirt for Terrafrom not setting hostnames of IPv6 hosts",
             cluster_id)
         utils.update_hosts(client, cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True)
