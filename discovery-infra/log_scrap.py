@@ -37,7 +37,8 @@ es_logger.setLevel(logging.WARNING)
 class ScrapeEvents:
     def __init__(self, inventory_url: str, offline_token: str, index: str, es_server: str, es_user:str, es_pass:str, backup_destination: str):
 
-        self.client = ClientFactory.create_client(url=inventory_url, offline_token=offline_token)
+        self.inventory_url = inventory_url
+        self.client = ClientFactory.create_client(url=self.inventory_url, offline_token=offline_token)
 
         self.index = index
         self.es = elasticsearch.Elasticsearch(es_server, http_auth=(es_user, es_pass))
@@ -105,8 +106,11 @@ class ScrapeEvents:
         for event in event_list[::-1]:
             if process.is_event_skippable(event):
                 continue
+
             doc_id = get_doc_id(event)
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
+            cluster_bash_data["inventory_url"] = self.inventory_url
+
             process_event_doc(event, cluster_bash_data)
             with self.enrich_event(event, cluster_bash_data):
                 ret = self.log_doc(cluster_bash_data, doc_id)
