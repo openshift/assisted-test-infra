@@ -455,6 +455,7 @@ _test: $(REPORTS) _test_setup
 	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
 
 test_parallel:
+	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	skipper make $(SKIPPER_PARAMS) _test_parallel
 
 _test_setup:

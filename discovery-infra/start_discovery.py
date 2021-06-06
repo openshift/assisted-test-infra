@@ -493,7 +493,7 @@ def nodes_flow(
                         set_vip_dhcp_allocation=False,
                     )
             elif is_none_platform_mode():
-                set_cluster_vips(client, cluster.id, machine_net)
+                pass
             elif args.vip_dhcp_allocation and not args.kube_api:
                 set_cluster_machine_cidr(client, cluster.id, machine_net)
             else:
