@@ -1,10 +1,10 @@
 import pytest
-
-from tests.config import ClusterConfig, TerraformConfig
-from tests.base_test import BaseTest
-from tests.conftest import get_available_openshift_versions
-
 from junit_report import JunitTestSuite
+from test_infra.consts import OperatorStatus
+
+from tests.base_test import BaseTest
+from tests.config import ClusterConfig, TerraformConfig
+from tests.conftest import get_available_openshift_versions
 
 
 class TestInstall(BaseTest):
@@ -25,3 +25,4 @@ class TestInstall(BaseTest):
                                   nodes=get_nodes(TerraformConfig(olm_operators=[olm_operator])))
         new_cluster.prepare_for_installation()
         new_cluster.start_install_and_wait_for_installed()
+        assert new_cluster.is_operator_in_status(olm_operator, OperatorStatus.AVAILABLE)
