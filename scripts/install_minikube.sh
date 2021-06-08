@@ -7,7 +7,7 @@ function install_minikube() {
         return
     fi
 
-    minikube_version=v1.18.1
+    minikube_version=v1.20.0
     minikube_path=$(command -v minikube)
     if ! [ -x "$minikube_path" ]; then 
         echo "Installing minikube..."
