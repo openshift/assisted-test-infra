@@ -356,27 +356,24 @@ def _cluster_create_params():
 
 # convert params from args to terraform tfvars
 def _create_node_details(cluster_name):
-    operators = operators_utils.parse_olm_operators_from_env()
     return {
-        "libvirt_worker_memory": operators_utils.resource_param(args.worker_memory, consts.OperatorResource.WORKER_MEMORY_KEY, operators),
-        "libvirt_master_memory": operators_utils.resource_param(
-            args.master_memory if not args.master_count == 1 else args.master_memory * 2, consts.OperatorResource.MASTER_MEMORY_KEY, operators),
-        "libvirt_worker_vcpu": operators_utils.resource_param(args.worker_cpu, consts.OperatorResource.WORKER_VCPU_KEY, operators),
-        "libvirt_master_vcpu": operators_utils.resource_param(args.master_cpu if not args.master_count == 1 else args.master_cpu * 2,
-                                                    consts.OperatorResource.MASTER_VCPU_KEY, operators),
-        "worker_count": operators_utils.resource_param(args.number_of_workers, consts.OperatorResource.WORKER_COUNT_KEY, operators),
+        "libvirt_worker_memory": args.worker_memory,
+        "libvirt_master_memory": args.master_memory if not args.master_count == 1 else args.master_memory * 2,
+        "libvirt_worker_vcpu": args.worker_cpu,
+        "libvirt_master_vcpu": args.master_cpu if not args.master_count == 1 else args.master_cpu * 2,
+        "worker_count": args.number_of_workers,
         "cluster_name": cluster_name,
         "cluster_domain": args.base_dns_domain,
         "libvirt_network_name": consts.TEST_NETWORK + args.namespace,
         "libvirt_network_mtu": args.network_mtu,
         "libvirt_network_if": args.network_bridge,
-        "libvirt_worker_disk": operators_utils.resource_param(args.worker_disk, consts.OperatorResource.WORKER_DISK_KEY, operators),
-        "libvirt_master_disk": operators_utils.resource_param(args.master_disk, consts.OperatorResource.MASTER_DISK_KEY, operators),
+        "libvirt_worker_disk": args.worker_disk,
+        "libvirt_master_disk": args.master_disk,
         "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
         "libvirt_secondary_network_if": f's{args.network_bridge}',
         "bootstrap_in_place": args.master_count == 1,
-        "master_disk_count": operators_utils.resource_param(args.master_disk_count, consts.OperatorResource.MASTER_DISK_COUNT_KEY, operators),
-        "worker_disk_count": operators_utils.resource_param(args.worker_disk_count, consts.OperatorResource.WORKER_DISK_COUNT_KEY, operators),
+        "master_disk_count": args.master_disk_count,
+        "worker_disk_count": args.worker_disk_count,
     }
 
 

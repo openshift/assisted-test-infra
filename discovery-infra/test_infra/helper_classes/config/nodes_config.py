@@ -32,7 +32,6 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     storage_pool_path: str = None
     # running: bool = True
     single_node_ip: str = None
-    olm_operators: List[str] = None
     dns_records: Dict[str, str] = field(default_factory=dict)
 
     libvirt_master_ips: List[str] = None

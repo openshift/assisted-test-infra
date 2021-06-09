@@ -88,9 +88,12 @@ def filter_operators_by_type(operators: List[MonitoredOperator], operator_types:
     return list(filter(lambda operator: operator.operator_type in operator_types, operators))
 
 
-def resource_param(base_value: int, resource_name: str, operators: List):
+def resource_param(base_value: int, resource_name: str, operator: str):
     try:
-        return sum((consts.OperatorResource.values()[operator][resource_name] for operator in operators),
-                   base_value)
+        value = base_value
+        resource = consts.OperatorResource.values()[operator][resource_name]
+        if value <= resource:
+            value = value + resource
+        return value
     except KeyError as e:
         raise ValueError(f"Unknown operator name {e.args[0]}")
