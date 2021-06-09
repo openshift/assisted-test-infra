@@ -140,7 +140,7 @@ class ScrapeEvents:
 
     def write_events_file(self, cluster, output_file):
         with suppress(assisted_service_client.rest.ApiException):
-            self.client.download_cluster_events(cluster['id'], output_file)
+            self.client.download_cluster_events(cluster['id'], output_file, categories=["user", "metrics"])
 
     def get_clusters(self):
         return self.client.clusters_list()
