@@ -248,13 +248,13 @@ set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
 deploy_ui: start_minikube
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_ui.sh
+	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_ui.sh
 
 deploy_prometheus_ui:
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) scripts/deploy_prometheus_ui.sh
+	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_prometheus_ui.sh
 
 test_ui: deploy_ui
-	DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) PULL_SECRET=${PULL_SECRET} scripts/test_ui.sh
+	scripts/test_ui.sh
 
 kill_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(NAMESPACE)'
@@ -277,19 +277,14 @@ run_full_flow_with_ipv6:
 deploy_on_ocp_cluster: bring_assisted_installer
 	# service
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
-		SERVICE=$(SERVICE) \
 		scripts/deploy_assisted_service.sh
 
 	# UI
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
 		scripts/deploy_ui.sh
 
 	# controller
 	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		DEPLOY_TAG=$(DEPLOY_TAG) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) OCP_KUBECONFIG=$(OCP_KUBECONFIG) \
-		CONTROLLER_OCP=$(CONTROLLER_OCP) \
 		scripts/deploy_controller.sh
 
 config_etc_hosts_for_ocp_cluster:
@@ -310,7 +305,7 @@ _install_cluster:
 	discovery-infra/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME)
 
 install_cluster:
-	skipper make $(SKIPPER_PARAMS) _install_cluster NAMESPACE=$(NAMESPACE)
+	skipper make $(SKIPPER_PARAMS) _install_cluster
 
 
 #########
@@ -390,7 +385,7 @@ deploy_assisted_operator: clear_operator
 
 deploy_assisted_service: start_minikube bring_assisted_service
 	mkdir -p assisted-service/build
-	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) DEPLOY_MANIFEST_PATH=$(DEPLOY_MANIFEST_PATH) DEPLOY_MANIFEST_TAG=$(DEPLOY_MANIFEST_TAG) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
 	@if ! cd assisted-service >/dev/null 2>&1; then \
@@ -400,7 +395,7 @@ bring_assisted_service:
 	@cd assisted-service && git fetch origin $(SERVICE_BRANCH) && git reset --hard FETCH_HEAD
 
 deploy_monitoring: bring_assisted_service
-	make -C assisted-service/ deploy-monitoring NAMESPACE=$(NAMESPACE)
+	make -C assisted-service/ deploy-monitoring
 	make deploy_prometheus_ui
 
 delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forwardings
@@ -433,10 +428,10 @@ _download_iso:
 	discovery-infra/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) -iO --day1-cluster
 
 download_iso:
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
+	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
 download_iso_for_remote_use: deploy_assisted_service
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) $(OC_FLAG)) NAMESPACE=$(NAMESPACE)
+	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) $(OC_FLAG))
 
 ########
 # Test #
