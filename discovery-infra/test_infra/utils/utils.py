@@ -21,6 +21,10 @@ from string import ascii_lowercase
 from typing import List
 
 import filelock
+from requests import Session
+from requests.adapters import HTTPAdapter, Retry
+from requests.exceptions import RequestException
+from requests.models import HTTPError
 import libvirt
 import oc_utils
 import requests
@@ -787,6 +791,28 @@ def download_iso(image_url, image_path):
             open(image_path, "wb") as out:
         for chunk in image.iter_content(chunk_size=1024):
             out.write(chunk)
+
+
+def fetch_url(url, timeout=60, max_retries=5):
+    """
+    Returns the response content for the specified URL.
+    Raises an exception in case of any failure.
+    """
+    try:
+        retries = Retry(
+            read=max_retries,
+            status=max_retries,
+            backoff_factor=0.5,
+            status_forcelist=[500])
+        s = Session()
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+
+        log.info(f"Fetching URL: {url}")
+        response = s.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response.content
+    except (RequestException, HTTPError) as err:
+        raise Exception(f"Failed to GET: {url} ({err})")
 
 
 # Deprecated functions
