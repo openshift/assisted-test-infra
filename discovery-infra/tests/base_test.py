@@ -10,6 +10,7 @@ import pytest
 
 import test_infra.utils as infra_utils
 import waiting
+from typing import Optional
 from assisted_service_client.rest import ApiException
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
@@ -20,10 +21,11 @@ from test_infra.controllers.proxy_controller.proxy_controller import ProxyContro
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
-from test_infra.tools.assets import NetworkAssets
+from test_infra.tools.assets import LibvirtNetworkAssets
 from tests.config import TerraformConfig
 from tests.conftest import env_variables
 from test_infra.controllers.node_controllers import TerraformController
+from test_infra.utils import file_lock_context
 
 
 class BaseTest:
@@ -34,11 +36,14 @@ class BaseTest:
         nodes_data = dict()
 
         @JunitTestCase()
-        def get_nodes_func(config: TerraformConfig = TerraformConfig()):
+        def get_nodes_func(config: Optional[TerraformConfig] = None):
+            if not config:
+                config = TerraformConfig()
+
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
-            net_asset = NetworkAssets()
+            net_asset = LibvirtNetworkAssets()
             config.net_asset = net_asset.get()
 
             nodes = Nodes(TerraformController(config),

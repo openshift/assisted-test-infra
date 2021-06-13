@@ -8,7 +8,7 @@ from munch import Munch
 from test_infra import utils
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
-from test_infra.tools.assets import NetworkAssets
+from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.tools.concurrently import run_concurrently
 from test_infra.controllers.nat_controller import NatController
 
@@ -25,7 +25,7 @@ class Nodes:
 
     def __init__(self, node_controller: NodeController,
                  private_ssh_key_path: str,
-                 net_asset: NetworkAssets = None,
+                 net_asset: LibvirtNetworkAssets = None,
                  needs_nat: bool = False
                  ):
         self.controller = node_controller

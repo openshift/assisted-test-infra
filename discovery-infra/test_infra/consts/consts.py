@@ -48,6 +48,18 @@ DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BAS
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
 
+IP_NETWORK_ASSET_FIELDS = (
+    "machine_cidr",
+    "machine_cidr6",
+    "provisioning_cidr",
+    "provisioning_cidr6",
+)
+REQUIRED_ASSET_FIELDS = (
+    "libvirt_network_if",
+    "libvirt_secondary_network_if",
+    *IP_NETWORK_ASSET_FIELDS,
+)
+
 
 class ImageType:
     FULL_ISO = "full-iso"
@@ -158,3 +170,12 @@ class Platforms:
 class HighAvailabilityMode:
     FULL = 'Full'
     NONE = 'None'
+
+
+class BaseAsset:
+    MACHINE_CIDR = "192.168.127.0/24"
+    MACHINE_CIDR6 = "1001:db9::/120"
+    PROVISIONING_CIDR = "192.168.145.0/24"
+    PROVISIONING_CIDR6 = "3001:db9::/120"
+    NETWORK_IF = "tt1"
+    SECONDARY_NETWORK_IF = "stt1"
