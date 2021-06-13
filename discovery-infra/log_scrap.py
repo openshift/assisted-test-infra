@@ -103,6 +103,19 @@ class ScrapeEvents:
         cluster_bash_data = process_metadata(metadata_json)
         event_names = get_cluster_object_names(cluster_bash_data)
 
+        self.process_and_log_events(cluster_bash_data, event_list, event_names)
+
+        cluster_events_count = self.es.search(index=self.index,
+                                    body={"query": {"match_phrase": {"cluster.id": cluster_id}}})["hits"]["total"]["value"]
+
+
+        relevant_event_count=[event for event in event_list if not process.is_event_skippable(event)]
+        if cluster_events_count < len(relevant_event_count):
+            log.info(f"Cluster {cluster_id} logged events are not same as the event count, logging all clusters events")
+            self.process_and_log_events(cluster_bash_data, event_list, event_names, False)
+
+
+    def process_and_log_events(self, cluster_bash_data, event_list, event_names, only_new_events=True):
         for event in event_list[::-1]:
             if process.is_event_skippable(event):
                 continue
@@ -114,7 +127,7 @@ class ScrapeEvents:
             process_event_doc(event, cluster_bash_data)
             with self.enrich_event(event, cluster_bash_data):
                 ret = self.log_doc(cluster_bash_data, doc_id)
-            if not ret:
+            if not ret and only_new_events:
                 break
 
     def save_new_backup(self,cluster_id, event_list, metadata_json):
