@@ -40,8 +40,8 @@ class TerraformUtils:
         self.tf.read_state_file(self.STATE_FILE)
         return self.tf.tfstate
 
-    def set_new_vip(self, api_vip: str) -> None:
-        self.change_variables(variables={"api_vip": api_vip}, refresh=True)
+    def set_new_vips(self, api_vip: str, ingress_vip: str) -> None:
+        self.change_variables(variables={"api_vip": api_vip, "ingress_vip": ingress_vip}, refresh=True)
 
     def destroy(self) -> None:
         self.tf.destroy(force=True, input=False, auto_approve=True)

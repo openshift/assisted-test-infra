@@ -153,7 +153,10 @@ class TerraformController(LibvirtController):
         tfvars['machine_cidr_addresses'] = [machine_cidr]
         tfvars['provisioning_cidr_addresses'] = [provisioning_cidr]
         tfvars['bootstrap_in_place'] = self.config.bootstrap_in_place
-        tfvars['api_vip'] = self.get_ingress_and_api_vips()["api_vip"]
+
+        vips = self.get_ingress_and_api_vips()
+        tfvars['api_vip'] = vips["api_vip"]
+        tfvars['ingress_vip'] = vips["ingress_vip"]
         tfvars['running'] = running
         tfvars['libvirt_master_macs'] = static_network.generate_macs(self.params.master_count)
         tfvars['libvirt_worker_macs'] = static_network.generate_macs(self.params.worker_count)

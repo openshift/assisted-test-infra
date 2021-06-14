@@ -197,8 +197,8 @@ def update_vip_from_tf(client, cluster_id, tf, pull_secret):
         cluster_info.api_vip = helper_cluster.get_api_vip_from_cluster(
             client, cluster_info, pull_secret)
 
-    log.info("Setting new vip=%s", cluster_info.api_vip)
-    tf.set_new_vip(cluster_info.api_vip)
+    log.info(f"Setting new API VIP {cluster_info.api_vip} and Ingress VIP {cluster_info.ingress_vip}")
+    tf.set_new_vips(api_vip=cluster_info.api_vip, ingress_vip=cluster_info.ingress_vip)
 
 
 def run_installation_flow_kube_api(

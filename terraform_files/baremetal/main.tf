@@ -51,6 +51,7 @@ resource "libvirt_network" "net" {
         data.libvirt_network_dns_host_template.oauth.*.rendered,
         data.libvirt_network_dns_host_template.console.*.rendered,
         data.libvirt_network_dns_host_template.canary.*.rendered,
+        data.libvirt_network_dns_host_template.assisted_service.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -212,6 +213,10 @@ data "libvirt_network_dns_host_template" "api-int" {
   hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
 }
 
+# TODO: Move to use wildcard with dnsmasq options
+# Read more at: https://bugzilla.redhat.com/show_bug.cgi?id=1532856
+# terraform-libvirt-provider supports dnsmasq options since https://github.com/dmacvicar/terraform-provider-libvirt/pull/820
+# but there's still no an official release with that code.
 data "libvirt_network_dns_host_template" "oauth" {
   count    = var.bootstrap_in_place ? 1 : 0
   ip       = var.single_node_ip
@@ -228,4 +233,12 @@ data "libvirt_network_dns_host_template" "canary" {
   count    = var.bootstrap_in_place ? 1 : 0
   ip       = var.single_node_ip
   hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
+}
+
+data "libvirt_network_dns_host_template" "assisted_service" {
+  # Ingress VIP is always present. A value is set by the installation flow that updates
+  # either the single node IP or API VIP, depending on the scenario
+  count    = 1
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
+  hostname = "assisted-service-assisted-installer.apps.${var.cluster_name}.${var.cluster_domain}"
 }
