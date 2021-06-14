@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Tuple, Union
 
 from test_infra.controllers.iptables import IpTableCommandOption
@@ -33,6 +34,12 @@ class NatController:
             self._remove_rule(self._build_mark_string(input_interface))
         for output_interface in self._get_default_interfaces():
             self._remove_rule(self._build_nat_string(output_interface))
+
+    @classmethod
+    def get_namespace_index(cls, libvirt_network_if):
+        """ Hack to retrieve namespace index - does not exist in tests """
+        matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+        return int(matcher.groups()[0]) if matcher is not None else 0
 
     def _build_mark(self) -> int:
         """ Build iptables mark """

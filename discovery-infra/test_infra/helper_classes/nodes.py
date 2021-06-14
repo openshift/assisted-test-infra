@@ -1,16 +1,13 @@
 import json
 import logging
 import random
-import re
 from typing import Dict, Iterator, List
 
 from munch import Munch
 from test_infra import utils
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
-from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.tools.concurrently import run_concurrently
-from test_infra.controllers.nat_controller import NatController
 
 
 class NodeMapping:
@@ -24,17 +21,12 @@ class Nodes:
     DEFAULT_STATIC_IP_CONFIG = False
 
     def __init__(self, node_controller: NodeController,
-                 private_ssh_key_path: str,
-                 net_asset: LibvirtNetworkAssets = None,
-                 needs_nat: bool = False
+                 private_ssh_key_path: str
                  ):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
-        self._needs_nat = needs_nat
-        self._net_asset = net_asset
         self._nodes = None
         self._nodes_as_dict = None
-        self._nat = None
 
     @property
     def nodes(self) -> List[Node]:
@@ -51,33 +43,6 @@ class Nodes:
     def __iter__(self) -> Iterator[Node]:
         for n in self.nodes:
             yield n
-
-    def is_nat_active(self) -> bool:
-        return self._needs_nat
-
-    @property
-    def nat_interfaces(self):
-        return (self.controller.network_conf.libvirt_network_if,
-                self.controller.network_conf.libvirt_secondary_network_if)
-
-    @staticmethod
-    def _get_namespace_index(libvirt_network_if):
-        """ Hack to retrieve namespace index - does not exist in tests """
-        matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
-        return int(matcher.groups()[0]) if matcher is not None else 0
-
-    def release_net_asset(self):
-        if self._net_asset:
-            self._net_asset.release_all()
-
-    def configure_nat(self):
-        nat_interfaces = self.nat_interfaces
-        self._nat = NatController(nat_interfaces, self._get_namespace_index(nat_interfaces[0]))
-        self._nat.add_nat_rules()
-
-    def unconfigure_nat(self):
-        if self._nat:
-            self._nat.remove_nat_rules()
 
     def drop_cache(self):
         self._nodes = None
@@ -129,7 +94,6 @@ class Nodes:
 
     def prepare_nodes(self):
         self.controller.prepare_nodes()
-        self.configure_nat()
 
     def reboot_all(self):
         self.run_for_all_nodes("restart")

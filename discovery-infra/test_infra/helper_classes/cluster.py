@@ -253,7 +253,7 @@ class Cluster:
         )
         if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             self.set_machine_cidr(controller.get_machine_cidr())
-        else:
+        elif self._config.platform != consts.Platforms.NONE:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
     def set_machine_cidr(self, machine_cidr):

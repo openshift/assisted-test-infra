@@ -46,11 +46,9 @@ class LoadBalancerController:
     def _render_load_balancer_config_file(
         self, load_balancer_ip: str, master_ips: List[str], worker_ips: List[str]
     ) -> str:
-        return (
-            "\n".join([self._render_port_entities(load_balancer_ip, master_ips, port) for port in [6443, 22623]])
-            + "\n"
-            + "\n".join([self._render_port_entities(load_balancer_ip, worker_ips, port) for port in [80, 443]])
-        )
+        api_stream = [self._render_port_entities(load_balancer_ip, master_ips, port) for port in [6443, 22623]]
+        route_stream = [self._render_port_entities(load_balancer_ip, worker_ips if worker_ips else master_ips, port) for port in [80, 443]]
+        return "\n".join(api_stream + route_stream)
 
     def _connect_to_load_balancer(self, load_balancer_ip: str) -> bool:
         family = socket.AF_INET6 if ":" in load_balancer_ip else socket.AF_INET
