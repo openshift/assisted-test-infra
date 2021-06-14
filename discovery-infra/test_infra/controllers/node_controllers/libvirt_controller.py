@@ -5,7 +5,7 @@ import secrets
 import string
 import tempfile
 from abc import ABC
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from typing import List, Callable
 from xml.dom import minidom
 
@@ -29,6 +29,15 @@ class LibvirtController(NodeController, ABC):
     def __del__(self):
         with suppress(Exception):
             self.libvirt_connection.close()
+
+    @staticmethod
+    @contextmanager
+    def connection_context():
+        conn = libvirt.open("qemu:///system")
+        try:
+            yield conn
+        finally:
+            conn.close()
 
     @property
     def setup_time(self):

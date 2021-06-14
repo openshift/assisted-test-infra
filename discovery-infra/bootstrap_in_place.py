@@ -8,7 +8,7 @@ import sys
 import waiting
 import yaml
 from test_infra import utils, consts, warn_deprecate
-from test_infra.tools.assets import NetworkAssets
+from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
 
 from download_logs import download_must_gather, gather_sosreport_data
@@ -210,7 +210,7 @@ def execute_ibip_flow(args):
     if not openshift_release_image:
         raise ValueError("os env OPENSHIFT_INSTALL_RELEASE_IMAGE must be provided")
 
-    net_asset = NetworkAssets().get()
+    net_asset = LibvirtNetworkAssets().get()
     controller = create_controller(net_asset)
     setup_files_and_folders(args, net_asset, controller.cluster_name)
 
