@@ -47,6 +47,7 @@ class ScrapeEvents:
         if self.backup_destination and not os.path.exists(self.backup_destination):
             os.makedirs(self.backup_destination)
 
+        self.cache_event_count_per_cluster = dict()
 
     def run_service(self):
 
@@ -105,15 +106,31 @@ class ScrapeEvents:
 
         self.process_and_log_events(cluster_bash_data, event_list, event_names)
 
-        cluster_events_count = self.es.search(index=self.index,
-                                    body={"query": {"match_phrase": {"cluster.id": cluster_id}}})["hits"]["total"]["value"]
 
-
-        relevant_event_count=[event for event in event_list if not process.is_event_skippable(event)]
-        if cluster_events_count < len(relevant_event_count):
+        if self.does_cluster_needs_full_update(cluster_id, event_list):
             log.info(f"Cluster {cluster_id} logged events are not same as the event count, logging all clusters events")
             self.process_and_log_events(cluster_bash_data, event_list, event_names, False)
 
+    def does_cluster_needs_full_update(self, cluster_id, event_list):
+        # check if cluster is missing past events
+        cluster_events_count = self.cache_event_count_per_cluster.get(cluster_id, None)
+        relevant_event_count = len([event for event in event_list if not process.is_event_skippable(event)])
+
+        if cluster_events_count and cluster_events_count == relevant_event_count:
+            return False
+        else:
+            cluster_events_count_from_db = self.get_cluster_event_count_on_es_db(cluster_id)
+            self.cache_event_count_per_cluster[cluster_id] = cluster_events_count_from_db
+        if cluster_events_count_from_db < relevant_event_count:
+            missing_events = relevant_event_count - cluster_events_count_from_db
+            logging.info(f"cluster {cluster_id} is missing {missing_events} events")
+            return True
+        else:
+            return False
+
+    def get_cluster_event_count_on_es_db(self, cluster_id):
+        return self.es.search(index=self.index,
+                              body={"query": {"match_phrase": {"cluster.id": cluster_id}}})["hits"]["total"]["value"]
 
     def process_and_log_events(self, cluster_bash_data, event_list, event_names, only_new_events=True):
         for event in event_list[::-1]:
