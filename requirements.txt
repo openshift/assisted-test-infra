@@ -10,7 +10,7 @@ kubernetes==17.17.0
 munch==2.5.0
 requests==2.25.1
 retry==0.9.2
-tqdm==4.61.0
+tqdm==4.61.1
 waiting==1.4.1
 netaddr==0.8.0
 pytest==6.2.4
