@@ -1,0 +1,34 @@
+{
+    "folders": [
+        {
+            "path": "assisted-test-infra"
+        },
+        {
+            "path": "kni-assisted-installer-auto"
+        }
+    ],
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python: Remote Attach",
+                "type": "python",
+                "request": "attach",
+                "connect": {
+                    "host": "localhost",
+                    "port": 5678
+                },
+                "pathMappings": [
+                    {
+                        "localRoot": "/home/dev/assisted-test-infra",
+                        "remoteRoot": "/home/dev/assisted-test-infra"
+                    },
+                    {
+                        "localRoot": "/home/dev/kni-assisted-installer-auto",
+                        "remoteRoot": "/home/dev/kni-assisted-installer-auto"
+                    }
+                ]
+            }
+        ]
+    }
+}
