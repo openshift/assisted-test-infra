@@ -544,7 +544,7 @@ def nodes_flow(
 
             if args.vip_dhcp_allocation:
                 vips_info = helper_cluster.Cluster.get_vips_from_cluster(client, cluster.id)
-                tf.set_new_vip(vips_info["api_vip"])
+                tf.set_new_vips(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
 
         if args.install_cluster:
             install_cluster.run_install_flow(

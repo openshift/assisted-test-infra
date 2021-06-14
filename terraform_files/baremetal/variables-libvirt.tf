@@ -113,6 +113,11 @@ variable "api_vip" {
   description = "the API virtual IP"
 }
 
+variable "ingress_vip" {
+  type        = string
+  description = "the Ingress virtual IP"
+}
+
 # It's definitely recommended to bump this if you can.
 variable "libvirt_master_memory" {
   type        = string
