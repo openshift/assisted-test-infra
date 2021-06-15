@@ -302,7 +302,7 @@ class InventoryClient(object):
 
     def get_events(self, cluster_id: str, host_id: Optional[str] = "", categories=["user"]) -> dict:
         # Get users events
-        response = self.events.list_events(cluster_id=cluster_id, host_id=host_id, _preload_content=False)
+        response = self.events.list_events(cluster_id=cluster_id, host_id=host_id, categories=categories, _preload_content=False)
 
         return json.loads(response.data)
 
