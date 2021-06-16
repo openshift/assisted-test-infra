@@ -1,29 +1,16 @@
 import logging
 import os
 from distutils import util
-from pathlib import Path
 from typing import List
 
 import pytest
 
 from test_infra import assisted_service_api, consts, utils
-from test_infra.utils import operators_utils
+from test_infra.utils import operators_utils, kubeapi_utils
 from test_infra.utils.cluster_name import ClusterName
 
 
 cluster_name = ClusterName()
-
-
-def get_kubeconfig_path():
-    kubeconfig_dir = Path("/build/kubeconfig")
-    default = kubeconfig_dir.joinpath(f"kubeconfig_{cluster_name}")
-    kubeconfig_path = utils.get_env('KUBECONFIG', str(default))
-
-    if kubeconfig_path == str(default):
-        kubeconfig_dir.mkdir(parents=True, exist_ok=True)
-
-    return kubeconfig_path
-
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), "ssh_key/key")
 
@@ -47,7 +34,7 @@ env_variables = {"ssh_public_key": utils.get_env('SSH_PUB_KEY'),
                  "storage_pool_path": utils.get_env('STORAGE_POOL_PATH', os.path.join(os.getcwd(), "storage_pool")),
                  "cluster_name": cluster_name.get(),
                  "private_ssh_key_path": utils.get_env('PRIVATE_KEY_PATH', private_ssh_key_path_default),
-                 "kubeconfig_path": get_kubeconfig_path(),
+                 "kubeconfig_path": kubeapi_utils.get_kubeconfig_path(cluster_name.get()),
                  "installer_kubeconfig_path": utils.get_env('INSTALLER_KUBECONFIG', None),
                  "log_folder": utils.get_env('LOG_FOLDER', consts.LOG_FOLDER),
                  "service_cidr": utils.get_env('SERVICE_CIDR', '172.30.0.0/16'),
