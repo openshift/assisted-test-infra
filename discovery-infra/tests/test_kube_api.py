@@ -10,6 +10,8 @@ import openshift as oc
 import pytest
 from junit_report import JunitTestSuite
 from netaddr import IPNetwork
+
+from test_infra import utils
 from test_infra.helper_classes.kube_helpers import (AgentClusterInstall,
                                                     ClusterDeployment,
                                                     ClusterImageSet,
@@ -168,7 +170,7 @@ def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
         return
     logger.info('setting cluster proxy details')
     proxy_server_name = 'squid-' + str(uuid.uuid4())[:8]
-    port = scan_for_free_port()
+    port = utils.scan_for_free_port(PROXY_PORT)
     proxy_server(name=proxy_server_name, port=port)
     host_ip = str(IPNetwork(machine_cidr).ip + 1)
     proxy_url = f'http://[{host_ip}]:{port}'
@@ -184,24 +186,6 @@ def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
         http_proxy=proxy_url,
         https_proxy=proxy_url,
         no_proxy=no_proxy
-    )
-
-
-def scan_for_free_port():
-    for port in range(PROXY_PORT, PROXY_PORT + 200):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            try:
-                sock.bind(('0.0.0.0', port))
-                sock.listen()
-            except OSError as e:
-                if e.errno != errno.EADDRINUSE:
-                    raise
-                continue
-
-            return port
-
-    raise RuntimeError(
-        'could not allocate free port for proxy'
     )
 
 

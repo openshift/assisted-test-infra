@@ -77,6 +77,13 @@ if env_variables["platform"] == consts.Platforms.NONE:
     env_variables["vip_dhcp_allocation"] = False
 
 
+if env_variables["is_ipv6"]:
+    env_variables["service_cidr"] = consts.DEFAULT_IPV6_SERVICE_CIDR
+    env_variables["cluster_cidr"] = consts.DEFAULT_IPV6_CLUSTER_CIDR
+    env_variables["host_prefix"] = consts.DEFAULT_IPV6_HOST_PREFIX
+    env_variables["vip_dhcp_allocation"] = False
+
+
 @pytest.fixture(scope="session")
 def api_client():
     logging.info('--- SETUP --- api_client\n')

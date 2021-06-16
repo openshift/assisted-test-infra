@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import errno
 import ipaddress
 import itertools
 import json
@@ -8,6 +9,7 @@ import os
 import random
 import shlex
 import shutil
+import socket
 import subprocess
 import tempfile
 import time
@@ -36,6 +38,24 @@ import test_infra.consts as consts
 from test_infra.utils import logs_utils
 
 conn = libvirt.open("qemu:///system")
+
+
+def scan_for_free_port(starting_port: int, step: int = 200):
+    for port in range(starting_port, starting_port + step):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind(("0.0.0.0", port))
+                sock.listen()
+            except OSError as e:
+                if e.errno != errno.EADDRINUSE:
+                    raise
+                continue
+
+            return port
+
+    raise RuntimeError(
+        'could not allocate free port for proxy'
+    )
 
 
 def run_command(command, shell=False, raise_errors=True, env=None):
