@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-source scripts/utils.sh
-
 function destroy_all() {
     make destroy
 }
@@ -25,17 +23,11 @@ function set_dns() {
     if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
     fi
-
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/.apps.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
 
     sudo systemctl reload NetworkManager
-
-    HOST_IP=$(get_main_ip)
-    if ! grep -q "${HOST_IP}" /etc/resolv.conf; then
-        sed -i "0,/nameserver/s/nameserver/nameserver ${HOST_IP}\nnameserver/" /etc/resolv.conf
-    fi
 
     echo "Finished setting dns"
 }
