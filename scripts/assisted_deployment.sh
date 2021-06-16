@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-source scripts/utils.sh
-
 function destroy_all() {
     make destroy
 }
@@ -32,9 +30,9 @@ function set_dns() {
 
     sudo systemctl reload NetworkManager
 
-    HOST_IP=$(get_main_ip)
-    if ! grep -q "${HOST_IP}" /etc/resolv.conf; then
-        sed -i "0,/nameserver/s/nameserver/nameserver ${HOST_IP}\nnameserver/" /etc/resolv.conf
+    LOCALHOST_IP="127.0.0.1"
+    if ! grep -q "${LOCALHOST_IP}" /etc/resolv.conf; then
+        sed -i "0,/nameserver/s/nameserver/nameserver ${LOCALHOST_IP}\nnameserver/" /etc/resolv.conf
     fi
 
     echo "Finished setting dns"
