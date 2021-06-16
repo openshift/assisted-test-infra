@@ -23,17 +23,11 @@ function set_dns() {
     if ! [ -f "${FILE}" ]; then
         echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
     fi
-
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/.apps.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
 
     sudo systemctl reload NetworkManager
-
-    LOCALHOST_IP="127.0.0.1"
-    if ! grep -q "${LOCALHOST_IP}" /etc/resolv.conf; then
-        sed -i "0,/nameserver/s/nameserver/nameserver ${LOCALHOST_IP}\nnameserver/" /etc/resolv.conf
-    fi
 
     echo "Finished setting dns"
 }
