@@ -18,7 +18,7 @@ from distutils.dir_util import copy_tree
 from functools import wraps
 from pathlib import Path
 from string import ascii_lowercase
-from typing import List
+from typing import List, Union, Tuple
 
 import filelock
 from requests import Session
@@ -604,7 +604,7 @@ def create_empty_nested_list(node_count):
     return [[] for _ in range(node_count)]
 
 
-def get_libvirt_nodes_from_tf_state(network_names, tf_state):
+def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]], tf_state):
     nodes = extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
     nodes.update(extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
     return nodes

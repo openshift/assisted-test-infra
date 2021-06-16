@@ -167,7 +167,9 @@ class Nodes:
             # set to valid hostname
             # TODO - NodeController has no `params` and `tf` attributes
             network_name = self.controller.params.libvirt_network_name
-            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(network_name, self.controller.tf.get_state())
+            secondary_network_name = self.controller.params.libvirt_secondary_network_name
+            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state([network_name, secondary_network_name],
+                                                                  self.controller.tf.get_state())
             utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True,
                                update_roles=(nodes_count != 1))
 
