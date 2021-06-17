@@ -34,13 +34,13 @@ class Cluster:
         self.nodes = nodes
 
         self._high_availability_mode = config.high_availability_mode
+        self.name = config.cluster_name.get()
+
         if config.cluster_id:
             self.id = config.cluster_id
             self._update_day2_config(api_client, config.cluster_id)
-            self.name = config.cluster_name
         else:
             self.id = self._create().id
-            self.name = config.cluster_name
 
     def _update_day2_config(self, api_client: InventoryClient, cluster_id: str):
         day2_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
@@ -71,7 +71,7 @@ class Cluster:
 
     def _create(self):
         return self.api_client.create_cluster(
-            self._config.cluster_name,
+            self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
             openshift_version=self._config.openshift_version,
             pull_secret=self._config.pull_secret,

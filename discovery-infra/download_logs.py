@@ -17,11 +17,10 @@ import urllib3
 from dateutil.parser import isoparse
 from paramiko.ssh_exception import SSHException
 
-from tests.conftest import private_ssh_key_path_default
 from test_infra import warn_deprecate
 from test_infra.tools.concurrently import run_concurrently
 from test_infra.assisted_service_api import InventoryClient, create_client
-from test_infra.consts import ClusterStatus, HostsProgressStages
+from test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.helper_classes import cluster as helper_cluster
@@ -29,6 +28,8 @@ from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
                               recreate_folder, run_command, verify_logs_uploaded, fetch_url)
 
 from logger import log, suppressAndLog
+
+private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
 
 TIME_FORMAT = '%Y-%m-%d_%H:%M:%S'
 MAX_RETRIES = 3
@@ -241,8 +242,7 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
         log.warning(f"Failed to run must gather: {ex}")
 
 
-def gather_sosreport_data(output_dir: str,
-                          private_ssh_key_path: str=private_ssh_key_path_default):
+def gather_sosreport_data(output_dir: str, private_ssh_key_path: str = private_ssh_key_path_default):
     sosreport_output = os.path.join(output_dir, "sosreport")
     recreate_folder(sosreport_output)
 

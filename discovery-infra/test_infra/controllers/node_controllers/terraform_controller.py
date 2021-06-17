@@ -21,25 +21,12 @@ class TerraformController(LibvirtController):
     def __init__(self, config: BaseTerraformConfig):
         super().__init__(config.private_ssh_key_path)
         self.config = config
-        self.cluster_suffix = self._get_cluster_suffix(config.cluster_name)
-        self.cluster_name = config.cluster_name
-        self.network_name = config.network_name + self.cluster_suffix
+        self.cluster_name = str(config.cluster_name)
+        self.network_name = config.network_name + config.cluster_name.suffix
         self.tf_folder = config.tf_folder or self._create_tf_folder(self.cluster_name, config.platform)
         self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
         self.master_ips = None
-
-    def _get_cluster_suffix(self, cluster_name: str):
-        """ Try to get suffix from the cluster name so TF network, Cluster and Nodes will
-        have the same suffix per cluster  """
-
-        try:
-            cluster_suffix = cluster_name.split("-")[-1]
-            assert len(cluster_suffix) == consts.SUFFIX_LENGTH
-        except (IndexError, AssertionError):
-            cluster_suffix = self._get_random_name()
-
-        return cluster_suffix
 
     @classmethod
     def _create_tf_folder(cls, cluster_name: str, platform: str):
@@ -81,7 +68,7 @@ class TerraformController(LibvirtController):
                 kwargs.get("worker_disk", 21474836480), consts.OperatorResource.WORKER_DISK_KEY, operators),
             "libvirt_master_disk": operators_utils.resource_param(
                 kwargs.get("master_disk", 128849018880), consts.OperatorResource.MASTER_DISK_KEY, operators),
-            "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.cluster_suffix,
+            "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.config.cluster_name.suffix,
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
             # TODO change to namespace index
             "libvirt_secondary_network_if": self.config.net_asset.libvirt_secondary_network_if,

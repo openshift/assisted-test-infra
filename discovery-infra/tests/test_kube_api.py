@@ -21,8 +21,7 @@ from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
-from tests.config import ClusterConfig, TerraformConfig
-from tests.conftest import env_variables
+from tests.config import ClusterConfig, TerraformConfig, EnvConfig
 from download_logs import collect_debug_info_from_cluster
 
 PROXY_PORT = 3129
@@ -215,8 +214,8 @@ def set_agent_hostname(node, agent, is_ipv4):
 
 
 def get_ca_bundle_from_hub():
-    os.environ['KUBECONFIG'] = env_variables['installer_kubeconfig_path']
-    with oc.project(env_variables['namespace']):
+    os.environ['KUBECONFIG'] = EnvConfig.get("installer_kubeconfig_path")
+    with oc.project(EnvConfig.get("namespace")):
         ca_config_map_objects = oc.selector('configmap/registry-ca').objects()
         assert len(ca_config_map_objects) > 0
         ca_config_map_object = ca_config_map_objects[0]

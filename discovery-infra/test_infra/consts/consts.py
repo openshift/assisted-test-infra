@@ -1,4 +1,12 @@
+from enum import Enum
+
 from .durations import MINUTE, HOUR
+
+
+class OpenshiftVersion(Enum):
+    VERSION_4_6 = "4.6"
+    VERSION_4_7 = "4.7"
+    VERSION_4_8 = "4.8"
 
 
 TF_FOLDER = "build/terraform"
@@ -21,8 +29,6 @@ VALIDATION_TIMEOUT = 6 * MINUTE
 NTP_VALIDATION_TIMEOUT = 10 * MINUTE
 OCS_VALIDATION_TIMEOUT = 10 * MINUTE
 CNV_VALIDATION_TIMEOUT = 10 * MINUTE
-WORKER_CPU = 2
-MASTER_CPU = 4
 READY_TIMEOUT = 15 * MINUTE
 DISCONNECTED_TIMEOUT = 10 * MINUTE
 PENDING_USER_ACTION_TIMEOUT = 30 * MINUTE
@@ -39,8 +45,7 @@ DEFAULT_CLUSTER_KUBECONFIG_PATH = "build/kubeconfig"
 WAIT_FOR_BM_API = 15 * MINUTE
 NAMESPACE_POOL_SIZE = 15
 PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
-LOG_FOLDER = "/tmp/assisted_test_infra_logs"
-DEFAULT_OPENSHIFT_VERSION = "4.7"
+DEFAULT_OPENSHIFT_VERSION = OpenshiftVersion.VERSION_4_7.value
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_BASE_DNS_DOMAIN = "redhat.com"
 DEFAULT_NAMESPACE = 'assisted-installer'

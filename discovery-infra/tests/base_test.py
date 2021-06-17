@@ -17,16 +17,14 @@ from assisted_service_client.rest import ApiException
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
-
 from test_infra import consts
-from tests.config import ClusterConfig, EnvConfig
+from tests.config import ClusterConfig, global_variables
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from tests.config import TerraformConfig
-from tests.conftest import env_variables, cluster_name
 from test_infra.controllers.nat_controller import NatController
 from test_infra.controllers.node_controllers import TerraformController
 
@@ -70,7 +68,7 @@ class BaseTest:
         _net_asset: LibvirtNetworkAssets = nodes_data["net_asset"]
 
         try:
-            if EnvConfig.get("test_teardown"):
+            if global_variables.test_teardown:
                 logging.info('--- TEARDOWN --- node controller\n')
                 _nodes.destroy_all_nodes()
 
@@ -95,7 +93,7 @@ class BaseTest:
         @JunitTestCase()
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig = ClusterConfig()):
             if not cluster_config.cluster_name:
-                cluster_config.cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
+                cluster_config.cluster_name = global_variables.cluster_name, infra_utils.get_random_name(length=10)
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
             if cluster_config.is_ipv6:
                 self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
@@ -108,7 +106,7 @@ class BaseTest:
             if request.node.result_call.failed:
                 logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
                 self.collect_test_logs(cluster, api_client, request.node, cluster.nodes)
-            if env_variables['test_teardown']:
+            if global_variables.test_teardown:
                 if cluster.is_installing() or cluster.is_finalizing():
                     cluster.cancel_install()
                 with suppress(ApiException):
@@ -117,7 +115,7 @@ class BaseTest:
 
     @staticmethod
     def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
-        proxy_name = "squid-" + cluster_name.suffix
+        proxy_name = "squid-" + cluster_config.cluster_name.suffix
         port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
         proxy_server(name=proxy_name, port=port, dir=proxy_name)
 
@@ -138,7 +136,7 @@ class BaseTest:
                 given_nodes,
                 iptables_rules,
                 download_image=True,
-                iso_download_path=env_variables['iso_download_path']
+                iso_download_path=global_variables.iso_download_path
         ):
 
             given_node_ips = []
@@ -173,7 +171,7 @@ class BaseTest:
             modified_nodes.add(node)
 
         yield attach
-        if env_variables['test_teardown']:
+        if global_variables.test_teardown:
             for modified_node in modified_nodes:
                 modified_node.detach_all_test_disks()
 
@@ -250,11 +248,11 @@ class BaseTest:
                                             " rather than: " + str(len(string)) + " String value: " + string
 
     def collect_test_logs(self, cluster, api_client, test: pytest.Function, nodes: Nodes):
-        log_dir_name = f"{env_variables['log_folder']}/{test.name}"
+        log_dir_name = f"{global_variables.log_folder}/{test.name}"
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
             download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed,
-                          pull_secret=env_variables.get("pull_secret"))
+                          pull_secret=global_variables.pull_secret)
         self._collect_virsh_logs(nodes, log_dir_name)
         self._collect_journalctl(nodes, log_dir_name)
 
@@ -314,11 +312,11 @@ class BaseTest:
 
     @staticmethod
     def update_oc_config(nodes, cluster):
-        os.environ["KUBECONFIG"] = env_variables['kubeconfig_path']
+        os.environ["KUBECONFIG"] = global_variables.kubeconfig_path
         vips = nodes.controller.get_ingress_and_api_vips()
         api_vip = vips['api_vip']
         infra_utils.config_etc_hosts(cluster_name=cluster.name,
-                                     base_dns_domain=env_variables["base_domain"],
+                                     base_dns_domain=global_variables.base_dns_domain,
                                      api_vip=api_vip)
 
     def wait_for_controller(self, cluster, nodes):
@@ -326,7 +324,7 @@ class BaseTest:
         self.update_oc_config(nodes, cluster)
 
         def check_status():
-            res = infra_utils.get_assisted_controller_status(env_variables['kubeconfig_path'])
+            res = infra_utils.get_assisted_controller_status(global_variables.kubeconfig_path)
             return "Running" in str(res, 'utf-8')
 
         waiting.wait(
