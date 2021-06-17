@@ -103,7 +103,12 @@ ifdef KEEP_ISO
     KEEP_ISO_FLAG = --keep-iso
 endif
 
-ifdef DEBUG
+ifeq ($(DEBUG),pycharm)
+	REMOTE_IDE_ADDR:=$(shell echo ${SSH_CLIENT} | cut -f 1 -d " ")
+	DEBUG_FLAGS=-m pycharm_remote_debugger -r $(REMOTE_IDE_ADDR) -p 6789
+endif
+
+ifeq ($(DEBUG),$(filter $(DEBUG),vscode true))
 	DEBUG_FLAGS=-m debugpy --listen 0.0.0.0:5678 --wait-for-client
 endif
 
