@@ -7,6 +7,7 @@ from contextlib import suppress
 from pathlib import Path
 
 import pytest
+from netaddr import IPNetwork
 
 import test_infra.utils as infra_utils
 import waiting
@@ -16,6 +17,8 @@ from assisted_service_client.rest import ApiException
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
+
+from test_infra import consts
 from tests.config import ClusterConfig, EnvConfig
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
@@ -23,7 +26,7 @@ from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeA
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from tests.config import TerraformConfig
-from tests.conftest import env_variables
+from tests.conftest import env_variables, cluster_name
 from test_infra.controllers.nat_controller import NatController
 from test_infra.controllers.node_controllers import TerraformController
 
@@ -83,7 +86,7 @@ class BaseTest:
 
     @pytest.fixture()
     @JunitFixtureTestCase()
-    def get_cluster(self, api_client, request, get_nodes) -> Callable:
+    def get_cluster(self, api_client, request, proxy_server, get_nodes) -> Callable:
         """ Do not use get_nodes fixture in this fixture. It's here only to force pytest teardown
         nodes after cluster """
 
@@ -93,9 +96,12 @@ class BaseTest:
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig = ClusterConfig()):
             if not cluster_config.cluster_name:
                 cluster_config.cluster_name = env_variables.get('cluster_name', infra_utils.get_random_name(length=10))
-            res = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
-            clusters.append(res)
-            return res
+            _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
+            if cluster_config.is_ipv6:
+                self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
+
+            clusters.append(_cluster)
+            return _cluster
 
         yield get_cluster_func
         for cluster in clusters:
@@ -108,6 +114,19 @@ class BaseTest:
                 with suppress(ApiException):
                     logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
                     cluster.delete()
+
+    @staticmethod
+    def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
+        proxy_name = "squid-" + cluster_name.suffix
+        port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
+        proxy_server(name=proxy_name, port=port, dir=proxy_name)
+
+        host_ip = str(IPNetwork(cluster.nodes.controller.get_machine_cidr()).ip + 1)
+        proxy_url = f"http://[{host_ip}]:{consts.DEFAULT_PROXY_SERVER_PORT}"
+        no_proxy = ",".join([cluster.nodes.controller.get_machine_cidr(), cluster_config.service_network_cidr,
+                             cluster_config.cluster_network_cidr,
+                             f".{str(cluster_config.cluster_name)}.redhat.com"])
+        cluster.set_proxy_values(http_proxy=proxy_url, https_proxy=proxy_url, no_proxy=no_proxy)
 
     @pytest.fixture()
     def iptables(self):
