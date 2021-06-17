@@ -117,8 +117,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
 def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool,
                   update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL, pull_secret=""):
 
-    # TODO remove when cluster_list has param to include download hosts
-    if "hosts" not in cluster:
+    if "hosts" not in cluster or len(cluster["hosts"]) == 0:
         cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"])
 
     output_folder = get_logs_output_folder(dest, cluster)
