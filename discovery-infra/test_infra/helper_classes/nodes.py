@@ -1,6 +1,7 @@
 import json
 import logging
 import random
+from pathlib import Path
 from typing import Dict, Iterator, List
 
 from munch import Munch
@@ -20,9 +21,7 @@ class NodeMapping:
 class Nodes:
     DEFAULT_STATIC_IP_CONFIG = False
 
-    def __init__(self, node_controller: NodeController,
-                 private_ssh_key_path: str
-                 ):
+    def __init__(self, node_controller: NodeController, private_ssh_key_path: Path):
         self.controller = node_controller
         self.private_ssh_key_path = private_ssh_key_path
         self._nodes = None
@@ -156,7 +155,8 @@ class Nodes:
         mapping = self.create_nodes_cluster_hosts_mapping(cluster=cluster)
         return mapping[node.name].cluster_host
 
-    def get_cluster_hostname(self, cluster_host_object):
+    @staticmethod
+    def get_cluster_hostname(cluster_host_object):
         inventory = json.loads(cluster_host_object["inventory"])
         return inventory["hostname"]
 
