@@ -33,7 +33,7 @@ class _EnvVariablesUtils(ABC):
     worker_disk_count: int = int(get_env("WORKER_DISK_COUNT", resources.DEFAULT_DISK_COUNT))
     storage_pool_path: str = get_env("STORAGE_POOL_PATH", env_defaults.DEFAULT_STORAGE_POOL_PATH)
     cluster_name: ClusterName = ClusterName()
-    private_ssh_key_path: str = get_env("PRIVATE_KEY_PATH", env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH)
+    private_ssh_key_path: Path = Path(get_env("PRIVATE_KEY_PATH", env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
     kubeconfig_path: str = get_kubeconfig_path(cluster_name.get())
     installer_kubeconfig_path: str = get_env("INSTALLER_KUBECONFIG", env_defaults.DEFAULT_INSTALLER_KUBECONFIG)
     log_folder: str = get_env("LOG_FOLDER", env_defaults.DEFAULT_LOG_FOLDER)

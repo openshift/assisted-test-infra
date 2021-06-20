@@ -1,5 +1,6 @@
 import logging
-from typing import Callable
+from pathlib import Path
+from typing import Callable, Optional
 
 from scp import SCPException
 
@@ -9,7 +10,7 @@ from test_infra.controllers.node_controllers.disk import Disk
 
 
 class Node:
-    def __init__(self, name, node_controller, private_ssh_key_path=None, username="core"):
+    def __init__(self, name, node_controller, private_ssh_key_path: Optional[Path] = None, username="core"):
         self.name = name
         self.private_ssh_key_path = private_ssh_key_path
         self.username = username

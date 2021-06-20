@@ -6,6 +6,7 @@ import string
 import tempfile
 from abc import ABC
 from contextlib import contextmanager, suppress
+from pathlib import Path
 from typing import List, Callable
 from xml.dom import minidom
 
@@ -21,10 +22,10 @@ from test_infra.controllers.node_controllers.node_controller import NodeControll
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, private_ssh_key_path: str):
-        self.libvirt_connection = libvirt.open('qemu:///system')
-        self.private_ssh_key_path = private_ssh_key_path
-        self._setup_timestamp = utils.run_command("date +\"%Y-%m-%d %T\"")[0]
+    def __init__(self, private_ssh_key_path: Path):
+        self.libvirt_connection: libvirt.virConnect = libvirt.open('qemu:///system')
+        self.private_ssh_key_path: Path = private_ssh_key_path
+        self._setup_timestamp: str = utils.run_command("date +\"%Y-%m-%d %T\"")[0]
 
     def __del__(self):
         with suppress(Exception):

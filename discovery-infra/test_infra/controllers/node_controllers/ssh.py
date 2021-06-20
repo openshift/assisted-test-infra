@@ -2,6 +2,8 @@ import logging
 import socket
 import time
 from ipaddress import IPv4Address, ip_address
+from pathlib import Path
+from typing import Optional
 
 import paramiko
 import scp
@@ -11,7 +13,7 @@ logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 
 class SshConnection:
 
-    def __init__(self, ip, private_ssh_key_path=None, username="core", port=22, **kwargs):
+    def __init__(self, ip, private_ssh_key_path: Optional[Path] = None, username="core", port=22, **kwargs):
         self._ip = ip
         self._username = username
         self._key_path = private_ssh_key_path
@@ -44,7 +46,7 @@ class SshConnection:
             timeout=timeout,
             look_for_keys=False,
             auth_timeout=timeout,
-            key_filename=self._key_path)
+            key_filename=str(self._key_path))
         self._ssh_client.get_transport().set_keepalive(15)
 
     def wait_for_tcp_server(self, timeout=60, interval=0.1):

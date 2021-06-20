@@ -694,7 +694,7 @@ def remove_running_container(container_name):
     run_command(container_rm_cmd, shell=True)
 
 
-def get_kubeconfig_path(cluster_name: str):
+def get_kubeconfig_path(cluster_name: str) -> str:
     kubeconfig_dir = env_defaults.DEFAULT_KUBECONFIG_DIR
     default = kubeconfig_dir.joinpath(f"kubeconfig_{cluster_name}")
     kubeconfig_path = get_env("KUBECONFIG", str(default))

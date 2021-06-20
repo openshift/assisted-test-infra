@@ -1,4 +1,5 @@
 from abc import ABC
+from pathlib import Path
 from typing import Dict, List
 
 from dataclasses import dataclass, field
@@ -39,7 +40,7 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     libvirt_worker_ips: List[str] = None
     libvirt_secondary_worker_ips: List[str] = None
 
-    private_ssh_key_path: str = None
+    private_ssh_key_path: Path = None
     cluster_name: ClusterName = None
     network_name: str = None
     net_asset: Munch = None
