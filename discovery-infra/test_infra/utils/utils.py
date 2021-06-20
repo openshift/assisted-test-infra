@@ -35,6 +35,7 @@ from logger import log
 from retry import retry
 
 import test_infra.consts as consts
+from test_infra.consts import env_defaults
 from test_infra.utils import logs_utils
 
 conn = libvirt.open("qemu:///system")
@@ -691,6 +692,17 @@ def remove_running_container(container_name):
     container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman' \
                        f' {consts.PODMAN_FLAGS} rm {container_name}'
     run_command(container_rm_cmd, shell=True)
+
+
+def get_kubeconfig_path(cluster_name: str):
+    kubeconfig_dir = env_defaults.DEFAULT_KUBECONFIG_DIR
+    default = kubeconfig_dir.joinpath(f"kubeconfig_{cluster_name}")
+    kubeconfig_path = get_env("KUBECONFIG", str(default))
+
+    if kubeconfig_path == str(default):
+        kubeconfig_dir.mkdir(parents=True, exist_ok=True)
+
+    return kubeconfig_path
 
 
 def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):

@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from .base_config import _BaseConfig
 
+from test_infra.utils.cluster_name import ClusterName
+
 
 @dataclass
 class BaseClusterConfig(_BaseConfig, ABC):
@@ -16,7 +18,7 @@ class BaseClusterConfig(_BaseConfig, ABC):
     ssh_public_key: str = None
     openshift_version: str = None
     cluster_id: str = None
-    cluster_name: str = None
+    cluster_name: ClusterName = None
     additional_ntp_source: str = None
     user_managed_networking: bool = None
     high_availability_mode: str = None

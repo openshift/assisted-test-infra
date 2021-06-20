@@ -6,6 +6,8 @@ from munch import Munch
 
 from .base_config import _BaseConfig
 
+from test_infra.utils.cluster_name import ClusterName
+
 
 @dataclass
 class BaseTerraformConfig(_BaseConfig, ABC):
@@ -38,7 +40,7 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     libvirt_secondary_worker_ips: List[str] = None
 
     private_ssh_key_path: str = None
-    cluster_name: str = None
+    cluster_name: ClusterName = None
     network_name: str = None
     net_asset: Munch = None
     platform: str = None

@@ -13,6 +13,7 @@ from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from netaddr import IPNetwork
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
+from test_infra.consts import resources
 from test_infra.utils import kubeapi_utils
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import static_network, terraform_utils
@@ -31,7 +32,6 @@ import oc_utils
 from logger import log
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
 from test_infra.controllers.nat_controller import NatController
-from tests.conftest import env_variables
 from test_infra.utils import operators_utils
 
 warn_deprecate()
@@ -971,14 +971,14 @@ if __name__ == "__main__":
         "--master-cpu",
         help="Master cpu count",
         type=int,
-        default=consts.MASTER_CPU,
+        default=resources.DEFAULT_MASTER_CPU,
     )
     parser.add_argument(
         "-wc",
         "--worker-cpu",
         help="Worker cpu count",
         type=int,
-        default=consts.WORKER_CPU,
+        default=resources.DEFAULT_WORKER_CPU,
     )
     parser.add_argument(
         "-mdc",
