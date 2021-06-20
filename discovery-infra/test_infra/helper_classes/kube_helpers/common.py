@@ -28,8 +28,11 @@ class KubeAPIContext:
 
     resources = set()
 
-    def __init__(self, kube_api_client: Optional[ApiClient] = None):
+    def __init__(self, kube_api_client: Optional[ApiClient] = None,
+                 clean_on_exit: Optional[bool] = True):
+
         self.api_client = kube_api_client
+        self._clean_on_exit = clean_on_exit
 
     def __enter__(self):
         logger.info("entering kube api context")
@@ -37,7 +40,8 @@ class KubeAPIContext:
 
     def __exit__(self, *_):
         logger.info("exiting kube api context")
-        self._delete_all_resources()
+        if self._clean_on_exit:
+            self._delete_all_resources()
 
     def _delete_all_resources(self, ignore_not_found: bool = True) -> None:
         logger.info("deleting all resources")

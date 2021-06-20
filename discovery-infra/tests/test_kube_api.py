@@ -62,6 +62,7 @@ class TestKubeAPISNO(BaseTest):
 
         kube_api_test(kube_api_context, get_nodes(tf_config), cluster_config, proxy_server, is_ipv4=False)
 
+
 def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = nodes.controller.cluster_name
 

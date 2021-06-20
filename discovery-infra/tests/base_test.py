@@ -341,7 +341,7 @@ class BaseTest:
 
     @pytest.fixture()
     def kube_api_context(self, kube_api_client):
-        kube_api_context = KubeAPIContext(kube_api_client)
+        kube_api_context = KubeAPIContext(kube_api_client, clean_on_exit=global_variables.test_teardown)
 
         with kube_api_context:
             yield kube_api_context
