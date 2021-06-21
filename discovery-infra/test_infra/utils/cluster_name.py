@@ -18,7 +18,7 @@ class ClusterName:
         return self.get()
 
     def get(self):
-        name = self.suffix
-        if self.prefix == consts.CLUSTER_PREFIX:
+        name = self.prefix
+        if self.prefix == consts.CLUSTER_PREFIX and self.suffix:
             name = self.prefix + "-" + self.suffix
         return name
