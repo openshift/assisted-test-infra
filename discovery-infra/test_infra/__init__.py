@@ -6,6 +6,8 @@ __displayed_warnings = list()
 
 
 def warn_deprecate():
+    if "targets" in sys.argv[0]:
+        return
     if sys.argv[0] not in __displayed_warnings:
         if sys.argv[0].endswith("__main__.py"):
             return 

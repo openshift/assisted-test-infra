@@ -12,9 +12,9 @@ class NatController:
     The logic behind it is to mark packets that are coming from libvirt bridges (i.e input_interfaces), and
     reference this mark in order to perform NAT operation on these packets.
     """
-    def __init__(self, input_interfaces: Union[List, Tuple], ns_index: Union[str, int]):
+    def __init__(self, input_interfaces: Union[List, Tuple], ns_index: Union[str, int, None] = None):
         self._input_interfaces = input_interfaces
-        self._ns_index = ns_index
+        self._ns_index = ns_index if ns_index is not None else self.get_namespace_index(input_interfaces[0])
         self._mark = self._build_mark()
 
     def add_nat_rules(self) -> None:
