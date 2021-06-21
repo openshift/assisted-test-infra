@@ -23,7 +23,18 @@ function init_minikube() {
         fi
     done
 
-    minikube start --driver=kvm2 --memory=8192 --cpus=4 --force --wait-timeout=15m0s --disk-size=50g
+    for i in {1..5}
+    do
+        minikube delete
+        minikube start --driver=kvm2 --memory=8192 --cpus=4 --force --wait-timeout=15m0s --disk-size=50g || true
+
+        if minikube status ; then
+            break
+        fi
+    done
+
+    minikube status
+
     minikube tunnel --cleanup &> /dev/null &
 }
 
