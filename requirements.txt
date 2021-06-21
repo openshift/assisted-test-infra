@@ -21,7 +21,7 @@ paramiko==2.7.2
 scp==0.13.4
 openshift-client==1.0.13
 Jinja2===3.0.1
-pytest-xdist==2.2.1
+pytest-xdist==2.3.0
 filelock==3.0.12
 urllib3==1.26.5
 elasticsearch==7.13.1
