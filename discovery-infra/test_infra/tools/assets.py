@@ -49,12 +49,9 @@ class LibvirtNetworkAssets:
         self._verify_asset_fields(asset)
 
         with utils.file_lock_context(self._lock_file):
-            all_assets = []
-            if os.path.isfile(self._assets_file):
-                with open(self._assets_file) as fp:
-                    all_assets = json.load(fp)
+            assets_in_use = self._get_assets_in_use_from_assets_file()
 
-            self._fill_allocated_ips_and_bridges_from_assets_file(all_assets)
+            self._fill_allocated_ips_and_bridges_from_assets_file(assets_in_use)
             self._fill_allocated_ips_and_bridges_by_interface()
             self._fill_virsh_allocated_ips_and_bridges()
 
@@ -62,10 +59,9 @@ class LibvirtNetworkAssets:
             self._override_network_bridges_values_if_not_free(asset)
 
             self._taken_assets.add(str(asset))
-            all_assets.append(asset)
+            assets_in_use.append(asset)
 
-            with open(self._assets_file, "w") as fp:
-                json.dump(all_assets, fp)
+            self._dump_all_assets_in_use_to_assets_file(assets_in_use)
 
         self._allocated_bridges.clear()
         self._allocated_ips_objects.clear()
@@ -88,8 +84,8 @@ class LibvirtNetworkAssets:
                     except AddrFormatError:
                         continue
 
-    def _fill_allocated_ips_and_bridges_from_assets_file(self, all_assets: List[Dict]):
-        for asset in all_assets:
+    def _fill_allocated_ips_and_bridges_from_assets_file(self, assets_in_use: List[Dict]):
+        for asset in assets_in_use:
             self._verify_asset_fields(asset)
 
             for ip_network_field in consts.IP_NETWORK_ASSET_FIELDS:
@@ -121,7 +117,10 @@ class LibvirtNetworkAssets:
 
     def _set_next_available_ip_network(self, ip_network: IPNetwork):
         while self._is_ip_network_allocated(ip_network):
-            ip_network += 1
+            if ip_network.version == 6:  # IPv6
+                self._increment_ipv6_network_grp(ip_network)
+            else:
+                ip_network += 1
 
     def _is_ip_network_allocated(self, ip_network: IPNetwork) -> bool:
         for ip_addr in self._allocated_ips_objects:
@@ -129,6 +128,18 @@ class LibvirtNetworkAssets:
                 return True
 
         return False
+
+    @staticmethod
+    def _increment_ipv6_network_grp(ip_network: IPNetwork):
+        # IPNetwork contains an IPAddress object which represents the global
+        # routing prefix (GRP), the subnet id and the host address.
+        # To increment the IPNetwork while keeping its validity we should update
+        # only the GRP section, which is the first 3 hextets of the IPAddress.
+        # The third hextet starts at the 72th bit of the IPAddress, means that
+        # there are 2^72 possibilities within the other 5 hextets. This number
+        # is needed to be added to the IPAddress to effect the GRP section.
+        five_hextets_ips_range = 2 ** 72
+        ip_network += five_hextets_ips_range
 
     def _add_allocated_ip(self, ip: Union[IPNetwork, IPRange, IPAddress]):
         self._allocated_ips_objects.append(ip)
@@ -159,24 +170,31 @@ class LibvirtNetworkAssets:
 
     def release_all(self):
         with utils.file_lock_context(self._lock_file):
-            with open(self._assets_file) as fp:
-                all_assets = json.load(fp)
+            assets_in_use = self._get_assets_in_use_from_assets_file()
+            self._remove_taken_assets_from_all_assets_in_use(assets_in_use)
+            self._dump_all_assets_in_use_to_assets_file(assets_in_use)
 
-            self._remove_taken_assets_from_all_assets(all_assets)
+    def _get_assets_in_use_from_assets_file(self) -> List[Dict]:
+        if not os.path.isfile(self._assets_file):
+            return []
 
-            with open(self._assets_file, "w") as fp:
-                json.dump(all_assets, fp)
+        with open(self._assets_file) as fp:
+            return json.load(fp)
 
-    def _remove_taken_assets_from_all_assets(self, all_assets: List[Munch]):
+    def _remove_taken_assets_from_all_assets_in_use(self, assets_in_use: List[Dict]):
         logging.info("Returning %d assets", len(self._taken_assets))
         logging.debug("Assets to return: %s", self._taken_assets)
 
         indexes_to_pop = []
-        for i in range(len(all_assets)):
-            if str(all_assets[i]) in self._taken_assets:
+        for i in range(len(assets_in_use)):
+            if str(assets_in_use[i]) in self._taken_assets:
                 indexes_to_pop.append(i)
 
         while indexes_to_pop:
-            all_assets.pop(indexes_to_pop.pop())
+            assets_in_use.pop(indexes_to_pop.pop())
 
         self._taken_assets.clear()
+
+    def _dump_all_assets_in_use_to_assets_file(self, assets_in_use: List[Dict]):
+        with open(self._assets_file, "w") as fp:
+            json.dump(assets_in_use, fp)
