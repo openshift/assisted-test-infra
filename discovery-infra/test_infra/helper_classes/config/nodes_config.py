@@ -50,3 +50,8 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     tf_folder: str = None
     iso_download_path: str = None
     bootstrap_in_place: bool = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.cluster_name, str):
+            self.cluster_name = ClusterName(prefix=self.cluster_name, suffix="")
