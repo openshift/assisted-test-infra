@@ -121,7 +121,10 @@ class LibvirtNetworkAssets:
 
     def _set_next_available_ip_network(self, ip_network: IPNetwork):
         while self._is_ip_network_allocated(ip_network):
-            ip_network += 1
+            if ip_network.version == 6:  # IPv6
+                self._increment_ipv6_network_grp(ip_network)
+            else:
+                ip_network += 1
 
     def _is_ip_network_allocated(self, ip_network: IPNetwork) -> bool:
         for ip_addr in self._allocated_ips_objects:
@@ -129,6 +132,18 @@ class LibvirtNetworkAssets:
                 return True
 
         return False
+
+    @staticmethod
+    def _increment_ipv6_network_grp(ip_network: IPNetwork):
+        # IPNetwork contains an IPAddress object which represents the global
+        # routing prefix (GRP), the subnet id and the host address.
+        # To increment the IPNetwork while keeping its validity we should update
+        # only the GRP section, which is the first 3 hextets of the IPAddress.
+        # The third hextet starts at the 72th bit of the IPAddress, means that
+        # there are 2^72 possibilities within the other 5 hextets. This number
+        # is needed to be added to the IPAddress to effect the GRP section.
+        five_hextets_ips_range = 2 ** 72
+        ip_network += five_hextets_ips_range
 
     def _add_allocated_ip(self, ip: Union[IPNetwork, IPRange, IPAddress]):
         self._allocated_ips_objects.append(ip)
