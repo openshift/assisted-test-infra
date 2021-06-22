@@ -79,14 +79,6 @@ class ScrapeEvents:
 
         self.elastefy_events(cluster, event_list)
 
-    @contextlib.contextmanager
-    def enrich_event(self, event, cluster_bash_data):
-        if "props" in event:
-            cluster_bash_data["event.props"] = json.loads(event["props"])
-        yield
-        if "props" in event:
-            del cluster_bash_data["event.props"]
-
     def elastefy_events(self, cluster, event_list):
 
         cluster_id = cluster["id"]
@@ -142,8 +134,11 @@ class ScrapeEvents:
             cluster_bash_data["inventory_url"] = self.inventory_url
 
             process_event_doc(event, cluster_bash_data)
-            with self.enrich_event(event, cluster_bash_data):
-                ret = self.log_doc(cluster_bash_data, doc_id)
+            ret = self.log_doc(cluster_bash_data, doc_id)
+
+            for key in event:
+                _ = cluster_bash_data.pop(key,None)
+
             if not ret and only_new_events:
                 break
 
