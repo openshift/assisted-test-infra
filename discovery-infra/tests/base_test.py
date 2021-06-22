@@ -40,35 +40,36 @@ class BaseTest:
         def get_nodes_func(config: Optional[TerraformConfig] = None):
             if not config:
                 config = TerraformConfig()
+            nodes_data["config"] = config
 
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
             net_asset = LibvirtNetworkAssets()
             config.net_asset = net_asset.get()
+            nodes_data["net_asset"] = net_asset
+
             controller = TerraformController(config)
             nodes = Nodes(controller, config.private_ssh_key_path)
+            nodes_data["nodes"] = nodes
 
             nodes.prepare_nodes()
             interfaces = BaseTest.nat_interfaces(config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
             nat.add_nat_rules()
-
-            nodes_data["nodes"] = nodes
-            nodes_data["config"] = config
-            nodes_data["net_asset"] = net_asset
             nodes_data["nat"] = nat
+
             return nodes
 
         yield get_nodes_func
 
         _nodes: Nodes = nodes_data.get("nodes")
-        _config: TerraformConfig = nodes_data["config"]
-        _nat: NatController = nodes_data["nat"]
-        _net_asset: LibvirtNetworkAssets = nodes_data["net_asset"]
+        _config: TerraformConfig = nodes_data.get("config")
+        _nat: NatController = nodes_data.get("nat")
+        _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
 
         try:
-            if global_variables.test_teardown:
+            if _nodes and global_variables.test_teardown:
                 logging.info('--- TEARDOWN --- node controller\n')
                 _nodes.destroy_all_nodes()
 
