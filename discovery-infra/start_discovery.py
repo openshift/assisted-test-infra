@@ -837,7 +837,7 @@ def execute_day1_flow():
     log.info('Cluster name: %s', cluster_name)
 
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
-    image_path = os.path.join(
+    image_path = args.image or os.path.join(
         consts.IMAGE_FOLDER,
         f'{args.namespace}-installer-image.iso'
     )
@@ -871,7 +871,7 @@ def execute_day1_flow():
     if not args.iso_only:
         run_nodes_flow(client, cluster_name, cluster, machine_net, image_path)
 
-    return cluster.id
+    return cluster.id if cluster else None
 
 
 def is_user_managed_networking():
@@ -909,6 +909,9 @@ def main():
 
     elif is_none_platform_mode():
         raise NotImplementedError("None platform currently not supporting day2")
+
+    if args.image:
+        args.keep_iso = True
 
     has_ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     if args.day2_cloud_cluster:
