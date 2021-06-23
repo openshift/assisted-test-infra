@@ -1,0 +1,37 @@
+---
+- name: Log in to oVirt
+  ovirt_auth:
+    url: "{{ ovirt_url }}"
+    username: "{{ ovirt_user }}"
+    password: "{{ ovirt_password }}"
+    ca_file:  "{{ ovirt_cafile | default(omit) }}"
+    insecure: "{{ ovirt_insecure | default(true) }}"
+  delegate_to: localhost
+
+- name: Remove virtual machines from oVirt
+  ovirt.ovirt.ovirt_vm:
+    ovirt_auth: "{{ ovirt_auth }}"
+    name: "{{ hostvars[item]['inventory_hostname'] }}"
+    cluster: "{{ hostvars[item]['ovirt_cluster'] | ovirt_cluster | default('Default') }}"
+    state: absent
+    force: true
+  with_items:
+  - "{{ groups['masters'] }}"
+  - "{{ groups['workers'] | default([]) }}"
+  delegate_to: localhost
+  when: hostvars[item]['vendor'] == 'oVirt'
+
+- name: Remove discovery ISO in {{ ovirt_storage_domain }}
+  ovirt.ovirt.ovirt_disk:
+    ovirt_auth: "{{ ovirt_auth }}"
+    name: "installer-image.iso"
+    storage_domain: "{{ ovirt_storage_domain }}"
+    state: absent
+  delegate_to: localhost
+
+- name: Logout from oVirt
+  ovirt_auth:
+    state: absent
+    ovirt_auth: "{{ ovirt_auth }}"
+  delegate_to: localhost
+...

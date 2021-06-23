@@ -1,0 +1,13 @@
+---
+- name: Ensure oVirt Python SDK libraries are installed
+  python_requirements_info:
+    dependencies:
+    - ovirt-engine-sdk-python
+  register: _py_facts
+
+- name: Fail if oVirt Python SDK is missing
+  fail:
+    msg: |
+         Missing python module(s) 'ovirt-engine-sdk-python' on {{ groups['assisted_installer'][0] }} use 'pip3 install ovirt-engine-sdk-python'
+  when: _py_facts.not_found | length > 0
+  delegate_to: localhost

@@ -65,3 +65,7 @@
 - name: Uploading Discovery ISO to VMware datastore
   include_tasks: vmware.yml
   when: vcenter_datastore is defined
+
+- name: Uploading Discovery ISO to oVirt storage domain
+  include_tasks: ovirt.yml
+  when: ovirt_storage_domain is defined

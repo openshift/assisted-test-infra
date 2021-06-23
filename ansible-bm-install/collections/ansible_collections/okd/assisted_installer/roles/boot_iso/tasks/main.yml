@@ -24,3 +24,9 @@
     - "{{ groups['masters'] }}"
     - "{{ groups['workers'] | default([]) }}"
   when: hostvars[item]['vendor'] == 'VMware'
+
+- include_tasks: ovirt.yml
+  with_items:
+    - "{{ groups['masters'] }}"
+    - "{{ groups['workers'] | default([]) }}"
+  when: hostvars[item]['vendor'] == 'oVirt'

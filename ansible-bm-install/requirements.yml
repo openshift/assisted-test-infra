@@ -4,3 +4,4 @@ collections:
 - name: community.general
   version: 0.2.0
 - name: community.vmware
+- name: ovirt.ovirt

@@ -34,10 +34,27 @@ openshift_version="4.5"
 #vcenter_datastore="datastore-name"
 #vcenter_cluster="cluster-name"
 
+# Inventory to create oVirt VMs
+#ovirt_url="https://ovirt.example.com/ovirt-engine/api"
+#ovirt_username="admin@internal"
+#ovirt_password=""
+#ovirt_cafile=""
+#ovirt_insecure="true"
+#ovirt_cluster="Default"
+#ovirt_storage_domain=""
+#ovirt_network="ovirtmgmt"
+#ovirt_template=""
+#ovirt_vm_os="rhcos_x64"
+#ovirt_vm_type="server"
+#ovirt_vm_cpu_cores="8"
+#ovirt_vm_cpu_sockets="1"
+#ovirt_vm_memory="16 GiB"
+#ovirt_vm_disk_size="120 GiB"
+
 [assisted_installer]
 assisted-installer.example.com
 
-#Options for vendor include: Dell, HPE, SuperMicro
+#Options for vendor include: Dell, HPE, SuperMicro, VMware, oVirt
 # Master nodes
 [masters]
 master-0 role=master bmc_user=admin bmc_password=password bmc_address=192.168.1.1 vendor=Dell
@@ -46,6 +63,22 @@ master-2 role=master bmc_user=admin bmc_password=password bmc_address=192.168.1.
 # master-0 role=master vendor=VMware
 # master-1 role=master vendor=VMware
 # master-2 role=master vendor=VMware
+
+# master-0 role=master vendor=oVirt
+# master-1 role=master vendor=oVirt
+# master-2 role=master vendor=oVirt
+
+# master-0 role="master" vendor="oVirt" ovirt_vm_cpu_cores="4" ovirt_vm_memory="12 GiB" ovirt_storage_domain="sd-1" ovirt_network="network-1"
+# master-1 role="master" vendor="oVirt" ovirt_vm_cpu_cores="6" ovirt_vm_memory="16 GiB" ovirt_storage_domain="sd-2" ovirt_network="network-2"
+# master-2 role="master" vendor="oVirt" ovirt_vm_cpu_cores="8" ovirt_vm_memory="32 GiB" ovirt_storage_domain="sd-3" ovirt_network="network-3"
+
+#[masters:vars]
+#role="master"
+#vendor="oVirt"
+#ovirt_vm_cpu_cores="8"
+#ovirt_vm_memory="16 GiB"
+#ovirt_storage_domain="sd-1"
+#ovirt_network="network-1"
 
 # Worker nodes
 [workers]
