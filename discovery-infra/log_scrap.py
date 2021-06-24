@@ -64,6 +64,9 @@ class ScrapeEvents:
             for i, cluster in enumerate(clusters):
                 cluster_id = cluster["id"]
                 log.info(f"{i}/{cluster_count}: Starting process of cluster {cluster_id}")
+                if "hosts" not in cluster or len(cluster["hosts"]) == 0:
+                    cluster["hosts"] = self.client.get_cluster_hosts(cluster_id=cluster["id"])
+
                 self.process_cluster(cluster)
 
     def get_metadata_json(self, cluster: dict):
@@ -121,6 +124,7 @@ class ScrapeEvents:
             return False
 
     def get_cluster_event_count_on_es_db(self, cluster_id):
+        time.sleep(1)
         return self.es.search(index=self.index,
                               body={"query": {"match_phrase": {"cluster.id": cluster_id}}})["hits"]["total"]["value"]
 
@@ -132,6 +136,9 @@ class ScrapeEvents:
             doc_id = get_doc_id(event)
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
             cluster_bash_data["inventory_url"] = self.inventory_url
+
+            if "props" in event:
+                event["event.props"] = json.loads(event["props"])
 
             process_event_doc(event, cluster_bash_data)
             ret = self.log_doc(cluster_bash_data, doc_id)
