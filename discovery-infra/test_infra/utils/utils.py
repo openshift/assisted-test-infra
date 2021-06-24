@@ -695,12 +695,15 @@ def remove_running_container(container_name):
 
 
 def get_kubeconfig_path(cluster_name: str) -> str:
-    kubeconfig_dir = env_defaults.DEFAULT_KUBECONFIG_DIR
+    kubeconfig_dir = Path.cwd().joinpath(consts.DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH)
     default = kubeconfig_dir.joinpath(f"kubeconfig_{cluster_name}")
     kubeconfig_path = get_env("KUBECONFIG", str(default))
 
-    if kubeconfig_path == str(default):
-        kubeconfig_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        if kubeconfig_path == str(default):
+            kubeconfig_dir.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        raise FileExistsError(f"{kubeconfig_dir} should be a directory. Remove the old kubeconfig file and retry.")
 
     return kubeconfig_path
 
