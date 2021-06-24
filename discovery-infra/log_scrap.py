@@ -64,6 +64,9 @@ class ScrapeEvents:
             for i, cluster in enumerate(clusters):
                 cluster_id = cluster["id"]
                 log.info(f"{i}/{cluster_count}: Starting process of cluster {cluster_id}")
+                if "hosts" not in cluster or len(cluster["hosts"]) == 0:
+                    cluster["hosts"] = self.client.get_cluster_hosts(cluster_id=cluster["id"])
+
                 self.process_cluster(cluster)
 
     def get_metadata_json(self, cluster: dict):
