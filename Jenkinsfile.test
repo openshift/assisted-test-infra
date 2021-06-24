@@ -57,7 +57,7 @@ pipeline {
                 }
 
                 try {
-                    for (service in ["assisted-service","postgres","scality","createimage"]) {
+                    for (service in ["assisted-service","postgres","object-store","createimage"]) {
                         sh "kubectl get pods -o=custom-columns=NAME:.metadata.name -A | grep ${service} | xargs -r -I {} sh -c \"kubectl logs {} -n ${NAMESPACE} > {}.log\" || true"
                     }
                 } finally {
