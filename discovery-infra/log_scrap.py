@@ -121,6 +121,7 @@ class ScrapeEvents:
             return False
 
     def get_cluster_event_count_on_es_db(self, cluster_id):
+        time.sleep(1)
         return self.es.search(index=self.index,
                               body={"query": {"match_phrase": {"cluster.id": cluster_id}}})["hits"]["total"]["value"]
 
