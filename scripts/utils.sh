@@ -38,14 +38,21 @@ function spawn_port_forwarding_command() {
     target=$6
     ip=${7:-""}
     port=${8:-""}
+    xinet_service_name="${9:-${service_name}}"
 
-    filename=${service_name}__${namespace}__${namespace_index}__${external_port}__assisted_installer
+    filename=${xinet_service_name}__${namespace}__${namespace_index}__${external_port}__assisted_installer
     if [ "$target" = "minikube" ]; then
         ip=$(minikube ip)
-        port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+        if [ -z "$port" ]
+        then
+          port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${NAMESPACE} -o=jsonpath='{.spec.ports[0].nodePort}')
+        else
+          # resolve the service node port form the service internal port (Support multiple ports per service).
+          port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${NAMESPACE} -o=jsonpath="{.spec.ports[?(@.port==$port)].nodePort}")
+        fi
     fi
     cat <<EOF >build/xinetd-$filename
-service ${service_name}
+service ${xinet_service_name}
 {
   type		= UNLISTED
   socket_type	= stream

@@ -34,7 +34,7 @@ function init_minikube() {
     done
 
     minikube status
-
+    minikube addons enable registry
     minikube tunnel --cleanup &> /dev/null &
 }
 
