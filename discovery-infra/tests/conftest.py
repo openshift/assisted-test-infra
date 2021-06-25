@@ -32,7 +32,7 @@ def get_available_openshift_versions() -> List[str]:
             return [specific_version]
         raise ValueError(f"Invalid version {specific_version}, can't find among versions: {available_versions}")
 
-    return available_versions
+    return sorted(available_versions)
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

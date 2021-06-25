@@ -11,7 +11,7 @@ from netaddr import IPNetwork
 
 import test_infra.utils as infra_utils
 import waiting
-from typing import Optional
+from typing import List, Optional
 from assisted_service_client.rest import ApiException
 
 from download_logs import download_logs
@@ -27,6 +27,9 @@ from test_infra.tools.assets import LibvirtNetworkAssets
 from tests.config import TerraformConfig
 from test_infra.controllers.nat_controller import NatController
 from test_infra.controllers.node_controllers import TerraformController
+from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
+from test_infra.consts import OperatorResource
+
 
 
 class BaseTest:
@@ -345,3 +348,36 @@ class BaseTest:
 
         with kube_api_context:
             yield kube_api_context
+
+    @pytest.fixture(scope="function")
+    def update_olm_config(self) -> Callable:
+        def update_config(tf_config: TerraformConfig = TerraformConfig(),
+                          cluster_config: ClusterConfig = ClusterConfig(), operators=None):
+            if operators is None:
+                operators = parse_olm_operators_from_env()
+
+            tf_config.worker_memory = resource_param(tf_config.worker_memory,
+                                                     OperatorResource.WORKER_MEMORY_KEY, operators)
+            tf_config.master_memory = resource_param(tf_config.master_memory,
+                                                     OperatorResource.MASTER_MEMORY_KEY, operators)
+            tf_config.worker_vcpu = resource_param(tf_config.worker_vcpu,
+                                                   OperatorResource.WORKER_VCPU_KEY, operators)
+            tf_config.master_vcpu = resource_param(tf_config.master_vcpu,
+                                                   OperatorResource.MASTER_VCPU_KEY, operators)
+            tf_config.workers_count = resource_param(tf_config.workers_count,
+                                                     OperatorResource.WORKER_COUNT_KEY, operators)
+            tf_config.worker_disk = resource_param(tf_config.worker_disk,
+                                                   OperatorResource.WORKER_DISK_KEY, operators)
+            tf_config.master_disk = resource_param(tf_config.master_disk,
+                                                   OperatorResource.MASTER_DISK_KEY, operators)
+            tf_config.master_disk_count = resource_param(tf_config.master_disk_count,
+                                                         OperatorResource.MASTER_DISK_COUNT_KEY, operators)
+            tf_config.worker_disk_count = resource_param(tf_config.worker_disk_count,
+                                                         OperatorResource.WORKER_DISK_COUNT_KEY, operators)
+
+            cluster_config.workers_count = resource_param(cluster_config.workers_count,
+                                                          OperatorResource.WORKER_COUNT_KEY, operators)
+            cluster_config.nodes_count = cluster_config.masters_count + cluster_config.workers_count
+            cluster_config.olm_operators = [operators]
+        
+        yield update_config
