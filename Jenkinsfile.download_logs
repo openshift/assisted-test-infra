@@ -5,7 +5,7 @@ pipeline {
         string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
     }
 
-    triggers { cron('H/30 * * * *') }
+    triggers { cron('*/5 * * * *') }
 
     environment {
         SKIPPER_PARAMS = " "
