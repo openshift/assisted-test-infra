@@ -152,17 +152,3 @@ def delete_kube_api_resources_for_namespace(
     ClusterImageSet(
         kube_api_client=kube_api_client, name=image_set_name or f"{name}-image-set", namespace=namespace
     ).delete()
-
-
-def get_kubeconfig_path(cluster_name: str):
-    kubeconfig_dir = Path.cwd().joinpath(consts.DEFAULT_CLUSTER_KUBECONFIG_PATH)
-    default = kubeconfig_dir.joinpath(f"kubeconfig_{cluster_name}")
-    kubeconfig_path = utils.get_env('KUBECONFIG', str(default))
-
-    try:
-        if kubeconfig_path == str(default):
-            kubeconfig_dir.mkdir(parents=True, exist_ok=True)
-    except FileExistsError:
-        raise FileExistsError(f"{kubeconfig_dir} should be a directory. Remove the old kubeconfig file and retry.")
-
-    return kubeconfig_path

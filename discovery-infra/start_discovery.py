@@ -547,7 +547,7 @@ def nodes_flow(
             install_cluster.run_install_flow(
                 client=client,
                 cluster_id=cluster.id,
-                kubeconfig_path=kubeapi_utils.get_kubeconfig_path(cluster_name),
+                kubeconfig_path=utils.get_kubeconfig_path(cluster_name),
                 pull_secret=args.pull_secret,
                 tf=tf,
                 cluster_deployment=cluster_deployment,
@@ -602,7 +602,7 @@ def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment, agent_clu
             cluster_deployment=cluster_deployment,
             agent_cluster_install=agent_cluster_install,
             nodes_number=nodes_number,
-            kubeconfig_path=kubeapi_utils.get_kubeconfig_path(cluster_name)
+            kubeconfig_path=utils.get_kubeconfig_path(cluster_name)
         )
 
 

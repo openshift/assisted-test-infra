@@ -28,4 +28,3 @@ DEFAULT_SINGLE_NODE_IP: str = ""
 DEFAULT_TF_CPU_MODE: str = consts.HOST_PASSTHROUGH_CPU_MODE
 DEFAULT_IMAGE_FOLDER: Path = Path(consts.IMAGE_FOLDER)
 DEFAULT_IMAGE_FILENAME: str = "installer-image.iso"
-DEFAULT_KUBECONFIG_DIR: Path = Path("/tmp/kubeconfig")
