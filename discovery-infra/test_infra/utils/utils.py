@@ -492,9 +492,10 @@ def get_local_assisted_service_url(namespace, service, deploy_target):
     else:
         # default deploy target is minikube
         log.info('Getting minikube %s URL in %s namespace', service, namespace)
-        url, _, _ = run_command(
-            f'minikube -n {namespace} service {service} --url'
-        )
+        ip, _, _ = run_command("kubectl get nodes -o=jsonpath={.items[0].status.addresses[0].address}")
+        # resolve the service node port form the service internal port (Support multiple ports per service).
+        port, _, _ = run_command(f'kubectl get svc assisted-service -n {namespace} -o=jsonpath="{{.spec.ports[?(@.port==8090)].nodePort}}"')
+        url = f'http://{ip}:{port}'
         if is_assisted_service_reachable(url):
             return url
 

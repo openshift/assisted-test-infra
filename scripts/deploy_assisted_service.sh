@@ -20,6 +20,11 @@ export OPENSHIFT_VERSIONS_CMD=""
 export DEBUG_SERVICE_NAME=assisted-service-debug
 export DEBUG_SERVICE_PORT=${DEBUG_SERVICE_PORT:-40000}
 export DEBUG_SERVICE=${DEBUG_SERVICE:-}
+export REGISTRY_SERVICE_NAME=registry
+export REGISTRY_SERVICE_NAMESPACE=kube-system
+export REGISTRY_SERVICE_PORT=80
+export REGISTRY_SERVICE_HOST_PORT=5000
+
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" && -z "${OPENSHIFT_VERSIONS}" ]]; then
     # Supporting version 4.8 for kube-api
@@ -117,9 +122,17 @@ else
     print_log "Updating assisted_service params"
 
     if [ "${DEBUG_SERVICE}" == "true" ]; then
-        print_log " Patching assisted service image with a debuggable code "
-        (cd assisted-service/ && skipper --env-file ../skipper.env make update-local-image -e LOCAL_ASSISTED_ORG=$(minikube ip):5000 -e CONTAINER_BUILD_EXTRA_PARAMS="--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file")
+        # Change the registry service type to LoadBalancer to be able to access it from outside the cluster
+        kubectl patch service $REGISTRY_SERVICE_NAME -n $REGISTRY_SERVICE_NAMESPACE --type json -p='[{"op": "replace", "path": "/spec/type", "value":"LoadBalancer"}]'
+        # Forward the minikube registry addon k8s service to the host to push the debug image using localhost:5000
+        spawn_port_forwarding_command $REGISTRY_SERVICE_NAME $REGISTRY_SERVICE_HOST_PORT $REGISTRY_SERVICE_NAMESPACE 999 $KUBECONFIG minikube undeclaredip $REGISTRY_SERVICE_PORT $REGISTRY_SERVICE_NAME
+        # Set the local registry to the minikube registry (used by the assisted-service update-local-image target)
+        export LOCAL_ASSISTED_ORG=localhost:5000
+        print_log "Patching assisted service image with a debuggable code "
+        (cd assisted-service/ && skipper --env-file ../skipper.env make update-local-image -e CONTAINER_BUILD_EXTRA_PARAMS="--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file")
         DEBUG_DEPLOY_AI_PARAMS="REPLICAS_COUNT=1"
+        # Override the SERVICE environment variable with the local registry debug image
+        export SERVICE="${LOCAL_ASSISTED_ORG}/assisted-service:latest"
     fi
 
     skipper run discovery-infra/update_assisted_service_cm.py
