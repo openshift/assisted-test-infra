@@ -94,7 +94,6 @@ class InfraEnv(BaseCustomResource):
         cluster_deployment: ClusterDeployment,
         secret: Secret,
         proxy: Optional[Proxy] = None,
-        label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
         ssh_pub_key: Optional[str] = None,
@@ -110,7 +109,6 @@ class InfraEnv(BaseCustomResource):
                 "nmStateConfigLabelSelector": {
                     "matchLabels": {f"{CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label or ""}
                 },
-                "agentLabelSelector": {"matchLabels": label_selector or {}},
                 "ignitionConfigOverride": ignition_config_override or "",
             },
         }
@@ -136,7 +134,6 @@ class InfraEnv(BaseCustomResource):
         cluster_deployment: Optional[ClusterDeployment],
         secret: Optional[Secret],
         proxy: Optional[Proxy] = None,
-        label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
         ssh_pub_key: Optional[str] = None,
@@ -153,9 +150,6 @@ class InfraEnv(BaseCustomResource):
 
         if proxy:
             spec["proxy"] = proxy.as_dict()
-
-        if label_selector:
-            spec["agentLabelSelector"] = {"matchLabels": label_selector}
 
         if nmstate_label:
             spec["nmStateConfigLabelSelector"] = {
@@ -253,7 +247,6 @@ class InfraEnv(BaseCustomResource):
         cluster_deployment: Optional[ClusterDeployment] = None,
         secret: Optional[Secret] = None,
         proxy: Optional[Proxy] = None,
-        label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         **kwargs,
     ) -> "InfraEnv":
@@ -273,7 +266,6 @@ class InfraEnv(BaseCustomResource):
                     cluster_deployment=cluster_deployment,
                     secret=secret,
                     proxy=proxy,
-                    label_selector=label_selector,
                     ignition_config_override=ignition_config_override,
                     **kwargs,
                 )
@@ -303,7 +295,6 @@ class InfraEnv(BaseCustomResource):
         pull_secret: str,
         secret: Optional[Secret] = None,
         proxy: Optional[Proxy] = None,
-        label_selector: Optional[Dict[str, str]] = None,
         ignition_config_override: Optional[str] = None,
         **kwargs,
     ) -> None:
@@ -318,7 +309,6 @@ class InfraEnv(BaseCustomResource):
             cluster_deployment=cluster_deployment,
             secret=secret,
             proxy=proxy,
-            label_selector=label_selector,
             ignition_config_override=ignition_config_override,
             **kwargs,
         )
@@ -333,7 +323,6 @@ def deploy_default_infraenv(
     cluster_deployment: Optional[ClusterDeployment] = None,
     secret: Optional[Secret] = None,
     proxy: Optional[Proxy] = None,
-    label_selector: Optional[Dict[str, str]] = None,
     ignition_config_override: Optional[str] = None,
     **kwargs,
 ) -> "InfraEnv":
@@ -350,7 +339,6 @@ def deploy_default_infraenv(
         cluster_deployment,
         secret,
         proxy,
-        label_selector,
         ignition_config_override,
         **kwargs,
     )
