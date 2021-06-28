@@ -8,6 +8,7 @@ import waiting
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import terraform_utils
+from test_infra.helper_classes.kube_helpers import Agent
 
 from assisted_service_client.models.operator_type import OperatorType
 
@@ -208,8 +209,12 @@ def run_installation_flow_kube_api(
         kubeconfig_path,
 ):
     log.info("Approving agents")
-    for agent in cluster_deployment.wait_for_agents(nodes_number):
+    agents = cluster_deployment.wait_for_agents(nodes_number)
+    for agent in agents:
         agent.approve()
+    
+    log.info("Waiting for agent status verification")
+    Agent.wait_for_agents_to_install(agents, nodes_number)
 
     log.info("Waiting for installation to start")
     agent_cluster_install.wait_to_be_installing()
