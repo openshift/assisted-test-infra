@@ -23,7 +23,7 @@ openshift-client==1.0.13
 Jinja2===3.0.1
 pytest-xdist==2.3.0
 filelock==3.0.12
-urllib3==1.26.5
+urllib3==1.26.6
 elasticsearch==7.13.1
 junit-report>=0.1.20
 debugpy>=1.2.1
