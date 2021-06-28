@@ -7,6 +7,7 @@ import re
 import time
 from collections import Counter
 from typing import List, Union, Optional
+from textwrap import dedent
 
 import requests
 import waiting
@@ -621,6 +622,21 @@ class Cluster:
             timeout=timeout,
         )
 
+    def _set_dns(self):
+        cluster = self.api_client.cluster_get(self.id)
+        cluster_name = cluster.name
+        base_domain = cluster.base_dns_domain
+        main_cidr = self.nodes.controller.get_machine_cidr()
+        nameserver_ip = str(IPNetwork(main_cidr).ip + 1)
+        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
+        contents = dedent(f"""
+            server=/api.{cluster_name}.{base_domain}/{nameserver_ip}
+            server=/.apps.{cluster_name}.{base_domain}/{nameserver_ip}
+            """)
+        self.nodes.controller.tf.change_variables(
+            {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
+        )
+
     @JunitTestCase()
     def prepare_for_installation(self, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
@@ -655,6 +671,7 @@ class Cluster:
 
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
+        self._set_dns()
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
