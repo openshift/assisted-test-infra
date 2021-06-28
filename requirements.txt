@@ -29,4 +29,4 @@ junit-report>=0.1.20
 debugpy>=1.2.1
 netifaces==0.11.0
 frozendict==2.0.2
-pycharm_remote_debugger==0.1.12
+pycharm_remote_debugger==0.1.13
