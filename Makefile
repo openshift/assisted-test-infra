@@ -1,7 +1,7 @@
 #############
 # Variables #
 #############
-# Dummy PR - Do not review   .
+# Dummy PR - Do not review
 
 SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
