@@ -35,6 +35,9 @@ volumes:
   - /tmp:/tmp/
   - /dev/:/dev
   - /run/udev:/run/udev
+
+  # Network manager dnsmasq.  Mounted to allow the container to write dnsmasq config files to HOST Network Manager
+  - /etc/NetworkManager/dnsmasq.d:/etc/NetworkManager/dnsmasq.d
 env_file:
   - skipper.env
 

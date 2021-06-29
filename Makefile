@@ -478,6 +478,7 @@ _test: $(REPORTS) _test_setup
 test_parallel:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	skipper make $(SKIPPER_PARAMS) _test_parallel
+	scripts/assisted_deployment.sh set_all_vips_dns
 
 _test_setup:
 	rm -rf /tmp/assisted_test_infra_logs

@@ -4,6 +4,13 @@ function destroy_all() {
     make destroy
 }
 
+function update_conf_file() {
+    FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
+    if ! [ -f "${FILE}" ]; then
+        echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
+    fi
+}
+
 function set_dns() {
     NAMESPACE_INDEX=${1:-0}
     if [ "${BASE_DNS_DOMAINS}" != '""' ]; then
@@ -19,10 +26,7 @@ function set_dns() {
       exit 1
     fi
 
-    FILE="/etc/NetworkManager/conf.d/dnsmasq.conf"
-    if ! [ -f "${FILE}" ]; then
-        echo -e "[main]\ndns=dnsmasq" | sudo tee $FILE
-    fi
+    update_conf_file
     sudo truncate -s0 /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/api.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
     echo "server=/.apps.${CLUSTER_NAME}-${NAMESPACE}.${BASE_DOMAIN}/${NAMESERVER_IP}" | sudo tee -a /etc/NetworkManager/dnsmasq.d/openshift-${CLUSTER_NAME}.conf
@@ -30,6 +34,14 @@ function set_dns() {
     sudo systemctl reload NetworkManager
 
     echo "Finished setting dns"
+}
+
+function set_all_vips_dns() {
+    update_conf_file
+
+    sudo systemctl reload NetworkManager
+
+    echo "Finished setting all vips dns"
 }
 
 # Delete after pushing fix to dev-scripts

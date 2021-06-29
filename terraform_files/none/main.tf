@@ -110,6 +110,12 @@ resource "local_file" "load_balancer_config" {
   filename = format("/etc/nginx/conf.d/stream_%s.conf", replace(var.load_balancer_ip,"/[:.]/" , "_"))
 }
 
+resource "local_file" "dns_forwarding_config" {
+  count    = var.dns_forwarding_file != "" && var.dns_forwarding_file_name != "" ? 1 : 0
+  content  = var.dns_forwarding_file
+  filename = var.dns_forwarding_file_name
+}
+
 resource "libvirt_domain" "master" {
   count = 2
 

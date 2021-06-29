@@ -156,3 +156,18 @@ variable "load_balancer_config_file" {
   description = "Contents of load balancer configuration file"
   default = ""
 }
+
+variable "dns_forwarding_file" {
+  type = string
+  description = "Contents of dns forwarding file"
+  default = ""
+}
+
+
+variable "dns_forwarding_file_name" {
+  type = string
+  description = "The file name of dns forwarding file"
+  default = ""
+}
+
+
