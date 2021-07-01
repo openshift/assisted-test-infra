@@ -121,14 +121,18 @@ class BaseTest:
     def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
         port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
-        proxy_server(name=proxy_name, port=port, dir=proxy_name)
 
         host_ip = str(IPNetwork(cluster.nodes.controller.get_machine_cidr()).ip + 1)
-        proxy_url = f"http://[{host_ip}]:{consts.DEFAULT_PROXY_SERVER_PORT}"
         no_proxy = ",".join([cluster.nodes.controller.get_machine_cidr(), cluster_config.service_network_cidr,
                              cluster_config.cluster_network_cidr,
                              f".{str(cluster_config.cluster_name)}.redhat.com"])
-        cluster.set_proxy_values(http_proxy=proxy_url, https_proxy=proxy_url, no_proxy=no_proxy)
+
+        proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip)
+        cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
+        install_config = cluster.get_install_config()
+        proxy_details = install_config.get("proxy")
+        assert proxy_details and proxy_details.get("httpProxy") == proxy.address
+        assert proxy_details.get("httpsProxy") == proxy.address
 
     @pytest.fixture()
     def iptables(self):
