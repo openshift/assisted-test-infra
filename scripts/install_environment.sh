@@ -174,7 +174,7 @@ RUN sed -i -e '\$a stream {\n    include /etc/nginx/conf.d/stream*.conf;\n}' -e 
 CMD ["bash", "-c", "while /bin/true ; do (ps -ef | grep -v grep | grep -q nginx && nginx -s reload) || nginx ; sleep 60 ; done"]
 EOF
   sudo podman rm -f load_balancer || /bin/true
-  sudo mkdir -p $HOME/.test-infra/etc/nginx/{stream,http}.d
+  sudo mkdir -p $HOME/.test-infra/etc/nginx/conf.d/{stream,http}.d
   sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
   sudo firewall-cmd --zone=libvirt --add-port=22623/tcp
   sudo firewall-cmd --zone=libvirt --add-port=443/tcp

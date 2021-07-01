@@ -207,7 +207,7 @@ start_load_balancer:
 stop_load_balancer:
 	@id=`podman ps --quiet --filter "name=load_balancer"`; \
 	test ! -z "$$id"  && podman rm -f load_balancer; \
-	rm -f  $(HOME)/.test-infra/etc/nginx/stream.d/*.conf >& /dev/null || /bin/true
+	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/stream.d/*.conf >& /dev/null || /bin/true
 
 
 #############
