@@ -672,6 +672,9 @@ class Cluster:
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
         self._set_dns()
+        if self._config.vip_dhcp_allocation:
+            vips_info = self.__class__.get_vips_from_cluster(self.api_client, self.id)
+            self.nodes.controller.tf.set_new_vips(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
