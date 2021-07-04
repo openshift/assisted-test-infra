@@ -31,7 +31,6 @@ from test_infra.utils.operators_utils import parse_olm_operators_from_env, resou
 from test_infra.consts import OperatorResource
 
 
-
 class BaseTest:
 
     @pytest.fixture(scope="function")
@@ -75,6 +74,8 @@ class BaseTest:
             if _nodes and global_variables.test_teardown:
                 logging.info('--- TEARDOWN --- node controller\n')
                 _nodes.destroy_all_nodes()
+                logging.info(f'--- TEARDOWN --- deleting iso file from: {_config.iso_download_path}\n')
+                infra_utils.run_command(f"rm -f {_config.iso_download_path}", shell=True)
 
                 if _nat:
                     _nat.remove_nat_rules()
@@ -98,6 +99,7 @@ class BaseTest:
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig = ClusterConfig()):
             if not cluster_config.cluster_name:
                 cluster_config.cluster_name = global_variables.cluster_name, infra_utils.get_random_name(length=10)
+            logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
             if cluster_config.is_ipv6:
                 self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
