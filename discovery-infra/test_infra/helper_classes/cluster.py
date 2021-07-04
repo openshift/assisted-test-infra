@@ -640,6 +640,8 @@ class Cluster:
     @JunitTestCase()
     def prepare_for_installation(self, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
+        logging.info(f"Preparing for installation with configurations: cluster_config={self._config},"
+                     f"nodes_config={self.nodes.config}")
 
         if self._config.download_image:
             if static_network_config:
