@@ -28,6 +28,10 @@ class Nodes:
         self._nodes_as_dict = None
 
     @property
+    def config(self):
+        return self.controller.config
+
+    @property
     def nodes(self) -> List[Node]:
         if not self._nodes:
             self._nodes = self.controller.list_nodes()
