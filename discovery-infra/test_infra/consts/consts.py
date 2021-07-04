@@ -123,6 +123,7 @@ class HostsProgressStages:
 class AgentStatus:
     VALIDATED = "Validated"
     INSTALLED = "Installed"
+    REQUIREMENTS_MET = "RequirementsMet"
 
 all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,
                    HostsProgressStages.WRITE_IMAGE_TO_DISK, HostsProgressStages.WAIT_FOR_CONTROL_PLANE,

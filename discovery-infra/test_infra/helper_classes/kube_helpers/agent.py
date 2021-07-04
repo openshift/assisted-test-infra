@@ -126,6 +126,12 @@ class Agent(BaseCustomResource):
         Agent.wait_till_all_agents_are_in_status(
             agents=agents,
             nodes_count=nodes_number,
+            statusType=consts.AgentStatus.REQUIREMENTS_MET,
+            timeout=timeout,
+        )
+        Agent.wait_till_all_agents_are_in_status(
+            agents=agents,
+            nodes_count=nodes_number,
             statusType=consts.AgentStatus.INSTALLED,
             timeout=timeout,
         )
