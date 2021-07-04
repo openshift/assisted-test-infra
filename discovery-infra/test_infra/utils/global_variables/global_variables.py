@@ -27,6 +27,7 @@ _triggers = frozendict({
         "service_network_cidr": consts.DEFAULT_IPV6_SERVICE_CIDR,
         "cluster_network_cidr": consts.DEFAULT_IPV6_CLUSTER_CIDR,
         "cluster_network_host_prefix": consts.DEFAULT_IPV6_HOST_PREFIX,
+        "openshift_version": consts.OpenshiftVersion.VERSION_4_8.value,
         "vip_dhcp_allocation": False
     }
 })

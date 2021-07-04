@@ -35,7 +35,6 @@ from logger import log
 from retry import retry
 
 import test_infra.consts as consts
-from test_infra.consts import env_defaults
 from test_infra.utils import logs_utils
 
 conn = libvirt.open("qemu:///system")
@@ -709,7 +708,7 @@ def get_kubeconfig_path(cluster_name: str) -> str:
     return kubeconfig_path
 
 
-def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
+def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION, global_vars=None):
     release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
 
     if release_image:
@@ -720,7 +719,7 @@ def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
                 shell=True)
         return stdout
 
-    return get_env('OPENSHIFT_VERSION', default)
+    return global_vars.openshift_version if global_vars else get_env('OPENSHIFT_VERSION', default)
 
 
 def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):

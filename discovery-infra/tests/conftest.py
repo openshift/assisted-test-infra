@@ -26,7 +26,7 @@ def get_api_client(offline_token=None, **kwargs) -> InventoryClient:
 
 def get_available_openshift_versions() -> List[str]:
     available_versions = list(get_api_client().get_openshift_versions().keys())
-    specific_version = utils.get_openshift_version(default=None)
+    specific_version = utils.get_openshift_version(default=None, global_vars=global_variables)
     if specific_version:
         if specific_version in available_versions:
             return [specific_version]
