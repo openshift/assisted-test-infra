@@ -22,6 +22,7 @@ from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
 from test_infra.utils import operators_utils, logs_utils, log
+from test_infra.utils.cluster_name import ClusterName
 
 
 class Cluster:
@@ -31,16 +32,21 @@ class Cluster:
     def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, nodes: Optional[Nodes] = None):
         self._config = config
         self.api_client = api_client
-        self.nodes = nodes
-
-        self._high_availability_mode = config.high_availability_mode
-        self.name = config.cluster_name.get()
+        self.nodes: Nodes = nodes
 
         if config.cluster_id:
             self.id = config.cluster_id
             self._update_day2_config(api_client, config.cluster_id)
         else:
             self.id = self._create().id
+            config.cluster_id = self.id
+
+        self._high_availability_mode = config.high_availability_mode
+        self.name = config.cluster_name.get()
+
+    @property
+    def config(self):
+        return self._config.get_copy()
 
     def _update_day2_config(self, api_client: InventoryClient, cluster_id: str):
         day2_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
@@ -48,13 +54,13 @@ class Cluster:
         self.update_config(
             **dict(
                 openshift_version=day2_cluster.openshift_version,
-                cluster_name=day2_cluster.name,
+                cluster_name=ClusterName(day2_cluster.name),
                 additional_ntp_source=day2_cluster.additional_ntp_source,
                 user_managed_networking=day2_cluster.user_managed_networking,
                 high_availability_mode=day2_cluster.high_availability_mode,
                 olm_operators=day2_cluster.monitored_operators,
                 base_dns_domain=day2_cluster.base_dns_domain,
-                vip_dhcp_allocation=day2_cluster.vip_dhcp_allocation,
+                vip_dhcp_allocation=day2_cluster.vip_dhcp_allocation
             )
         )
 
@@ -64,6 +70,8 @@ class Cluster:
         The name (key) of each argument must match to one of the BaseClusterConfig arguments.
         If key doesn't exists in config - KeyError exception is raised
         """
+        log.info(f"Updating cluster {self.id} configurations to {kwargs}")
+
         for k, v in kwargs.items():
             if not hasattr(self._config, k):
                 raise KeyError(f"The key {k} is not present in {self._config.__class__.__name__}")
@@ -196,7 +204,7 @@ class Cluster:
             olm_operators.append({"name": operator.name, "properties": operator.properties})
         olm_operators.append({"name": operator_name, "properties": properties})
 
-        self.update_config(olm_operators=olm_operators)
+        self._config.olm_operators = olm_operators
         self.api_client.update_cluster(self.id, {"olm_operators": olm_operators})
 
     def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
@@ -1029,6 +1037,7 @@ def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluste
     cluster = Cluster(
         api_client=api_client,
         config=ClusterConfig(
+            cluster_name=ClusterName(cluster_info.name),
             pull_secret=pull_secret,
             ssh_public_key=cluster_info.ssh_public_key,
             cluster_id=cluster_info.id),

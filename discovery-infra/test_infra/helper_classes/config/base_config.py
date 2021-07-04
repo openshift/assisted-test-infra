@@ -20,5 +20,9 @@ class _BaseConfig(ABC):
     def get_default(key, default=None) -> Any:
         pass
 
+    @abstractmethod
+    def get_copy(self):
+        pass
+
     def get_all(self) -> dict:
         return asdict(self)

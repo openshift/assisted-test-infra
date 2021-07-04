@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import shutil
-import uuid
 import warnings
 from typing import List
 
@@ -12,17 +11,20 @@ from test_infra import consts, utils, virsh_cleanup
 from test_infra.consts import resources
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.helper_classes.config import BaseTerraformConfig
+from test_infra.helper_classes.config import BaseTerraformConfig, BaseClusterConfig
 from test_infra.tools import static_network, terraform_utils
+from test_infra.utils.cluster_name import get_cluster_name_suffix
 
 
 class TerraformController(LibvirtController):
 
-    def __init__(self, config: BaseTerraformConfig):
+    def __init__(self, config: BaseTerraformConfig, cluster_config: BaseClusterConfig):
         super().__init__(config.private_ssh_key_path)
         self.config = config
-        self.cluster_name = str(config.cluster_name)
-        self.network_name = config.network_name + config.cluster_name.suffix
+        self._cluster_config = cluster_config
+        self.cluster_name = cluster_config.cluster_name.get()
+        self._suffix = cluster_config.cluster_name.suffix or get_cluster_name_suffix()
+        self.network_name = config.network_name + self._suffix
         self.tf_folder = config.tf_folder or self._create_tf_folder(self.cluster_name, config.platform)
         self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
@@ -35,10 +37,6 @@ class TerraformController(LibvirtController):
         utils.recreate_folder(tf_folder)
         utils.copy_template_tree(tf_folder, none_platform_mode=platform == consts.Platforms.NONE)
         return tf_folder
-
-    @classmethod
-    def _get_random_name(cls):
-        return uuid.uuid4().hex[:8].lower()
 
     # TODO move all those to conftest and pass it as kwargs
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
@@ -60,7 +58,7 @@ class TerraformController(LibvirtController):
             "libvirt_network_if": self.config.net_asset.libvirt_network_if,
             "libvirt_worker_disk": kwargs.get("worker_disk", resources.DEFAULT_WORKER_DISK),
             "libvirt_master_disk": kwargs.get("master_disk", resources.DEFAULT_MASTER_DISK),
-            "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self.config.cluster_name.suffix,
+            "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self._suffix,
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
             # TODO change to namespace index
             "libvirt_secondary_network_if": self.config.net_asset.libvirt_secondary_network_if,
@@ -119,7 +117,7 @@ class TerraformController(LibvirtController):
             + 10
             + int(tfvars["master_count"])
         )
-        tfvars['image_path'] = self.config.iso_download_path
+        tfvars['image_path'] = self._cluster_config.iso_download_path
         tfvars['master_count'] = self.params.master_count
         self.master_ips = tfvars['libvirt_master_ips'] = self._create_address_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
@@ -244,10 +242,10 @@ class TerraformController(LibvirtController):
     def prepare_nodes(self):
         logging.info("Preparing nodes")
         self.destroy_all_nodes()
-        if not os.path.exists(self.config.iso_download_path):
-            utils.recreate_folder(os.path.dirname(self.config.iso_download_path), force_recreate=False)
+        if not os.path.exists(self._cluster_config.iso_download_path):
+            utils.recreate_folder(os.path.dirname(self._cluster_config.iso_download_path), force_recreate=False)
             # if file not exist lets create dummy
-            utils.touch(self.config.iso_download_path)
+            utils.touch(self._cluster_config.iso_download_path)
         self.params.running = False
         self._create_nodes()
 
@@ -307,13 +305,13 @@ class TerraformController(LibvirtController):
     def image_path(self):
         warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        return self.config.iso_download_path
+        return self._cluster_config.iso_download_path
 
     @image_path.setter
     def image_path(self, image_path):
         warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        self.config.iso_download_path = image_path
+        self._cluster_config.iso_download_path = image_path
 
     @property
     def bootstrap_in_place(self):
