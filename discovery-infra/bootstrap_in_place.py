@@ -14,7 +14,7 @@ from test_infra.controllers.node_controllers.terraform_controller import Terrafo
 from download_logs import download_must_gather, gather_sosreport_data
 from oc_utils import get_operators_status
 from test_infra.utils.cluster_name import ClusterName
-from tests.config import TerraformConfig
+from tests.config import TerraformConfig, ClusterConfig
 
 warn_deprecate()
 
@@ -126,16 +126,15 @@ def str_presenter(dumper, data):
 def create_controller(net_asset):
     return TerraformController(
         TerraformConfig(
-            cluster_name=ClusterName(prefix="test-infra-cluster", suffix=""),
             masters_count=1,
             workers_count=0,
             master_memory=45 * 1024,  # in megabytes
             master_vcpu=16,
             net_asset=net_asset,
-            iso_download_path="<TBD>",  # will be set later on
             bootstrap_in_place=True,
             single_node_ip=net_asset.machine_cidr.replace("0/24", "10"),
-        )
+        ),
+        cluster_config=ClusterConfig(cluster_name=ClusterName(prefix="test-infra-cluster", suffix=""))
     )
 
 

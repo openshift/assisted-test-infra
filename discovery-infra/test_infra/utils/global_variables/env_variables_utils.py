@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from test_infra import consts
 from test_infra.consts import resources, env_defaults
 from test_infra.utils import operators_utils, get_env, get_openshift_version, get_kubeconfig_path
-from test_infra.utils.cluster_name import ClusterName
 
 
 @dataclass(frozen=True)
@@ -32,9 +31,7 @@ class _EnvVariablesUtils(ABC):
     master_disk_count: int = int(get_env("MASTER_DISK_COUNT", resources.DEFAULT_DISK_COUNT))
     worker_disk_count: int = int(get_env("WORKER_DISK_COUNT", resources.DEFAULT_DISK_COUNT))
     storage_pool_path: str = get_env("STORAGE_POOL_PATH", env_defaults.DEFAULT_STORAGE_POOL_PATH)
-    cluster_name: ClusterName = ClusterName()
     private_ssh_key_path: Path = Path(get_env("PRIVATE_KEY_PATH", env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
-    kubeconfig_path: str = get_kubeconfig_path(cluster_name.get())
     installer_kubeconfig_path: str = get_env("INSTALLER_KUBECONFIG", env_defaults.DEFAULT_INSTALLER_KUBECONFIG)
     log_folder: str = get_env("LOG_FOLDER", env_defaults.DEFAULT_LOG_FOLDER)
     service_network_cidr: str = get_env("SERVICE_CIDR", env_defaults.DEFAULT_SERVICE_CIDR)
@@ -66,15 +63,6 @@ class _EnvVariablesUtils(ABC):
 
     def __post_init__(self):
         self._set("olm_operators", operators_utils.parse_olm_operators_from_env())
-        if self.iso_download_path is None:
-            self._set(
-                "iso_download_path",
-                str(
-                    Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(
-                        f"{self.cluster_name}-{self.cluster_name.suffix}" f"-{env_defaults.DEFAULT_IMAGE_FILENAME}"
-                    )
-                ).strip(),
-            )
 
     def _set(self, key: str, value: Any):
         if not hasattr(self, key):

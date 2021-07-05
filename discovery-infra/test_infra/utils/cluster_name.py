@@ -1,15 +1,17 @@
 import uuid
 
-from dataclasses import dataclass
-
 from test_infra import consts
 from test_infra.utils import get_env
 
 
-@dataclass
+def get_cluster_name_suffix(length: str = consts.SUFFIX_LENGTH):
+    return str(uuid.uuid4())[: length]
+
+
 class ClusterName:
-    suffix: str = str(uuid.uuid4())[: consts.SUFFIX_LENGTH]
-    prefix: str = get_env("CLUSTER_NAME", f"{consts.CLUSTER_PREFIX}")
+    def __init__(self, prefix: str = None, suffix: str = None):
+        self.prefix = prefix if prefix is not None else get_env("CLUSTER_NAME", f"{consts.CLUSTER_PREFIX}")
+        self.suffix = suffix if suffix is not None else get_cluster_name_suffix()
 
     def __str__(self):
         return self.get()

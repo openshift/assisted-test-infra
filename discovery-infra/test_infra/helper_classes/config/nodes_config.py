@@ -7,8 +7,6 @@ from munch import Munch
 
 from .base_config import _BaseConfig
 
-from test_infra.utils.cluster_name import ClusterName
-
 
 @dataclass
 class BaseTerraformConfig(_BaseConfig, ABC):
@@ -40,17 +38,13 @@ class BaseTerraformConfig(_BaseConfig, ABC):
     libvirt_secondary_worker_ips: List[str] = None
 
     private_ssh_key_path: Path = None
-    cluster_name: ClusterName = None
     network_name: str = None
     net_asset: Munch = None
     platform: str = None
     base_dns_domain: str = None  # base_domain
     is_ipv6: bool = None  # ipv6
     tf_folder: str = None
-    iso_download_path: str = None
     bootstrap_in_place: bool = None
 
     def __post_init__(self):
         super().__post_init__()
-        if isinstance(self.cluster_name, str):
-            self.cluster_name = ClusterName(prefix=self.cluster_name, suffix="")

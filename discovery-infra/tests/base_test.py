@@ -2,22 +2,24 @@ import json
 import logging
 import os
 import shutil
-from collections import Callable
+from typing import Callable
 from contextlib import suppress
 from pathlib import Path
+from typing import Tuple, List, Optional
 
 import pytest
 from netaddr import IPNetwork
 
 import test_infra.utils as infra_utils
 import waiting
-from typing import List, Optional
 from assisted_service_client.rest import ApiException
 
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from paramiko import SSHException
 from test_infra import consts
+from test_infra.controllers.iptables import IptableRule
+from test_infra.controllers.node_controllers.node import Node
 from tests.config import ClusterConfig, global_variables
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
@@ -32,31 +34,27 @@ from test_infra.consts import OperatorResource
 
 
 class BaseTest:
-
     @pytest.fixture(scope="function")
-    def get_nodes(self) -> Callable:
+    def get_nodes(self) -> Callable[[TerraformConfig, ClusterConfig], Nodes]:
         """ Currently support only single instance of nodes """
         nodes_data = dict()
 
         @JunitTestCase()
-        def get_nodes_func(config: Optional[TerraformConfig] = None):
-            if not config:
-                config = TerraformConfig()
-            nodes_data["config"] = config
-
+        def get_nodes_func(tf_config: TerraformConfig, cluster_config: ClusterConfig):
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
+            nodes_data["configs"] = cluster_config, tf_config
             net_asset = LibvirtNetworkAssets()
-            config.net_asset = net_asset.get()
+            tf_config.net_asset = net_asset.get()
             nodes_data["net_asset"] = net_asset
 
-            controller = TerraformController(config)
-            nodes = Nodes(controller, config.private_ssh_key_path)
+            controller = TerraformController(tf_config, cluster_config=cluster_config)
+            nodes = Nodes(controller, tf_config.private_ssh_key_path)
             nodes_data["nodes"] = nodes
 
             nodes.prepare_nodes()
-            interfaces = BaseTest.nat_interfaces(config)
+            interfaces = BaseTest.nat_interfaces(tf_config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
             nat.add_nat_rules()
             nodes_data["nat"] = nat
@@ -66,7 +64,7 @@ class BaseTest:
         yield get_nodes_func
 
         _nodes: Nodes = nodes_data.get("nodes")
-        _config: TerraformConfig = nodes_data.get("config")
+        _cluster_config, _tf_config = nodes_data.get("configs")
         _nat: NatController = nodes_data.get("nat")
         _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
 
@@ -74,8 +72,8 @@ class BaseTest:
             if _nodes and global_variables.test_teardown:
                 logging.info('--- TEARDOWN --- node controller\n')
                 _nodes.destroy_all_nodes()
-                logging.info(f'--- TEARDOWN --- deleting iso file from: {_config.iso_download_path}\n')
-                infra_utils.run_command(f"rm -f {_config.iso_download_path}", shell=True)
+                logging.info(f'--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n')
+                infra_utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
 
                 if _nat:
                     _nat.remove_nat_rules()
@@ -89,16 +87,14 @@ class BaseTest:
 
     @pytest.fixture()
     @JunitFixtureTestCase()
-    def get_cluster(self, api_client, request, proxy_server, get_nodes) -> Callable:
+    def get_cluster(self, api_client, request, proxy_server, get_nodes) -> Callable[[Nodes, ClusterConfig], Cluster]:
         """ Do not use get_nodes fixture in this fixture. It's here only to force pytest teardown
         nodes after cluster """
 
         clusters = list()
 
         @JunitTestCase()
-        def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig = ClusterConfig()):
-            if not cluster_config.cluster_name:
-                cluster_config.cluster_name = global_variables.cluster_name, infra_utils.get_random_name(length=10)
+        def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
             logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
             if cluster_config.is_ipv6:
@@ -119,6 +115,12 @@ class BaseTest:
                     logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
                     cluster.delete()
 
+    @pytest.fixture
+    def configs(self) -> Tuple[ClusterConfig, TerraformConfig]:
+        """ Get configurations objects - while using configs fixture cluster and tf configs are the same
+        For creating new Config object just call it explicitly e.g. ClusterConfig(masters_count=1) """
+        yield ClusterConfig(), TerraformConfig()
+
     @staticmethod
     def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
@@ -137,27 +139,26 @@ class BaseTest:
         assert proxy_details.get("httpsProxy") == proxy.address
 
     @pytest.fixture()
-    def iptables(self):
+    def iptables(self) -> Callable[[Cluster, List[IptableRule], Optional[List[Node]]], None]:
         rules = []
 
         def set_iptables_rules_for_nodes(
-                cluster,
-                nodes,
-                given_nodes,
-                iptables_rules,
-                download_image=True,
-                iso_download_path=global_variables.iso_download_path
+                cluster: Cluster,
+                iptables_rules: List[IptableRule],
+                given_nodes=None,
         ):
-
             given_node_ips = []
-            if download_image:
+            given_nodes = given_nodes or cluster.nodes.nodes
+            cluster_config = cluster.config
+
+            if cluster_config.download_image:
                 cluster.generate_and_download_image(
-                    iso_download_path=iso_download_path,
+                    iso_download_path=cluster_config.iso_download_path,
                 )
-            nodes.start_given(given_nodes)
+            cluster.nodes.start_given(given_nodes)
             for node in given_nodes:
                 given_node_ips.append(node.ips[0])
-            nodes.shutdown_given(given_nodes)
+            cluster.nodes.shutdown_given(given_nodes)
 
             logging.info(f'Given node ips: {given_node_ips}')
 
@@ -322,7 +323,7 @@ class BaseTest:
 
     @staticmethod
     def update_oc_config(nodes, cluster):
-        os.environ["KUBECONFIG"] = global_variables.kubeconfig_path
+        os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
         vips = nodes.controller.get_ingress_and_api_vips()
         api_vip = vips['api_vip']
         infra_utils.config_etc_hosts(cluster_name=cluster.name,
@@ -334,7 +335,7 @@ class BaseTest:
         self.update_oc_config(nodes, cluster)
 
         def check_status():
-            res = infra_utils.get_assisted_controller_status(global_variables.kubeconfig_path)
+            res = infra_utils.get_assisted_controller_status(cluster.config.kubeconfig_path)
             return "Running" in str(res, 'utf-8')
 
         waiting.wait(
@@ -385,5 +386,5 @@ class BaseTest:
                                                           OperatorResource.WORKER_COUNT_KEY, operators)
             cluster_config.nodes_count = cluster_config.masters_count + cluster_config.workers_count
             cluster_config.olm_operators = [operators]
-        
+
         yield update_config

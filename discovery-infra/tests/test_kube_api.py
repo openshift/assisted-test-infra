@@ -11,7 +11,7 @@ import pytest
 from junit_report import JunitTestSuite
 from netaddr import IPNetwork
 
-from test_infra import utils
+from test_infra import utils, consts
 from test_infra.helper_classes.kube_helpers import (AgentClusterInstall,
                                                     ClusterDeployment,
                                                     ClusterImageSet,
@@ -21,7 +21,7 @@ from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
-from tests.config import ClusterConfig, TerraformConfig, EnvConfig
+from tests.config import EnvConfig
 from download_logs import collect_debug_info_from_cluster
 
 PROXY_PORT = 3129
@@ -31,40 +31,39 @@ logger = logging.getLogger(__name__)
 
 class TestKubeAPISNO(BaseTest):
 
-    @JunitTestSuite()
-    @pytest.mark.kube_api
-    def test_kube_api_ipv4(self, kube_api_context, get_nodes):
-        tf_config = TerraformConfig(
-            masters_count=1,
-            workers_count=0,
-            master_vcpu=8,
-            master_memory=35840
-        )
-        cluster_config = ClusterConfig()
-        kube_api_test(kube_api_context, get_nodes(tf_config), cluster_config)
+    @pytest.fixture
+    def kube_test_configs(self, configs):
+        cluster_config, tf_config = configs
+        tf_config.masters_count = 1
+        tf_config.workers_count = 0
+        tf_config.master_vcpu = 8
+        tf_config.master_memory = 35840
+
+        yield cluster_config, tf_config
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_ipv6(self, kube_api_context, proxy_server, get_nodes):
-        tf_config = TerraformConfig(
-            masters_count=1,
-            workers_count=0,
-            master_vcpu=8,
-            master_memory=35840,
-            is_ipv6=True
-        )
-        cluster_config = ClusterConfig(
-            service_network_cidr='2003:db8::/112',
-            cluster_network_cidr='2002:db8::/53',
-            cluster_network_host_prefix=64,
-            is_ipv6=True,
-        )
+    def test_kube_api_ipv4(self, kube_test_configs, kube_api_context, get_nodes):
+        cluster_config, tf_config = kube_test_configs
+        kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config), cluster_config)
 
-        kube_api_test(kube_api_context, get_nodes(tf_config), cluster_config, proxy_server, is_ipv4=False)
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_kube_api_ipv6(self, kube_test_configs, kube_api_context, proxy_server, get_nodes):
+        cluster_config, tf_config = kube_test_configs
+        tf_config.is_ipv6 = True
+        cluster_config.service_network_cidr = consts.DEFAULT_IPV6_SERVICE_CIDR
+        cluster_config.cluster_network_cidr = consts.DEFAULT_IPV6_CLUSTER_CIDR
+        cluster_config.cluster_network_host_prefix = consts.DEFAULT_IPV6_HOST_PREFIX
+        cluster_config.is_ipv6 = True
+
+        kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
+                      cluster_config, proxy_server, is_ipv4=False)
+
 
 
 def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
-    cluster_name = nodes.controller.cluster_name
+    cluster_name = cluster_config.cluster_name
 
     machine_cidr = nodes.controller.get_machine_cidr()
 
