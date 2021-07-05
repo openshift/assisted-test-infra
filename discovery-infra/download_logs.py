@@ -16,6 +16,7 @@ import requests
 import urllib3
 from dateutil.parser import isoparse
 from paramiko.ssh_exception import SSHException
+from scp import SCPException
 
 from test_infra import warn_deprecate
 from test_infra.tools.concurrently import run_concurrently
@@ -262,7 +263,7 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
         node.download_file(f"/tmp/sosreport.tar.bz2",
                            os.path.join(destination_dir, f"sosreport-{node.name}.tar.bz2"))
 
-    except (TimeoutError, RuntimeError, SSHException):
+    except (TimeoutError, RuntimeError, SSHException, SCPException):
         log.exception("Failed accessing node %s for sosreport data gathering", node)
 
 
