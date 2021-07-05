@@ -10,8 +10,13 @@ class SensitiveFormatter(logging.Formatter):
 
     @staticmethod
     def _filter(s):
+        # Dict filter
         s = re.sub(r"('_pull_secret':\s+)'(.*?)'", r"\g<1>'*** PULL_SECRET ***'", s)
         s = re.sub(r"('_ssh_public_key':\s+)'(.*?)'", r"\g<1>'*** SSH_KEY ***'", s)
+
+        # Object filter
+        s = re.sub(r"(pull_secret='[^']*(?=')')", "pull_secret = *** PULL_SECRET ***", s)
+        s = re.sub(r"(ssh_public_key='[^']*(?=')')", "ssh_public_key = *** SSH_KEY ***", s)
         return s
 
     def format(self, record):
