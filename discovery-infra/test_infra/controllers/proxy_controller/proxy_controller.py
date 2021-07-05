@@ -18,7 +18,8 @@ class ProxyController:
         denied_port=None,
         authenticated=False,
         dir=None,
-        host_ip=None
+        host_ip=None,
+        is_ipv6=False
     ):
 
         if not name:
@@ -29,6 +30,7 @@ class ProxyController:
             self.authenticated = authenticated
             self.image = "quay.io/sameersbn/squid"
             self.dir = dir
+            self._is_ipv6 = is_ipv6
             self._set_server_address(host_ip)
             self._create_conf_from_template(denied_port=denied_port)
             self._create_user_file_for_auth()
@@ -44,7 +46,8 @@ class ProxyController:
         host_name = socket.gethostname()
         host_ip = host_ip or socket.gethostbyname(host_name)
         proxy_user_path = f"{self.PROXY_USER}:{self.PROXY_USER_PASS}@" if self.authenticated else ""
-        self.address = f"http://[{proxy_user_path}{host_ip}]:{self.port}"
+        address = f"{proxy_user_path}{host_ip}"
+        self.address = f"http://{f'[{address}]' if self._is_ipv6 else address}:{self.port}"
         logging.info(f"Proxy server address {self.address}")
 
     def _run_proxy_server(self):
