@@ -129,7 +129,10 @@ class BaseTest:
                              cluster_config.cluster_network_cidr,
                              f".{str(cluster_config.cluster_name)}.redhat.com"])
 
-        proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip)
+        # todo cluster.config will be property as part of MGMT-7060 - need to replace cluster._config.is_ipv6 with
+        #  cluster.config.is_ipv6
+        proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
+                             is_ipv6=cluster._config.is_ipv6)
         cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy")
