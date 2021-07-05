@@ -1,7 +1,6 @@
 import contextlib
 import ipaddress
 import json
-import logging
 import random
 import re
 import time
@@ -22,7 +21,7 @@ from test_infra.controllers.load_balancer_controller import LoadBalancerControll
 from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils import operators_utils, logs_utils
+from test_infra.utils import operators_utils, logs_utils, log
 
 
 class Cluster:
@@ -152,7 +151,7 @@ class Cluster:
         return [{"id": h["id"], "role": host_type} for h in hosts if host_type in h["requested_hostname"]][:count]
 
     def set_cluster_name(self, cluster_name: str):
-        logging.info(f"Setting Cluster Name:{cluster_name} for cluster: {self.id}")
+        log.info(f"Setting Cluster Name:{cluster_name} for cluster: {self.id}")
         self.update_config(cluster_name=cluster_name)
         self.api_client.update_cluster(self.id, {"name": cluster_name})
 
@@ -172,7 +171,7 @@ class Cluster:
         self.unset_olm_operator(consts.OperatorType.CNV)
 
     def unset_olm_operator(self, operator_name):
-        logging.info(f"Unsetting {operator_name} for cluster: {self.id}")
+        log.info(f"Unsetting {operator_name} for cluster: {self.id}")
         cluster = self.api_client.cluster_get(self.id)
 
         olm_operators = []
@@ -184,7 +183,7 @@ class Cluster:
         self.api_client.update_cluster(self.id, {"olm_operators": olm_operators})
 
     def set_olm_operator(self, operator_name, properties=None):
-        logging.info(f"Setting {operator_name} for cluster: {self.id}")
+        log.info(f"Setting {operator_name} for cluster: {self.id}")
         cluster = self.api_client.cluster_get(self.id)
 
         if operator_name in [o.name for o in cluster.monitored_operators]:
@@ -258,25 +257,25 @@ class Cluster:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
     def set_machine_cidr(self, machine_cidr):
-        logging.info(f"Setting Machine Network CIDR:{machine_cidr} for cluster: {self.id}")
+        log.info(f"Setting Machine Network CIDR:{machine_cidr} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"machine_network_cidr": machine_cidr})
 
     def set_ingress_and_api_vips(self, vips):
-        logging.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")
+        log.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, vips)
 
     def set_ssh_key(self, ssh_key: str):
-        logging.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
+        log.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
         self.update_config(ssh_public_key=ssh_key)
         self.api_client.update_cluster(self.id, {"ssh_public_key": ssh_key})
 
     def set_base_dns_domain(self, base_dns_domain: str):
-        logging.info(f"Setting base DNS domain:{base_dns_domain} for cluster: {self.id}")
+        log.info(f"Setting base DNS domain:{base_dns_domain} for cluster: {self.id}")
         self.update_config(base_dns_domain=base_dns_domain)
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
 
     def set_advanced_networking(self, cluster_cidr: str, service_cidr: str, cluster_host_prefix: int):
-        logging.info(
+        log.info(
             f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr}, "
             f"Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}"
         )
@@ -296,32 +295,32 @@ class Cluster:
         )
 
     def set_advanced_cluster_cidr(self, cluster_cidr: str):
-        logging.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
+        log.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
         self.update_config(cluster_network_cidr=cluster_cidr)
         self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr})
 
     def set_advanced_service_cidr(self, service_cidr: str):
-        logging.info(f"Setting Service CIDR: {service_cidr} for cluster: {self.id}")
+        log.info(f"Setting Service CIDR: {service_cidr} for cluster: {self.id}")
         self.update_config(service_network_cidr=service_cidr)
         self.api_client.update_cluster(self.id, {"service_network_cidr": service_cidr})
 
     def set_advanced_cluster_host_prefix(self, cluster_host_prefix: int):
-        logging.info(f"Setting Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+        log.info(f"Setting Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
         self.update_config(cluster_network_host_prefix=cluster_host_prefix)
         self.api_client.update_cluster(self.id, {"cluster_network_host_prefix": cluster_host_prefix})
 
     def set_pull_secret(self, pull_secret: str):
-        logging.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
+        log.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
         self.update_config(pull_secret=pull_secret)
         self.api_client.update_cluster(self.id, {"pull_secret": pull_secret})
 
     def set_host_name(self, host_id, requested_name):
-        logging.info(f"Setting Required Host Name:{requested_name}, for Host ID: {host_id}")
+        log.info(f"Setting Required Host Name:{requested_name}, for Host ID: {host_id}")
         host_data = {"hosts_names": [{"id": host_id, "hostname": requested_name}]}
         self.api_client.update_cluster(self.id, host_data)
 
     def set_additional_ntp_source(self, ntp_source: List[str]):
-        logging.info(f"Setting Additional NTP source:{ntp_source}")
+        log.info(f"Setting Additional NTP source:{ntp_source}")
         if isinstance(ntp_source, List):
             ntp_source_string = ",".join(ntp_source)
         elif isinstance(ntp_source, str):
@@ -337,7 +336,7 @@ class Cluster:
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
 
     def set_proxy_values(self, http_proxy, https_proxy="", no_proxy=""):
-        logging.info(
+        log.info(
             f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} "
             f"for cluster: {self.id}"
         )
@@ -467,17 +466,17 @@ class Cluster:
 
     def disable_host(self, host):
         host_name = host["requested_hostname"]
-        logging.info(f"Going to disable host: {host_name} in cluster: {self.id}")
+        log.info(f"Going to disable host: {host_name} in cluster: {self.id}")
         self.api_client.disable_host(cluster_id=self.id, host_id=host["id"])
 
     def enable_host(self, host):
         host_name = host["requested_hostname"]
-        logging.info(f"Going to enable host: {host_name} in cluster: {self.id}")
+        log.info(f"Going to enable host: {host_name} in cluster: {self.id}")
         self.api_client.enable_host(cluster_id=self.id, host_id=host["id"])
 
     def delete_host(self, host):
         host_id = host["id"]
-        logging.info(f"Going to delete host: {host_id} in cluster: {self.id}")
+        log.info(f"Going to delete host: {host_id} in cluster: {self.id}")
         self.api_client.deregister_host(cluster_id=self.id, host_id=host_id)
 
     def cancel_install(self):
@@ -487,7 +486,7 @@ class Cluster:
         hosts = self.get_hosts_by_role(consts.NodeRoles.MASTER)
         for host in hosts:
             if host.get("bootstrap"):
-                logging.info("Bootstrap node is: %s", host["requested_hostname"])
+                log.info("Bootstrap node is: %s", host["requested_hostname"])
                 return host["requested_hostname"]
 
     def get_hosts_by_role(self, role, hosts=None):
@@ -496,7 +495,7 @@ class Cluster:
         for host in hosts:
             if host["role"] == role:
                 nodes_by_role.append(host)
-        logging.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
+        log.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
         return nodes_by_role
 
     def get_random_host_by_role(self, role):
@@ -640,8 +639,8 @@ class Cluster:
     @JunitTestCase()
     def prepare_for_installation(self, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
-        logging.info(f"Preparing for installation with configurations: cluster_config={self._config},"
-                     f"nodes_config={self.nodes.config}")
+        log.info(f"Preparing for installation with clsuter configurations: cluster_config={self._config}")
+        log.info(f"Preparing for installation with nodes configurations: nodes_config={self.nodes.config}")
 
         if self._config.download_image:
             if static_network_config:
@@ -720,7 +719,7 @@ class Cluster:
     def wait_for_cluster_validation(
         self, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
     ):
-        logging.info("Wait until cluster %s validation %s is in status %s", self.id, validation_id, statuses)
+        log.info("Wait until cluster %s validation %s is in status %s", self.id, validation_id, statuses)
         try:
             waiting.wait(
                 lambda: self.is_cluster_validation_in_status(
@@ -731,7 +730,7 @@ class Cluster:
                 waiting_for="Cluster validation to be in status %s" % statuses,
             )
         except BaseException:
-            logging.error(
+            log.error(
                 "Cluster validation status is: %s",
                 utils.get_cluster_validation_value(
                     self.api_client.cluster_get(self.id), validation_section, validation_id
@@ -740,7 +739,7 @@ class Cluster:
             raise
 
     def is_cluster_validation_in_status(self, validation_section, validation_id, statuses):
-        logging.info("Is cluster %s validation %s in status %s", self.id, validation_id, statuses)
+        log.info("Is cluster %s validation %s in status %s", self.id, validation_id, statuses)
         try:
             return (
                 utils.get_cluster_validation_value(
@@ -749,12 +748,12 @@ class Cluster:
                 in statuses
             )
         except BaseException:
-            logging.exception("Failed to get cluster %s validation info", self.id)
+            log.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_host_validation(
         self, host_id, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
     ):
-        logging.info("Wait until host %s validation %s is in status %s", host_id, validation_id, statuses)
+        log.info("Wait until host %s validation %s is in status %s", host_id, validation_id, statuses)
         try:
             waiting.wait(
                 lambda: self.is_host_validation_in_status(
@@ -768,7 +767,7 @@ class Cluster:
                 waiting_for="Host validation to be in status %s" % statuses,
             )
         except BaseException:
-            logging.error(
+            log.error(
                 "Host validation status is: %s",
                 utils.get_host_validation_value(
                     self.api_client.cluster_get(self.id), host_id, validation_section, validation_id
@@ -777,7 +776,7 @@ class Cluster:
             raise
 
     def is_host_validation_in_status(self, host_id, validation_section, validation_id, statuses):
-        logging.info("Is host %s validation %s in status %s", host_id, validation_id, statuses)
+        log.info("Is host %s validation %s in status %s", host_id, validation_id, statuses)
         try:
             return (
                 utils.get_host_validation_value(
@@ -786,7 +785,7 @@ class Cluster:
                 in statuses
             )
         except BaseException:
-            logging.exception("Failed to get cluster %s validation info", self.id)
+            log.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_cluster_to_be_in_installing_pending_user_action_status(self):
         utils.wait_till_cluster_is_in_status(
@@ -864,13 +863,13 @@ class Cluster:
                 if utils.to_utc(event["event_time"]) >= reference_time - 2:
                     if all(param in event["message"] for param in params_list):
                         # event_exist = True
-                        logging.info(f"Event to find: {event_to_find} exists with its params")
+                        log.info(f"Event to find: {event_to_find} exists with its params")
                         return True
         else:
             return False
 
     def wait_for_event(self, event_to_find, reference_time, params_list=None, host_id="", timeout=10):
-        logging.info(f"Searching for event: {event_to_find}")
+        log.info(f"Searching for event: {event_to_find}")
         if params_list is None:
             params_list = list()
         try:
@@ -881,7 +880,7 @@ class Cluster:
                 waiting_for="Event: %s" % event_to_find,
             )
         except waiting.exceptions.TimeoutExpired:
-            logging.error(f"Event: {event_to_find} did't found")
+            log.error(f"Event: {event_to_find} did't found")
             raise
 
     @staticmethod
@@ -976,11 +975,11 @@ class Cluster:
         api_vip = cluster.api_vip
 
         if not api_vip and cluster.user_managed_networking:
-            logging.info("API VIP is not set, searching for api ip on masters")
+            log.info("API VIP is not set, searching for api ip on masters")
             masters = self.get_hosts_by_role(consts.NodeRoles.MASTER, hosts=cluster.to_dict()["hosts"])
             api_vip = self._wait_for_api_vip(masters)
 
-        logging.info("api vip is %s", api_vip)
+        log.info("api vip is %s", api_vip)
         return api_vip
 
     def _wait_for_api_vip(self, hosts, timeout=180):
