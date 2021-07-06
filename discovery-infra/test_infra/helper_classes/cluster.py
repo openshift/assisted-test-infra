@@ -629,7 +629,7 @@ class Cluster:
             timeout=timeout,
         )
 
-    def _set_dns(self):
+    def _set_none_platform_dns(self):
         cluster = self.api_client.cluster_get(self.id)
         cluster_name = cluster.name
         base_domain = cluster.base_dns_domain
@@ -639,6 +639,19 @@ class Cluster:
         contents = dedent(f"""
             server=/api.{cluster_name}.{base_domain}/{nameserver_ip}
             server=/.apps.{cluster_name}.{base_domain}/{nameserver_ip}
+            """)
+        self.nodes.controller.tf.change_variables(
+            {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
+        )
+
+    def _set_dns(self, api_vip, ingress_vip):
+        cluster = self.api_client.cluster_get(self.id)
+        cluster_name = cluster.name
+        base_domain = cluster.base_dns_domain
+        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
+        contents = dedent(f"""
+            address=/api.{cluster_name}.{base_domain}/{api_vip}
+            address=/.apps.{cluster_name}.{base_domain}/{ingress_vip}
             """)
         self.nodes.controller.tf.change_variables(
             {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
@@ -680,10 +693,17 @@ class Cluster:
 
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
-        self._set_dns()
+            self._set_none_platform_dns()
         if self._config.vip_dhcp_allocation:
             vips_info = self.__class__.get_vips_from_cluster(self.api_client, self.id)
-            self.nodes.controller.tf.set_new_vips(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
+            self._set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
+        elif self._config.masters_count == 1:
+            main_cidr = self.nodes.controller.get_machine_cidr()
+            master_ips = self.get_master_ips(self.api_client, self.id, main_cidr)
+            if len(master_ips) != 1:
+                raise Exception(f"Unexpected master count {len(master_ips)} for single node")
+            node_ip = master_ips[0]
+            self._set_dns(api_vip=node_ip, ingress_vip=node_ip)
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
