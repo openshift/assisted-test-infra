@@ -1,13 +1,13 @@
 from abc import ABC
+from dataclasses import dataclass, field
 from distutils.util import strtobool
 from pathlib import Path
-from typing import List, Any
-
-from dataclasses import dataclass, field
+from typing import Any, List
 
 from test_infra import consts
-from test_infra.consts import resources, env_defaults
-from test_infra.utils import operators_utils, get_env, get_openshift_version, get_kubeconfig_path
+from test_infra.consts import env_defaults, resources
+from test_infra.utils import get_env, get_kubeconfig_path, get_openshift_version, operators_utils
+from test_infra.utils.cluster_name import ClusterName
 
 
 @dataclass(frozen=True)
