@@ -327,8 +327,12 @@ class BaseTest:
     @staticmethod
     def update_oc_config(nodes, cluster):
         os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
-        vips = nodes.controller.get_ingress_and_api_vips()
-        api_vip = vips['api_vip']
+        if cluster.config.masters_count == 1:
+            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id,
+                                                     cluster.get_details().machine_network_cidr)
+        else:
+            vips = nodes.controller.get_ingress_and_api_vips()
+            api_vip = vips['api_vip']
         infra_utils.config_etc_hosts(cluster_name=cluster.name,
                                      base_dns_domain=global_variables.base_dns_domain,
                                      api_vip=api_vip)
