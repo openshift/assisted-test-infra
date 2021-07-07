@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 import waiting
 from logger import log
+
 from test_infra.consts import NUMBER_OF_MASTERS
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
@@ -43,7 +44,7 @@ def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path):
         cluster.download_installation_logs(cluster_tar_path)
         assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
         _verify_oc_logs_uploaded(cluster_tar_path)
-    except BaseException as err:
+    except BaseException:
         logging.exception("oc logs were not uploaded")
         raise
 
@@ -62,20 +63,22 @@ def verify_logs_not_uploaded(cluster_tar_path, category):
 
     with TemporaryDirectory() as tempdir:
         with tarfile.open(cluster_tar_path) as tar:
-            logging.info(f'downloaded logs: {tar.getnames()}')
+            logging.info(f"downloaded logs: {tar.getnames()}")
             tar.extractall(tempdir)
-            assert category not in os.listdir(tempdir), f'{category} logs were found in uploaded logs'
+            assert category not in os.listdir(tempdir), f"{category} logs were found in uploaded logs"
 
 
 def to_utc(timestr):
     # TODO - temporary import!! Delete after deprecating utils.get_logs_collected_at to avoid cyclic import
     import datetime
+
     return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
 
 
 def get_logs_collected_at(client, cluster_id):
     hosts = client.get_cluster_hosts(cluster_id)
     return [to_utc(host["logs_collected_at"]) for host in hosts]
+
 
 def wait_for_controller_logs(client, cluster_id, timeout, interval=60):
     try:

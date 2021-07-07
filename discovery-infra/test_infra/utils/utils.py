@@ -20,18 +20,18 @@ from distutils.dir_util import copy_tree
 from functools import wraps
 from pathlib import Path
 from string import ascii_lowercase
-from typing import List, Union, Tuple
+from typing import List, Tuple, Union
 
 import filelock
-from requests import Session
-from requests.adapters import HTTPAdapter, Retry
-from requests.exceptions import RequestException
-from requests.models import HTTPError
 import libvirt
 import oc_utils
 import requests
 import waiting
 from logger import log
+from requests import Session
+from requests.adapters import HTTPAdapter, Retry
+from requests.exceptions import RequestException
+from requests.models import HTTPError
 from retry import retry
 
 import test_infra.consts as consts
@@ -54,24 +54,17 @@ def scan_for_free_port(starting_port: int, step: int = 200):
 
             return port
 
-    raise RuntimeError(
-        'could not allocate free port for proxy'
-    )
+    raise RuntimeError("could not allocate free port for proxy")
 
 
 def run_command(command, shell=False, raise_errors=True, env=None):
     command = command if shell else shlex.split(command)
     process = subprocess.run(
-        command,
-        shell=shell,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=env,
-        universal_newlines=True
+        command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True
     )
 
     def _io_buffer_to_str(buf):
-        if hasattr(buf, 'read'):
+        if hasattr(buf, "read"):
             buf = buf.read().decode()
         return buf
 
@@ -79,17 +72,19 @@ def run_command(command, shell=False, raise_errors=True, env=None):
     err = _io_buffer_to_str(process.stderr).strip()
 
     if raise_errors and process.returncode != 0:
-        raise RuntimeError(
-            f'command: {command} exited with an error: {err} '
-            f'code: {process.returncode}'
-        )
+        raise RuntimeError(f"command: {command} exited with an error: {err} " f"code: {process.returncode}")
 
     return out, err, process.returncode
 
 
 def run_command_with_output(command, env=None):
     with subprocess.Popen(
-            command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, env=env,
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        env=env,
     ) as p:
         for line in p.stdout:
             print(line, end="")  # process line here
@@ -152,7 +147,7 @@ def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
 
 def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
     hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    num_macs = len([mac for mac in hosts_macs if mac != ''])
+    num_macs = len([mac for mac in hosts_macs if mac != ""])
     return num_macs >= num_nodes
 
 
@@ -177,20 +172,15 @@ def set_tfvars(tf_folder, tfvars_json):
         json.dump(tfvars_json, _file)
 
 
-def are_hosts_in_status(
-        hosts, nodes_count, statuses, fall_on_error_status=True
-):
+def are_hosts_in_status(hosts, nodes_count, statuses, fall_on_error_status=True):
     hosts_in_status = [host for host in hosts if host["status"] in statuses]
     if len(hosts_in_status) >= nodes_count:
         return True
-    elif (
-            fall_on_error_status
-            and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR])
-            > 0
-    ):
+    elif fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
         hosts_in_error = [
             (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
-            for i, host in enumerate(hosts, start=1) if host["status"] == consts.NodesStatus.ERROR
+            for i, host in enumerate(hosts, start=1)
+            if host["status"] == consts.NodesStatus.ERROR
         ]
         log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
         raise Exception("All the nodes must be in valid status, but got some in error")
@@ -198,19 +188,22 @@ def are_hosts_in_status(
     log.info(
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
         statuses,
-        [(i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"]) for i, host in enumerate(hosts, start=1)],
+        [
+            (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
+            for i, host in enumerate(hosts, start=1)
+        ],
     )
     return False
 
 
 def wait_till_hosts_with_macs_are_in_status(
-        client,
-        cluster_id,
-        macs,
-        statuses,
-        timeout=consts.NODES_REGISTERED_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    macs,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
 
@@ -228,13 +221,13 @@ def wait_till_hosts_with_macs_are_in_status(
 
 
 def wait_till_all_hosts_are_in_status(
-        client,
-        cluster_id,
-        nodes_count,
-        statuses,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    nodes_count,
+    statuses,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
@@ -252,13 +245,13 @@ def wait_till_all_hosts_are_in_status(
 
 
 def wait_till_at_least_one_host_is_in_status(
-        client,
-        cluster_id,
-        statuses,
-        nodes_count=1,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    statuses,
+    nodes_count=1,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till 1 node is in one of the statuses %s", statuses)
 
@@ -274,15 +267,16 @@ def wait_till_at_least_one_host_is_in_status(
         waiting_for="Node to be in of the statuses %s" % statuses,
     )
 
+
 def wait_till_specific_host_is_in_status(
-        client,
-        cluster_id,
-        host_name,
-        nodes_count,
-        statuses,
-        timeout=consts.NODES_REGISTERED_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    host_name,
+    nodes_count,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
 
@@ -300,12 +294,12 @@ def wait_till_specific_host_is_in_status(
 
 
 def wait_till_at_least_one_host_is_in_stage(
-        client,
-        cluster_id,
-        stages,
-        nodes_count=1,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
-        interval=5,
+    client,
+    cluster_id,
+    stages,
+    nodes_count=1,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    interval=5,
 ):
     log.info(f"Wait till {nodes_count} node is in stage {stages}")
     try:
@@ -321,50 +315,49 @@ def wait_till_at_least_one_host_is_in_stage(
         )
     except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
-        log.error(f"All nodes stages: "
-                  f"{[host['progress']['current_stage'] for host in hosts]} "
-                  f"when waited for {stages}")
+        log.error(
+            f"All nodes stages: "
+            f"{[host['progress']['current_stage'] for host in hosts]} "
+            f"when waited for {stages}"
+        )
         raise
 
 
 def are_host_progress_in_stage(hosts, stages, nodes_count=1):
     log.info("Checking hosts installation stage")
-    hosts_in_stage = [host for host in hosts if
-                      (host["progress"]["current_stage"]) in stages]
+    hosts_in_stage = [host for host in hosts if (host["progress"]["current_stage"]) in stages]
     if len(hosts_in_stage) >= nodes_count:
         return True
     host_info = [(host["id"], (host["progress"]["current_stage"])) for host in hosts]
     log.info(
         f"Asked {nodes_count} hosts to be in one of the statuses from {stages} and currently "
-        f"hosts statuses are {host_info}")
+        f"hosts statuses are {host_info}"
+    )
     return False
 
 
 def wait_till_cluster_is_in_status(
-        client,
-        cluster_id,
-        statuses: List[str],
-        timeout=consts.NODES_REGISTERED_TIMEOUT,
-        interval=30,
-        break_statuses: List[str] = None
+    client,
+    cluster_id,
+    statuses: List[str],
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    interval=30,
+    break_statuses: List[str] = None,
 ):
     log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
     try:
         if break_statuses:
             statuses += break_statuses
         waiting.wait(
-            lambda: is_cluster_in_status(
-                client=client,
-                cluster_id=cluster_id,
-                statuses=statuses
-            ),
+            lambda: is_cluster_in_status(client=client, cluster_id=cluster_id, statuses=statuses),
             timeout_seconds=timeout,
             sleep_seconds=interval,
             waiting_for="Cluster to be in status %s" % statuses,
         )
         if break_statuses and is_cluster_in_status(client, cluster_id, break_statuses):
-            raise BaseException(f"Stop installation process, "
-                                f"cluster is in status {client.cluster_get(cluster_id).status}")
+            raise BaseException(
+                f"Stop installation process, " f"cluster is in status {client.cluster_get(cluster_id).status}"
+            )
     except BaseException:
         log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
         raise
@@ -377,8 +370,7 @@ def is_cluster_in_status(client, cluster_id, statuses):
         if cluster_status in statuses:
             return True
         else:
-            log.info(f"Cluster not yet in its required status. "
-                     f"Current status: {cluster_status}")
+            log.info(f"Cluster not yet in its required status. " f"Current status: {cluster_status}")
             return False
     except BaseException:
         log.exception("Failed to get cluster %s info", cluster_id)
@@ -388,8 +380,8 @@ def get_cluster_validation_value(cluster_info, validation_section, validation_id
     found_status = "validation not found"
     validations = json.loads(cluster_info.validations_info)
     for validation in validations[validation_section]:
-        if validation['id'] == validation_id:
-            found_status = validation['status']
+        if validation["id"] == validation_id:
+            found_status = validation["status"]
             break
     return found_status
 
@@ -401,15 +393,15 @@ def get_host_validation_value(cluster_info, host_id, validation_section, validat
         found_status = "validation not found"
         validations = json.loads(host.validations_info)
         for validation in validations[validation_section]:
-            if validation['id'] == validation_id:
-                found_status = validation['status']
+            if validation["id"] == validation_id:
+                found_status = validation["status"]
                 break
         return found_status
     return "host not found"
 
 
 def get_random_name(length=8):
-    return ''.join(random.choice(ascii_lowercase) for _ in range(length))
+    return "".join(random.choice(ascii_lowercase) for _ in range(length))
 
 
 def folder_exists(file_path):
@@ -433,92 +425,70 @@ def recreate_folder(folder, with_chmod=True, force_recreate=True):
 
 
 def get_assisted_service_url_by_args(args, wait=True):
-    if hasattr(args, 'inventory_url') and args.inventory_url:
+    if hasattr(args, "inventory_url") and args.inventory_url:
         return args.inventory_url
 
-    kwargs = {
-        'service': args.service_name,
-        'namespace': args.namespace
-    }
+    kwargs = {"service": args.service_name, "namespace": args.namespace}
     if args.oc_mode:
         get_url = get_remote_assisted_service_url
-        kwargs['oc'] = oc_utils.get_oc_api_client(
-            token=args.oc_token,
-            server=args.oc_server
-        )
-        kwargs['scheme'] = args.oc_scheme
+        kwargs["oc"] = oc_utils.get_oc_api_client(token=args.oc_token, server=args.oc_server)
+        kwargs["scheme"] = args.oc_scheme
     else:
         get_url = get_local_assisted_service_url
-        kwargs['deploy_target'] = args.deploy_target
+        kwargs["deploy_target"] = args.deploy_target
 
     return retry(
         tries=5 if wait else 1,
         delay=3,
         backoff=2,
-        exceptions=(
-            requests.ConnectionError,
-            requests.ConnectTimeout,
-            requests.RequestException
-        )
+        exceptions=(requests.ConnectionError, requests.ConnectTimeout, requests.RequestException),
     )(get_url)(**kwargs)
 
 
 def get_remote_assisted_service_url(oc, namespace, service, scheme):
-    log.info('Getting oc %s URL in %s namespace', service, namespace)
+    log.info("Getting oc %s URL in %s namespace", service, namespace)
     service_urls = oc_utils.get_namespaced_service_urls_list(
-        client=oc,
-        namespace=namespace,
-        service=service,
-        scheme=scheme
+        client=oc, namespace=namespace, service=service, scheme=scheme
     )
     for url in service_urls:
         if is_assisted_service_reachable(url):
             return url
 
-    raise RuntimeError(
-        f'could not find any reachable url to {service} service '
-        f'in {namespace} namespace'
-    )
+    raise RuntimeError(f"could not find any reachable url to {service} service " f"in {namespace} namespace")
 
 
 def get_local_assisted_service_url(namespace, service, deploy_target):
     if deploy_target in ["onprem"]:
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
-        return f'http://{assisted_hostname_or_ip}:8090'
+        return f"http://{assisted_hostname_or_ip}:8090"
     elif deploy_target == "ocp":
         res = subprocess.check_output("ip route get 1", shell=True).split()[6]
         ip = str(res, "utf-8")
-        return f'http://{ip}:7000'
+        return f"http://{ip}:7000"
     else:
         # default deploy target is minikube
-        log.info('Getting minikube %s URL in %s namespace', service, namespace)
+        log.info("Getting minikube %s URL in %s namespace", service, namespace)
         ip, _, _ = run_command("kubectl get nodes -o=jsonpath={.items[0].status.addresses[0].address}")
         # resolve the service node port form the service internal port (Support multiple ports per service).
-        port, _, _ = run_command(f'kubectl get svc assisted-service -n {namespace} -o=jsonpath="{{.spec.ports[?(@.port==8090)].nodePort}}"')
-        url = f'http://{ip}:{port}'
+        port, _, _ = run_command(f"kubectl get svc assisted-service -n {namespace} "
+                                 f"-o=jsonpath='{{.spec.ports[?(@.port==8090)].nodePort}}'")
+        url = f"http://{ip}:{port}"
         if is_assisted_service_reachable(url):
             return url
 
-        raise RuntimeError(
-            f'could not find any reachable url to {service} service '
-            f'in {namespace} namespace'
-        )
+        raise RuntimeError(f"could not find any reachable url to {service} service " f"in {namespace} namespace")
 
 
 def is_assisted_service_reachable(url):
     try:
-        r = requests.get(url + '/health', timeout=10, verify=False)
+        r = requests.get(url + "/health", timeout=10, verify=False)
         return r.status_code == 200
-    except (
-            requests.ConnectionError,
-            requests.ConnectTimeout,
-            requests.RequestException
-    ):
+    except (requests.ConnectionError, requests.ConnectTimeout, requests.RequestException):
         return False
 
 
 def get_tf_folder(cluster_name, namespace=None):
-    folder_name = f'{cluster_name}__{namespace}' if namespace else f'{cluster_name}'
+    folder_name = f"{cluster_name}__{namespace}" if namespace else f"{cluster_name}"
     return os.path.join(consts.TF_FOLDER, folder_name)
 
 
@@ -535,13 +505,13 @@ def get_all_namespaced_clusters():
 
 
 def get_name_and_namespace_from_dirname(dirname):
-    if '__' in dirname:
-        return dirname.rsplit('__', 1)
+    if "__" in dirname:
+        return dirname.rsplit("__", 1)
 
     log.warning(
-        'Unable to extract cluster name and namespace from directory name %s. '
-        'Directory name convention must be <cluster_name>:<namespace>',
-        dirname
+        "Unable to extract cluster name and namespace from directory name %s. "
+        "Directory name convention must be <cluster_name>:<namespace>",
+        dirname,
     )
 
 
@@ -566,18 +536,14 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
 
 
 @contextmanager
-def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
-    logging.getLogger('filelock').setLevel(logging.ERROR)
+def file_lock_context(filepath="/tmp/discovery-infra.lock", timeout=300):
+    logging.getLogger("filelock").setLevel(logging.ERROR)
 
     lock = filelock.FileLock(filepath, timeout)
     try:
         lock.acquire()
     except filelock.Timeout:
-        log.info(
-            'Deleting lock file: %s '
-            'since it exceeded timeout of: %d seconds',
-            filepath, timeout
-        )
+        log.info("Deleting lock file: %s " "since it exceeded timeout of: %d seconds", filepath, timeout)
         os.unlink(filepath)
         lock.acquire()
 
@@ -590,12 +556,22 @@ def file_lock_context(filepath='/tmp/discovery-infra.lock', timeout=300):
 def _get_hosts_from_network(net):
     desc = md.parseString(net.XMLDesc())
     try:
-        hosts = desc.getElementsByTagName("network")[0]. \
-            getElementsByTagName("ip")[0]. \
-            getElementsByTagName("dhcp")[0]. \
-            getElementsByTagName("host")
-        return list(map(lambda host: {"mac": host.getAttribute("mac"), "ipaddr": host.getAttribute("ip"),
-                                      "hostname": host.getAttribute("name")}, hosts))
+        hosts = (
+            desc.getElementsByTagName("network")[0]
+            .getElementsByTagName("ip")[0]
+            .getElementsByTagName("dhcp")[0]
+            .getElementsByTagName("host")
+        )
+        return list(
+            map(
+                lambda host: {
+                    "mac": host.getAttribute("mac"),
+                    "ipaddr": host.getAttribute("ip"),
+                    "hostname": host.getAttribute("name"),
+                },
+                hosts,
+            )
+        )
     except IndexError:
         return []
 
@@ -654,7 +630,7 @@ def get_env(env, default=None):
 
 
 def touch(path):
-    with open(path, 'a'):
+    with open(path, "a"):
         os.utime(path, None)
 
 
@@ -676,22 +652,23 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
 
 
 def run_container(container_name, image, flags=None, command=""):
-    logging.info(f'Running Container {container_name}')
-    run_container_cmd = f'podman {consts.PODMAN_FLAGS} run --name {container_name}'
+    logging.info(f"Running Container {container_name}")
+    run_container_cmd = f"podman {consts.PODMAN_FLAGS} run --name {container_name}"
 
     flags = flags or []
     for flag in flags:
-        run_container_cmd += f' {flag}'
+        run_container_cmd += f" {flag}"
 
-    run_container_cmd += f' {image} {command}'
+    run_container_cmd += f" {image} {command}"
 
     run_command(run_container_cmd, shell=True)
 
 
 def remove_running_container(container_name):
-    logging.info(f'Removing Container {container_name}')
-    container_rm_cmd = f'podman {consts.PODMAN_FLAGS} stop {container_name} && podman' \
-                       f' {consts.PODMAN_FLAGS} rm {container_name}'
+    logging.info(f"Removing Container {container_name}")
+    container_rm_cmd = (
+        f"podman {consts.PODMAN_FLAGS} stop {container_name} && podman" f" {consts.PODMAN_FLAGS} rm {container_name}"
+    )
     run_command(container_rm_cmd, shell=True)
 
 
@@ -710,26 +687,27 @@ def get_kubeconfig_path(cluster_name: str) -> str:
 
 
 def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
-    release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
+    release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if release_image:
         with pull_secret_file() as pull_secret:
             stdout, _, _ = run_command(
                 f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"
                 f" jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
-                shell=True)
+                shell=True,
+            )
         return stdout
 
-    return get_env('OPENSHIFT_VERSION', default)
+    return get_env("OPENSHIFT_VERSION", default)
 
 
 def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):
-    release_image = os.getenv('OPENSHIFT_INSTALL_RELEASE_IMAGE')
+    release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if not release_image:
         stdout, _, _ = run_command(
-            f"jq -r '.[\"{ocp_version}\"].release_image' assisted-service/data/default_ocp_versions.json",
-            shell=True)
+            f"jq -r '.[\"{ocp_version}\"].release_image' assisted-service/data/default_ocp_versions.json", shell=True
+        )
         return stdout
 
     return release_image
@@ -737,10 +715,7 @@ def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):
 
 def copy_template_tree(dst, none_platform_mode=False):
     copy_tree(
-        src=consts.TF_TEMPLATE_NONE_PLATFORM_FLOW
-        if none_platform_mode else
-        consts.TF_TEMPLATE_BARE_METAL_FLOW,
-        dst=dst
+        src=consts.TF_TEMPLATE_NONE_PLATFORM_FLOW if none_platform_mode else consts.TF_TEMPLATE_BARE_METAL_FLOW, dst=dst
     )
 
 
@@ -751,10 +726,9 @@ def pull_secret_file():
     try:
         json.loads(pull_secret)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Value of PULL_SECRET environment variable "
-                         f"is not a valid JSON payload") from e
+        raise ValueError("Value of PULL_SECRET environment variable is not a valid JSON payload") from e
 
-    with tempfile.NamedTemporaryFile(mode='w') as f:
+    with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(pull_secret)
         f.flush()
         yield f.name
@@ -763,7 +737,10 @@ def pull_secret_file():
 def extract_installer(release_image, dest):
     logging.info("Extracting installer from %s to %s", release_image, dest)
     with pull_secret_file() as pull_secret:
-        run_command(f"oc adm release extract --registry-config '{pull_secret}' --command=openshift-install --to={dest} {release_image}")
+        run_command(
+            f"oc adm release extract --registry-config '{pull_secret}'"
+            f" --command=openshift-install --to={dest} {release_image}"
+        )
 
 
 def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
@@ -794,8 +771,8 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
             inventory = json.loads(host["inventory"])
 
             if libvirt_mac.lower() in map(
-                    lambda interface: interface["mac_address"].lower(),
-                    inventory["interfaces"],
+                lambda interface: interface["mac_address"].lower(),
+                inventory["interfaces"],
             ):
                 roles.append({"id": host["id"], "role": libvirt_metadata["role"]})
                 hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
@@ -811,20 +788,21 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
 
 def get_assisted_controller_status(kubeconfig):
     log.info("Getting controller status")
-    command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer " \
-              f"get pods -l job-name=assisted-installer-controller"
+    command = (
+        f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} --no-headers=true -n assisted-installer "
+        f"get pods -l job-name=assisted-installer-controller"
+    )
     response = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     if response.returncode != 0:
-        log.error(f'failed to get controller status: {response.stderr}')
-        return b''
+        log.error(f"failed to get controller status: {response.stderr}")
+        return b""
 
-    log.info(f'{response.stdout}')
+    log.info(f"{response.stdout}")
     return response.stdout
 
 
 def download_iso(image_url, image_path):
-    with requests.get(image_url, stream=True, verify=False) as image, \
-            open(image_path, "wb") as out:
+    with requests.get(image_url, stream=True, verify=False) as image, open(image_path, "wb") as out:
         for chunk in image.iter_content(chunk_size=1024):
             out.write(chunk)
 
@@ -835,13 +813,9 @@ def fetch_url(url, timeout=60, max_retries=5):
     Raises an exception in case of any failure.
     """
     try:
-        retries = Retry(
-            read=max_retries,
-            status=max_retries,
-            backoff_factor=0.5,
-            status_forcelist=[500])
+        retries = Retry(read=max_retries, status=max_retries, backoff_factor=0.5, status_forcelist=[500])
         s = Session()
-        s.mount('http://', HTTPAdapter(max_retries=retries))
+        s.mount("http://", HTTPAdapter(max_retries=retries))
 
         log.info(f"Fetching URL: {url}")
         response = s.get(url, timeout=timeout)
@@ -853,13 +827,19 @@ def fetch_url(url, timeout=60, max_retries=5):
 
 # Deprecated functions
 
+
 def get_logs_collected_at(client, cluster_id):
-    warnings.warn("get_logs_collected_at is deprecated and will be deleted soon."
-                  "Use test_infra.utils.logs_utils instead", DeprecationWarning)
+    warnings.warn(
+        "get_logs_collected_at is deprecated and will be deleted soon." "Use test_infra.utils.logs_utils instead",
+        DeprecationWarning,
+    )
     logs_utils.get_logs_collected_at(client, cluster_id)
 
 
 def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_logs_only=False):
-    warnings.warn("wait_for_logs_complete is deprecated and will be deleted soon."
-                  "Use test_infra.utils.wait_for_logs_complete instead", DeprecationWarning)
+    warnings.warn(
+        "wait_for_logs_complete is deprecated and will be deleted soon."
+        "Use test_infra.utils.wait_for_logs_complete instead",
+        DeprecationWarning,
+    )
     return logs_utils.wait_for_logs_complete(client, cluster_id, timeout, interval, check_host_logs_only)
