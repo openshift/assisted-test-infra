@@ -694,10 +694,10 @@ class Cluster:
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
             self._set_none_platform_dns()
-        if self._config.vip_dhcp_allocation:
+        elif self._config.masters_count != 1:
             vips_info = self.__class__.get_vips_from_cluster(self.api_client, self.id)
             self._set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
-        elif self._config.masters_count == 1:
+        else:
             main_cidr = self.nodes.controller.get_machine_cidr()
             master_ips = self.get_master_ips(self.api_client, self.id, main_cidr)
             if len(master_ips) != 1:
