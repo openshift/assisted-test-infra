@@ -136,7 +136,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
         with suppressAndLog(AssertionError, ConnectionError, requests.exceptions.ConnectionError):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
 
-        for cluster_file in ("bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml"):
+        for cluster_file in ("bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml", "custom_manifests.yaml"):
             with suppressAndLog(assisted_service_client.rest.ApiException):
                 client.download_and_save_file(cluster['id'], cluster_file,
                                               os.path.join(output_folder, "cluster_files", cluster_file))
