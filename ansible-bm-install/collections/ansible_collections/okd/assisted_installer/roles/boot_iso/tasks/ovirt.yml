@@ -1,0 +1,60 @@
+---
+- name: Log in to oVirt
+  ovirt_auth:
+    url: "{{ ovirt_url }}"
+    username: "{{ ovirt_username | default('admin@internal') }}"
+    password: "{{ ovirt_password | default(omit) }}"
+    ca_file:  "{{ ovirt_cafile | default(omit) }}"
+    insecure: "{{ ovirt_insecure | default(true) }}"
+  delegate_to: localhost
+
+- name: Create the virtual machine disk
+  ovirt.ovirt.ovirt_disk:
+    auth: "{{ ovirt_auth }}"
+    name: "{{ hostvars[item]['inventory_hostname'] }}_Disk1"
+    size: "{{ hostvars[item]['ovirt_vm_disk_size'] | default('120 GiB') }}"
+    format: cow
+    interface: virtio
+    storage_domain: "{{ hostvars[item]['ovirt_storage_domain'] | default(ovirt_storage_domain) }}"
+  register: ovirt_vm_disk
+  delegate_to: localhost
+
+- name: Create a virtual machine to boot from the discovery ISO
+  ovirt.ovirt.ovirt_vm:
+    auth: "{{ ovirt_auth }}"
+    name: "{{ hostvars[item]['inventory_hostname'] }}"
+    cluster: "{{ hostvars[item]['ovirt_cluster'] | default('Default') }}"
+    storage_domain: "{{ ovirt_storage_domain }}"
+    template: "{{ hostvars[item]['ovirt_template'] | default(omit) }}"
+    operating_system: "{{ hostvars[item]['ovirt_vm_os'] | default('rhcos_x64') }}"
+    type: "{{ hostvars[item]['ovirt_vm_type'] | default('server') }}"
+    cpu_cores: "{{ hostvars[item]['ovirt_vm_cpu_cores'] | default('8') }}"
+    cpu_sockets: "{{ hostvars[item]['ovirt_vm_cpu_sockets'] | default('1') }}"
+    memory: "{{ hostvars[item]['ovirt_vm_memory'] | default('16 GiB') }}"
+    disks:
+      - id: "{{ ovirt_vm_disk.id }}"
+        bootable: true
+    nics:
+      - name: nic1
+        profile_name: "{{ hostvars[item]['ovirt_network'] | default('ovirtmgmt') }}"
+    cd_iso: installer-image.iso
+    boot_devices:
+        - cdrom
+    state: running
+  delegate_to: localhost
+
+- name: Boot from hard disk next time
+  ovirt.ovirt.ovirt_vm:
+    auth: "{{ ovirt_auth }}"
+    name: "{{ hostvars[item]['inventory_hostname'] }}"
+    boot_devices:
+        - 'hd'
+    state: running
+  delegate_to: localhost
+
+- name: Logout from oVirt
+  ovirt_auth:
+    state: absent
+    ovirt_auth: "{{ ovirt_auth }}"
+  delegate_to: localhost
+

@@ -36,3 +36,7 @@
 - name: Check for required VMware pre-reqs
   include_tasks: vmware.yml
   when: vcenter_datastore is defined
+
+- name: Check for required oVirt pre-reqs
+  include_tasks: ovirt.yml
+  when: ovirt_storage_domain is defined

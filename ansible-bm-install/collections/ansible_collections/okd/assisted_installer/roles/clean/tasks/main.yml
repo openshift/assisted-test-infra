@@ -1,5 +1,9 @@
 ---
 # main playbook for cleanup
-- name: Cleaning up VMware Environment 
+- name: Cleaning up VMware Environment
   include_tasks: vmware.yml
   when: vcenter_datastore is defined
+
+- name: Cleaning up oVirt Environment
+  include_tasks: ovirt.yml
+  when: ovirt_storage_domain is defined

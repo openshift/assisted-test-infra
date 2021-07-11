@@ -1,6 +1,6 @@
 galaxy_info:
   author: Davis Phillips
-  description: Clean up VMware environment 
+  description: Clean up VMware and oVirt environments
   company: Red Hat, Inc.
   license: Apache License, Version 2.0
   min_ansible_version: 2.9
