@@ -13,6 +13,7 @@ SKIPPER_PARAMS ?= -i
 
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
+SERVICE_BASE_REF := $(or $(SERVICE_BASE_REF), "master")
 SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
 SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
@@ -20,6 +21,7 @@ INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/ocpmetal/assisted-service-index:lates
 
 # assisted-installer
 INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
+INSTALLER_BASE_REF := $(or $(INSTALLER_BASE_REF), "master")
 INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted-installer")
 
 # ui service
@@ -306,7 +308,10 @@ bring_assisted_installer:
 		git clone $(INSTALLER_REPO); \
 	fi
 
-	@cd assisted-installer && git fetch origin $(INSTALLER_BRANCH) && git reset --hard FETCH_HEAD
+	@cd assisted-installer && \
+	git fetch --force origin $(INSTALLER_BASE_REF):FETCH_BASE $(INSTALLER_BRANCH) && \
+	git reset --hard FETCH_HEAD && \
+	git rebase FETCH_BASE
 
 ###########
 # Cluster #
@@ -403,7 +408,10 @@ bring_assisted_service:
 		git clone $(SERVICE_REPO); \
 	fi
 
-	@cd assisted-service && git fetch origin $(SERVICE_BRANCH) && git reset --hard FETCH_HEAD
+	@cd assisted-service && \
+	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH) && \
+	git reset --hard FETCH_HEAD && \
+	git rebase FETCH_BASE
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring
