@@ -18,7 +18,7 @@ class TerraformUtils:
         self.init_tf()
 
     def init_tf(self) -> None:
-        self.tf.cmd("init -plugin-dir=/root/.terraform.d/plugins/", raise_on_error=True)
+        self.tf.init(dir_or_plan=self.working_dir)
 
     def apply(self, refresh: bool = True) -> None:
         return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True)

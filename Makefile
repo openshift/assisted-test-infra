@@ -226,7 +226,7 @@ run_terraform: copy_terraform_files
 
 _run_terraform:
 		cd build/terraform/$(CLUSTER_NAME)__$(NAMESPACE) && \
-		terraform init -plugin-dir=/root/.terraform.d/plugins/ && \
+		terraform init \
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 _apply_terraform:

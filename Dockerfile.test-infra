@@ -20,12 +20,7 @@ RUN yum -y install \
   libguestfs-tools \
     && yum clean all && pip3 install --upgrade pip
 
-RUN curl -Lo terraform.zip https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
-
-RUN mkdir -p /root/.terraform.d/plugins
-RUN curl -SL https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.3/terraform-provider-libvirt-0.6.3+git.1604843676.67f4f2aa.Fedora_32.x86_64.tar.gz | \
-  tar -xz -C /root/.terraform.d/plugins
-RUN curl -SL https://releases.hashicorp.com/terraform-provider-local/2.0.0/terraform-provider-local_2.0.0_linux_amd64.zip > /tmp/tpl.zip && unzip -d /root/.terraform.d/plugins /tmp/tpl.zip && rm -f /tmp/tpl.zip
+RUN curl -Lo terraform.zip https://releases.hashicorp.com/terraform/1.0.1/terraform_1.0.1_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
 
 COPY requirements.txt /tmp/
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
