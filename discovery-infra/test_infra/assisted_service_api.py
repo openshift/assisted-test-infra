@@ -394,9 +394,6 @@ class InventoryClient(object):
     def get_supported_operators(self) -> List[str]:
         return self.operators.list_supported_operators()
 
-    def get_host_requirements(self) -> models.HostRequirements:
-        return self.client.get_host_requirements()
-
     def get_cluster_host_requirements(self, cluster_id: str) -> models.ClusterHostRequirementsList:
         return self.client.get_cluster_host_requirements(cluster_id=cluster_id)
 
