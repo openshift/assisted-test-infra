@@ -727,7 +727,7 @@ class Cluster:
                 static_network_config=static_network_config,
             )
 
-        self.nodes.iso_ready()
+        self.nodes.notify_iso_ready()
         self.nodes.start_all(self._config.is_static_ip)
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
         self._set_hostnames_and_roles()
