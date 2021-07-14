@@ -1,13 +1,13 @@
 from abc import ABC
-from dataclasses import dataclass, field
 from distutils.util import strtobool
 from pathlib import Path
 from typing import Any, List
 
+from dataclasses import dataclass, field
+
 from test_infra import consts
 from test_infra.consts import env_defaults, resources
-from test_infra.utils import get_env, get_kubeconfig_path, get_openshift_version, operators_utils
-from test_infra.utils.cluster_name import ClusterName
+from test_infra.utils import get_env, get_openshift_version, operators_utils
 
 
 @dataclass(frozen=True)
@@ -60,6 +60,14 @@ class _EnvVariablesUtils(ABC):
     master_cpu_mode: str = get_env("MASTER_CPU_MODE", env_defaults.DEFAULT_TF_CPU_MODE)
     iso_download_path: str = get_env("ISO_DOWNLOAD_PATH", get_env("ISO"))  # todo replace ISO env var->ISO_DOWNLOAD_PATH
     hyperthreading: str = get_env("HYPERTHREADING")
+
+    vsphere_cluster: str = get_env("VSPHERE_CLUSTER")
+    vsphere_username: str = get_env("VSPHERE_USERNAME")
+    vsphere_password: str = get_env("VSPHERE_PASSWORD")
+    vsphere_network: str = get_env("VSPHERE_NETWORK")
+    vsphere_vcenter: str = get_env("VSPHERE_VCENTER")
+    vsphere_datacenter: str = get_env("VSPHERE_DATACENTER")
+    vsphere_datastore: str = get_env("VSPHERE_DATASTORE")
 
     def __post_init__(self):
         self._set("olm_operators", operators_utils.parse_olm_operators_from_env())
