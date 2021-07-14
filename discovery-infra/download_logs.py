@@ -29,6 +29,7 @@ from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
                               recreate_folder, run_command, verify_logs_uploaded, fetch_url)
 
 from logger import log, suppressAndLog
+from tests.config import TerraformConfig, ClusterConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
 
@@ -243,11 +244,11 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
         log.warning(f"Failed to run must gather: {ex}")
 
 
-def gather_sosreport_data(output_dir: str, private_ssh_key_path: str = private_ssh_key_path_default):
+def gather_sosreport_data(output_dir: str):
     sosreport_output = os.path.join(output_dir, "sosreport")
     recreate_folder(sosreport_output)
 
-    controller = LibvirtController(private_ssh_key_path=private_ssh_key_path)
+    controller = LibvirtController(config=TerraformConfig(), cluster_config=ClusterConfig())
     run_concurrently(
         jobs=[(gather_sosreport_from_node, node, sosreport_output)
               for node in controller.list_nodes()],

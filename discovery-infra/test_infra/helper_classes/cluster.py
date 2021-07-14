@@ -1,6 +1,7 @@
 import contextlib
 import ipaddress
 import json
+import os
 import random
 import re
 import time
@@ -121,12 +122,18 @@ class Cluster:
 
     @JunitTestCase()
     def generate_and_download_image(
-        self, iso_download_path=None, static_network_config=None, iso_image_type=None, ssh_key=None
+            self, iso_download_path=None, static_network_config=None, iso_image_type=None, ssh_key=None
     ):
+        iso_download_path = iso_download_path or self._config.iso_download_path
+
+        # ensure file path exists before downloading
+        if not os.path.exists(iso_download_path):
+            utils.recreate_folder(os.path.dirname(iso_download_path), force_recreate=False)
+
         self.api_client.generate_and_download_image(
             cluster_id=self.id,
             ssh_key=ssh_key or self._config.ssh_public_key,
-            image_path=iso_download_path or self._config.iso_download_path,
+            image_path=iso_download_path,
             image_type=iso_image_type or self._config.iso_image_type,
             static_network_config=static_network_config,
         )
@@ -227,12 +234,12 @@ class Cluster:
         self.api_client.update_hosts(cluster_id=self.id, hosts_with_roles=assignment_role)
 
     def set_network_params(
-        self,
-        controller=None,  # Here only for backward compatibility TODO - Remove after QE refactor all e2e tests
-        vip_dhcp_allocation: bool = None,
-        service_network_cidr: str = None,
-        cluster_network_cidr: str = None,
-        cluster_network_host_prefix: int = None,
+            self,
+            controller=None,  # Here only for backward compatibility TODO - Remove after QE refactor all e2e tests
+            vip_dhcp_allocation: bool = None,
+            service_network_cidr: str = None,
+            cluster_network_cidr: str = None,
+            cluster_network_host_prefix: int = None,
     ):
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
         self.update_config(
@@ -445,17 +452,17 @@ class Cluster:
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
-            stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1 :],
+            stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1:],
             nodes_count=self._config.nodes_count,
         )
 
     @JunitTestCase()
     def start_install_and_wait_for_installed(
-        self,
-        wait_for_hosts=True,
-        wait_for_operators=True,
-        wait_for_cluster_install=True,
-        download_kubeconfig=True,
+            self,
+            wait_for_hosts=True,
+            wait_for_operators=True,
+            wait_for_cluster_install=True,
+            download_kubeconfig=True,
     ):
         self.start_install()
         if wait_for_hosts:
@@ -528,7 +535,7 @@ class Cluster:
         )
 
     def wait_for_hosts_to_be_in_wrong_boot_order(
-        self, nodes_count, timeout=consts.PENDING_USER_ACTION_TIMEOUT, fall_on_error_status=True
+            self, nodes_count, timeout=consts.PENDING_USER_ACTION_TIMEOUT, fall_on_error_status=True
     ):
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -579,7 +586,7 @@ class Cluster:
         )
 
     def wait_for_hosts_to_install(
-        self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True, nodes_count: int = None
+            self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True, nodes_count: int = None
     ):
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -657,15 +664,58 @@ class Cluster:
             {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
         )
 
+    def _set_hostnames_and_roles(self):
+        cluster_id = self.id
+        hosts = self.api_client.get_cluster_hosts(cluster_id)
+        nodes = self.nodes.get_nodes(refresh=True)
+
+        roles = []
+        hostnames = []
+
+        def has_host_name(_host, _inventory):
+            default_host_name = "localhost"
+            return inventory["hostname"] != default_host_name or \
+                   (host["requested_hostname"] and host["requested_hostname"] != default_host_name)
+
+        def get_node_by_mac_addresses(_nodes, _host_macs):
+            for _node in _nodes:
+                for _mac in _node.macs():
+                    if _mac.lower() in _host_macs:
+                        return _node
+
+            return None
+
+        for host in hosts:
+            host_id = host["id"]
+            inventory = json.loads(host["inventory"])
+
+            if has_host_name(host, inventory):
+                continue
+
+            host_macs = map(lambda interface: interface["mac_address"].lower(),
+                            inventory["interfaces"])
+
+            node = get_node_by_mac_addresses(nodes, host_macs)
+            role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
+            roles.append({"id": host_id, "role": role})
+            hostnames.append({"id": host_id, "hostname": node.name})
+
+        # no need to update the roles for SNO
+        if self._config.nodes_count == 1:
+            roles = None
+
+        if roles or hostnames:
+            self.api_client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
+
     @JunitTestCase()
     def prepare_for_installation(self, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
-        log.info(f"Preparing for installation with clsuter configurations: cluster_config={self._config}")
-        log.info(f"Preparing for installation with nodes configurations: nodes_config={self.nodes.config}")
+        log.info(f"Preparing for installation with cluster configurations: cluster_config={self._config}")
+        self.nodes.controller.log_configuration()
 
         if self._config.download_image:
             if static_network_config:
-                static_network_config = static_network.\
+                static_network_config = static_network. \
                     generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
             else:
                 static_network_config = None
@@ -675,13 +725,18 @@ class Cluster:
                 iso_image_type=self._config.iso_image_type,
                 static_network_config=static_network_config,
             )
+
+        self.nodes.iso_ready()
         self.nodes.start_all(self._config.is_static_ip)
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
-        self.nodes.set_hostnames(self, self._config.nodes_count, self._config.is_ipv6, self._config.is_static_ip)
+        self._set_hostnames_and_roles()
+
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
         else:
-            self.nodes.set_single_node_ip(self)
+            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, self.nodes.controller.get_machine_cidr())
+            self.nodes.controller.set_single_node_ip(ip)
+
         self.set_network_params(
             controller=self.nodes.controller,
             vip_dhcp_allocation=self._config.vip_dhcp_allocation,
@@ -745,7 +800,7 @@ class Cluster:
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 
     def wait_for_cluster_validation(
-        self, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
+            self, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
     ):
         log.info("Wait until cluster %s validation %s is in status %s", self.id, validation_id, statuses)
         try:
@@ -770,16 +825,16 @@ class Cluster:
         log.info("Is cluster %s validation %s in status %s", self.id, validation_id, statuses)
         try:
             return (
-                utils.get_cluster_validation_value(
-                    self.api_client.cluster_get(self.id), validation_section, validation_id
-                )
-                in statuses
+                    utils.get_cluster_validation_value(
+                        self.api_client.cluster_get(self.id), validation_section, validation_id
+                    )
+                    in statuses
             )
         except BaseException:
             log.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_host_validation(
-        self, host_id, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
+            self, host_id, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
     ):
         log.info("Wait until host %s validation %s is in status %s", host_id, validation_id, statuses)
         try:
@@ -807,10 +862,10 @@ class Cluster:
         log.info("Is host %s validation %s in status %s", host_id, validation_id, statuses)
         try:
             return (
-                utils.get_host_validation_value(
-                    self.api_client.cluster_get(self.id), host_id, validation_section, validation_id
-                )
-                in statuses
+                    utils.get_host_validation_value(
+                        self.api_client.cluster_get(self.id), host_id, validation_section, validation_id
+                    )
+                    in statuses
             )
         except BaseException:
             log.exception("Failed to get cluster %s validation info", self.id)

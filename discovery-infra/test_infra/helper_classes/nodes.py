@@ -1,11 +1,10 @@
 import json
 import logging
 import random
-from pathlib import Path
 from typing import Dict, Iterator, List
 
 from munch import Munch
-from test_infra import utils
+
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
@@ -21,15 +20,10 @@ class NodeMapping:
 class Nodes:
     DEFAULT_STATIC_IP_CONFIG = False
 
-    def __init__(self, node_controller: NodeController, private_ssh_key_path: Path):
+    def __init__(self, node_controller: NodeController):
         self.controller = node_controller
-        self.private_ssh_key_path = private_ssh_key_path
         self._nodes = None
         self._nodes_as_dict = None
-
-    @property
-    def config(self):
-        return self.controller.config
 
     @property
     def nodes(self) -> List[Node]:
@@ -50,6 +44,12 @@ class Nodes:
     def drop_cache(self):
         self._nodes = None
         self._nodes_as_dict = None
+
+    def get_nodes(self, refresh=False):
+        if refresh:
+            self.drop_cache()
+
+        return self.nodes
 
     def get_masters(self):
         return [node for node in self.nodes if node.is_master_in_name()]
@@ -72,6 +72,9 @@ class Nodes:
 
     def shutdown_all(self):
         self.run_for_all_nodes("shutdown")
+
+    def iso_ready(self):
+        self.controller.notify_iso_ready()
 
     def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IP_CONFIG):
         if is_static_ip:
@@ -164,20 +167,5 @@ class Nodes:
         inventory = json.loads(cluster_host_object["inventory"])
         return inventory["hostname"]
 
-    def set_hostnames(self, cluster, nodes_count: int, is_ipv6: bool, is_static_ip: bool = False):
-        if is_ipv6 or is_static_ip:
-            # When using IPv6 with libvirt, hostnames are not set automatically by DHCP.  Therefore, we must find out
-            # the hostnames using terraform's tfstate file. In case of static ip, the hostname is localhost and must be
-            # set to valid hostname
-            # TODO - NodeController has no `params` and `tf` attributes
-            network_name = self.controller.params.libvirt_network_name
-            secondary_network_name = self.controller.params.libvirt_secondary_network_name
-            libvirt_nodes = utils.get_libvirt_nodes_from_tf_state([network_name, secondary_network_name],
-                                                                  self.controller.tf.get_state())
-            utils.update_hosts(cluster.api_client, cluster.id, libvirt_nodes, update_hostnames=True,
-                               update_roles=(nodes_count != 1))
-
-    def set_single_node_ip(self, cluster):
-        self.controller.tf.change_variables(
-            {"single_node_ip": cluster.get_ip_for_single_node(cluster.api_client,
-                                                              cluster.id, self.controller.get_machine_cidr())})
+    def set_single_node_ip(self, ip):
+        self.controller.set_single_node_ip(ip)

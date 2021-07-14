@@ -35,7 +35,6 @@ from requests.models import HTTPError
 from retry import retry
 
 import test_infra.consts as consts
-from test_infra.consts import env_defaults
 from test_infra.utils import logs_utils
 
 conn = libvirt.open("qemu:///system")
