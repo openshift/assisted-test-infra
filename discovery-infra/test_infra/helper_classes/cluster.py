@@ -6,8 +6,7 @@ import random
 import re
 import time
 from collections import Counter
-from typing import List, Union, Optional
-from textwrap import dedent
+from typing import List, Union, Optional, Set, Dict, Any
 
 import requests
 import waiting
@@ -16,13 +15,16 @@ from assisted_service_client import models
 from assisted_service_client.models.operator_type import OperatorType
 from junit_report import JunitTestCase
 from netaddr import IPAddress, IPNetwork
+
 from test_infra import consts, utils
 from test_infra.assisted_service_api import InventoryClient
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
+from test_infra.controllers.node_controllers import Node
+from test_infra.helper_classes.cluster_host import ClusterHost
 from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils import operators_utils, logs_utils, log
+from test_infra.utils import operators_utils, logs_utils, log, network_utils
 from test_infra.utils.cluster_name import ClusterName
 
 
@@ -258,7 +260,7 @@ class Cluster:
             else self._config.cluster_network_host_prefix,
         )
 
-        self.api_client.update_cluster(
+        cluster = self.api_client.update_cluster(
             self.id,
             {
                 "vip_dhcp_allocation": self._config.vip_dhcp_allocation,
@@ -267,10 +269,26 @@ class Cluster:
                 "cluster_network_host_prefix": self._config.cluster_network_host_prefix,
             },
         )
+
         if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
-            self.set_machine_cidr(controller.get_machine_cidr())
+            machine_cidr = self.get_machine_cidr()
+            self.set_machine_cidr(machine_cidr)
         elif self._config.platform != consts.Platforms.NONE:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
+
+    def get_machine_cidr(self):
+        cidr = self.nodes.controller.get_machine_cidr()
+
+        if not cidr:
+            # Support controllers which the machine cidr is not configurable. taking it from the AI instead
+            matching_cidrs = self.get_cluster_matching_cidrs(Cluster.get_cluster_hosts(self))
+
+            if not matching_cidrs:
+                raise RuntimeError(f"No matching cidr for DHCP")
+
+            cidr = next(iter(matching_cidrs))
+
+        return cidr
 
     def set_machine_cidr(self, machine_cidr):
         log.info(f"Setting Machine Network CIDR:{machine_cidr} for cluster: {self.id}")
@@ -637,69 +655,22 @@ class Cluster:
             timeout=timeout,
         )
 
-    def _set_none_platform_dns(self):
-        cluster = self.api_client.cluster_get(self.id)
-        cluster_name = cluster.name
-        base_domain = cluster.base_dns_domain
-        main_cidr = self.nodes.controller.get_machine_cidr()
-        nameserver_ip = str(IPNetwork(main_cidr).ip + 1)
-        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
-        contents = dedent(f"""
-            server=/api.{cluster_name}.{base_domain}/{nameserver_ip}
-            server=/.apps.{cluster_name}.{base_domain}/{nameserver_ip}
-            """)
-        self.nodes.controller.tf.change_variables(
-            {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
-        )
-
-    def _set_dns(self, api_vip, ingress_vip):
-        cluster = self.api_client.cluster_get(self.id)
-        cluster_name = cluster.name
-        base_domain = cluster.base_dns_domain
-        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
-        contents = dedent(f"""
-            address=/api.{cluster_name}.{base_domain}/{api_vip}
-            address=/.apps.{cluster_name}.{base_domain}/{ingress_vip}
-            """)
-        self.nodes.controller.tf.change_variables(
-            {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
-        )
-
     def _set_hostnames_and_roles(self):
         cluster_id = self.id
-        hosts = self.api_client.get_cluster_hosts(cluster_id)
+        hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(cluster_id))
         nodes = self.nodes.get_nodes(refresh=True)
 
         roles = []
-        hostnames = []
-
-        def has_host_name(_host, _inventory):
-            default_host_name = "localhost"
-            return inventory["hostname"] != default_host_name or \
-                   (host["requested_hostname"] and host["requested_hostname"] != default_host_name)
-
-        def get_node_by_mac_addresses(_nodes, _host_macs):
-            for _node in _nodes:
-                for _mac in _node.macs:
-                    if _mac.lower() in _host_macs:
-                        return _node
-
-            return None
+        hostnames: List[models.ClusterupdateparamsHostsNames] = []
 
         for host in hosts:
-            host_id = host["id"]
-            inventory = json.loads(host["inventory"])
-
-            if has_host_name(host, inventory):
+            if host.has_hostname():
                 continue
 
-            host_macs = list(map(lambda interface: interface["mac_address"].lower(),
-                            inventory["interfaces"]))
-
-            node = get_node_by_mac_addresses(nodes, host_macs)
+            node = Cluster.find_matching_node(host, nodes)
             role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
-            roles.append({"id": host_id, "role": role})
-            hostnames.append({"id": host_id, "hostname": node.name})
+            roles.append({"id": host.get_id(), "role": role})
+            hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=node.name))
 
         # no need to update the roles for SNO
         if self._config.nodes_count == 1:
@@ -735,7 +706,8 @@ class Cluster:
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
         else:
-            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, self.nodes.controller.get_machine_cidr())
+            main_cidr = self.get_machine_cidr()
+            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
             self.nodes.controller.set_single_node_ip(ip)
 
         self.set_network_params(
@@ -749,17 +721,17 @@ class Cluster:
 
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
-            self._set_none_platform_dns()
+            self.nodes.controller.set_dns_for_user_managed_network()
         elif self._config.masters_count != 1:
             vips_info = self.__class__.get_vips_from_cluster(self.api_client, self.id)
-            self._set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
+            self.nodes.controller.set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
         else:
-            main_cidr = self.nodes.controller.get_machine_cidr()
+            main_cidr = self.get_machine_cidr()
             master_ips = self.get_master_ips(self.api_client, self.id, main_cidr)
             if len(master_ips) != 1:
                 raise Exception(f"Unexpected master count {len(master_ips)} for single node")
             node_ip = master_ips[0]
-            self._set_dns(api_vip=node_ip, ingress_vip=node_ip)
+            self.nodes.controller.set_dns(api_vip=node_ip, ingress_vip=node_ip)
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
@@ -919,7 +891,7 @@ class Cluster:
         return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
 
     def _configure_load_balancer(self):
-        main_cidr = self.nodes.controller.get_machine_cidr()
+        main_cidr = self.get_machine_cidr()
         secondary_cidr = self.nodes.controller.get_provisioning_cidr()
 
         master_ips = self.get_master_ips(self.api_client, self.id, main_cidr) + self.get_master_ips(
@@ -993,6 +965,41 @@ class Cluster:
     @staticmethod
     def get_hosts_nics_data(hosts: list, ipv4_first=True):
         return [Cluster.get_inventory_host_nics_data(h, ipv4_first=ipv4_first) for h in hosts]
+
+    @staticmethod
+    def get_cluster_hosts(cluster: models.cluster.Cluster) -> List[ClusterHost]:
+        return [ClusterHost(h) for h in cluster.hosts]
+
+    @staticmethod
+    def to_cluster_hosts(hosts: List[Dict[str, Any]]) -> List[ClusterHost]:
+        return [ClusterHost(models.Host(**h)) for h in hosts]
+
+    def get_cluster_cidrs(self, hosts: List[ClusterHost]) -> Set[str]:
+        cidrs = set()
+
+        for host in hosts:
+            ips = host.ipv6_addresses() if self._config.is_ipv6 else host.ipv4_addresses()
+
+            for host_ip in ips:
+                cidr = network_utils.get_cidr_by_interface(host_ip)
+                cidrs.add(cidr)
+
+        return cidrs
+
+    def get_cluster_matching_cidrs(self, hosts: List[ClusterHost]) -> Set[str]:
+        cluster_cidrs = self.get_cluster_cidrs(hosts)
+        matching_cidrs = set()
+
+        for cidr in cluster_cidrs:
+            for host in hosts:
+                interfaces = host.ipv6_addresses() if self._config.is_ipv6 else host.ipv4_addresses()
+
+                if not network_utils.any_interface_in_cidr(interfaces, cidr):
+                    break
+
+            matching_cidrs.add(cidr)
+
+        return matching_cidrs
 
     @staticmethod
     def get_ip_for_single_node(client, cluster_id, machine_cidr, ipv4_first=True):
@@ -1071,6 +1078,16 @@ class Cluster:
         return waiting.wait(
             lambda: self.get_kube_api_ip(hosts=hosts), timeout_seconds=timeout, sleep_seconds=5, waiting_for="API's IP"
         )
+
+    @staticmethod
+    def find_matching_node(host: ClusterHost, nodes: List[Node]):
+        # Looking for node matches the given host by its mac address (which is unique)
+        for node in nodes:
+            for mac in node.macs:
+                if mac.lower() in host.macs():
+                    return node
+
+        return None
 
     @staticmethod
     def is_kubeapi_service_ready(ip_or_dns):

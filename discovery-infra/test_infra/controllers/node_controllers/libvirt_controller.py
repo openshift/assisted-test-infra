@@ -546,8 +546,5 @@ class LibvirtController(NodeController, ABC):
     def get_cluster_network(self) -> str:
         raise NotImplementedError
 
-    def get_machine_cidr(self) -> str:
-        raise NotImplementedError
-
     def set_single_node_ip(self, ip):
         raise NotImplementedError

@@ -4,9 +4,12 @@ import logging
 import os
 import shutil
 import warnings
+from textwrap import dedent
 from typing import List
 
 from munch import Munch
+from netaddr import IPNetwork
+
 from test_infra import consts, utils, virsh_cleanup
 from test_infra.consts import resources
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
@@ -204,6 +207,23 @@ class TerraformController(LibvirtController):
         if self._config.is_ipv6:
             return self._config.net_asset.provisioning_cidr6
         return self._config.net_asset.provisioning_cidr
+
+    def set_dns(self, api_vip: str, ingress_vip: str) -> None:
+        cluster_name = self._cluster_config.cluster_name
+        base_domain = self._cluster_config.base_dns_domain
+        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
+        contents = dedent(f"""
+                    address=/api.{cluster_name}.{base_domain}/{api_vip}
+                    address=/.apps.{cluster_name}.{base_domain}/{ingress_vip}
+                    """)
+        self.tf.change_variables(
+            {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
+        )
+
+    def set_dns_for_user_managed_network(self) -> None:
+        machine_cidr = self.get_machine_cidr()
+        nameserver_ip = str(IPNetwork(machine_cidr).ip + 1)
+        self.set_dns(nameserver_ip, nameserver_ip)
 
     def _try_to_delete_nodes(self):
         logging.info('Start running terraform delete')

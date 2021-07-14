@@ -61,10 +61,11 @@ class TestKubeAPISNO(BaseTest):
                       cluster_config, proxy_server, is_ipv4=False)
 
 
-
 def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = cluster_config.cluster_name
 
+    # TODO resolve it from the service if the node controller doesn't have this information
+    #  (please see cluster.get_machine_cidr())
     machine_cidr = nodes.controller.get_machine_cidr()
 
     agent_cluster_install = AgentClusterInstall(

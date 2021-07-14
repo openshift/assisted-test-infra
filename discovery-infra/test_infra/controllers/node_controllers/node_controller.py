@@ -152,9 +152,9 @@ class NodeController(ABC):
     def set_ram_kib(self, node_name: str, ram_kib: int) -> None:
         pass
 
-    @abstractmethod
     def get_machine_cidr(self) -> str:
-        pass
+        # Default to auto resolve by the cluster. see cluster.get_machine_cidr
+        return None
 
     @abstractmethod
     def attach_interface(self, node_name, network_xml: str) -> Tuple[libvirt.virNetwork, str]:
@@ -181,4 +181,10 @@ class NodeController(ABC):
         pass
 
     def notify_iso_ready(self) -> None:
+        pass
+
+    def set_dns(self, api_vip: str, ingress_vip: str) -> None:
+        pass
+
+    def set_dns_for_user_managed_network(self) -> None:
         pass

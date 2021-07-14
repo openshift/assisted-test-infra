@@ -229,8 +229,9 @@ class BaseTest:
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
         port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
 
-        host_ip = str(IPNetwork(cluster.nodes.controller.get_machine_cidr()).ip + 1)
-        no_proxy = ",".join([cluster.nodes.controller.get_machine_cidr(), cluster_config.service_network_cidr,
+        machine_cidr = cluster.get_machine_cidr()
+        host_ip = str(IPNetwork(machine_cidr).ip + 1)
+        no_proxy = ",".join([machine_cidr, cluster_config.service_network_cidr,
                              cluster_config.cluster_network_cidr,
                              f".{str(cluster_config.cluster_name)}.redhat.com"])
 
