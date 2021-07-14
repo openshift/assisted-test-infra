@@ -30,3 +30,5 @@ debugpy>=1.2.1
 netifaces==0.11.0
 frozendict==2.0.3
 pycharm_remote_debugger==0.1.13
+python-hcl2>=2.0.3
+dataclasses~=0.8
