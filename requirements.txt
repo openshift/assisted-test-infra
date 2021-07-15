@@ -1,4 +1,4 @@
-boto3==1.17.109
+boto3==1.17.112
 dataclasses==0.8
 debugpy==1.3.0
 dnspython==2.1.0
