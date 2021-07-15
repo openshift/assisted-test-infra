@@ -11,10 +11,10 @@ updates:
       interval: "weekly"
     labels:
       - "approved"
-      - "ok-to-test"
       - "lgtm"
       - "ok-to-test"
       - "dependencies"
+      - "python"
 
   - package-ecosystem: "docker"
     directory: "/"
