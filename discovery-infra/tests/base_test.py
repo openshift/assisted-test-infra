@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import libvirt
 from typing import Callable
 from contextlib import suppress
 from pathlib import Path
@@ -187,7 +188,11 @@ class BaseTest:
         yield attach
         if global_variables.test_teardown:
             for modified_node in modified_nodes:
-                modified_node.detach_all_test_disks()
+                try:
+                    modified_node.detach_all_test_disks()
+                    logging.info(f'Successfully detach test disks from node {modified_node.name}')
+                except (libvirt.libvirtError, FileNotFoundError):
+                    logging.warning(f'Failed to detach test disks from node {modified_node.name}')
 
     @pytest.fixture(scope="function")
     def attach_disk(self):
