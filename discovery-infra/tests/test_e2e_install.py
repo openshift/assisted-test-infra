@@ -22,14 +22,6 @@ class TestInstall(BaseTest):
         new_cluster.start_install_and_wait_for_installed()
 
     @JunitTestSuite()
-    @pytest.mark.parametrize("sleep_time", [1, 60])
-    def test_dummy(self, configs: Tuple[ClusterConfig, TerraformConfig], get_nodes, get_cluster, sleep_time):
-        cluster_config, tf_config = configs
-        new_cluster = get_cluster(get_nodes(tf_config, cluster_config), cluster_config)
-        new_cluster.prepare_for_installation()
-        time.sleep(sleep_time)
-
-    @JunitTestSuite()
     @pytest.mark.parametrize("operators", sorted(get_api_client().get_supported_operators()))
     def test_olm_operator(self, configs, get_nodes, get_cluster, operators, update_olm_config):
         cluster_config, tf_config = configs
