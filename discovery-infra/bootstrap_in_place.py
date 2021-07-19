@@ -166,7 +166,7 @@ def log_collection(vm_ip):
 
     try:
         logging.info("Gathering sosreport data from host...")
-        gather_sosreport_data(output_dir=IBIP_DIR, private_ssh_key_path=SSH_KEY)
+        gather_sosreport_data(output_dir=IBIP_DIR)
     except Exception:
         logging.exception("sosreport gathering failed!")
 

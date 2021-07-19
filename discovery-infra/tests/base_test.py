@@ -2,62 +2,157 @@ import json
 import logging
 import os
 import shutil
-import libvirt
-from typing import Callable
 from contextlib import suppress
 from pathlib import Path
+from typing import Callable
 from typing import Tuple, List, Optional
 
 import pytest
+import waiting
+from _pytest.fixtures import FixtureRequest
+from assisted_service_client.rest import ApiException
+from junit_report import JunitFixtureTestCase, JunitTestCase
 from netaddr import IPNetwork
+from paramiko import SSHException
 
 import test_infra.utils as infra_utils
-import waiting
-from assisted_service_client.rest import ApiException
-
 from download_logs import download_logs
-from junit_report import JunitFixtureTestCase, JunitTestCase
-from paramiko import SSHException
 from test_infra import consts
+from test_infra.assisted_service_api import InventoryClient
+from test_infra.consts import OperatorResource
 from test_infra.controllers.iptables import IptableRule
+from test_infra.controllers.nat_controller import NatController
+from test_infra.controllers.node_controllers import NodeController
+from test_infra.controllers.node_controllers import TerraformController
 from test_infra.controllers.node_controllers.node import Node
-from tests.config import ClusterConfig, global_variables
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
+from test_infra.helper_classes.config.controller_config import BaseNodeConfig, global_variables
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
-from tests.config import TerraformConfig
-from test_infra.controllers.nat_controller import NatController
-from test_infra.controllers.node_controllers import TerraformController
 from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
-from test_infra.consts import OperatorResource
+from tests.config import ClusterConfig
+from tests.config import TerraformConfig
 
 
 class BaseTest:
+
+    @pytest.fixture
+    def controller_configuration(self) -> BaseNodeConfig:
+        """
+        Creates the controller configuration object according to the platform.
+        Override this fixture in your test class to provide a custom configuration object
+        :rtype: new node controller configuration
+        """
+        return TerraformConfig()
+
+    @pytest.fixture
+    def prepare_controller_configuration(self, controller_configuration: BaseNodeConfig) -> \
+            BaseNodeConfig:
+        if not isinstance(controller_configuration, TerraformConfig):
+            yield controller_configuration
+            return
+
+        # Configuring net asset which currently supported by libvirt terraform only
+        net_asset = LibvirtNetworkAssets()
+        controller_configuration.net_asset = net_asset.get()
+        yield controller_configuration
+        net_asset.release_all()
+
+    @pytest.fixture
+    def cluster_configuration(self) -> ClusterConfig:
+        """
+        Creates new cluster configuration object.
+        Override this fixture in your test class to provide a custom cluster configuration. (See TestInstall)
+        :rtype: new cluster configuration object
+        """
+        return ClusterConfig()
+
+    @pytest.fixture
+    def controller(self, cluster_configuration: ClusterConfig,
+                   prepare_controller_configuration: BaseNodeConfig) -> NodeController:
+        return TerraformController(prepare_controller_configuration, cluster_config=cluster_configuration)
+
+    @pytest.fixture
+    def nodes(self, controller: NodeController) -> Nodes:
+        return Nodes(controller)
+
+    @pytest.fixture
+    def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
+        try:
+            nodes.prepare_nodes()
+            yield nodes
+        finally:
+            if global_variables.test_teardown:
+                logging.info('--- TEARDOWN --- node controller\n')
+                nodes.destroy_all_nodes()
+                logging.info(f'--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n')
+                infra_utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
+
+    @pytest.fixture
+    def prepare_network(self, prepare_nodes: Nodes, prepare_controller_configuration: BaseNodeConfig) -> Nodes:
+        if global_variables.platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE):
+            yield prepare_nodes
+            return
+
+        interfaces = BaseTest.nat_interfaces(prepare_controller_configuration)
+        nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
+        nat.add_nat_rules()
+        yield prepare_nodes
+        if nat:
+            nat.remove_nat_rules()
+
+    @pytest.fixture
+    @JunitFixtureTestCase()
+    def cluster(self, api_client: InventoryClient, request: FixtureRequest,
+                proxy_server, prepare_network, cluster_configuration):
+        logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
+        cluster = Cluster(api_client=api_client, config=cluster_configuration, nodes=prepare_network)
+
+        if cluster_configuration.is_ipv6:
+            self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
+
+        yield cluster
+
+        if BaseTest._is_test_failed(request):
+            logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
+            self.collect_test_logs(cluster, api_client, request.node, cluster.nodes)
+
+            if global_variables.test_teardown:
+                if cluster.is_installing() or cluster.is_finalizing():
+                    cluster.cancel_install()
+
+                with suppress(ApiException):
+                    logging.info(f'--- TEARDOWN --- deleting created cluster {cluster.id}\n')
+                    cluster.delete()
+
     @pytest.fixture(scope="function")
     def get_nodes(self) -> Callable[[TerraformConfig, ClusterConfig], Nodes]:
         """ Currently support only single instance of nodes """
         nodes_data = dict()
 
         @JunitTestCase()
-        def get_nodes_func(tf_config: TerraformConfig, cluster_config: ClusterConfig):
+        def get_nodes_func(tf_config: BaseNodeConfig, cluster_config: ClusterConfig):
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
             nodes_data["configs"] = cluster_config, tf_config
+
             net_asset = LibvirtNetworkAssets()
             tf_config.net_asset = net_asset.get()
             nodes_data["net_asset"] = net_asset
 
             controller = TerraformController(tf_config, cluster_config=cluster_config)
-            nodes = Nodes(controller, tf_config.private_ssh_key_path)
+            nodes = Nodes(controller)
             nodes_data["nodes"] = nodes
 
             nodes.prepare_nodes()
+
             interfaces = BaseTest.nat_interfaces(tf_config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
             nat.add_nat_rules()
+
             nodes_data["nat"] = nat
 
             return nodes
@@ -106,7 +201,7 @@ class BaseTest:
 
         yield get_cluster_func
         for cluster in clusters:
-            if request.node.result_call.failed:
+            if BaseTest._is_test_failed(request):
                 logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
                 self.collect_test_logs(cluster, api_client, request.node, cluster.nodes)
             if global_variables.test_teardown:
@@ -135,7 +230,7 @@ class BaseTest:
         # todo cluster.config will be property as part of MGMT-7060 - need to replace cluster._config.is_ipv6 with
         #  cluster.config.is_ipv6
         proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
-                             is_ipv6=cluster._config.is_ipv6)
+                             is_ipv6=cluster_config.is_ipv6)
         cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy")
@@ -270,10 +365,16 @@ class BaseTest:
         log_dir_name = f"{global_variables.log_folder}/{test.name}"
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
-            download_logs(api_client, cluster_details, log_dir_name, test.result_call.failed,
+            download_logs(api_client, cluster_details, log_dir_name,
+                          BaseTest._is_test_failed(test),
                           pull_secret=global_variables.pull_secret)
         self._collect_virsh_logs(nodes, log_dir_name)
         self._collect_journalctl(nodes, log_dir_name)
+
+    @classmethod
+    def _is_test_failed(cls, test):
+        # When cancelling a test the test.result_call isn't available, mark it as failed
+        return not hasattr(test.node, "result_call") or test.node.result_call.failed
 
     @classmethod
     def _collect_virsh_logs(cls, nodes: Nodes, log_dir_name):

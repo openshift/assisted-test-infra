@@ -3,11 +3,21 @@ from typing import List, Any, Tuple, Callable
 
 import libvirt
 
+from test_infra.helper_classes.config import BaseClusterConfig
+from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.controllers.node_controllers.disk import Disk
 from test_infra.controllers.node_controllers.node import Node
+from test_infra.utils import log
 
 
 class NodeController(ABC):
+
+    def __init__(self, config: BaseNodeConfig, cluster_config: BaseClusterConfig):
+        self._config = config
+        self._cluster_config = cluster_config
+
+    def log_configuration(self):
+        log.info(f"controller configuration={self._config}")
 
     @abstractmethod
     def list_nodes(self) -> List[Node]:
@@ -117,6 +127,10 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
+    def set_single_node_ip(self, ip) -> None:
+        pass
+
+    @abstractmethod
     def get_host_id(self, node_name: str) -> str:
         pass
 
@@ -162,4 +176,7 @@ class NodeController(ABC):
 
     @abstractmethod
     def destroy_network(self, network: libvirt.virNetwork):
+        pass
+
+    def notify_iso_ready(self) -> None:
         pass

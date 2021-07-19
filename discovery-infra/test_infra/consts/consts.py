@@ -9,7 +9,8 @@ class OpenshiftVersion(Enum):
     VERSION_4_8 = "4.8"
 
 
-TF_FOLDER = "build/terraform"
+WORKING_DIR = "build"
+TF_FOLDER = f"{WORKING_DIR}/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
 IMAGE_FOLDER = "/tmp/test_images"
 TF_MAIN_JSON_NAME = "main.tf"
@@ -33,8 +34,9 @@ READY_TIMEOUT = 15 * MINUTE
 DISCONNECTED_TIMEOUT = 10 * MINUTE
 PENDING_USER_ACTION_TIMEOUT = 30 * MINUTE
 ERROR_TIMEOUT = 10 * MINUTE
-TF_TEMPLATE_BARE_METAL_FLOW = "terraform_files/baremetal"
-TF_TEMPLATE_NONE_PLATFORM_FLOW = "terraform_files/none"
+TF_TEMPLATES_ROOT = "terraform_files"
+TF_TEMPLATE_BARE_METAL_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal"
+TF_TEMPLATE_NONE_PLATFORM_FLOW = f"{TF_TEMPLATES_ROOT}/none"
 TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
 NUMBER_OF_MASTERS = 3
 TEST_INFRA = "test-infra"
@@ -120,10 +122,12 @@ class HostsProgressStages:
     CONFIGURING = "Configuring"
     DONE = "Done"
 
+
 class AgentStatus:
     VALIDATED = "Validated"
     INSTALLED = "Installed"
     REQUIREMENTS_MET = "RequirementsMet"
+
 
 all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,
                    HostsProgressStages.WRITE_IMAGE_TO_DISK, HostsProgressStages.WAIT_FOR_CONTROL_PLANE,
@@ -179,6 +183,7 @@ class Events:
 class Platforms:
     BARE_METAL = 'baremetal'
     NONE = 'none'
+    VSPHERE = 'vsphere'
 
 
 class HighAvailabilityMode:

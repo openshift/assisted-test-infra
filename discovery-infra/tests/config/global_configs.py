@@ -11,6 +11,7 @@ from test_infra.utils.cluster_name import ClusterName
 from test_infra.utils.global_variables import GlobalVariables
 from test_infra.helper_classes.config import BaseClusterConfig, BaseTerraformConfig
 
+
 global_variables = GlobalVariables()
 
 
@@ -80,7 +81,3 @@ class TerraformConfig(BaseTerraformConfig):
 
     def get_copy(self):
         return TerraformConfig(**self.get_all())
-
-    @staticmethod
-    def get_default(key, default=None) -> Any:
-        return getattr(global_variables, key)

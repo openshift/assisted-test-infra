@@ -24,10 +24,12 @@ _triggers = frozendict(
             "master_vcpu": resources.DEFAULT_MASTER_SNO_CPU,
         },
         ("is_ipv6", True): {
+            "is_ipv4": False,
             "service_network_cidr": consts.DEFAULT_IPV6_SERVICE_CIDR,
             "cluster_network_cidr": consts.DEFAULT_IPV6_CLUSTER_CIDR,
             "cluster_network_host_prefix": consts.DEFAULT_IPV6_HOST_PREFIX,
             "vip_dhcp_allocation": False,
+            "openshift_version": consts.OpenshiftVersion.VERSION_4_8.value
         },
     }
 )
