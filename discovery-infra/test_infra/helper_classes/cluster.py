@@ -89,6 +89,7 @@ class Cluster:
             user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
             olm_operators=[{"name": name} for name in self._config.olm_operators],
+            network_type= self._config.network_type
         )
 
     def delete(self):

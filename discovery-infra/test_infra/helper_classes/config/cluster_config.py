@@ -39,3 +39,4 @@ class BaseClusterConfig(_BaseConfig, ABC):
     cluster_network_cidr: str = None
     cluster_network_host_prefix: int = None
     kubeconfig_path: str = None
+    network_type: str = None
