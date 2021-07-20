@@ -334,6 +334,7 @@ def _cluster_create_params():
     ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
     user_managed_networking = is_user_managed_networking()
     http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
+    network_type = _get_network_type(ipv4=ipv4, ipv6=ipv6)
     params = {
         "openshift_version": utils.get_openshift_version(),
         "base_dns_domain": args.base_dns_domain,
@@ -349,7 +350,8 @@ def _cluster_create_params():
         "user_managed_networking": user_managed_networking,
         "high_availability_mode": consts.HighAvailabilityMode.NONE if args.master_count == 1 else consts.HighAvailabilityMode.FULL,
         "hyperthreading": args.hyperthreading,
-        "olm_operators": [{'name': name} for name in operators_utils.parse_olm_operators_from_env()]
+        "olm_operators": [{'name': name} for name in operators_utils.parse_olm_operators_from_env()],
+        "network_type": network_type
     }
     return params
 
@@ -390,6 +392,12 @@ def _get_provisioning_cidr6(cidr, ns_index):
         provisioning_cidr += (1 << 63)
     return str(provisioning_cidr)
 
+
+def _get_network_type(ipv4, ipv6):
+    ipv6_only = ipv6 and not ipv4
+    if ipv6_only:
+            return "OVNKubernetes"
+    return "OpenShiftSDN"
 
 def validate_dns(client, cluster_id):
     if not args.managed_dns_domains:
