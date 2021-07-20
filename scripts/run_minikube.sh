@@ -26,7 +26,7 @@ function init_minikube() {
     for i in {1..5}
     do
         minikube delete
-        minikube start --driver=kvm2 --memory=8192 --cpus=4 --force --wait-timeout=15m0s --disk-size=50g || true
+        minikube start --driver=kvm2 --memory=8192 --cpus=4 --force --wait-timeout=15m0s --disk-size=50g --addons=registry || true
 
         if minikube status ; then
             break
@@ -34,7 +34,6 @@ function init_minikube() {
     done
 
     minikube status
-    minikube addons enable registry
     minikube tunnel --cleanup &> /dev/null &
 }
 
