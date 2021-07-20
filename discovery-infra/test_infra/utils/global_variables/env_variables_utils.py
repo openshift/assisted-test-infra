@@ -60,7 +60,7 @@ class _EnvVariablesUtils(ABC):
     master_cpu_mode: str = get_env("MASTER_CPU_MODE", env_defaults.DEFAULT_TF_CPU_MODE)
     iso_download_path: str = get_env("ISO_DOWNLOAD_PATH", get_env("ISO"))  # todo replace ISO env var->ISO_DOWNLOAD_PATH
     hyperthreading: str = get_env("HYPERTHREADING")
-    network_type: str =get_env("NETWORK_TYPE", env_defaults.DEFAULT_NETWORK_TYPE)
+    network_type: str = get_env("NETWORK_TYPE", env_defaults.DEFAULT_NETWORK_TYPE)
 
     vsphere_cluster: str = get_env("VSPHERE_CLUSTER")
     vsphere_username: str = get_env("VSPHERE_USERNAME")

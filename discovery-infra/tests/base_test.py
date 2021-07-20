@@ -117,7 +117,7 @@ class BaseTest:
 
         if BaseTest._is_test_failed(request):
             logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
-            self.collect_test_logs(cluster, api_client, request.node, cluster.nodes)
+            self.collect_test_logs(cluster, api_client, request, cluster.nodes)
 
             if global_variables.test_teardown:
                 if cluster.is_installing() or cluster.is_finalizing():
@@ -203,7 +203,7 @@ class BaseTest:
         for cluster in clusters:
             if BaseTest._is_test_failed(request):
                 logging.info(f'--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n')
-                self.collect_test_logs(cluster, api_client, request.node, cluster.nodes)
+                self.collect_test_logs(cluster, api_client, request, cluster.nodes)
             if global_variables.test_teardown:
                 if cluster.is_installing() or cluster.is_finalizing():
                     cluster.cancel_install()
@@ -361,12 +361,12 @@ class BaseTest:
         assert len(string) == expected_len, "Expected len string of: " + str(expected_len) + \
                                             " rather than: " + str(len(string)) + " String value: " + string
 
-    def collect_test_logs(self, cluster, api_client, test: pytest.Function, nodes: Nodes):
-        log_dir_name = f"{global_variables.log_folder}/{test.name}"
+    def collect_test_logs(self, cluster, api_client, request, nodes: Nodes):
+        log_dir_name = f"{global_variables.log_folder}/{request.node.name}"
         with suppress(ApiException):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
             download_logs(api_client, cluster_details, log_dir_name,
-                          BaseTest._is_test_failed(test),
+                          BaseTest._is_test_failed(request),
                           pull_secret=global_variables.pull_secret)
         self._collect_virsh_logs(nodes, log_dir_name)
         self._collect_journalctl(nodes, log_dir_name)
