@@ -282,13 +282,13 @@ class TerraformController(LibvirtController):
     def cluster_domain(self):
         warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        return self._config.base_dns_domain
+        return self._cluster_config.base_dns_domain
 
     @cluster_domain.setter
     def cluster_domain(self, cluster_domain):
         warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        self._config.base_dns_domain = cluster_domain
+        self._cluster_config.base_dns_domain = cluster_domain
 
     @property
     def ipv6(self):
