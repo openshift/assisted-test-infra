@@ -83,7 +83,7 @@ def get_clusters(client, all_cluster):
 
 
 def should_download_logs(cluster: dict):
-    return cluster['status'] in [ClusterStatus.ERROR]
+    return cluster['status'] in [ClusterStatus.ERROR] or 'degraded' in cluster['status_info']
 
 
 def min_number_of_log_files(cluster, is_controller_expected):
