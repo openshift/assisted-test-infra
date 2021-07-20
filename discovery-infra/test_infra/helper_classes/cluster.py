@@ -90,7 +90,7 @@ class Cluster:
             user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
             olm_operators=[{"name": name} for name in self._config.olm_operators],
-            network_type= self._config.network_type
+            network_type=self._config.network_type
         )
 
     def delete(self):
@@ -680,7 +680,7 @@ class Cluster:
 
         def get_node_by_mac_addresses(_nodes, _host_macs):
             for _node in _nodes:
-                for _mac in _node.macs():
+                for _mac in _node.macs:
                     if _mac.lower() in _host_macs:
                         return _node
 
@@ -693,8 +693,8 @@ class Cluster:
             if has_host_name(host, inventory):
                 continue
 
-            host_macs = map(lambda interface: interface["mac_address"].lower(),
-                            inventory["interfaces"])
+            host_macs = list(map(lambda interface: interface["mac_address"].lower(),
+                            inventory["interfaces"]))
 
             node = get_node_by_mac_addresses(nodes, host_macs)
             role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
