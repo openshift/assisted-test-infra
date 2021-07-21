@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Any, Tuple, Callable
+from typing import List, Any, Tuple, Callable, TypeVar, SupportsAbs
 
 import libvirt
 
@@ -12,7 +12,9 @@ from test_infra.utils import log
 
 class NodeController(ABC):
 
-    def __init__(self, config: BaseNodeConfig, cluster_config: BaseClusterConfig):
+    T = TypeVar('T', bound=SupportsAbs[BaseNodeConfig])
+
+    def __init__(self, config: T, cluster_config: BaseClusterConfig):
         self._config = config
         self._cluster_config = cluster_config
 

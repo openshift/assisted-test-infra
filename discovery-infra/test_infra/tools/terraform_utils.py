@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 from builtins import list
-from typing import Dict
+from typing import Dict, List, Any
 
 import hcl2
 from python_terraform import IsFlagged, Terraform, Tfstate
@@ -63,7 +63,7 @@ class TerraformUtils:
         self.tf.read_state_file(self.STATE_FILE)
         return self.tf.tfstate
 
-    def get_resources(self, resource_type: str = None) -> list:
+    def get_resources(self, resource_type: str = None) -> List[Dict[str, Any]]:
         state = self.get_state()
         return [resource for resource in state.resources
                 if resource_type is None or resource["type"] == resource_type]

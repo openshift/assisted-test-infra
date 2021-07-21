@@ -23,12 +23,11 @@ from test_infra.assisted_service_api import InventoryClient
 from test_infra.consts import OperatorResource
 from test_infra.controllers.iptables import IptableRule
 from test_infra.controllers.nat_controller import NatController
-from test_infra.controllers.node_controllers import NodeController
-from test_infra.controllers.node_controllers import TerraformController
-from test_infra.controllers.node_controllers.node import Node
+from test_infra.controllers.node_controllers import NodeController, Node, TerraformController, VSphereController
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig, global_variables
+from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
 from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
@@ -46,6 +45,9 @@ class BaseTest:
         Override this fixture in your test class to provide a custom configuration object
         :rtype: new node controller configuration
         """
+        if global_variables.platform == consts.Platforms.VSPHERE:
+            return VSphereControllerConfig()
+
         return TerraformConfig()
 
     @pytest.fixture
@@ -73,6 +75,10 @@ class BaseTest:
     @pytest.fixture
     def controller(self, cluster_configuration: ClusterConfig,
                    prepare_controller_configuration: BaseNodeConfig) -> NodeController:
+
+        if cluster_configuration.platform == consts.Platforms.VSPHERE:
+            return VSphereController(prepare_controller_configuration, cluster_configuration)
+
         return TerraformController(prepare_controller_configuration, cluster_config=cluster_configuration)
 
     @pytest.fixture

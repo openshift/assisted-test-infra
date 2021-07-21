@@ -31,4 +31,5 @@ scp==0.13.6
 tabulate==0.8.9
 tqdm==4.61.2
 urllib3==1.26.6
-waiting==1.4.1
+pyvmomi>=7.0.2
+waiting>=1.4.1

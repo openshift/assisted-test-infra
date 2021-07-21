@@ -73,7 +73,7 @@ class Nodes:
     def shutdown_all(self):
         self.run_for_all_nodes("shutdown")
 
-    def iso_ready(self):
+    def notify_iso_ready(self):
         self.controller.notify_iso_ready()
 
     def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IP_CONFIG):
