@@ -6,7 +6,7 @@ import shutil
 import time
 import warnings
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urljoin
+from urllib.parse import urlparse
 
 import requests
 import waiting
@@ -25,7 +25,7 @@ class InventoryClient(object):
     def __init__(self, inventory_url: str, offline_token: Union[str, None], pull_secret: str):
         self.inventory_url = inventory_url
         configs = Configuration()
-        configs.host = configs.host.replace("http://api.openshift.com", self.inventory_url)
+        configs.host = configs.host.replace(urlparse(configs.host).netloc, urlparse(inventory_url).netloc)
         configs.verify_ssl = False
         self.set_config_auth(configs, offline_token)
         self._set_x_secret_key(configs, pull_secret)
