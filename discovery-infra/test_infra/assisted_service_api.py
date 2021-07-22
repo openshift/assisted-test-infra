@@ -25,7 +25,7 @@ class InventoryClient(object):
     def __init__(self, inventory_url: str, offline_token: Union[str, None], pull_secret: str):
         self.inventory_url = inventory_url
         configs = Configuration()
-        configs.host = configs.host.replace(urlparse(configs.host).netloc, urlparse(inventory_url).netloc)
+        configs.host = self.get_host(configs)
         configs.verify_ssl = False
         self.set_config_auth(configs, offline_token)
         self._set_x_secret_key(configs, pull_secret)
@@ -36,6 +36,11 @@ class InventoryClient(object):
         self.versions = api.VersionsApi(api_client=self.api)
         self.domains = api.ManagedDomainsApi(api_client=self.api)
         self.operators = api.OperatorsApi(api_client=self.api)
+
+    def get_host(self, configs: Configuration) -> str:
+        parsed_host = urlparse(configs.host)
+        parsed_inventory_url = urlparse(self.inventory_url)
+        return parsed_host._replace(netloc=parsed_inventory_url.netloc, scheme=parsed_inventory_url.scheme).geturl()
 
     @classmethod
     def set_config_auth(cls, c: Configuration, offline_token: Union[str, None]) -> None:
