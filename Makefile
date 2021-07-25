@@ -309,8 +309,8 @@ bring_assisted_installer:
 	fi
 
 	@cd assisted-installer && \
-	git fetch --force origin $(INSTALLER_BASE_REF):FETCH_BASE $(INSTALLER_BRANCH) && \
-	git reset --hard FETCH_HEAD && \
+	git fetch --force origin $(INSTALLER_BASE_REF):FETCH_BASE $(INSTALLER_BRANCH):FETCH_NEW && \
+	git reset --hard FETCH_NEW && \
 	git rebase FETCH_BASE
 
 ###########
@@ -409,8 +409,8 @@ bring_assisted_service:
 	fi
 
 	@cd assisted-service && \
-	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH) && \
-	git reset --hard FETCH_HEAD && \
+	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH):FETCH_NEW && \
+	git reset --hard FETCH_NEW && \
 	git rebase FETCH_BASE
 
 deploy_monitoring: bring_assisted_service
