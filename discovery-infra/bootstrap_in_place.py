@@ -31,7 +31,6 @@ MUST_GATHER_DIR = os.path.join(IBIP_DIR, "must-gather")
 INSTALLER_GATHER_DIR = os.path.join(IBIP_DIR, "installer-gather")
 INSTALLER_GATHER_DEBUG_STDOUT = os.path.join(INSTALLER_GATHER_DIR, "gather.stdout.log")
 INSTALLER_GATHER_DEBUG_STDERR = os.path.join(INSTALLER_GATHER_DIR, "gather.stderr.log")
-SSH_KEY = os.path.join("ssh_key", "key")
 
 
 def installer_generate(openshift_release_image):
@@ -174,7 +173,7 @@ def log_collection(vm_ip):
     try:
         logging.info("Gathering information via installer-gather...")
         utils.recreate_folder(INSTALLER_GATHER_DIR, force_recreate=True)
-        installer_gather(ip=vm_ip, ssh_key=SSH_KEY, out_dir=INSTALLER_GATHER_DIR)
+        installer_gather(ip=vm_ip, ssh_key=consts.DEFAULT_SSH_PRIVATE_KEY_PATH, out_dir=INSTALLER_GATHER_DIR)
     except Exception:
         logging.exception("installer-gather failed!")
 

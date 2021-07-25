@@ -135,7 +135,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `REMOTE_SERVICE_URL`          | URL to remote assisted-service - run infra on existing deployment |
 | `ROUTE53_SECRET`              | Amazon Route 53 secret to use for DNS domains registration. |
 | `WORKER_MEMORY`               | memory for worker VM, default: 8892MB |
-| `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ssh_key/key_pub |
+| `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub |
 
 ## Instructions
 

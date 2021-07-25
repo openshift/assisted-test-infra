@@ -19,7 +19,7 @@ Procedure
 
 As `$USER` user with `sudo` privileges,
 
-1.  Generate an SSH key if not already available (`ssh_key/key`)
+1.  Generate an SSH key if not already available (`~/.ssh/id_rsa`)
 
         [$USER@assisted_installer ~]# ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
 
@@ -212,9 +212,7 @@ VMs fail to connect to Assisted Service.
 
    - Get the VM IP addresses using `virsh net-dhcp-leases test-infra-net`.
 
-   - `cd test-infra` and `chmod 600 ssh_key/key` (default SSH key)
-
-   - `ssh -i ssh_key/key core@vm-ip` or try `ssh -i ssh_key/key systemuser@vm-ip` if it did not work
+   - `ssh core@vm-ip` or try `ssh systemuser@vm-ip` if it did not work
 
    - Agent logs are located under `/var/log/agent.log`
 

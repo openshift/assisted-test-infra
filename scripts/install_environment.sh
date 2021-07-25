@@ -202,7 +202,12 @@ function additional_configs() {
     sudo chmod ugo+rx "$(dirname "$(pwd)")"
     echo "disabling selinux by setenforce 0"
     sudo setenforce 0 || true
-    sudo chmod 600 ssh_key/key
+
+    if [ ! -f ~/.ssh/id_rsa ]; then
+        ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
+    fi
+    sudo chmod 600 ~/.ssh/id_rsa
+
     sudo firewall-cmd --zone=libvirt --add-port=59151-59154/tcp
 
     echo "enabling ipv6"
