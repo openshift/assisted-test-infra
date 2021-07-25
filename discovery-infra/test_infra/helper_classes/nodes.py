@@ -45,7 +45,7 @@ class Nodes:
         self._nodes = None
         self._nodes_as_dict = None
 
-    def get_nodes(self, refresh=False):
+    def get_nodes(self, refresh=False) -> List[Node]:
         if refresh:
             self.drop_cache()
 

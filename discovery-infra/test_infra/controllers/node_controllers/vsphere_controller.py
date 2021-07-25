@@ -128,6 +128,9 @@ class VSphereController(NodeController):
     def detach_all_test_disks(self, node_name: str):
         raise NotImplementedError
 
+    def get_ingress_and_api_vips(self) -> dict:
+        raise NotImplementedError
+
     def get_cluster_network(self) -> str:
         raise NotImplementedError
 
@@ -147,9 +150,6 @@ class VSphereController(NodeController):
         raise NotImplementedError
 
     def set_ram_kib(self, node_name: str, ram_kib: int) -> None:
-        raise NotImplementedError
-
-    def get_machine_cidr(self) -> str:
         raise NotImplementedError
 
     def attach_interface(self, node_name, network_xml: str) -> Tuple[libvirt.virNetwork, str]:

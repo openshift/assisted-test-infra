@@ -13,6 +13,9 @@ _triggers = frozendict(
             "user_managed_networking": True,
             "vip_dhcp_allocation": False,
         },
+        ("platform", consts.Platforms.VSPHERE): {
+            "user_managed_networking": False,
+        },
         ("masters_count", 1): {
             "workers_count": 0,
             "nodes_count": 1,
