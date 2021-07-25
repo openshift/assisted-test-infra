@@ -842,3 +842,12 @@ def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_
         DeprecationWarning,
     )
     return logs_utils.wait_for_logs_complete(client, cluster_id, timeout, interval, check_host_logs_only)
+
+
+def run_marked_fixture(old_value, marker_name, request):
+    marker = request.node.get_closest_marker(marker_name)
+    if marker and marker.args and marker.args[0]:
+        fixture_name = marker.args[0]
+        # execute fixture
+        return request.getfixturevalue(fixture_name)
+    return old_value

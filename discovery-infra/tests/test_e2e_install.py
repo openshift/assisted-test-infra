@@ -15,8 +15,8 @@ from tests.conftest import get_available_openshift_versions, get_api_client
 class TestInstall(BaseTest):
 
     @pytest.fixture
-    def cluster_configuration(self, request):
-        # Overriding the default BaseTest.cluster_configuration fixture to set the openshift version.
+    def new_cluster_configuration(self, request):
+        # Overriding the default BaseTest.new_cluster_configuration fixture to set the openshift version.
         config = ClusterConfig()
 
         with suppress(FixtureLookupError):
