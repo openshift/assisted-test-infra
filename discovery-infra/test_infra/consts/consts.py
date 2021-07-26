@@ -17,7 +17,6 @@ TF_MAIN_JSON_NAME = "main.tf"
 BASE_IMAGE_FOLDER = "/tmp/images"
 IMAGE_NAME = "installer-image.iso"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
-SSH_KEY = "ssh_key/key.pub"
 HOST_PASSTHROUGH_CPU_MODE = "host-passthrough"
 MASTER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
 WORKER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE

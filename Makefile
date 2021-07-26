@@ -67,7 +67,7 @@ API_VIP_IP := $(or $(API_VIP_IP),"")
 API_VIP_DNSNAME := $(or $(API_VIP_DNSNAME),"")
 
 # secrets
-SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ssh_key/key.pub))
+SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ~/.ssh/id_rsa.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 
