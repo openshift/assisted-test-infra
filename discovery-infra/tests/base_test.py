@@ -73,6 +73,11 @@ class BaseTest:
         return ClusterConfig()
 
     @pytest.fixture
+    def prepared_cluster(self, cluster):
+        cluster.prepare_for_installation()
+        yield cluster
+
+    @pytest.fixture
     def controller(self, cluster_configuration: ClusterConfig,
                    prepare_controller_configuration: BaseNodeConfig) -> NodeController:
 
