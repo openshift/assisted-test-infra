@@ -406,7 +406,7 @@ def get_random_name(length=8):
 def folder_exists(file_path):
     folder = Path(file_path).parent
     if not folder:
-        log.warn("Directory %s doesn't exist. Please create it", folder)
+        log.warning("Directory %s doesn't exist. Please create it", folder)
         return False
     return True
 
