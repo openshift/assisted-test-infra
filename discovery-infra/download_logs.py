@@ -172,7 +172,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
                                          check_oc=are_masters_in_join_state)
                     break
                 except AssertionError as ex:
-                    log.warn(f"Cluster logs verification failed: {ex}")
+                    log.warning("Cluster logs verification failed: %s", ex)
 
                     # Skip sleeping on last retry
                     if i < MAX_RETRIES - 1:

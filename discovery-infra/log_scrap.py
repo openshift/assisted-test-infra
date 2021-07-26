@@ -9,7 +9,6 @@ import urllib3
 import logging
 import hashlib
 import tempfile
-import contextlib
 import elasticsearch
 
 from logger import log
@@ -56,7 +55,7 @@ class ScrapeEvents:
             random.shuffle(clusters)
 
             if not clusters:
-                log.warn(f'No clusters were found, waiting {RETRY_INTERVAL/60} min')
+                log.warning(f'No clusters were found, waiting {RETRY_INTERVAL/60} min')
                 time.sleep(RETRY_INTERVAL)
                 break
 
@@ -232,8 +231,8 @@ def main():
                                          es_pass = args.es_pass,
                                          backup_destination=args.backup_destination)
             scrape_events.run_service()
-        except Exception as EX:
-            log.warn(f"Elastefying logs failed with error {EX}, sleeping for {RETRY_INTERVAL} and retrying")
+        except Exception as ex:
+            log.warning("Elastefying logs failed with error %s, sleeping for %s and retrying", ex, RETRY_INTERVAL)
             time.sleep(RETRY_INTERVAL)
 
 if __name__ == '__main__':

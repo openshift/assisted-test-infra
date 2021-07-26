@@ -9,7 +9,7 @@ REMOVED_FIELDS = [
     "cluster.image_info.ssh_public_key"
     "cluster.connectivity_majority_groups",
     "cluster.controller_logs_collected_at",
-    
+
     "cluster.hosts.connectivity",
     "cluster.hosts.images_status",
 
@@ -94,4 +94,4 @@ def convert_field_to_json(converted_field):
         if type(converted_field) == str:
             return json.loads(converted_field)
     except KeyError:
-        logger.warn("Error while conversing to json")
+        logger.warning("Error while conversing to json")
