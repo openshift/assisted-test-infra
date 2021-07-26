@@ -260,7 +260,7 @@ class Cluster:
             else self._config.cluster_network_host_prefix,
         )
 
-        cluster = self.api_client.update_cluster(
+        self.api_client.update_cluster(
             self.id,
             {
                 "vip_dhcp_allocation": self._config.vip_dhcp_allocation,
@@ -281,7 +281,7 @@ class Cluster:
 
         if not cidr:
             # Support controllers which the machine cidr is not configurable. taking it from the AI instead
-            matching_cidrs = self.get_cluster_matching_cidrs(Cluster.get_cluster_hosts(self))
+            matching_cidrs = self.get_cluster_matching_cidrs(Cluster.get_cluster_hosts(self.get_details()))
 
             if not matching_cidrs:
                 raise RuntimeError(f"No matching cidr for DHCP")
