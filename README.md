@@ -109,7 +109,6 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `ENABLE_KUBE_API`             | If set, deploy assisted-service with Kube API controllers (minikube only) |
 | `DISABLED_HOST_VALIDATIONS`   | comma-separated list of validation IDs to be excluded from the host validation process. |
 | `SSO_URL`                     | URL used to fetch JWT tokens for assisted-service authentication |
-| `WITH_AMS_SUBSCRIPTIONS`      | configure assisted-service to create AMS subscription for each registered cluster, default: false |
 | `CHECK_CLUSTER_VERSION`       | If "True", the controller will wait for CVO to finish |
 
 ## Installation parameters
