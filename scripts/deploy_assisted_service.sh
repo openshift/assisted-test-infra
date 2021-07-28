@@ -5,7 +5,6 @@ source scripts/utils.sh
 export SERVICE_NAME=assisted-service
 export SERVICE_URL=$(get_main_ip)
 export AUTH_TYPE=${AUTH_TYPE:-none}
-export WITH_AMS_SUBSCRIPTIONS=${WITH_AMS_SUBSCRIPTIONS:-false}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
 export SERVICE_INTERNAL_PORT=8090
