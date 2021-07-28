@@ -407,17 +407,26 @@ class BaseTest:
         infra_utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
 
         messages_log_path = os.path.join(virsh_log_path, "messages.log")
-        shutil.copy('/var/log/messages', messages_log_path)
+        try:
+            shutil.copy('/var/log/messages', messages_log_path)
+        except (FileNotFoundError):
+            logging.warning('Failed to copy /var/log/messages, file does not exist')
 
         qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
         os.makedirs(qemu_libvirt_path, exist_ok=False)
         for node in nodes:
-            shutil.copy(f'/var/log/libvirt/qemu/{node.name}.log', f'{qemu_libvirt_path}/{node.name}-qemu.log')
+            try:
+                shutil.copy(f'/var/log/libvirt/qemu/{node.name}.log', f'{qemu_libvirt_path}/{node.name}-qemu.log')
+            except (FileNotFoundError):
+                logging.warning(f"Failed to copy {node.name} qemu log, file does not exist")
 
         console_log_path = os.path.join(virsh_log_path, "console_logs")
         os.makedirs(console_log_path, exist_ok=False)
         for node in nodes:
-            shutil.copy(f'/var/log/libvirt/qemu/{node.name}-console.log', f'{console_log_path}/{node.name}-console.log')
+            try:
+                shutil.copy(f'/var/log/libvirt/qemu/{node.name}-console.log', f'{console_log_path}/{node.name}-console.log')
+            except (FileNotFoundError):
+                logging.warning(f"Failed to copy {node.name} console log, file does not exist")
 
         libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
         infra_utils.run_command(f"journalctl --since \"{nodes.setup_time}\" "
