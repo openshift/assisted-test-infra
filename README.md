@@ -445,7 +445,7 @@ Run installation with the operator
 ```bash
 export INSTALLER_KUBECONFIG=./build/kubeconfig
 export TEST_FUNC=test_kube_api_ipv4
-export TEST=./discovery-infra/tests/test_kube_api.py
+export TEST=./tests/test_kube_api.py
 export TEST_TEARDOWN=false
 make test
 ```
