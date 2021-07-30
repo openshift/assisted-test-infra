@@ -679,6 +679,10 @@ class Cluster:
         if roles or hostnames:
             self.api_client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
 
+    def _ha_not_none(self):
+        return self._high_availability_mode != consts.HighAvailabilityMode.NONE and self._config.platform != \
+               consts.Platforms.NONE
+
     @JunitTestCase()
     def prepare_for_installation(self, static_network_config=None, **kwargs):
         self.update_config(**kwargs)
@@ -705,10 +709,6 @@ class Cluster:
 
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
-        else:
-            main_cidr = self.get_machine_cidr()
-            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
-            self.nodes.controller.set_single_node_ip(ip)
 
         self.set_network_params(
             controller=self.nodes.controller,
@@ -717,21 +717,24 @@ class Cluster:
             cluster_network_cidr=self._config.cluster_network_cidr,
             cluster_network_host_prefix=self._config.cluster_network_host_prefix,
         )
-        self.wait_for_ready_to_install()
 
+        # in case of None platform we need to specify dns records before hosts are ready
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
-        elif self._config.masters_count != 1:
+        elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:
+            main_cidr = self.get_machine_cidr()
+            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
+            self.nodes.controller.set_single_node_ip(ip)
+            self.nodes.controller.set_dns(api_vip=ip, ingress_vip=ip)
+
+        self.wait_for_ready_to_install()
+
+        # in case of regular cluster, need to set dns after vips exits
+        # in our case when nodes are ready, vips will be there for sure
+        if self._ha_not_none():
             vips_info = self.__class__.get_vips_from_cluster(self.api_client, self.id)
             self.nodes.controller.set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
-        else:
-            main_cidr = self.get_machine_cidr()
-            master_ips = self.get_master_ips(self.api_client, self.id, main_cidr)
-            if len(master_ips) != 1:
-                raise Exception(f"Unexpected master count {len(master_ips)} for single node")
-            node_ip = master_ips[0]
-            self.nodes.controller.set_dns(api_vip=node_ip, ingress_vip=node_ip)
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)
