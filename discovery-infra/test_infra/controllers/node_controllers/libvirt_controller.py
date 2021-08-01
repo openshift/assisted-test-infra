@@ -9,6 +9,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import List, Callable
 from xml.dom import minidom
+from netaddr import IPAddress
 
 import libvirt
 import waiting
@@ -409,15 +410,20 @@ class LibvirtController(NodeController, ABC):
 
     @staticmethod
     def _get_domain_ips_and_macs(domain):
-        interfaces = domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
         ips = []
         macs = []
-        if interfaces:
-            for (_, val) in interfaces.items():
-                if val['addrs']:
-                    for addr in val['addrs']:
-                        ips.append(addr['addr'])
-                        macs.append(val['hwaddr'])
+        try:
+            interfaces = domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
+            if interfaces:
+                for (_, val) in interfaces.items():
+                    if val['addrs']:
+                        for addr in val['addrs']:
+                            if not IPAddress(addr['addr']).is_loopback():
+                                ips.append(addr['addr'])
+                                macs.append(val['hwaddr'])
+        except libvirt.libvirtError:
+            logging.info(f"libvirt Domain {domain.name()} is not yet connected")
+            
         if ips:
             logging.info("Host %s ips are %s", domain.name(), ips)
         if macs:
