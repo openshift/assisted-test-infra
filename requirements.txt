@@ -11,7 +11,7 @@ Jinja2===3.0.1
 jira==3.0.1
 junit-report==0.1.24
 kubernetes==17.17.0
-libvirt-python==7.5.0
+libvirt-python==7.6.0
 munch==2.5.0
 netaddr==0.8.0
 netifaces==0.11.0
