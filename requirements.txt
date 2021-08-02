@@ -9,7 +9,7 @@ ipdb==0.13.9
 ipython==7.11.1
 Jinja2===3.0.1
 jira==3.0.1
-junit-report==0.1.24
+junit-report==0.1.31
 kubernetes==17.17.0
 libvirt-python==7.5.0
 munch==2.5.0
