@@ -167,7 +167,7 @@ class Events:
     DONE = "reached installation stage Done"
     CANCELLED_CLUSTER_INSTALLATION = "Cancelled cluster installation"
     CANCELLED_FOR_HOST = "Installation cancelled for host"
-    CLUSTER_VERSION_DONE = "Cluster version status: available message: Done"
+    CLUSTER_VERSION_DONE = "Operator cvo status: available message: Done"
     CANCELLED_STATUS = "to \"cancelled\""
     RESET_CLUSTER_INSTALLATION = "Reset cluster installation"
     RESET_FOR_HOST = "Installation reset for host"
