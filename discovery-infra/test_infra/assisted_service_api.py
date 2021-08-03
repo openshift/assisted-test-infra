@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import requests
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
+from junit_report import JunitTestCase
 from kubernetes.client import ApiClient as KubeApiClient
 from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration as KubeConfiguration
@@ -247,6 +248,7 @@ class InventoryClient(object):
                 log.info(f"Requested host by name: {host_name}, host details: {host}")
                 return host
 
+    @JunitTestCase()
     def download_and_save_file(self, cluster_id: str, file_name: str, file_path: str) -> None:
         log.info("Downloading %s to %s", file_name, file_path)
         response = self.client.download_cluster_files(
@@ -263,6 +265,7 @@ class InventoryClient(object):
             file_path=kubeconfig_path,
         )
 
+    @JunitTestCase()
     def download_host_ignition(self, cluster_id: str, host_id: str, destination: str) -> None:
         log.info("Downloading host %s cluster %s ignition files to %s", host_id, cluster_id, destination)
 
@@ -276,6 +279,7 @@ class InventoryClient(object):
         with open(kubeconfig_path, "wb") as _file:
             _file.write(response.data)
 
+    @JunitTestCase()
     def download_metrics(self, dest: str) -> None:
         log.info("Downloading metrics to %s", dest)
 

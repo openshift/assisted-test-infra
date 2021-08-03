@@ -10,6 +10,7 @@ CLUSTER_ID=${CLUSTER_ID:-""}
 ADDITIONAL_PARAMS=${ADDITIONAL_PARAMS:-""}
 KUBECTL=${KUBECTL:-kubectl}
 LOGS_DEST=${LOGS_DEST:-build}
+JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-"reports/"}
 KUBE_CRS=( clusterdeployment infraenv agentclusterinstall agent )
 
 function download_service_logs() {
@@ -45,7 +46,7 @@ function download_cluster_logs() {
     fi
   fi
 
-  skipper run ./discovery-infra/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
+  JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR} skipper run ./discovery-infra/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
 }
 
 function collect_kube_api_resources() {

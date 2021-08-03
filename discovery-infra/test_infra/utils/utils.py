@@ -24,6 +24,8 @@ from typing import List, Tuple, Union
 
 import filelock
 import libvirt
+from junit_report import JunitTestCase
+
 import oc_utils
 import requests
 import waiting
@@ -56,6 +58,7 @@ def scan_for_free_port(starting_port: int, step: int = 200):
     raise RuntimeError("could not allocate free port for proxy")
 
 
+@JunitTestCase()
 def run_command(command, shell=False, raise_errors=True, env=None):
     command = command if shell else shlex.split(command)
     process = subprocess.run(

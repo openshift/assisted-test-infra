@@ -420,10 +420,10 @@ delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forw
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
 
 download_service_logs:
-	./scripts/download_logs.sh download_service_logs
+	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_service_logs
 
 download_cluster_logs:
-	./scripts/download_logs.sh download_cluster_logs
+	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_cluster_logs
 
 ##############
 # monitoring #
