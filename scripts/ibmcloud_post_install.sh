@@ -8,28 +8,30 @@ export HOME=/root
 
 ### Status flag
 LOGFILE=/root/ibmcloud-post-install.log
+### Check if the script has been already run
+if [ -f /root/ibmcloud-post-install.log ]; then
+    echo "Found existing log, exiting!"
+    log "Found existing log, exiting!"
+    exit 0
+fi
+
 log () {
   echo "\$(date) +++ \$1" >> \$LOGFILE
 }
 
 log "Starting ibmcloud-post-install.sh"
 
-### Check if the script has been already run
-if [ -f /root/ibmcloud-post-install.log ]; then
-    log "Found existing log, exiting !"
-    exit 0
-fi
 
 {
-### Base prerequisites
+echo "Install base prerequisites"
 dnf install -y git
 
-### Get AI repo
+echo "Get AI repo"
 mkdir -p /home/test
 cd /home/test
 git clone https://github.com/openshift/assisted-test-infra.git
 
-### Provision test-infra
+echo "Provision test-infra"
 cd /home/test/assisted-test-infra
 
 scripts/install_environment.sh
@@ -38,9 +40,10 @@ scripts/install_environment.sh config_sshd
 } &>> \$LOGFILE
 
 ### Status flag
-log "Finished ibmcloud-post-install.sh, thank you !"
+echo "Installation completed"
+log "Installation completed, thank you !"
 EOF
-chmod 755 /root/install_complete.sh
+chmod 755 /usr/bin/install_complete.sh
 
 # set timeoutsec explicitly to prevent timeout fail
 # ref. https://qiita.com/khayama/items/861243aed5cf95f318d1
