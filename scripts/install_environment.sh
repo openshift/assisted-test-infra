@@ -181,6 +181,19 @@ EOF
   sudo firewall-cmd --zone=libvirt --add-port=80/tcp
 }
 
+function config_sshd() {
+  echo "Harden SSH daemon"
+
+  ### IBM Cloud machines by default allow SSH as root using the password. Given that the default one
+  ### is extremely simple, we disable this option.
+
+  sudo sed -i "s/.*RSAAuthentication.*/RSAAuthentication yes/g" /etc/ssh/sshd_config
+  sudo sed -i "s/.*PubkeyAuthentication.*/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
+  sudo sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/g" /etc/ssh/sshd_config
+
+  sudo systemctl restart sshd.service
+}
+
 function additional_configs() {
     if [ "${ADD_USER_TO_SUDO}" != "n" ]; then
         current_user=$(whoami)
@@ -230,4 +243,3 @@ if [ $# -eq 0 ]; then
 else
     $@
 fi
-
