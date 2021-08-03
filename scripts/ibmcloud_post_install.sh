@@ -40,7 +40,7 @@ scripts/install_environment.sh config_sshd
 ### Status flag
 log "Finished ibmcloud-post-install.sh, thank you !"
 EOF
-chmod 755 /root/install_complete.sh
+chmod 755 /usr/bin/install_complete.sh
 
 # set timeoutsec explicitly to prevent timeout fail
 # ref. https://qiita.com/khayama/items/861243aed5cf95f318d1
