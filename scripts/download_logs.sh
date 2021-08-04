@@ -13,6 +13,8 @@ LOGS_DEST=${LOGS_DEST:-build}
 JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-"reports/"}
 KUBE_CRS=( clusterdeployment infraenv agentclusterinstall agent )
 
+export JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR}
+
 function download_service_logs() {
   mkdir -p ${LOGS_DEST} || true
 
