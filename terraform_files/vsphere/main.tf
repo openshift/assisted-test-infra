@@ -9,6 +9,7 @@ terraform {
 
 locals {
   hasISO = var.iso_download_path != "" && var.iso_download_path != null
+  path = var.vsphere_folder == "" ? "" : "${var.vsphere_folder}/"
 }
 
 provider "vsphere" {
@@ -59,7 +60,7 @@ resource "vsphere_tag" "tag" {
 
 # Creating a folder, all the vms would be created into this folder.
 resource "vsphere_folder" "folder" {
-  path          = var.cluster_name
+  path          = "${local.path}${var.cluster_name}"
   type          = "vm"
   datacenter_id = data.vsphere_datacenter.datacenter.id
   tags          = [vsphere_tag.tag.id]
@@ -72,7 +73,7 @@ resource "vsphere_file" "ISO_UPLOAD" {
   datacenter       = var.vsphere_datacenter
   datastore        = var.vsphere_datastore
   source_file      = var.iso_download_path
-  destination_file = "ISOs/${basename(var.iso_download_path)}"
+  destination_file = "assisted-installer-isos/cluster-${var.cluster_name}/${basename(var.iso_download_path)}"
 }
 
 # Creating the master VMs.

@@ -23,7 +23,7 @@ class VSphereController(NodeController):
         super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
         folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=cluster_config.platform)
-        self._tf = terraform_utils.TerraformUtils(working_dir=folder)
+        self._tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
 
     def prepare_nodes(self):
         config = {**self._config.get_all(), **self._cluster_config.get_all(), "cluster_name": self.cluster_name}
