@@ -318,6 +318,8 @@ def handle_arguments():
     parser.add_argument("--sosreport", help="gather sosreport from each node", action='store_true')
     parser.add_argument("--update-by-events", help="Update logs if cluster events were updated", action='store_true')
     parser.add_argument("-ps", "--pull-secret", help="Pull secret", type=str, default="")
+    parser.add_argument("-report-dir", "--junit-report-dir", help="Path of the junit report", type=str,
+                        default="report/")
 
     return parser.parse_args()
 
