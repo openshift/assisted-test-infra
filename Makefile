@@ -340,8 +340,7 @@ deploy_static_network_config_nodes_with_install:
 	make deploy_nodes_with_install ADDITIONAL_PARAMS="'--with-static-network-config'"
 
 deploy_nodes: start_load_balancer
-	bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG)
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS=$(ADDITIONAL_PARAMS) DAY1_PARAMS=--day1-cluster
+	TEST_TEARDOWN=no TEST=./discovery-infra/tests/test_targets.py TEST_FUNC=test_target_deploy_nodes $(MAKE) test
 
 deploy_static_network_config_nodes:
 	make deploy_nodes ADDITIONAL_PARAMS="'--with-static-network-config'"
