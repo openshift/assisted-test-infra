@@ -48,7 +48,7 @@ function download_cluster_logs() {
     fi
   fi
 
-  skipper run ./discovery-infra/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS} --junit-report-dir ${JUNIT_REPORT_DIR}
+  skipper run -e JUNIT_REPORT_DIR ./discovery-infra/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
 }
 
 function collect_kube_api_resources() {
