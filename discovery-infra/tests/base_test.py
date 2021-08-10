@@ -514,8 +514,8 @@ class BaseTest:
 
         waiting.wait(
             lambda: check_status(),
-            timeout_seconds=3000,
-            sleep_seconds=90,
+            timeout_seconds=900,
+            sleep_seconds=30,
             waiting_for="controller to be running",
         )
 
