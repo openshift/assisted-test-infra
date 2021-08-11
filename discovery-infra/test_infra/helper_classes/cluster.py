@@ -130,6 +130,10 @@ class Cluster(Entity):
         hosts = self.get_hosts()
         return {h["id"]: h["role"] for h in hosts}
 
+    def get_host_labels(self):
+        hosts = self.get_hosts()
+        return {h["id"]: json.loads(h["labels"]) for h in hosts}
+
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
@@ -292,6 +296,9 @@ class Cluster(Entity):
             self._infra_env.update_host(host_id=role["id"], host_role=role["role"])
 
         return assigned_roles
+
+    def set_host_labels(self, assigned_labels = None):
+        self.api_client.set_labels(cluster_id=self.id, hosts_with_labels=assigned_labels)
 
     def set_specific_host_role(self, host, role):
         self._infra_env.update_host(host_id=host["id"], host_role=role)

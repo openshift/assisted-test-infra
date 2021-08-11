@@ -281,6 +281,11 @@ class InventoryClient(object):
         update_params = models.ClusterUpdateParams(pull_secret=pull_secret)
         return self.update_cluster(cluster_id=cluster_id, update_params=update_params)
 
+    def set_labels(self, cluster_id: str, hosts_with_labels) -> models.cluster.Cluster:
+        log.info("Setting labels for hosts %s in cluster %s", hosts_with_labels, cluster_id)
+        update_params = models.ClusterUpdateParams(host_labels=hosts_with_labels)
+        return self.update_cluster(cluster_id=cluster_id, update_params=update_params)
+
     def update_cluster(self, cluster_id, update_params) -> models.cluster.Cluster:
         log.info("Updating cluster %s with params %s", cluster_id, update_params)
         return self.client.v2_update_cluster(cluster_id=cluster_id, cluster_update_params=update_params)
