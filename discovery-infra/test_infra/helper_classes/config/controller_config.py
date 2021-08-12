@@ -14,7 +14,7 @@ global_variables = GlobalVariables()
 @dataclass
 class BaseNodeConfig(_BaseConfig, ABC):
     platform: str = None
-    is_ipv6: bool = None   # Todo - Might change during MGMT-5370
+    is_ipv6: bool = None
     bootstrap_in_place: bool = None
     private_ssh_key_path: Path = None
     working_dir: str = consts.WORKING_DIR
@@ -22,6 +22,7 @@ class BaseNodeConfig(_BaseConfig, ABC):
     master_memory: int = None
     master_vcpu: int = None
     masters_count: int = None
+    nodes_count: int = None
     master_cpu_mode: str = None
     master_disk: int = None   # disk size in MB.
     master_disk_size_gib: str = None # disk size in GB.

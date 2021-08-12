@@ -21,6 +21,14 @@ class NodeController(ABC):
     def log_configuration(self):
         log.info(f"controller configuration={self._config}")
 
+    @property
+    def workers_count(self):
+        return self._config.workers_count
+
+    @property
+    def masters_count(self):
+        return self._config.masters_count
+
     @abstractmethod
     def list_nodes(self) -> List[Node]:
         pass
@@ -188,3 +196,6 @@ class NodeController(ABC):
 
     def set_dns_for_user_managed_network(self) -> None:
         pass
+
+    def is_ipv6(self):
+        return self._config.is_ipv6
