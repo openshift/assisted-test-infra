@@ -146,7 +146,7 @@ class Cluster:
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            nodes_count=nodes_count or self._config.nodes_count,
+            nodes_count=nodes_count or self.nodes.nodes_count,
             statuses=statuses,
             timeout=consts.DISCONNECTED_TIMEOUT,
         )
@@ -159,7 +159,7 @@ class Cluster:
         utils.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            nodes_count=nodes_count or self._config.nodes_count,
+            nodes_count=nodes_count or self.nodes.nodes_count,
             statuses=statuses,
             timeout=consts.NODES_REGISTERED_TIMEOUT,
         )
@@ -220,7 +220,7 @@ class Cluster:
     def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
         if requested_roles is None:
             requested_roles = Counter(
-                master=num_masters or self._config.masters_count, worker=num_workers or self._config.workers_count
+                master=num_masters or self.nodes.masters_count, worker=num_workers or self.nodes.workers_count
             )
         assigned_roles = self._get_matching_hosts(host_type=consts.NodeRoles.MASTER, count=requested_roles["master"])
 
@@ -449,7 +449,7 @@ class Cluster:
         )
 
     def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self, num_masters: int = None):
-        num_masters = num_masters if num_masters is not None else self._config.masters_count
+        num_masters = num_masters if num_masters is not None else self.nodes.masters_count
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
@@ -458,7 +458,7 @@ class Cluster:
         )
 
     def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self, num_masters: int = None):
-        num_masters = num_masters if num_masters is not None else self._config.masters_count
+        num_masters = num_masters if num_masters is not None else self.nodes.masters_count
         utils.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
@@ -472,7 +472,7 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1:],
-            nodes_count=self._config.nodes_count,
+            nodes_count=self.nodes.nodes_count,
         )
 
     @JunitTestCase()
@@ -611,7 +611,7 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLED],
-            nodes_count=nodes_count or self._config.nodes_count,
+            nodes_count=nodes_count or self.nodes.nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
         )
@@ -673,7 +673,7 @@ class Cluster:
             hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=node.name))
 
         # no need to update the roles for SNO
-        if self._config.nodes_count == 1:
+        if self.nodes.nodes_count == 1:
             roles = None
 
         if roles or hostnames:
@@ -981,7 +981,7 @@ class Cluster:
         cidrs = set()
 
         for host in hosts:
-            ips = host.ipv6_addresses() if self._config.is_ipv6 else host.ipv4_addresses()
+            ips = host.ipv6_addresses() if self.nodes.is_ipv6() else host.ipv4_addresses()
 
             for host_ip in ips:
                 cidr = network_utils.get_cidr_by_interface(host_ip)
@@ -995,7 +995,7 @@ class Cluster:
 
         for cidr in cluster_cidrs:
             for host in hosts:
-                interfaces = host.ipv6_addresses() if self._config.is_ipv6 else host.ipv4_addresses()
+                interfaces = host.ipv6_addresses() if self.nodes.is_ipv6() else host.ipv4_addresses()
 
                 if not network_utils.any_interface_in_cidr(interfaces, cidr):
                     break

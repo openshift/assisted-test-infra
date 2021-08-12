@@ -55,7 +55,6 @@ class TestKubeAPISNO(BaseTest):
         cluster_config.service_network_cidr = consts.DEFAULT_IPV6_SERVICE_CIDR
         cluster_config.cluster_network_cidr = consts.DEFAULT_IPV6_CLUSTER_CIDR
         cluster_config.cluster_network_host_prefix = consts.DEFAULT_IPV6_HOST_PREFIX
-        cluster_config.is_ipv6 = True
 
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
                       cluster_config, proxy_server, is_ipv4=False)
