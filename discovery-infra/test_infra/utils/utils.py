@@ -188,7 +188,7 @@ def are_hosts_in_status(hosts, nodes_count, statuses, fall_on_error_status=True)
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
         statuses,
         [
-            (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
+            (i, host["id"], host.get("requested_hostname"), host.get("role"), host["status"], host["status_info"])
             for i, host in enumerate(hosts, start=1)
         ],
     )
@@ -220,19 +220,43 @@ def wait_till_hosts_with_macs_are_in_status(
 
 
 def wait_till_all_hosts_are_in_status(
-    client,
-    cluster_id,
-    nodes_count,
-    statuses,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
+        client,
+        cluster_id,
+        nodes_count,
+        statuses,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True,
+        interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
     waiting.wait(
         lambda: are_hosts_in_status(
             client.get_cluster_hosts(cluster_id),
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Nodes to be in of the statuses %s" % statuses,
+    )
+
+
+def wait_till_all_infra_env_hosts_are_in_status(
+        client,
+        infra_env_id,
+        nodes_count,
+        statuses,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True,
+        interval=5,
+):
+    log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
+
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            client.get_infra_env_hosts(infra_env_id),
             nodes_count,
             statuses,
             fall_on_error_status,
@@ -712,9 +736,9 @@ def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):
     return release_image
 
 
-def copy_template_tree(dst, none_platform_mode=False):
+def copy_template_tree(dst, none_platform_mode=False, is_infra_env=False):
     copy_tree(
-        src=consts.TF_TEMPLATE_NONE_PLATFORM_FLOW if none_platform_mode else consts.TF_TEMPLATE_BARE_METAL_FLOW, dst=dst
+        src=consts.TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW if is_infra_env else consts.TF_TEMPLATE_NONE_PLATFORM_FLOW if none_platform_mode else consts.TF_TEMPLATE_BARE_METAL_FLOW, dst=dst
     )
 
 

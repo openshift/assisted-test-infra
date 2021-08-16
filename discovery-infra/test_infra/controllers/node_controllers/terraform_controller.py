@@ -9,34 +9,98 @@ from typing import List
 
 from munch import Munch
 from netaddr import IPNetwork
-
+from abc import ABC, abstractmethod
 from test_infra import consts, utils, virsh_cleanup
 from test_infra.consts import resources
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.helper_classes.config import BaseTerraformConfig, BaseClusterConfig
+from test_infra.helper_classes.config import BaseTerraformConfig, BaseClusterConfig, BaseEntityConfig
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils.cluster_name import get_cluster_name_suffix
+from test_infra.utils.base_name import get_name_suffix
+
+class _EntityOperations(ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplemented
+
+    @property
+    @abstractmethod
+    def terraform_params(self) -> dict:
+        raise NotImplemented
+
+    @property
+    @abstractmethod
+    def name_suffix(self) -> str:
+        raise NotImplemented
+
+
+
+class _ClusterOperations(_EntityOperations):
+    def __init__(self, controller, entity_config : BaseEntityConfig):
+        self._controller = controller
+        self._entity_config = entity_config
+
+    @property
+    def name(self) -> str:
+        return self._entity_config.cluster_name.get()
+
+    @property
+    def name_suffix(self) -> str:
+        return self._entity_config.cluster_name.suffix
+
+    @property
+    def terraform_params(self) -> dict:
+        return {
+            "cluster_name": self.name,
+            "cluster_domain": self._entity_config.base_dns_domain
+        }
+
+
+class _InfraEnvOperations(_EntityOperations):
+    def __init__(self, controller, entity_config : BaseEntityConfig):
+        self._controller = controller
+        self._entity_config = entity_config
+
+    @property
+    def name(self) -> str:
+        return self._entity_config.infra_env_name.get()
+
+    @property
+    def name_suffix(self) -> str:
+        return self._entity_config.infra_env_name.suffix
+
+    @property
+    def terraform_params(self) -> dict:
+        return {
+            "infra_env_name": self.name
+        }
 
 
 class TerraformController(LibvirtController):
 
-    def __init__(self, config: BaseTerraformConfig, cluster_config: BaseClusterConfig):
-        super().__init__(config, cluster_config)
-        self.cluster_name = cluster_config.cluster_name.get()
-        self._suffix = cluster_config.cluster_name.suffix or get_cluster_name_suffix()
+    def __init__(self, config: BaseTerraformConfig, entity_config: BaseEntityConfig):
+        super().__init__(config, entity_config)
+        if entity_config.is_cluster():
+            self._entity_operations = _ClusterOperations(self, entity_config)
+            self.cluster_name = entity_config.cluster_name.get()
+        elif entity_config.is_infra_env():
+            self._entity_operations = _InfraEnvOperations(self, entity_config)
+            self.infra_env_name = entity_config.infra_env_name.get()
+        else:
+            raise Exception("Unidentified entity config")
+        self._suffix = self._entity_operations.name_suffix or get_name_suffix()
+        self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_operations.name, config.platform)
         self.network_name = config.network_name + self._suffix
-        self.tf_folder = config.tf_folder or self._create_tf_folder(self.cluster_name, config.platform)
         self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
         self.master_ips = None
 
-    @classmethod
-    def _create_tf_folder(cls, cluster_name: str, platform: str):
-        tf_folder = utils.get_tf_folder(cluster_name)
+    def _create_tf_folder(self, name: str, platform: str):
+        tf_folder = utils.get_tf_folder(name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder, none_platform_mode=platform == consts.Platforms.NONE)
+        utils.copy_template_tree(tf_folder, none_platform_mode=platform == consts.Platforms.NONE, is_infra_env=self._entity_config.is_infra_env())
         return tf_folder
 
     # TODO move all those to conftest and pass it as kwargs
@@ -49,8 +113,6 @@ class TerraformController(LibvirtController):
             "libvirt_master_vcpu": kwargs.get("master_vcpu", resources.DEFAULT_MASTER_CPU),
             "worker_count": kwargs.get("workers_count", 0),
             "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
-            "cluster_name": self.cluster_name,
-            "cluster_domain": self._cluster_config.base_dns_domain,
             "machine_cidr": self.get_machine_cidr(),
             "libvirt_network_name": self.network_name,
             "libvirt_network_mtu": kwargs.get("network_mtu", 1500),
@@ -71,6 +133,7 @@ class TerraformController(LibvirtController):
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)
         }
+        params.update(self._entity_operations.terraform_params)
         for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
                     "libvirt_secondary_worker_ips"]:
             value = kwargs.get(key)
@@ -79,7 +142,7 @@ class TerraformController(LibvirtController):
         return Munch.fromDict(params)
 
     def list_nodes(self) -> List[Node]:
-        return self.list_nodes_with_name_filter(self.cluster_name)
+        return self.list_nodes_with_name_filter(self._entity_operations.name)
 
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
@@ -118,7 +181,7 @@ class TerraformController(LibvirtController):
             + 10
             + int(tfvars["master_count"])
         )
-        tfvars['image_path'] = self._cluster_config.iso_download_path
+        tfvars['image_path'] = self._entity_config.iso_download_path
         tfvars['master_count'] = self.params.master_count
         self.master_ips = tfvars['libvirt_master_ips'] = self._create_address_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
@@ -179,7 +242,7 @@ class TerraformController(LibvirtController):
             return super().start_all_nodes()
 
     def format_node_disk(self, node_name: str, disk_index: int = 0):
-        logging.info("Formating disk for %s", node_name)
+        logging.info("Formatting disk for %s", node_name)
         self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}-disk-{disk_index}')
 
     def get_ingress_and_api_vips(self):
@@ -209,8 +272,8 @@ class TerraformController(LibvirtController):
         return self._config.net_asset.provisioning_cidr
 
     def set_dns(self, api_vip: str, ingress_vip: str) -> None:
-        cluster_name = self._cluster_config.cluster_name
-        base_domain = self._cluster_config.base_dns_domain
+        cluster_name = self._entity_config.cluster_name
+        base_domain = self._entity_config.base_dns_domain
         fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
         contents = dedent(f"""
                     address=/api.{cluster_name}.{base_domain}/{api_vip}
@@ -239,7 +302,7 @@ class TerraformController(LibvirtController):
             self._try_to_delete_nodes()
 
         self._delete_virsh_resources(
-            self.cluster_name,
+            self._entity_operations.name,
             self.params.libvirt_network_name,
             self.params.libvirt_secondary_network_name
         )
@@ -260,10 +323,10 @@ class TerraformController(LibvirtController):
     def prepare_nodes(self):
         logging.info("Preparing nodes")
         self.destroy_all_nodes()
-        if not os.path.exists(self._cluster_config.iso_download_path):
-            utils.recreate_folder(os.path.dirname(self._cluster_config.iso_download_path), force_recreate=False)
+        if not os.path.exists(self._entity_config.iso_download_path):
+            utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
             # if file not exist lets create dummy
-            utils.touch(self._cluster_config.iso_download_path)
+            utils.touch(self._entity_config.iso_download_path)
         self.params.running = False
         self._create_nodes()
 
@@ -302,13 +365,13 @@ class TerraformController(LibvirtController):
     def cluster_domain(self):
         warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        return self._cluster_config.base_dns_domain
+        return self._entity_config.base_dns_domain
 
     @cluster_domain.setter
     def cluster_domain(self, cluster_domain):
         warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        self._cluster_config.base_dns_domain = cluster_domain
+        self._entity_config.base_dns_domain = cluster_domain
 
     @property
     def ipv6(self):
@@ -326,13 +389,13 @@ class TerraformController(LibvirtController):
     def image_path(self):
         warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        return self._cluster_config.iso_download_path
+        return self._entity_config.iso_download_path
 
     @image_path.setter
     def image_path(self, image_path):
         warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        self._cluster_config.iso_download_path = image_path
+        self._entity_config.iso_download_path = image_path
 
     @property
     def bootstrap_in_place(self):
