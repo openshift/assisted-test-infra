@@ -4,7 +4,7 @@ debugpy==1.4.1
 dnspython==2.1.0
 elasticsearch==7.14.0
 filelock==3.0.12
-frozendict==2.0.3
+frozendict==2.0.6
 ipdb==0.13.9
 ipython==7.11.1
 Jinja2===3.0.1
