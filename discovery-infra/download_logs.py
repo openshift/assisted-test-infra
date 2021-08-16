@@ -2,11 +2,11 @@
 
 import filecmp
 import json
+import logging
 import os
 import shutil
 import tempfile
 import time
-import uuid
 from argparse import ArgumentParser
 from collections import Counter
 from contextlib import suppress
@@ -16,22 +16,23 @@ import assisted_service_client
 import requests
 import urllib3
 from dateutil.parser import isoparse
-from junit_report import JunitTestSuite, JunitTestCase
+from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
 from scp import SCPException
 
+from logger import log, suppressAndLog, add_log_file_handler
 from test_infra import warn_deprecate
-from test_infra.tools.concurrently import run_concurrently
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
+from test_infra.controllers.node_controllers.libvirt_controller import \
+    LibvirtController
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.helper_classes import cluster as helper_cluster
+from test_infra.tools.concurrently import run_concurrently
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
-                              recreate_folder, run_command, verify_logs_uploaded, fetch_url)
-
-from logger import log, suppressAndLog
-from tests.config import TerraformConfig, ClusterConfig
+                              fetch_url, recreate_folder, run_command,
+                              verify_logs_uploaded)
+from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
 
@@ -143,6 +144,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     recreate_folder(output_folder)
     recreate_folder(os.path.join(output_folder, "cluster_files"))
+    log_handler = add_log_file_handler(os.path.join(output_folder, "test_infra.log"))
 
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, 'metadata.json'))
@@ -205,6 +207,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")
+        log.removeHandler(log_handler)
 
 
 def get_cluster_events_path(cluster, output_folder):

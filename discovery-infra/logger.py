@@ -54,6 +54,12 @@ ch.setFormatter(
 )
 log.addHandler(ch)
 
-fh = logging.FileHandler(filename="test_infra.log")
-fh.setFormatter(fmt)
-log.addHandler(fh)
+
+def add_log_file_handler(filename: str) -> logging.FileHandler:
+    fh = logging.FileHandler(filename)
+    fh.setFormatter(fmt)
+    log.addHandler(fh)
+    return fh
+
+
+add_log_file_handler("test_infra.log")
