@@ -260,6 +260,7 @@ class Cluster:
             else self._config.cluster_network_host_prefix,
         )
 
+        # TODO MGMT-7365: Deprecate single CIDR
         self.api_client.update_cluster(
             self.id,
             {
@@ -267,12 +268,14 @@ class Cluster:
                 "service_network_cidr": self._config.service_network_cidr,
                 "cluster_network_cidr": self._config.cluster_network_cidr,
                 "cluster_network_host_prefix": self._config.cluster_network_host_prefix,
+                "cluster_networks": [models.ClusterNetwork(self.id, self._config.cluster_network_cidr, self._config.cluster_network_host_prefix)],
+                "service_networks": [models.ServiceNetwork(self.id, self._config.service_network_cidr)],
             },
         )
 
         if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             machine_cidr = self.get_machine_cidr()
-            self.set_machine_cidr(machine_cidr)
+            self.set_primary_machine_cidr(machine_cidr)
         elif self._config.platform != consts.Platforms.NONE:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
@@ -290,9 +293,14 @@ class Cluster:
 
         return cidr
 
-    def set_machine_cidr(self, machine_cidr):
-        log.info(f"Setting Machine Network CIDR:{machine_cidr} for cluster: {self.id}")
-        self.api_client.update_cluster(self.id, {"machine_network_cidr": machine_cidr})
+    def set_primary_machine_cidr(self, machine_cidr):
+        log.info(f"Setting Primary Machine Network CIDR:{machine_cidr} for cluster: {self.id}")
+
+        # TODO MGMT-7365: Deprecate single CIDR
+        self.api_client.update_cluster(self.id, {
+            "machine_network_cidr": machine_cidr,
+            "machine_networks": [models.MachineNetwork(self.id, machine_cidr)],
+        })
 
     def set_ingress_and_api_vips(self, vips):
         log.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")

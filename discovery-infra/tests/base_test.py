@@ -492,8 +492,8 @@ class BaseTest:
     def update_oc_config(nodes, cluster):
         os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
         if nodes.masters_count == 1:
-            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id,
-                                                     cluster.get_details().machine_network_cidr)
+            main_cidr = cluster.get_machine_cidr()
+            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, main_cidr)
         else:
             vips = nodes.controller.get_ingress_and_api_vips()
             api_vip = vips['api_vip']
