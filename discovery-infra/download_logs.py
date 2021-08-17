@@ -166,9 +166,9 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
         with suppressAndLog(assisted_service_client.rest.ApiException):
             are_masters_in_configuring_state = are_host_progress_in_stage(
                 cluster['hosts'], [HostsProgressStages.CONFIGURING], 2)
-            are_masters_in_join_state = are_host_progress_in_stage(
-                cluster['hosts'], [HostsProgressStages.JOINED], 2)
-            max_retries = MUST_GATHER_MAX_RETRIES if are_masters_in_join_state else MAX_RETRIES
+            are_masters_in_join_or_done_state = are_host_progress_in_stage(
+                cluster['hosts'], [HostsProgressStages.JOINED, HostsProgressStages.DONE], 2)
+            max_retries = MUST_GATHER_MAX_RETRIES if are_masters_in_join_or_done_state else MAX_RETRIES
             is_controller_expected = cluster['status'] == ClusterStatus.INSTALLED or are_masters_in_configuring_state
             min_number_of_logs = min_number_of_log_files(cluster, is_controller_expected)
 
@@ -182,7 +182,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
                 try:
                     verify_logs_uploaded(cluster_logs_tar, min_number_of_logs,
                                          installation_success=(cluster['status'] == ClusterStatus.INSTALLED),
-                                         check_oc=are_masters_in_join_state)
+                                         check_oc=are_masters_in_join_or_done_state)
                     break
                 except AssertionError as ex:
                     log.warning("Cluster logs verification failed: %s", ex)
