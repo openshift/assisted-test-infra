@@ -151,6 +151,15 @@ class Cluster:
             timeout=consts.DISCONNECTED_TIMEOUT,
         )
 
+    def wait_until_hosts_are_resetting_pending_user_action(self, nodes_count: int = None):
+        utils.wait_till_all_hosts_are_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            nodes_count=nodes_count or self.nodes.nodes_count,
+            statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION],
+            timeout=consts.PENDING_USER_ACTION_TIMEOUT,
+        )
+
     @JunitTestCase()
     def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
@@ -892,6 +901,8 @@ class Cluster:
         # Reset cluster install
         cluster.reset_install()
         assert cluster.is_in_insufficient_status()
+        # wait until all hosts are ready for the actual reset
+        cluster.wait_until_hosts_are_resetting_pending_user_action()
         # Reboot required nodes into ISO
         cluster.reboot_required_nodes_into_iso_after_reset()
         # Wait for hosts to be rediscovered
