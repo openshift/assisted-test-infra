@@ -364,18 +364,18 @@ class InventoryClient(object):
             cluster_id=cluster_id,
         )
 
-    def register_host(self, cluster_id: str, host_id: str) -> None:
-        log.info(f"Registering host: {host_id} to cluster: {cluster_id}")
+    def register_host(self, infra_env_id: str, host_id: str) -> None:
+        log.info(f"Registering host: {host_id} to cluster: {infra_env_id}")
         host_params = models.HostCreateParams(host_id=host_id)
-        self.client.register_host(cluster_id, host_params)
+        self.client.v2_register_host(infra_env_id=infra_env_id, new_host_params=host_params)
 
-    def host_get_next_step(self, cluster_id: str, host_id: str) -> models.Steps:
-        log.info(f"Getting next step for host: {host_id} in cluster: {cluster_id}")
-        return self.client.get_next_steps(cluster_id=cluster_id, host_id=host_id)
+    def host_get_next_step(self, infra_env_id: str, host_id: str) -> models.Steps:
+        log.info(f"Getting next step for host: {host_id} in cluster: {infra_env_id}")
+        return self.client.v2_get_next_steps(infra_env_id=infra_env_id, host_id=host_id)
 
-    def host_post_step_result(self, cluster_id: str, host_id: str, **kwargs) -> None:
+    def host_post_step_result(self, infra_env_id: str, host_id: str, **kwargs) -> None:
         reply = models.StepReply(**kwargs)
-        self.client.post_step_reply(cluster_id=cluster_id, host_id=host_id, reply=reply)
+        self.client.v2_post_step_reply(infra_env_id=infra_env_id, host_id=host_id, reply=reply)
 
     def host_update_progress(
         self, cluster_id: str, host_id: str, current_stage: models.HostStage, progress_info=None

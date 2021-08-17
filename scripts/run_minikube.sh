@@ -9,10 +9,7 @@ set -o xtrace
 
 function configure_minikube() {
     echo "Configuring minikube..."
-    minikube config set ShowBootstrapperDeprecationNotification false
     minikube config set WantUpdateNotification false
-    minikube config set WantReportErrorPrompt false
-    minikube config set WantKubectlDownloadMsg false
 }
 
 function init_minikube() {

@@ -26,6 +26,18 @@ class Nodes:
         self._nodes_as_dict = None
 
     @property
+    def masters_count(self):
+        return self.controller.masters_count
+
+    @property
+    def workers_count(self):
+        return self.controller.workers_count
+
+    @property
+    def nodes_count(self):
+        return self.workers_count + self.masters_count
+
+    @property
     def nodes(self) -> List[Node]:
         if not self._nodes:
             self._nodes = self.controller.list_nodes()
@@ -169,3 +181,6 @@ class Nodes:
 
     def set_single_node_ip(self, ip):
         self.controller.set_single_node_ip(ip)
+
+    def is_ipv6(self):
+        return self.controller.is_ipv6()

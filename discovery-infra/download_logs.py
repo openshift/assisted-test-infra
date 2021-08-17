@@ -2,6 +2,7 @@
 
 import filecmp
 import json
+import logging
 import os
 import shutil
 import tempfile
@@ -15,21 +16,23 @@ import assisted_service_client
 import requests
 import urllib3
 from dateutil.parser import isoparse
+from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
 from scp import SCPException
 
+from logger import log, suppressAndLog, add_log_file_handler
 from test_infra import warn_deprecate
-from test_infra.tools.concurrently import run_concurrently
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
+from test_infra.controllers.node_controllers.libvirt_controller import \
+    LibvirtController
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.helper_classes import cluster as helper_cluster
+from test_infra.tools.concurrently import run_concurrently
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
-                              recreate_folder, run_command, verify_logs_uploaded, fetch_url)
-
-from logger import log, suppressAndLog
-from tests.config import TerraformConfig, ClusterConfig
+                              fetch_url, recreate_folder, run_command,
+                              verify_logs_uploaded)
+from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
 
@@ -57,8 +60,8 @@ def main():
     client = create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT)
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
-        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
-                      args.must_gather, args.update_by_events, pull_secret=args.pull_secret)
+        download_cluster_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
+                              args.must_gather, args.update_by_events, pull_secret=args.pull_secret)
     else:
         clusters = get_clusters(client, args.download_all)
 
@@ -68,13 +71,23 @@ def main():
 
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
-                download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events,
-                              pull_secret=args.pull_secret)
+                download_cluster_logs(client, cluster, args.dest, args.must_gather, args.update_by_events,
+                                      pull_secret=args.pull_secret)
 
-        log.info("Cluster installation statuses: %s",
-                 dict(Counter(cluster["status"] for cluster in clusters).items()))
+        log.info("Cluster installation statuses: %s", dict(Counter(cluster["status"] for cluster in clusters).items()))
 
 
+def download_cluster_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool,
+                          update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL, pull_secret=""):
+
+    @JunitTestSuite(custom_filename=f"junit_download_report_{cluster['id']}")
+    def download_logs_suite():
+        return download_logs(client, cluster, dest, must_gather, update_by_events, retry_interval, pull_secret)
+
+    return download_logs_suite()
+
+
+@JunitTestCase()
 def get_clusters(client, all_cluster):
     if all_cluster:
         return client.get_all_clusters()
@@ -117,6 +130,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
     return need_update
 
 
+@JunitTestCase()
 def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool,
                   update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL, pull_secret=""):
 
@@ -130,6 +144,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     recreate_folder(output_folder)
     recreate_folder(os.path.join(output_folder, "cluster_files"))
+    log_handler = add_log_file_handler(os.path.join(output_folder, "test_infra.log"))
 
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, 'metadata.json'))
@@ -192,12 +207,14 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")
+        log.removeHandler(log_handler)
 
 
 def get_cluster_events_path(cluster, output_folder):
     return os.path.join(output_folder, f"cluster_{cluster['id']}_events.json")
 
 
+@JunitTestCase()
 def get_logs_output_folder(dest: str, cluster: dict):
     started_at = cluster['install_started_at']
 
@@ -210,6 +227,7 @@ def get_logs_output_folder(dest: str, cluster: dict):
     return os.path.join(dest, f"{started_at}_{cluster['id']}")
 
 
+@JunitTestCase()
 def write_metadata_file(client: InventoryClient, cluster: dict, file_name: str):
     d = {'cluster': cluster}
     d.update(client.get_versions())
@@ -234,6 +252,7 @@ def get_ui_url_from_api_url(api_url: str):
         raise KeyError(api_url)
 
 
+@JunitTestCase()
 def download_must_gather(kubeconfig: str, dest_dir: str):
     log.info(f"Downloading must-gather to {dest_dir}")
     command = f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather" \
@@ -244,6 +263,7 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
         log.warning(f"Failed to run must gather: {ex}")
 
 
+@JunitTestCase()
 def gather_sosreport_data(output_dir: str):
     sosreport_output = os.path.join(output_dir, "sosreport")
     recreate_folder(sosreport_output)

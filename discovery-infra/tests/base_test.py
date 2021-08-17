@@ -33,8 +33,7 @@ from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from test_infra.utils import utils
-from tests.config import ClusterConfig
-from tests.config import TerraformConfig
+from tests.config import ClusterConfig, TerraformConfig
 
 
 class BaseTest:
@@ -156,7 +155,7 @@ class BaseTest:
         logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
         cluster = Cluster(api_client=api_client, config=cluster_configuration, nodes=prepare_nodes_network)
 
-        if cluster_configuration.is_ipv6:
+        if prepare_nodes_network.is_ipv6():
             self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
         yield cluster
@@ -244,7 +243,7 @@ class BaseTest:
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
             logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
-            if cluster_config.is_ipv6:
+            if nodes.is_ipv6():
                 self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
 
             clusters.append(_cluster)
@@ -279,10 +278,8 @@ class BaseTest:
                              cluster_config.cluster_network_cidr,
                              f".{str(cluster_config.cluster_name)}.redhat.com"])
 
-        # todo cluster.config will be property as part of MGMT-7060 - need to replace cluster._config.is_ipv6 with
-        #  cluster.config.is_ipv6
         proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
-                             is_ipv6=cluster_config.is_ipv6)
+                             is_ipv6=cluster.nodes.is_ipv6())
         cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy")
@@ -494,9 +491,9 @@ class BaseTest:
     @staticmethod
     def update_oc_config(nodes, cluster):
         os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
-        if cluster.config.masters_count == 1:
-            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id,
-                                                     cluster.get_details().machine_network_cidr)
+        if nodes.masters_count == 1:
+            main_cidr = cluster.get_machine_cidr()
+            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, main_cidr)
         else:
             vips = nodes.controller.get_ingress_and_api_vips()
             api_vip = vips['api_vip']
@@ -514,8 +511,8 @@ class BaseTest:
 
         waiting.wait(
             lambda: check_status(),
-            timeout_seconds=3000,
-            sleep_seconds=90,
+            timeout_seconds=900,
+            sleep_seconds=30,
             waiting_for="controller to be running",
         )
 
@@ -556,9 +553,7 @@ class BaseTest:
             tf_config.worker_disk_count = resource_param(tf_config.worker_disk_count,
                                                          OperatorResource.WORKER_DISK_COUNT_KEY, operators)
 
-            cluster_config.workers_count = resource_param(cluster_config.workers_count,
-                                                          OperatorResource.WORKER_COUNT_KEY, operators)
-            cluster_config.nodes_count = cluster_config.masters_count + cluster_config.workers_count
+            tf_config.nodes_count = tf_config.masters_count + tf_config.workers_count
             cluster_config.olm_operators = [operators]
 
         yield update_config
