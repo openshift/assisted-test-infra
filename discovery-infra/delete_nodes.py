@@ -37,10 +37,12 @@ def try_to_delete_cluster(namespace, tfvars):
     )
     client.delete_cluster(cluster_id=cluster_id)
 
+
 def _get_namespace_index(libvirt_network_if):
     # Hack to retrieve namespace index - does not exist in tests
     matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
     return int(matcher.groups()[0]) if matcher is not None else 0
+
 
 @utils.on_exception(message='Failed to remove nat', silent=True)
 def _try_remove_nat(tfvars):
@@ -50,6 +52,7 @@ def _try_remove_nat(tfvars):
     secondary_interface = tfvars.get('libvirt_secondary_network_if', f's{primary_interface}')
     nat_controller = NatController([primary_interface, secondary_interface], _get_namespace_index(primary_interface))
     nat_controller.remove_nat_rules()
+
 
 def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
     """ Runs terraform destroy and then cleans it with virsh cleanup to delete
@@ -221,6 +224,9 @@ if __name__ == "__main__":
         const=True,
         default=False,
     )
+
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
+    if not args.kube_api:
+        args.namespace = ""
     main()
