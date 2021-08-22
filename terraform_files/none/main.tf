@@ -160,6 +160,10 @@ resource "libvirt_domain" "master" {
   boot_device{
     dev = ["hd", "cdrom"]
   }
+
+  xml {
+    xslt = file("consolemodel.xsl")
+  }
 }
 
 
@@ -198,6 +202,10 @@ resource "libvirt_domain" "master-sec" {
   boot_device{
     dev = ["hd", "cdrom"]
   }
+
+  xml {
+    xslt = file("consolemodel.xsl")
+  }
 }
 
 resource "libvirt_domain" "worker" {
@@ -234,5 +242,9 @@ resource "libvirt_domain" "worker" {
 
   boot_device{
     dev = ["hd", "cdrom"]
+  }
+
+  xml {
+    xslt = file("consolemodel.xsl")
   }
 }
