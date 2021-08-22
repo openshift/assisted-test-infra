@@ -294,13 +294,13 @@ def wait_till_specific_host_is_in_status(
 
 def wait_till_at_least_one_host_is_in_stage(
     client,
-    cluster_id,
-    stages,
-    nodes_count=1,
+    cluster_id: str,
+    stages: List[str],
+    nodes_count: int = 1,
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
-    interval=5,
+    interval: int = 5,
 ):
-    log.info(f"Wait till {nodes_count} node is in stage {stages}")
+    log.info(f"Wait till {nodes_count} host is in stage {stages}")
     try:
         waiting.wait(
             lambda: are_host_progress_in_stage(
@@ -314,6 +314,37 @@ def wait_till_at_least_one_host_is_in_stage(
         )
     except BaseException:
         hosts = client.get_cluster_hosts(cluster_id)
+        log.error(
+            f"All hosts stages: "
+            f"{[host['progress']['current_stage'] for host in hosts]} "
+            f"when waited for {stages}"
+        )
+        raise
+
+
+def wait_till_specific_host_is_in_stage(
+    client,
+    cluster_id: str,
+    host_name: str,
+    stages: List[str],
+    nodes_count: int = 1,
+    timeout: int = consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    interval: int = 5,
+):
+    log.info(f"Wait till {host_name} host is in stage {stages}")
+    try:
+        waiting.wait(
+            lambda: are_host_progress_in_stage(
+                [client.get_host_by_name(cluster_id, host_name)],
+                stages,
+                nodes_count,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Node to be in of the stage %s" % stages,
+        )
+    except BaseException:
+        hosts = [client.get_host_by_name(cluster_id, host_name)]
         log.error(
             f"All nodes stages: "
             f"{[host['progress']['current_stage'] for host in hosts]} "
@@ -330,7 +361,7 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
     host_info = [(host["id"], (host["progress"]["current_stage"])) for host in hosts]
     log.info(
         f"Asked {nodes_count} hosts to be in one of the statuses from {stages} and currently "
-        f"hosts statuses are {host_info}"
+        f"hosts stages are {host_info}"
     )
     return False
 
