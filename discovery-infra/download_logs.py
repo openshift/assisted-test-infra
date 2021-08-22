@@ -149,7 +149,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, 'metadata.json'))
 
-        with suppressAndLog(AssertionError, ConnectionError, requests.exceptions.ConnectionError):
+        with suppressAndLog(requests.exceptions.RequestException, ConnectionError):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
 
         for cluster_file in ("bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml", "custom_manifests.yaml"):
