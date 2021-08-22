@@ -9,7 +9,7 @@ from test_infra.consts import OperatorStatus
 
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig
-from tests.conftest import get_available_openshift_versions, get_api_client
+from tests.conftest import get_available_openshift_versions, global_variables
 
 
 class TestInstall(BaseTest):
@@ -38,7 +38,7 @@ class TestInstall(BaseTest):
         infra_env.prepare_infraenv()
 
     @JunitTestSuite()
-    @pytest.mark.parametrize("operators", sorted(get_api_client().get_supported_operators()))
+    @pytest.mark.parametrize("operators", sorted(global_variables.get_api_client().get_supported_operators()))
     def test_olm_operator(self, configs, get_nodes, get_cluster, operators, update_olm_config):
         cluster_config, tf_config = configs
         update_olm_config(tf_config=tf_config, cluster_config=cluster_config, operators=operators)

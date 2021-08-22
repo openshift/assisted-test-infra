@@ -6,6 +6,7 @@ import distutils.util
 import ipaddress
 import json
 import os
+from assisted_service_client.models import inventory
 
 import yaml
 import dns.resolver
@@ -328,14 +329,14 @@ def _get_http_proxy_params(ipv4, ipv6):
 
 # TODO add config file
 # Converts params from args to assisted-service cluster params
-def _cluster_create_params():
+def _cluster_create_params(client: assisted_service_api.InventoryClient):
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
     ipv6 = args.ipv6 and args.ipv6.lower() in MachineNetwork.YES_VALUES
     ntp_source = _get_host_ip_from_cidr(args.vm_network_cidr6 if ipv6 and not ipv4 else args.vm_network_cidr)
     user_managed_networking = is_user_managed_networking()
     http_proxy, https_proxy, no_proxy = _get_http_proxy_params(ipv4=ipv4, ipv6=ipv6)
     params = {
-        "openshift_version": utils.get_openshift_version(),
+        "openshift_version": utils.get_openshift_version(allow_default=True, client=client),
         "base_dns_domain": args.base_dns_domain,
         "cluster_network_cidr": args.cluster_network if ipv4 else args.cluster_network6,
         "cluster_network_host_prefix": args.host_prefix if ipv4 else args.host_prefix6,
@@ -742,7 +743,7 @@ def execute_kube_api_flow():
         name=f"{cluster_name}-image-set",
         namespace=args.namespace
     )
-    releaseImage=utils.get_env('OPENSHIFT_INSTALL_RELEASE_IMAGE', utils.get_openshift_release_image("4.8"))
+    releaseImage = utils.get_openshift_release_image()
     imageSet.apply(releaseImage=releaseImage)
 
     ipv4 = args.ipv4 and args.ipv4.lower() in MachineNetwork.YES_VALUES
@@ -849,7 +850,7 @@ def execute_day1_flow():
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
-            cluster = client.create_cluster(cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params())
+            cluster = client.create_cluster(cluster_name, ssh_public_key=args.ssh_key, **_cluster_create_params(client))
 
         static_network_config = apply_static_network_config(
             cluster_name=cluster_name,

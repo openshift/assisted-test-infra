@@ -54,13 +54,13 @@ DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
 WAIT_FOR_BM_API = 15 * MINUTE
 NAMESPACE_POOL_SIZE = 15
 PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
-DEFAULT_OPENSHIFT_VERSION = OpenshiftVersion.VERSION_4_8.value
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_BASE_DNS_DOMAIN = "redhat.com"
 DEFAULT_NAMESPACE = 'assisted-installer'
 DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BASE_DNS_DOMAIN}"
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
+OCP_VERSIONS_JSON_PATH = "assisted-service/data/default_ocp_versions.json"
 
 DEFAULT_IPV6_SERVICE_CIDR = "2003:db8::/112"
 DEFAULT_IPV6_CLUSTER_CIDR = "2002:db8::/53"

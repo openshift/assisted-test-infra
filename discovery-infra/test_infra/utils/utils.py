@@ -20,12 +20,13 @@ from distutils.dir_util import copy_tree
 from functools import wraps
 from pathlib import Path
 from string import ascii_lowercase
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import filelock
 import libvirt
 import oc_utils
 import requests
+import test_infra.consts as consts
 import waiting
 from logger import log
 from requests import Session
@@ -33,8 +34,6 @@ from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
 from requests.models import HTTPError
 from retry import retry
-
-import test_infra.consts as consts
 from test_infra.utils import logs_utils
 
 conn = libvirt.open("qemu:///system")
@@ -520,17 +519,13 @@ def get_local_assisted_service_url(namespace, service, deploy_target):
         ip = str(res, "utf-8")
         return f"http://{ip}:7000"
     else:
-        # default deploy target is minikube
-        log.info("Getting minikube %s URL in %s namespace", service, namespace)
-        ip, _, _ = run_command("kubectl get nodes -o=jsonpath={.items[0].status.addresses[0].address}")
-        # resolve the service node port form the service internal port (Support multiple ports per service).
-        port, _, _ = run_command(f"kubectl get svc assisted-service -n {namespace} "
-                                 f"-o=jsonpath='{{.spec.ports[?(@.port==8090)].nodePort}}'")
-        url = f"http://{ip}:{port}"
+        # Resolve the service ip and port
+        url, _, _ = run_command(f"kubectl get svc {service} -n {namespace} "
+                            f"-o=jsonpath='http://{{.status.loadBalancer.ingress[0].ip}}:{{.spec.ports[?(@.name==\"{service}\")].port}}'")
         if is_assisted_service_reachable(url):
             return url
 
-        raise RuntimeError(f"could not find any reachable url to {service} service " f"in {namespace} namespace")
+        raise RuntimeError(f"The parsed url {url} to service {service} in {namespace} namespace was not reachable.]")
 
 
 def is_assisted_service_reachable(url):
@@ -740,7 +735,31 @@ def get_kubeconfig_path(cluster_name: str) -> str:
     return kubeconfig_path
 
 
-def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
+def get_default_openshift_version(client=None) -> str:
+    if client:
+        ocp_versions_dict = client.get_openshift_versions()
+    else:
+        with open(consts.OCP_VERSIONS_JSON_PATH, 'r') as f:
+            ocp_versions_dict = json.load(f)
+
+    d = [k for k, v in ocp_versions_dict.items() if v.get('default', False)]
+    assert len(d) == 1, "There should be only one default version"
+    return d[0]
+
+
+def get_openshift_version(allow_default=True, client=None) -> str:
+    """
+    Return the openshift version that needs to be handled
+    according to the following process:
+
+    1. In case env var OPENSHIFT_INSTALL_RELEASE_IMAGE is defined to override the release image -
+    extract its OCP version.
+    2. In case env var OPENSHIFT_VERSION is defined - return it.
+    3. In case allow_default is enabled, return the default supported version by assisted-service.
+    3.1 If a client is provided, request the versions fron the service (supports remote service).
+    3.2 Otherwise, Get from the JSON file in assisted-service repository.
+    """
+
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if release_image:
@@ -752,17 +771,27 @@ def get_openshift_version(default=consts.DEFAULT_OPENSHIFT_VERSION):
             )
         return stdout
 
-    return get_env("OPENSHIFT_VERSION", default)
+    version = get_env("OPENSHIFT_VERSION")
+    if version:
+        return version
+
+    if allow_default:
+        return get_default_openshift_version(client)
+
+    return None
 
 
-def get_openshift_release_image(ocp_version=consts.DEFAULT_OPENSHIFT_VERSION):
+def get_openshift_release_image(allow_default=True):
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if not release_image:
-        stdout, _, _ = run_command(
-            f"jq -r '.[\"{ocp_version}\"].release_image' assisted-service/data/default_ocp_versions.json", shell=True
-        )
-        return stdout
+        # TODO: Support remote client. kube-api client needs to respond supported versions
+        ocp_version = get_openshift_version(allow_default=allow_default)
+
+        with open(consts.OCP_VERSIONS_JSON_PATH, 'r') as f:
+            ocp_versions_dict = json.load(f)
+
+        return ocp_versions_dict[ocp_version]["release_image"]
 
     return release_image
 

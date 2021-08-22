@@ -21,7 +21,7 @@ from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
-from tests.config import EnvConfig
+from tests.config import global_variables
 from download_logs import collect_debug_info_from_cluster
 
 PROXY_PORT = 3129
@@ -151,8 +151,7 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
 
 
 def deploy_image_set(cluster_name, kube_api_context):
-    openshift_version = os.environ.get('OPENSHIFT_VERSION', '4.8')
-    openshift_release_image = get_openshift_release_image(openshift_version)
+    openshift_release_image = get_openshift_release_image()
 
     image_set_name = f'{cluster_name}-image-set'
     image_set = ClusterImageSet(
@@ -214,8 +213,8 @@ def set_agent_hostname(node, agent, is_ipv4):
 
 
 def get_ca_bundle_from_hub():
-    os.environ['KUBECONFIG'] = EnvConfig.get("installer_kubeconfig_path")
-    with oc.project(EnvConfig.get("namespace")):
+    os.environ['KUBECONFIG'] = global_variables.installer_kubeconfig_path
+    with oc.project(global_variables.namespace):
         ca_config_map_objects = oc.selector('configmap/registry-ca').objects()
         assert len(ca_config_map_objects) > 0
         ca_config_map_object = ca_config_map_objects[0]

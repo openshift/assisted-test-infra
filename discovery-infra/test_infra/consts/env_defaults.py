@@ -29,3 +29,4 @@ DEFAULT_TF_CPU_MODE: str = consts.HOST_PASSTHROUGH_CPU_MODE
 DEFAULT_IMAGE_FOLDER: Path = Path(consts.IMAGE_FOLDER)
 DEFAULT_IMAGE_FILENAME: str = "installer-image.iso"
 DEFAULT_NETWORK_TYPE: str = consts.NetworkType.OpenShiftSDN
+DEFAULT_IS_KUBE_API: bool = False
