@@ -283,7 +283,7 @@ class InventoryClient(object):
         if not (url.startswith("http://") or url.startswith("https://")):
             url = f"http://{url}"
         response = requests.get(f"{url}/metrics")
-        assert response.status_code == 200
+        response.raise_for_status()
 
         with open(dest, "w") as _file:
             _file.write(response.text)
