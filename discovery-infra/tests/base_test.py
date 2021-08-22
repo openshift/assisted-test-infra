@@ -221,7 +221,7 @@ class BaseTest:
                 logging.info(f'--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n')
                 infra_utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
 
-                if _nat:
+                if _nat and global_variables.test_teardown:
                     _nat.remove_nat_rules()
         finally:
             if _net_asset:
