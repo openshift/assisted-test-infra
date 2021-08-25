@@ -432,6 +432,15 @@ class Cluster:
             nodes_count=nodes_count,
         )
 
+    def wait_for_specific_host_stage(self, host: dict, stage: str, inclusive: bool = True):
+        index = consts.all_host_stages.index(stage)
+        utils.wait_till_specific_host_is_in_stage(
+            client=self.api_client,
+            cluster_id=self.id,
+            host_name=host.get("requested_hostname"),
+            stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1:]
+        )
+
     def wait_for_cluster_in_error_status(self):
         utils.wait_till_cluster_is_in_status(
             client=self.api_client,
@@ -592,6 +601,11 @@ class Cluster:
     def is_in_cancelled_status(self):
         return utils.is_cluster_in_status(
             client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.CANCELLED]
+        )
+
+    def is_in_error(self):
+        return utils.is_cluster_in_status(
+            client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.ERROR]
         )
 
     def is_finalizing(self):
