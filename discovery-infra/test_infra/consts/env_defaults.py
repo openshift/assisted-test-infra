@@ -2,7 +2,6 @@ from pathlib import Path
 
 from test_infra import consts
 
-
 DEFAULT_NUMBER_OF_MASTERS: int = consts.NUMBER_OF_MASTERS
 DEFAULT_DAY2_WORKERS_COUNT: int = 0
 DEFAULT_WORKERS_COUNT: int = 0
@@ -29,4 +28,4 @@ DEFAULT_SINGLE_NODE_IP: str = ""
 DEFAULT_TF_CPU_MODE: str = consts.HOST_PASSTHROUGH_CPU_MODE
 DEFAULT_IMAGE_FOLDER: Path = Path(consts.IMAGE_FOLDER)
 DEFAULT_IMAGE_FILENAME: str = "installer-image.iso"
-DEFAULT_NETWORK_TYPE: str = "OVNKubernetes"
+DEFAULT_NETWORK_TYPE: str = consts.NetworkType.OpenShiftSDN
