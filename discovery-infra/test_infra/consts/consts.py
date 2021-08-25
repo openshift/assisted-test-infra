@@ -10,6 +10,11 @@ class OpenshiftVersion(Enum):
     VERSION_4_9 = "4.9"
 
 
+class NetworkType:
+    OpenShiftSDN = "OpenShiftSDN"
+    OVNKubernetes = "OVNKubernetes"
+
+
 WORKING_DIR = "build"
 TF_FOLDER = f"{WORKING_DIR}/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
