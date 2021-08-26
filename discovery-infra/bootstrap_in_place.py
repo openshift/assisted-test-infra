@@ -133,7 +133,7 @@ def create_controller(net_asset):
             bootstrap_in_place=True,
             single_node_ip=net_asset.machine_cidr.replace("0/24", "10"),
         ),
-        cluster_config=ClusterConfig(cluster_name=ClusterName(prefix="test-infra-cluster", suffix=""))
+        entity_config=ClusterConfig(cluster_name=ClusterName(prefix="test-infra-cluster", suffix=""))
     )
 
 
