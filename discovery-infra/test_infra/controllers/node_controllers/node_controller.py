@@ -3,7 +3,7 @@ from typing import List, Any, Tuple, Callable, TypeVar, SupportsAbs
 
 import libvirt
 
-from test_infra.helper_classes.config import BaseClusterConfig
+from test_infra.helper_classes.config import BaseClusterConfig,BaseEntityConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.controllers.node_controllers.disk import Disk
 from test_infra.controllers.node_controllers.node import Node
@@ -14,9 +14,9 @@ class NodeController(ABC):
 
     T = TypeVar('T', bound=SupportsAbs[BaseNodeConfig])
 
-    def __init__(self, config: T, cluster_config: BaseClusterConfig):
+    def __init__(self, config: T, entity_config: BaseEntityConfig):
         self._config = config
-        self._cluster_config = cluster_config
+        self._entity_config = entity_config
 
     def log_configuration(self):
         log.info(f"controller configuration={self._config}")

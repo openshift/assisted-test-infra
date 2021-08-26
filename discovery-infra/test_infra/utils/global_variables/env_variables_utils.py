@@ -70,6 +70,7 @@ class _EnvVariablesUtils(ABC):
     vsphere_datacenter: str = get_env("VSPHERE_DATACENTER")
     vsphere_datastore: str = get_env("VSPHERE_DATASTORE")
 
+
     def __post_init__(self):
         self._set("olm_operators", operators_utils.parse_olm_operators_from_env())
 

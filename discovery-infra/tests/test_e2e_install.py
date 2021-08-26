@@ -33,6 +33,11 @@ class TestInstall(BaseTest):
         cluster.start_install_and_wait_for_installed()
 
     @JunitTestSuite()
+    @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())
+    def test_infra_env_install(self, infra_env, openshift_version):
+        infra_env.prepare_infraenv()
+
+    @JunitTestSuite()
     @pytest.mark.parametrize("operators", sorted(get_api_client().get_supported_operators()))
     def test_olm_operator(self, configs, get_nodes, get_cluster, operators, update_olm_config):
         cluster_config, tf_config = configs

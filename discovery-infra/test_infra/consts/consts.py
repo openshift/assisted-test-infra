@@ -42,10 +42,12 @@ ERROR_TIMEOUT = 10 * MINUTE
 TF_TEMPLATES_ROOT = "terraform_files"
 TF_TEMPLATE_BARE_METAL_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal"
 TF_TEMPLATE_NONE_PLATFORM_FLOW = f"{TF_TEMPLATES_ROOT}/none"
+TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal_infra_env"
 TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
 NUMBER_OF_MASTERS = 3
 TEST_INFRA = "test-infra"
 CLUSTER = CLUSTER_PREFIX = "%s-cluster" % TEST_INFRA
+INFRA_ENV_PREFIX = "%s-infra-env" % TEST_INFRA
 TEST_NETWORK = "test-infra-net-"
 TEST_SECONDARY_NETWORK = "test-infra-secondary-network-"
 DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
@@ -101,6 +103,8 @@ class NodesStatus:
     DAY2_INSTALLED = "added-to-existing-cluster"
     RESETING_PENDING_USER_ACTION = "resetting-pending-user-action"
     DISCONNECTED = "disconnected"
+    INSUFFICIENT_UNBOUND = "insufficient-unbound"
+    KNOWN_UNBOUND = "known-unbound"
 
 
 class ClusterStatus:

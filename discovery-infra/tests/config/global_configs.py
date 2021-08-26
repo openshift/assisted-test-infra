@@ -8,8 +8,9 @@ from test_infra.assisted_service_api import InventoryClient, ClientFactory
 from test_infra.consts import env_defaults
 from test_infra.utils import get_kubeconfig_path, utils
 from test_infra.utils.cluster_name import ClusterName
+from test_infra.utils.infra_env_name import InfraEnvName
 from test_infra.utils.global_variables import GlobalVariables
-from test_infra.helper_classes.config import BaseClusterConfig, BaseTerraformConfig
+from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
 
 
 global_variables = GlobalVariables()
@@ -42,6 +43,33 @@ class ClusterConfig(BaseClusterConfig):
             self.kubeconfig_path = get_kubeconfig_path(self.cluster_name.get())
         if self.iso_download_path is None:
             self.iso_download_path = self._get_iso_download_path(self.cluster_name.get())
+
+
+@dataclass
+class InfraEnvConfig(BaseInfraEnvConfig):
+    """ A Cluster configuration with defaults that obtained from EnvConfig """
+
+    @staticmethod
+    def get_default(key, default=None) -> Any:
+        return getattr(global_variables, key)
+
+    def get_copy(self):
+        return InfraEnvConfig(**self.get_all())
+
+    @staticmethod
+    def _get_iso_download_path(infra_env_name: str):
+        return str(
+            Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(
+                f"{infra_env_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}"
+            )
+        ).strip()
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.infra_env_name is None or isinstance(self.infra_env_name, str):
+            self.infra_env_name = InfraEnvName()
+        if self.iso_download_path is None:
+            self.iso_download_path = self._get_iso_download_path(self.infra_env_name.get())
 
 
 def get_api_client(offline_token=None, **kwargs) -> InventoryClient:
