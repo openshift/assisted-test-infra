@@ -182,7 +182,7 @@ class VSphereController(NodeController):
         if not vms_object_type:
             return list()
 
-        return vms_object_type[0]["instances"]
+        return [vms_objects["instances"] for vms_objects in vms_object_type]
 
     def __run_on_vm(self, name: str, folder, action: Callable) -> None:
         connection = SmartConnect(host=self._config.vsphere_vcenter,

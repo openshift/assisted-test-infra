@@ -86,6 +86,31 @@ variable "master_vcpu" {
   description = "The total number of virtual processor cores to assign to the master virtual machine."
 }
 
+variable "workers_count" {
+  type = string
+  default = "2"
+  description = "The number of worker nodes to be created."
+}
+
+variable "worker_memory" {
+  type = number
+  default = 16984
+  description = "The size of the worker's virtual machine's memory, in MB"
+}
+
+variable "worker_disk_size_gib" {
+  type = number
+  default = 120
+  description = "The size of the worker's disk, in GB"
+}
+
+variable "worker_vcpu" {
+  type = number
+  default = 4
+  description = "The total number of virtual processor cores to assign to the master virtual machine."
+}
+
+
 variable "vsphere_control_plane_cores_per_socket" {
   type = number
   default = 1

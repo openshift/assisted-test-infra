@@ -33,6 +33,7 @@ class BaseNodeConfig(_BaseConfig, ABC):
     workers_count: int = None
     worker_cpu_mode: str = None
     worker_disk: int = None
+    worker_disk_size_gib: str = None  # disk size in GB.
     worker_disk_count: int = None
 
     network_mtu: int = None
