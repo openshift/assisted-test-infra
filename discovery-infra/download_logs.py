@@ -268,7 +268,7 @@ def gather_sosreport_data(output_dir: str):
     sosreport_output = os.path.join(output_dir, "sosreport")
     recreate_folder(sosreport_output)
 
-    controller = LibvirtController(config=TerraformConfig(), cluster_config=ClusterConfig())
+    controller = LibvirtController(config=TerraformConfig(), entity_config=ClusterConfig())
     run_concurrently(
         jobs=[(gather_sosreport_from_node, node, sosreport_output)
               for node in controller.list_nodes()],
