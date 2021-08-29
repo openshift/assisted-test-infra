@@ -189,6 +189,11 @@ class Events:
     PROXY_SETTINGS_CHANGED = "Proxy settings changed"
 
 
+class HostStatusInfo:
+    WRONG_BOOT_ORDER = "Expected the host to boot from disk, but it booted the installation image"
+    REBOOT_TIMEOUT = "Host failed to reboot within timeout"
+
+
 class Platforms:
     BARE_METAL = 'baremetal'
     NONE = 'none'

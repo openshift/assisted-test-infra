@@ -566,6 +566,18 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
+            status_info=consts.HostStatusInfo.WRONG_BOOT_ORDER,
+            fall_on_error_status=fall_on_error_status,
+            timeout=consts.PENDING_USER_ACTION_TIMEOUT,
+        )
+
+    def wait_for_at_least_one_host_to_be_in_reboot_timeout(self, fall_on_error_status=True, nodes_count=1):
+        utils.wait_till_at_least_one_host_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
+            status_info=consts.HostStatusInfo.REBOOT_TIMEOUT,
+            nodes_count=nodes_count,
             fall_on_error_status=fall_on_error_status,
             timeout=consts.PENDING_USER_ACTION_TIMEOUT,
         )
@@ -577,6 +589,7 @@ class Cluster:
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
+            status_info=consts.HostStatusInfo.WRONG_BOOT_ORDER,
             nodes_count=nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,

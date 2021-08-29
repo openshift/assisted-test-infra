@@ -171,8 +171,9 @@ def set_tfvars(tf_folder, tfvars_json):
         json.dump(tfvars_json, _file)
 
 
-def are_hosts_in_status(hosts, nodes_count, statuses, fall_on_error_status=True):
-    hosts_in_status = [host for host in hosts if host["status"] in statuses]
+def are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_error_status=True):
+    hosts_in_status = [host for host in hosts if (host["status"] in statuses and
+                                                  host["status_info"].startswith(status_info))]
     if len(hosts_in_status) >= nodes_count:
         return True
     elif fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
@@ -220,13 +221,14 @@ def wait_till_hosts_with_macs_are_in_status(
 
 
 def wait_till_all_hosts_are_in_status(
-        client,
-        cluster_id,
-        nodes_count,
-        statuses,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
+    client,
+    cluster_id,
+    nodes_count,
+    statuses,
+    status_info="",
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
@@ -235,6 +237,7 @@ def wait_till_all_hosts_are_in_status(
             client.get_cluster_hosts(cluster_id),
             nodes_count,
             statuses,
+            status_info,
             fall_on_error_status,
         ),
         timeout_seconds=timeout,
@@ -271,6 +274,7 @@ def wait_till_at_least_one_host_is_in_status(
     client,
     cluster_id,
     statuses,
+    status_info="",
     nodes_count=1,
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
@@ -283,6 +287,7 @@ def wait_till_at_least_one_host_is_in_status(
             client.get_cluster_hosts(cluster_id),
             nodes_count,
             statuses,
+            status_info,
             fall_on_error_status,
         ),
         timeout_seconds=timeout,
