@@ -26,7 +26,7 @@ class VSphereController(NodeController):
         self._tf = terraform_utils.TerraformUtils(working_dir=folder)
 
     def prepare_nodes(self):
-        config = {**self._config.get_all(), **self._cluster_config.get_all(), "cluster_name": self.cluster_name}
+        config = {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
         # The ISO file isn't available now until preparing for installation
         del config["iso_download_path"]
         self._tf.set_and_apply(**config)
@@ -34,7 +34,7 @@ class VSphereController(NodeController):
 
     def notify_iso_ready(self) -> None:
         self.shutdown_all_nodes()
-        config = {**self._config.get_all(), **self._cluster_config.get_all(), "cluster_name": self.cluster_name}
+        config = {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
         self._tf.set_and_apply(**config)
 
     def list_nodes(self) -> List[Node]:
@@ -128,9 +128,6 @@ class VSphereController(NodeController):
     def detach_all_test_disks(self, node_name: str):
         raise NotImplementedError
 
-    def get_ingress_and_api_vips(self) -> dict:
-        raise NotImplementedError
-
     def get_cluster_network(self) -> str:
         raise NotImplementedError
 
@@ -182,7 +179,7 @@ class VSphereController(NodeController):
         if not vms_object_type:
             return list()
 
-        return [vms_objects["instances"] for vms_objects in vms_object_type]
+        return [vm_instance for vms_objects in vms_object_type for vm_instance in vms_objects["instances"]]
 
     def __run_on_vm(self, name: str, folder, action: Callable) -> None:
         connection = SmartConnect(host=self._config.vsphere_vcenter,
