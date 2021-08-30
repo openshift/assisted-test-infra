@@ -74,8 +74,8 @@ def download_live_image(download_path):
     logging.info("Downloading iso to %s", download_path)
     # TODO: enable fetching the appropriate rhcos image
     utils.run_command(
-        f"curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/"
-        f"4.7.0-rc.2/rhcos-4.7.0-rc.2-x86_64-live.x86_64.iso --retry 5 -o {download_path}")
+        f"curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.8/4.8.2/rhcos-live.x86_64.iso"
+        f" --retry 10 --retry-all-errors --retry-connrefused -o {download_path} --continue-at -")
 
 
 def embed(image_name, ignition_file, embed_image_name):
