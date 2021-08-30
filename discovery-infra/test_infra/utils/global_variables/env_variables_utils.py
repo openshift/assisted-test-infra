@@ -1,13 +1,12 @@
 from abc import ABC
+from dataclasses import dataclass, field
 from distutils.util import strtobool
 from pathlib import Path
 from typing import Any, List
 
-from dataclasses import dataclass, field
-
 from test_infra import consts
 from test_infra.consts import env_defaults, resources
-from test_infra.utils import get_env, get_openshift_version, operators_utils
+from test_infra.utils import get_env, operators_utils
 
 
 @dataclass(frozen=True)
@@ -16,7 +15,7 @@ class _EnvVariablesUtils(ABC):
     remote_service_url: str = get_env("REMOTE_SERVICE_URL")
     pull_secret: str = get_env("PULL_SECRET")
     offline_token: str = get_env("OFFLINE_TOKEN")
-    openshift_version: str = get_openshift_version()
+    openshift_version: str = ''
     base_dns_domain: str = get_env("BASE_DOMAIN", consts.DEFAULT_BASE_DNS_DOMAIN)
     masters_count: int = int(get_env("MASTERS_COUNT", get_env("NUM_MASTERS", env_defaults.DEFAULT_NUMBER_OF_MASTERS)))
     workers_count: int = int(get_env("WORKERS_COUNT", get_env("NUM_WORKERS", env_defaults.DEFAULT_WORKERS_COUNT)))
@@ -61,6 +60,7 @@ class _EnvVariablesUtils(ABC):
     iso_download_path: str = get_env("ISO_DOWNLOAD_PATH", get_env("ISO"))  # todo replace ISO env var->ISO_DOWNLOAD_PATH
     hyperthreading: str = get_env("HYPERTHREADING")
     network_type: str = get_env("NETWORK_TYPE", env_defaults.DEFAULT_NETWORK_TYPE)
+    is_kube_api: bool = bool(strtobool(get_env("KUBE_API", str(env_defaults.DEFAULT_IS_KUBE_API))))
 
     vsphere_cluster: str = get_env("VSPHERE_CLUSTER")
     vsphere_username: str = get_env("VSPHERE_USERNAME")

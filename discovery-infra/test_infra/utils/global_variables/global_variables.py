@@ -1,11 +1,14 @@
+from contextlib import suppress
 from typing import ClassVar, List
 
 from frozendict import frozendict
-
 from logger import log
 from test_infra import consts
+from test_infra.assisted_service_api import ClientFactory, InventoryClient
 from test_infra.consts import resources
-from test_infra.utils.global_variables.env_variables_utils import _EnvVariablesUtils
+from test_infra.utils import utils
+from test_infra.utils.global_variables.env_variables_utils import \
+    _EnvVariablesUtils
 
 _triggers = frozendict(
     {
@@ -44,6 +47,11 @@ class GlobalVariables(_EnvVariablesUtils):
 
     def __post_init__(self):
         super().__post_init__()
+        client=None
+        if not self.is_kube_api:
+            with suppress(RuntimeError, TimeoutError):
+                client=self.get_api_client()
+        self._set("openshift_version", utils.get_openshift_version(allow_default=True, client=client))
 
         for (env, expected), values in _triggers.items():
             if getattr(self, env) == expected:
@@ -57,3 +65,13 @@ class GlobalVariables(_EnvVariablesUtils):
             return super().__getattribute__(item)
         except BaseException:
             return None
+
+    def get_api_client(self, offline_token=None, **kwargs) -> InventoryClient:
+        url = self.remote_service_url
+        offline_token = offline_token or self.offline_token
+
+        if not url:
+            url = utils.get_local_assisted_service_url(
+                self.namespace, 'assisted-service', utils.get_env('DEPLOY_TARGET'))
+
+        return ClientFactory.create_client(url, offline_token, **kwargs)

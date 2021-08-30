@@ -441,7 +441,7 @@ class ClientFactory:
         pull_secret: Optional[str] = "",
         wait_for_api: Optional[bool] = True,
         timeout: Optional[int] = consts.WAIT_FOR_BM_API,
-    ):
+    ) -> InventoryClient:
         log.info("Creating assisted-service client for url: %s", url)
         c = InventoryClient(url, offline_token, pull_secret)
         if wait_for_api:
@@ -459,6 +459,6 @@ class ClientFactory:
 
 def create_client(
     url, offline_token=utils.get_env("OFFLINE_TOKEN"), pull_secret="", wait_for_api=True, timeout=consts.WAIT_FOR_BM_API
-):
+) -> InventoryClient:
     warnings.warn("create_client is deprecated. Use ClientFactory.create_client instead.", DeprecationWarning)
     return ClientFactory.create_client(url, offline_token, pull_secret, wait_for_api, timeout)

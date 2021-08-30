@@ -4,9 +4,8 @@ from typing import Any, ClassVar
 from assisted_service_client import models
 from dataclasses import dataclass
 
-from test_infra.assisted_service_api import InventoryClient, ClientFactory
 from test_infra.consts import env_defaults
-from test_infra.utils import get_kubeconfig_path, utils
+from test_infra.utils import get_kubeconfig_path
 from test_infra.utils.cluster_name import ClusterName
 from test_infra.utils.infra_env_name import InfraEnvName
 from test_infra.utils.global_variables import GlobalVariables
@@ -72,17 +71,6 @@ class InfraEnvConfig(BaseInfraEnvConfig):
             self.iso_download_path = self._get_iso_download_path(self.infra_env_name.get())
 
 
-def get_api_client(offline_token=None, **kwargs) -> InventoryClient:
-    url = global_variables.remote_service_url
-    offline_token = offline_token or global_variables.offline_token
-
-    if not url:
-        url = utils.get_local_assisted_service_url(
-            global_variables.namespace, 'assisted-service', utils.get_env('DEPLOY_TARGET'))
-
-    return ClientFactory.create_client(url, offline_token, **kwargs)
-
-
 @dataclass
 class Day2ClusterConfig(ClusterConfig):
     _details: ClassVar[models.cluster.Cluster] = None
@@ -93,7 +81,7 @@ class Day2ClusterConfig(ClusterConfig):
 
     def __post_init__(self):
         super(BaseClusterConfig, self).__post_init__()
-        api_client = get_api_client()
+        api_client = global_variables.get_api_client()
         self._details = api_client.cluster_get(self.cluster_id)
         if self.day1_cluster_name is None:
             raise ValueError("Invalid day1_cluster_name, got None")
