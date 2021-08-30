@@ -2,6 +2,8 @@
 set -euo pipefail
 source scripts/utils.sh
 
+set -o xtrace
+
 export SERVICE_NAME=assisted-service
 export SERVICE_URL=$(get_main_ip)
 export AUTH_TYPE=${AUTH_TYPE:-none}
@@ -89,9 +91,7 @@ elif [ "${DEPLOY_TARGET}" == "operator" ]; then
     # TODO: Find a way to get the route dest dynamically.
     # Currently it's not possible since it would be available only after the operator would be deployed
     # The deploy.sh script would wait for the operator to succeed - so we need to have the LB before that.
-    # ROUTE=$(kubectl get routes -n assisted-installer --no-headers | awk '{print $2}')
-
-    ROUTE=assisted-service-assisted-installer.apps.test-infra-cluster-assisted-installer.redhat.com
+    ROUTE=dummy.route
 
     tee << EOF ${HOME}/.test-infra/etc/nginx/conf.d/http_localhost.conf
 upstream upstream_${SERVICE_URL//./_} {
@@ -114,6 +114,13 @@ EOF
 
     ./assisted-service/deploy/operator/deploy.sh
     echo "Installation of Assisted Install operator passed successfully!"
+
+    # Update the LB configuration to point to the service route endpoint
+    # Nginx is being updated every 60s
+    # TODO: Restart nginx
+    PATCH_ROUTE=$(kubectl get routes ${SERVICE_NAME} -n assisted-installer --no-headers | awk '{print $2}')
+    sed -i "s/${ROUTE}/${PATCH_ROUTE}/g" "${HOME}/.test-infra/etc/nginx/conf.d/http_localhost.conf"
+    sleep 60
 else
     print_log "Updating assisted_service params"
 

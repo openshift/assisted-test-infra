@@ -42,6 +42,7 @@ class _EnvVariablesDefaults(ABC):
     master_vcpu: str = get_env("MASTER_CPU", resources.DEFAULT_MASTER_CPU)
     test_teardown: bool = bool(strtobool(get_env("TEST_TEARDOWN", str(env_defaults.DEFAULT_TEST_TEARDOWN))))
     namespace: str = get_env("NAMESPACE", consts.DEFAULT_NAMESPACE)
+    spoke_namespace: str = get_env("SPOKE_NAMESPACE", consts.DEFAULT_SPOKE_NAMESPACE)
     olm_operators: List[str] = field(default_factory=list)
     platform: str = get_env("PLATFORM", env_defaults.DEFAULT_PLATFORM)
     user_managed_networking: bool = env_defaults.DEFAULT_USER_MANAGED_NETWORKING

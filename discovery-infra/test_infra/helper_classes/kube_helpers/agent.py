@@ -116,29 +116,26 @@ class Agent(BaseCustomResource):
         logger.info("approved agent %s", self.ref)
 
     @staticmethod
-    def wait_for_agents_to_install(agents: List["Agent"], nodes_number: int, timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
+    def wait_for_agents_to_install(agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
         Agent.wait_till_all_agents_are_in_status(
             agents=agents,
-            nodes_count=nodes_number,
             statusType=consts.AgentStatus.VALIDATED,
             timeout=timeout,
         )
         Agent.wait_till_all_agents_are_in_status(
             agents=agents,
-            nodes_count=nodes_number,
             statusType=consts.AgentStatus.REQUIREMENTS_MET,
             timeout=timeout,
         )
         Agent.wait_till_all_agents_are_in_status(
             agents=agents,
-            nodes_count=nodes_number,
             statusType=consts.AgentStatus.INSTALLED,
             timeout=timeout,
         )
 
     @staticmethod
     def are_agents_in_status(
-        agents: List["Agent"], nodes_count: int, statusType: str, status: str,
+        agents: List["Agent"], statusType: str, status: str,
     ) -> bool:
         logger.info(
             "Asked agents to have the status [('%s', '%s')] and currently agent statuses are %s",
@@ -148,7 +145,7 @@ class Agent(BaseCustomResource):
             )
 
         agents_in_status = [agent for agent in agents for condition in  agent.status()["conditions"] if condition["type"] == statusType and condition["status"] == status]
-        if len(agents_in_status) >= nodes_count:
+        if len(agents_in_status) >= len(agents):
             return True
         return False
 
@@ -156,7 +153,6 @@ class Agent(BaseCustomResource):
     def wait_till_all_agents_are_in_status(
             agents: List["Agent"],
             statusType: str,
-            nodes_count: int,
             timeout,
             interval=10,
     ) -> None:
@@ -165,7 +161,6 @@ class Agent(BaseCustomResource):
         waiting.wait(
             lambda: Agent.are_agents_in_status(
                 agents,
-                nodes_count,
                 statusType,
                 status="True",
             ),
