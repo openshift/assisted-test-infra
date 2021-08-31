@@ -170,7 +170,7 @@ class Cluster:
 
     def set_cluster_name(self, cluster_name: str):
         log.info(f"Setting Cluster Name:{cluster_name} for cluster: {self.id}")
-        self.update_config(cluster_name=cluster_name)
+        self.update_config(cluster_name=ClusterName(prefix=cluster_name, suffix=None))
         self.api_client.update_cluster(self.id, {"name": cluster_name})
 
     def select_installation_disk(self, hosts_with_disk_paths):
