@@ -102,6 +102,10 @@ class Node:
         self.shutdown()
         self.start()
 
+    def restart_service(self, service):
+        logging.info("Restarting service: %s on host %s", service, self.name)
+        self.run_command(f'sudo systemctl restart {service}.service')
+
     def reset(self):
         logging.info("Resetting host %s", self.name)
         self.shutdown()
