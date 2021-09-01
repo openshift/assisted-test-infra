@@ -24,7 +24,7 @@ from test_infra.controllers.nat_controller import NatController
 from test_infra.controllers.node_controllers import Node, NodeController, TerraformController, VSphereController
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
-from test_infra.helper_classes.config.controller_config import BaseNodeConfig, global_variables
+from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
 from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
@@ -32,7 +32,7 @@ from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.utils import utils
 from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
-from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig
+from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 
 
 class BaseTest:
