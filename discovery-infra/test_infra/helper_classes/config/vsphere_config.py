@@ -4,9 +4,6 @@ from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 
 @dataclass
 class VSphereControllerConfig(BaseNodeConfig):
-    def get_copy(self):
-        return VSphereControllerConfig(**self.get_all())
-
     vsphere_vcenter: str = None
     vsphere_username: str = None
     vsphere_password: str = None

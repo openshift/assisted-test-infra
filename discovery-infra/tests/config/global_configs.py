@@ -23,9 +23,6 @@ class ClusterConfig(BaseClusterConfig):
     def get_default(key, default=None) -> Any:
         return getattr(global_variables, key)
 
-    def get_copy(self):
-        return ClusterConfig(**self.get_all())
-
     @staticmethod
     def _get_iso_download_path(cluster_name: str):
         return str(
@@ -51,9 +48,6 @@ class InfraEnvConfig(BaseInfraEnvConfig):
     @staticmethod
     def get_default(key, default=None) -> Any:
         return getattr(global_variables, key)
-
-    def get_copy(self):
-        return InfraEnvConfig(**self.get_all())
 
     @staticmethod
     def _get_iso_download_path(infra_env_name: str):
@@ -95,5 +89,6 @@ class Day2ClusterConfig(ClusterConfig):
 class TerraformConfig(BaseTerraformConfig):
     """ A Nodes configuration with defaults that obtained from EnvConfig """
 
-    def get_copy(self):
-        return TerraformConfig(**self.get_all())
+    @staticmethod
+    def get_default(key, default=None) -> Any:
+        return getattr(global_variables, key)
