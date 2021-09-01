@@ -202,8 +202,7 @@ class BaseTest:
         nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
         nat.add_nat_rules()
         yield prepare_nodes
-        if nat:
-            nat.remove_nat_rules()
+        self.teardown_nat(nat)
 
     @pytest.fixture
     def prepare_infraenv_nodes_network(self, prepare_infraenv_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
@@ -215,7 +214,11 @@ class BaseTest:
         nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
         nat.add_nat_rules()
         yield prepare_infraenv_nodes
-        if nat:
+        self.teardown_nat(nat)
+
+    @staticmethod
+    def teardown_nat(nat: NatController) -> None:
+        if global_variables.test_teardown and nat:
             nat.remove_nat_rules()
 
     @pytest.fixture
@@ -302,9 +305,8 @@ class BaseTest:
                 _nodes.destroy_all_nodes()
                 logging.info(f'--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n')
                 infra_utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
+                self.teardown_nat(_nat)
 
-                if _nat and global_variables.test_teardown:
-                    _nat.remove_nat_rules()
         finally:
             if _net_asset:
                 _net_asset.release_all()
