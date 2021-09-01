@@ -1,40 +1,38 @@
 import json
 import logging
 import os
-import libvirt
 import shutil
 from contextlib import suppress
 from pathlib import Path
-from typing import Callable
-from typing import Tuple, List, Optional
+from typing import Callable, List, Optional, Tuple
 
+import libvirt
 import pytest
+import test_infra.utils as infra_utils
 import waiting
 from _pytest.fixtures import FixtureRequest
 from assisted_service_client.rest import ApiException
+from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from netaddr import IPNetwork
 from paramiko import SSHException
-
-import test_infra.utils as infra_utils
-from download_logs import download_logs
 from test_infra import consts
 from test_infra.assisted_service_api import InventoryClient
 from test_infra.consts import OperatorResource
 from test_infra.controllers.iptables import IptableRule
 from test_infra.controllers.nat_controller import NatController
-from test_infra.controllers.node_controllers import NodeController, Node, TerraformController, VSphereController
+from test_infra.controllers.node_controllers import Node, NodeController, TerraformController, VSphereController
 from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
-from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig, global_variables
 from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
-from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
+from test_infra.helper_classes.infra_env import InfraEnv
+from test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
-from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from test_infra.utils import utils
-from tests.config import ClusterConfig, TerraformConfig, InfraEnvConfig
+from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
+from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig
 
 
 class BaseTest:
@@ -121,7 +119,7 @@ class BaseTest:
 
     @pytest.fixture
     def infra_env_configuration(self, request: pytest.FixtureRequest,
-                              new_infra_env_configuration: InfraEnvConfig) -> InfraEnvConfig:
+                                new_infra_env_configuration: InfraEnvConfig) -> InfraEnvConfig:
         """
         Allows the test to modify the cluster configuration by registering a custom fixture.
         To register the custom fixture you have to mark the test with "override_cluster_configuration" marker.
@@ -152,19 +150,17 @@ class BaseTest:
                             controller_configuration: BaseNodeConfig) -> NodeController:
         if infra_env_configuration.platform == consts.Platforms.VSPHERE:
             # TODO implement for Vsphere
-            return NotImplemented
+            raise NotImplementedError
 
         return TerraformController(controller_configuration, entity_config=infra_env_configuration)
-
 
     @pytest.fixture
     def nodes(self, controller: NodeController) -> Nodes:
         return Nodes(controller)
 
     @pytest.fixture
-    def infraenv_nodes(self, infraenv_controller: NodeController) -> NodeController:
+    def infraenv_nodes(self, infraenv_controller: NodeController) -> Nodes:
         return Nodes(infraenv_controller)
-
 
     @pytest.fixture
     def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
@@ -192,29 +188,26 @@ class BaseTest:
                     f'--- TEARDOWN --- deleting iso file from: {infra_env_configuration.iso_download_path}\n')
                 infra_utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
 
+    @classmethod
+    def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
+        if global_variables.platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE):
+            yield prepared_nodes
+            return
+
+        interfaces = cls.nat_interfaces(controller_configuration)  # todo need to fix mismatch config types
+        nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
+        nat.add_nat_rules()
+        yield prepared_nodes
+        cls.teardown_nat(nat)
+
     @pytest.fixture
     def prepare_nodes_network(self, prepare_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
-        if global_variables.platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE):
-            yield prepare_nodes
-            return
-
-        interfaces = BaseTest.nat_interfaces(controller_configuration)
-        nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
-        nat.add_nat_rules()
-        yield prepare_nodes
-        self.teardown_nat(nat)
+        yield from self._prepare_nodes_network(prepare_nodes, controller_configuration)
 
     @pytest.fixture
-    def prepare_infraenv_nodes_network(self, prepare_infraenv_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
-        if global_variables.platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE):
-            yield prepare_infraenv_nodes
-            return
-
-        interfaces = BaseTest.nat_interfaces(controller_configuration)
-        nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
-        nat.add_nat_rules()
-        yield prepare_infraenv_nodes
-        self.teardown_nat(nat)
+    def prepare_infraenv_nodes_network(self, prepare_infraenv_nodes: Nodes,
+                                       controller_configuration: BaseNodeConfig) -> Nodes:
+        yield from self._prepare_nodes_network(prepare_infraenv_nodes, controller_configuration)
 
     @staticmethod
     def teardown_nat(nat: NatController) -> None:
@@ -247,15 +240,15 @@ class BaseTest:
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def infra_env(self, api_client: InventoryClient, request: FixtureRequest, proxy_server, prepare_infraenv_nodes_network: Nodes, infra_env_configuration: InfraEnvConfig):
-        logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
-        infra_env = InfraEnv(api_client=api_client, config=infra_env_configuration, nodes=prepare_infraenv_nodes_network)
-
+    def infra_env(self, api_client: InventoryClient, request: FixtureRequest, proxy_server,
+                  prepare_infraenv_nodes_network: Nodes, infra_env_configuration: InfraEnvConfig):
+        logging.debug(f'--- SETUP --- Creating InfraEnv for test: {request.node.name}\n')
+        infra_env = InfraEnv(api_client=api_client, config=infra_env_configuration,
+                             nodes=prepare_infraenv_nodes_network)
 
         yield infra_env
 
         logging.info('--- TEARDOWN --- Infra env\n')
-
 
     @pytest.fixture
     def prepared_cluster(self, cluster):
@@ -312,7 +305,7 @@ class BaseTest:
                 _net_asset.release_all()
 
     @classmethod
-    def nat_interfaces(cls, config: TerraformConfig):
+    def nat_interfaces(cls, config: TerraformConfig) -> Tuple[str, str]:
         return config.net_asset.libvirt_network_if, config.net_asset.libvirt_secondary_network_if
 
     @pytest.fixture()
@@ -530,7 +523,7 @@ class BaseTest:
         messages_log_path = os.path.join(virsh_log_path, "messages.log")
         try:
             shutil.copy('/var/log/messages', messages_log_path)
-        except (FileNotFoundError):
+        except FileNotFoundError:
             logging.warning('Failed to copy /var/log/messages, file does not exist')
 
         qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
@@ -538,15 +531,16 @@ class BaseTest:
         for node in nodes:
             try:
                 shutil.copy(f'/var/log/libvirt/qemu/{node.name}.log', f'{qemu_libvirt_path}/{node.name}-qemu.log')
-            except (FileNotFoundError):
+            except FileNotFoundError:
                 logging.warning(f"Failed to copy {node.name} qemu log, file does not exist")
 
         console_log_path = os.path.join(virsh_log_path, "console_logs")
         os.makedirs(console_log_path, exist_ok=False)
         for node in nodes:
             try:
-                shutil.copy(f'/var/log/libvirt/qemu/{node.name}-console.log', f'{console_log_path}/{node.name}-console.log')
-            except (FileNotFoundError):
+                shutil.copy(f'/var/log/libvirt/qemu/{node.name}-console.log',
+                            f'{console_log_path}/{node.name}-console.log')
+            except FileNotFoundError:
                 logging.warning(f"Failed to copy {node.name} console log, file does not exist")
 
         libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
