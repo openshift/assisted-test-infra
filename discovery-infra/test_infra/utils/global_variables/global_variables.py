@@ -7,8 +7,8 @@ from test_infra import consts
 from test_infra.assisted_service_api import ClientFactory, InventoryClient
 from test_infra.consts import resources
 from test_infra.utils import utils
-from test_infra.utils.global_variables.env_variables_utils import \
-    _EnvVariablesUtils
+from test_infra.utils.global_variables.env_variables_defaults import \
+    _EnvVariablesDefaults
 
 _triggers = frozendict(
     {
@@ -42,7 +42,7 @@ _triggers = frozendict(
 )
 
 
-class GlobalVariables(_EnvVariablesUtils):
+class GlobalVariables(_EnvVariablesDefaults):
     _triggered: ClassVar[List[str]] = list()
 
     def __post_init__(self):
