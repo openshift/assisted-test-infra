@@ -16,9 +16,8 @@ from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration as KubeConfiguration
 from logger import log
 from retry import retry
-from urllib3 import HTTPResponse
-
 from test_infra import consts, utils
+from urllib3 import HTTPResponse
 
 
 class InventoryClient(object):
@@ -100,7 +99,7 @@ class InventoryClient(object):
         )
 
     def create_cluster(
-        self, name: str, ssh_public_key: Optional[str] = None, **cluster_params
+            self, name: str, ssh_public_key: Optional[str] = None, **cluster_params
     ) -> models.cluster.Cluster:
         cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params)
         log.info("Creating cluster with params %s", cluster.__dict__)
@@ -108,12 +107,11 @@ class InventoryClient(object):
         return result
 
     def create_infra_env(self, name: str, ssh_public_key: Optional[str] = None, **infra_env_params
-                                ) -> models.infra_env.InfraEnv:
+                         ) -> models.infra_env.InfraEnv:
         infra_env = models.InfraEnvCreateParams(name=name, ssh_authorized_key=ssh_public_key, **infra_env_params)
-        log.info("Creating ןinfra-env with params %s", infra_env.__dict__)
+        log.info("Creating infra-env with params %s", infra_env.__dict__)
         result = self.client.register_infra_env(infraenv_create_params=infra_env)
         return result
-
 
     def create_day2_cluster(self, name: str, cluster_uuid: str, **cluster_params) -> models.cluster.Cluster:
         cluster = models.AddHostsClusterCreateParams(name=name, id=cluster_uuid, **cluster_params)
@@ -126,7 +124,6 @@ class InventoryClient(object):
 
     def get_infra_env_hosts(self, infra_env_id: str) -> List[Dict[str, Any]]:
         return self.client.v2_list_hosts(infra_env_id=infra_env_id)
-
 
     def get_cluster_operators(self, cluster_id: str) -> List[models.MonitoredOperator]:
         return self.cluster_get(cluster_id=cluster_id).monitored_operators
@@ -201,12 +198,13 @@ class InventoryClient(object):
     @retry(exceptions=RuntimeError, tries=2, delay=3)
     def download_infraenv_image(self, infraenv_id: str, image_path: str) -> None:
         log.info("Downloading image for infra-env %s to %s", infraenv_id, image_path)
-        response = self.client.download_infra_env_discovery_image_with_http_info(infra_env_id=infraenv_id, _preload_content=False)
+        response = self.client.download_infra_env_discovery_image_with_http_info(infra_env_id=infraenv_id,
+                                                                                 _preload_content=False)
         response_obj = response[0]
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
     def update_hosts(
-        self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None
+            self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None
     ) -> models.cluster.Cluster:
         log.info("Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id)
         hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles, hosts_names=hosts_names)
@@ -216,7 +214,7 @@ class InventoryClient(object):
         log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
 
         def role_to_selected_disk_config(
-            host_id: str, disk_id: str, role: models.DiskRole
+                host_id: str, disk_id: str, role: models.DiskRole
         ) -> models.ClusterupdateparamsDisksSelectedConfig:
             disk_config_params = models.DiskConfigParams(id=disk_id, role=role)
             return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
@@ -331,7 +329,8 @@ class InventoryClient(object):
 
     def get_events(self, cluster_id: str, host_id: Optional[str] = "", categories=["user"]) -> dict:
         # Get users events
-        response = self.events.list_events(cluster_id=cluster_id, host_id=host_id, categories=categories, _preload_content=False)
+        response = self.events.list_events(cluster_id=cluster_id, host_id=host_id, categories=categories,
+                                           _preload_content=False)
 
         return json.loads(response.data)
 
@@ -364,7 +363,7 @@ class InventoryClient(object):
         return self.client.enable_host(cluster_id=cluster_id, host_id=host_id)
 
     def set_cluster_proxy(
-        self, cluster_id: str, http_proxy: str, https_proxy: Optional[str] = "", no_proxy: Optional[str] = ""
+            self, cluster_id: str, http_proxy: str, https_proxy: Optional[str] = "", no_proxy: Optional[str] = ""
     ) -> models.cluster.Cluster:
         log.info("Setting proxy for cluster %s", cluster_id)
         update_params = models.ClusterUpdateParams(http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy)
@@ -401,7 +400,7 @@ class InventoryClient(object):
         self.client.v2_post_step_reply(infra_env_id=infra_env_id, host_id=host_id, reply=reply)
 
     def host_update_progress(
-        self, cluster_id: str, host_id: str, current_stage: models.HostStage, progress_info=None
+            self, cluster_id: str, host_id: str, current_stage: models.HostStage, progress_info=None
     ) -> None:
         host_progress = models.HostProgress(current_stage=current_stage, progress_info=progress_info)
         self.client.update_host_install_progress(cluster_id=cluster_id, host_id=host_id, host_progress=host_progress)
@@ -436,11 +435,11 @@ class InventoryClient(object):
 class ClientFactory:
     @staticmethod
     def create_client(
-        url: str,
-        offline_token: str,
-        pull_secret: Optional[str] = "",
-        wait_for_api: Optional[bool] = True,
-        timeout: Optional[int] = consts.WAIT_FOR_BM_API,
+            url: str,
+            offline_token: str,
+            pull_secret: Optional[str] = "",
+            wait_for_api: Optional[bool] = True,
+            timeout: Optional[int] = consts.WAIT_FOR_BM_API,
     ) -> InventoryClient:
         log.info("Creating assisted-service client for url: %s", url)
         c = InventoryClient(url, offline_token, pull_secret)
@@ -458,7 +457,8 @@ class ClientFactory:
 
 
 def create_client(
-    url, offline_token=utils.get_env("OFFLINE_TOKEN"), pull_secret="", wait_for_api=True, timeout=consts.WAIT_FOR_BM_API
+        url, offline_token=utils.get_env("OFFLINE_TOKEN"), pull_secret="", wait_for_api=True,
+        timeout=consts.WAIT_FOR_BM_API
 ) -> InventoryClient:
     warnings.warn("create_client is deprecated. Use ClientFactory.create_client instead.", DeprecationWarning)
     return ClientFactory.create_client(url, offline_token, pull_secret, wait_for_api, timeout)
