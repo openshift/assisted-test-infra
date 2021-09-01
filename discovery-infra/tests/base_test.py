@@ -462,9 +462,10 @@ class BaseTest:
             return proxy_server
 
         yield start_proxy_server
-        logging.info('--- TEARDOWN --- proxy controller')
-        for server in proxy_servers:
-            server.remove()
+        if global_variables.test_teardown:
+            logging.info('--- TEARDOWN --- proxy controller')
+            for server in proxy_servers:
+                server.remove()
 
     @staticmethod
     def get_cluster_by_name(api_client, cluster_name):
