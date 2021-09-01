@@ -340,9 +340,6 @@ deploy_nodes_with_install: start_load_balancer
 		$(MAKE) set_dns; \
 	fi
 
-test_test:
-	ifdef ENABLE_KUBE_API
-
 deploy_static_network_config_nodes_with_install:
 	make deploy_nodes_with_install IS_STATIC_IP="true"
 
