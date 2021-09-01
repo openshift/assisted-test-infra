@@ -1,12 +1,11 @@
 import functools
 import logging
 from ipaddress import IPv4Interface, IPv6Interface
-from pathlib import Path
 
 import waiting
 from kubernetes.client import ApiException, CoreV1Api, CustomObjectsApi
 
-from test_infra import consts, utils
+from test_infra import utils
 from test_infra.helper_classes.kube_helpers import ClusterDeployment, ClusterImageSet, InfraEnv, NMStateConfig, Secret
 
 logger = logging.getLogger(__name__)

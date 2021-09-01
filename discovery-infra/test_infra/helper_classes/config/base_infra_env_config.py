@@ -12,10 +12,3 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     All arguments must have default to None with type hint
     """
     infra_env_id: str = None
-    infra_env_name: str = None
-
-    def is_cluster(self) -> bool:
-        return False
-
-    def is_infra_env(self) -> bool:
-        return True

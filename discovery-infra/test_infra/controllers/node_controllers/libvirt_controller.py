@@ -7,13 +7,13 @@ import tempfile
 from abc import ABC
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import List, Callable
+from typing import List, Callable, Union
 from xml.dom import minidom
 
 import libvirt
 import waiting
 
-from test_infra.helper_classes.config import BaseClusterConfig, BaseEntityConfig
+from test_infra.helper_classes.config import BaseClusterConfig, BaseEntityConfig, BaseInfraEnvConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra import consts, utils
 from test_infra.controllers.node_controllers.disk import Disk, DiskSourceType
@@ -24,7 +24,7 @@ from test_infra.controllers.node_controllers.node_controller import NodeControll
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, config: BaseNodeConfig, entity_config: BaseEntityConfig):
+    def __init__(self, config: BaseNodeConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
         super().__init__(config, entity_config)
         self.libvirt_connection: libvirt.virConnect = libvirt.open('qemu:///system')
         self.private_ssh_key_path: Path = config.private_ssh_key_path

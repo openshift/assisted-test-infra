@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from .base_config import _BaseConfig
+from ...utils.base_name import BaseName
 
 
 @dataclass
@@ -20,11 +21,5 @@ class BaseEntityConfig(_BaseConfig, ABC):
     platform: str = None
     is_static_ip: bool = None
     is_ipv6: bool = None
-
-    @abstractmethod
-    def is_cluster(self) -> bool:
-        pass
-
-    @abstractmethod
-    def is_infra_env(self) -> bool:
-        pass
+    base_dns_domain: str = None
+    entity_name: BaseName = None
