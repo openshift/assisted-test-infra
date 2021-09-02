@@ -1,6 +1,5 @@
 from abc import ABC
 from pathlib import Path
-from typing import Any
 
 from dataclasses import dataclass
 
@@ -37,7 +36,3 @@ class BaseNodeConfig(_BaseConfig, ABC):
     worker_disk_count: int = None
 
     network_mtu: int = None
-
-    @staticmethod
-    def get_default(key, default=None) -> Any:
-        return getattr(global_variables, key)
