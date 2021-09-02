@@ -208,10 +208,10 @@ def wait_till_hosts_with_macs_are_in_status(
 
     waiting.wait(
         lambda: are_hosts_in_status(
-            get_cluster_hosts_with_mac(client, cluster_id, macs),
-            len(macs),
-            statuses,
-            fall_on_error_status,
+            hosts=get_cluster_hosts_with_mac(client, cluster_id, macs),
+            nodes_count=len(macs),
+            statuses=statuses,
+            fall_on_error_status=fall_on_error_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,
@@ -233,11 +233,11 @@ def wait_till_all_hosts_are_in_status(
 
     waiting.wait(
         lambda: are_hosts_in_status(
-            client.get_cluster_hosts(cluster_id),
-            nodes_count,
-            statuses,
-            status_info,
-            fall_on_error_status,
+            hosts=client.get_cluster_hosts(cluster_id),
+            nodes_count=nodes_count,
+            statuses=statuses,
+            status_info=status_info,
+            fall_on_error_status=fall_on_error_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,
@@ -258,10 +258,10 @@ def wait_till_all_infra_env_hosts_are_in_status(
 
     waiting.wait(
         lambda: are_hosts_in_status(
-            client.get_infra_env_hosts(infra_env_id),
-            nodes_count,
-            statuses,
-            fall_on_error_status,
+            hosts=client.get_infra_env_hosts(infra_env_id),
+            nodes_count=nodes_count,
+            statuses=statuses,
+            fall_on_error_status=fall_on_error_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,
@@ -283,11 +283,11 @@ def wait_till_at_least_one_host_is_in_status(
 
     waiting.wait(
         lambda: are_hosts_in_status(
-            client.get_cluster_hosts(cluster_id),
-            nodes_count,
-            statuses,
-            status_info,
-            fall_on_error_status,
+            hosts=client.get_cluster_hosts(cluster_id),
+            nodes_count=nodes_count,
+            statuses=statuses,
+            status_info=status_info,
+            fall_on_error_status=fall_on_error_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,
@@ -309,10 +309,10 @@ def wait_till_specific_host_is_in_status(
 
     waiting.wait(
         lambda: are_hosts_in_status(
-            [client.get_host_by_name(cluster_id, host_name)],
-            nodes_count,
-            statuses,
-            fall_on_error_status,
+            hosts=[client.get_host_by_name(cluster_id, host_name)],
+            nodes_count=nodes_count,
+            statuses=statuses,
+            fall_on_error_status=fall_on_error_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,
