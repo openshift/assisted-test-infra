@@ -26,9 +26,9 @@ export REGISTRY_SERVICE_HOST_PORT=5000
 
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" && -z "${OPENSHIFT_VERSIONS}" ]]; then
-    # Supporting version 4.8 for kube-api
+    # Supporting versions >= 4.8 for kube-api
     OPENSHIFT_VERSIONS=$(cat assisted-service/data/default_ocp_versions.json |
-       jq -rc 'with_entries(.key = "4.8") | with_entries(
+       jq -rc 'del (.["4.6", "4.7"]) | with_entries(
            {key: .key, value: {rhcos_image: .value.rhcos_image,
            rhcos_version: .value.rhcos_version,
            rhcos_rootfs: .value.rhcos_rootfs}})')
