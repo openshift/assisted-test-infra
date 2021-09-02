@@ -9,7 +9,6 @@ from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
 
 
-
 class InfraEnv:
     def __init__(self, api_client: InventoryClient, config: BaseInfraEnvConfig, nodes: Optional[Nodes] = None):
         self._config = config
@@ -17,14 +16,14 @@ class InfraEnv:
         self.api_client = api_client
         try:
             infra_env = self._create()
-        except:
+        except BaseException:
             logging.exception("create")
             raise
         self._config.infra_env_id = self.id = infra_env.id
 
     def _create(self):
         return self.api_client.create_infra_env(
-            self._config.infra_env_name.get(),
+            self._config.entity_name.get(),
             pull_secret=self._config.pull_secret,
             ssh_public_key=self._config.ssh_public_key,
             openshift_version=self._config.openshift_version,
@@ -74,17 +73,14 @@ class InfraEnv:
         )
 
     @JunitTestCase()
-    def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
+    def wait_until_hosts_are_discovered(self, nodes_count: int, allow_insufficient=False):
         statuses = [consts.NodesStatus.KNOWN_UNBOUND]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT_UNBOUND)
         utils.wait_till_all_infra_env_hosts_are_in_status(
             client=self.api_client,
             infra_env_id=self.id,
-            nodes_count=nodes_count or self._config.nodes_count,
+            nodes_count=nodes_count,
             statuses=statuses,
             timeout=consts.NODES_REGISTERED_TIMEOUT,
         )
-
-
-

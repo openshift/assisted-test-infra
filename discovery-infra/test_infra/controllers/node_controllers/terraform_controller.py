@@ -5,102 +5,53 @@ import os
 import shutil
 import warnings
 from textwrap import dedent
-from typing import List
+from typing import List, Union, Dict
 
 from munch import Munch
 from netaddr import IPNetwork
-from abc import ABC, abstractmethod
 from test_infra import consts, utils, virsh_cleanup
 from test_infra.consts import resources
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.helper_classes.config import BaseTerraformConfig, BaseClusterConfig, BaseEntityConfig
+from test_infra.helper_classes.config import BaseTerraformConfig, BaseClusterConfig, BaseInfraEnvConfig
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils.base_name import get_name_suffix
-
-class _EntityOperations(ABC):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplemented
-
-    @property
-    @abstractmethod
-    def terraform_params(self) -> dict:
-        raise NotImplemented
-
-    @property
-    @abstractmethod
-    def name_suffix(self) -> str:
-        raise NotImplemented
-
-
-
-class _ClusterOperations(_EntityOperations):
-    def __init__(self, controller, entity_config : BaseEntityConfig):
-        self._controller = controller
-        self._entity_config = entity_config
-
-    @property
-    def name(self) -> str:
-        return self._entity_config.cluster_name.get()
-
-    @property
-    def name_suffix(self) -> str:
-        return self._entity_config.cluster_name.suffix
-
-    @property
-    def terraform_params(self) -> dict:
-        return {
-            "cluster_name": self.name,
-            "cluster_domain": self._entity_config.base_dns_domain
-        }
-
-
-class _InfraEnvOperations(_EntityOperations):
-    def __init__(self, controller, entity_config : BaseEntityConfig):
-        self._controller = controller
-        self._entity_config = entity_config
-
-    @property
-    def name(self) -> str:
-        return self._entity_config.infra_env_name.get()
-
-    @property
-    def name_suffix(self) -> str:
-        return self._entity_config.infra_env_name.suffix
-
-    @property
-    def terraform_params(self) -> dict:
-        return {
-            "infra_env_name": self.name
-        }
+from test_infra.utils.base_name import get_name_suffix, BaseName
 
 
 class TerraformController(LibvirtController):
 
-    def __init__(self, config: BaseTerraformConfig, entity_config: BaseEntityConfig):
+    def __init__(self, config: BaseTerraformConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
         super().__init__(config, entity_config)
-        if entity_config.is_cluster():
-            self._entity_operations = _ClusterOperations(self, entity_config)
-            self.cluster_name = entity_config.cluster_name.get()
-        elif entity_config.is_infra_env():
-            self._entity_operations = _InfraEnvOperations(self, entity_config)
-            self.infra_env_name = entity_config.infra_env_name.get()
-        else:
-            raise Exception("Unidentified entity config")
-        self._suffix = self._entity_operations.name_suffix or get_name_suffix()
-        self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_operations.name, config.platform)
+        self._entity_name = self._get_entity_name()
+        self._suffix = self._entity_name.suffix or get_name_suffix()
+        self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.platform)
         self.network_name = config.network_name + self._suffix
         self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
         self.master_ips = None
 
+    @property
+    def entity_name(self) -> BaseName:
+        return self._entity_name
+
+    @property
+    def cluster_name(self) -> str:
+        warnings.warn("cluster_name is deprecated. Use Controller.entity_name instead.", DeprecationWarning)
+        return self._entity_name.get()
+
+    def _get_entity_name(self) -> BaseName:
+        if isinstance(self._entity_config, BaseClusterConfig):
+            return self._entity_config.cluster_name
+        elif isinstance(self._entity_config, BaseInfraEnvConfig):
+            return self._entity_config.entity_name
+        raise Exception("Unidentified entity config")
+
     def _create_tf_folder(self, name: str, platform: str):
         tf_folder = utils.get_tf_folder(name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder, none_platform_mode=platform == consts.Platforms.NONE, is_infra_env=self._entity_config.is_infra_env())
+        utils.copy_template_tree(tf_folder, none_platform_mode=(platform == consts.Platforms.NONE),
+                                 is_infra_env=isinstance(self._entity_config, BaseInfraEnvConfig))
         return tf_folder
 
     # TODO move all those to conftest and pass it as kwargs
@@ -133,7 +84,8 @@ class TerraformController(LibvirtController):
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)
         }
-        params.update(self._entity_operations.terraform_params)
+
+        params.update(self._get_specific_tf_entity_params())
         for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
                     "libvirt_secondary_worker_ips"]:
             value = kwargs.get(key)
@@ -141,8 +93,19 @@ class TerraformController(LibvirtController):
                 params[key] = value
         return Munch.fromDict(params)
 
+    def _get_specific_tf_entity_params(self) -> Dict[str, str]:
+        if isinstance(self._entity_config, BaseClusterConfig):
+            return {
+                "cluster_name": self.entity_name.get(),
+                "cluster_domain": self._entity_config.base_dns_domain
+            }
+        elif isinstance(self._entity_config, BaseInfraEnvConfig):
+            return {"infra_env_name": self._entity_name.get()}
+
+        return dict()
+
     def list_nodes(self) -> List[Node]:
-        return self.list_nodes_with_name_filter(self._entity_operations.name)
+        return self.list_nodes_with_name_filter(self._entity_name.get())
 
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
@@ -243,7 +206,7 @@ class TerraformController(LibvirtController):
 
     def format_node_disk(self, node_name: str, disk_index: int = 0):
         logging.info("Formatting disk for %s", node_name)
-        self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.cluster_name}/{node_name}-disk-{disk_index}')
+        self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}')
 
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
@@ -272,12 +235,11 @@ class TerraformController(LibvirtController):
         return self._config.net_asset.provisioning_cidr
 
     def set_dns(self, api_vip: str, ingress_vip: str) -> None:
-        cluster_name = self._entity_config.cluster_name
         base_domain = self._entity_config.base_dns_domain
-        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
+        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{self._entity_name}.conf"
         contents = dedent(f"""
-                    address=/api.{cluster_name}.{base_domain}/{api_vip}
-                    address=/.apps.{cluster_name}.{base_domain}/{ingress_vip}
+                    address=/api.{self._entity_name}.{base_domain}/{api_vip}
+                    address=/.apps.{self._entity_name}.{base_domain}/{ingress_vip}
                     """)
         self.tf.change_variables(
             {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
@@ -302,7 +264,7 @@ class TerraformController(LibvirtController):
             self._try_to_delete_nodes()
 
         self._delete_virsh_resources(
-            self._entity_operations.name,
+            self._entity_name.get(),
             self.params.libvirt_network_name,
             self.params.libvirt_secondary_network_name
         )

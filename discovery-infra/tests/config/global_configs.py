@@ -6,8 +6,7 @@ from dataclasses import dataclass
 
 from test_infra.consts import env_defaults
 from test_infra.utils import get_kubeconfig_path
-from test_infra.utils.cluster_name import ClusterName
-from test_infra.utils.infra_env_name import InfraEnvName
+from test_infra.utils.entity_name import ClusterName, InfraEnvName
 from test_infra.utils.global_variables import GlobalVariables
 from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
 
@@ -37,7 +36,8 @@ class ClusterConfig(BaseClusterConfig):
     def __post_init__(self):
         super().__post_init__()
         if self.cluster_name is None or isinstance(self.cluster_name, str):
-            self.cluster_name = ClusterName()
+            self.cluster_name = ClusterName()  # todo rm cluster_name after removing config.cluster_name dependencies
+            self.entity_name = self.cluster_name
         if self.kubeconfig_path is None:
             self.kubeconfig_path = get_kubeconfig_path(self.cluster_name.get())
         if self.iso_download_path is None:
@@ -65,10 +65,10 @@ class InfraEnvConfig(BaseInfraEnvConfig):
 
     def __post_init__(self):
         super().__post_init__()
-        if self.infra_env_name is None or isinstance(self.infra_env_name, str):
-            self.infra_env_name = InfraEnvName()
+        if self.entity_name is None or isinstance(self.entity_name, str):
+            self.entity_name = InfraEnvName()
         if self.iso_download_path is None:
-            self.iso_download_path = self._get_iso_download_path(self.infra_env_name.get())
+            self.iso_download_path = self._get_iso_download_path(self.entity_name.get())
 
 
 @dataclass
