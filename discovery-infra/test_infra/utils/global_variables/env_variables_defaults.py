@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass, field
 from distutils.util import strtobool
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, ClassVar
 
 from test_infra import consts
 from test_infra.consts import env_defaults, resources
@@ -10,12 +10,12 @@ from test_infra.utils import get_env, operators_utils
 
 
 @dataclass(frozen=True)
-class _EnvVariablesUtils(ABC):
+class _EnvVariablesDefaults(ABC):
     ssh_public_key: str = get_env("SSH_PUB_KEY")
     remote_service_url: str = get_env("REMOTE_SERVICE_URL")
     pull_secret: str = get_env("PULL_SECRET")
     offline_token: str = get_env("OFFLINE_TOKEN")
-    openshift_version: str = ''
+    openshift_version: str = ""
     base_dns_domain: str = get_env("BASE_DOMAIN", consts.DEFAULT_BASE_DNS_DOMAIN)
     masters_count: int = int(get_env("MASTERS_COUNT", get_env("NUM_MASTERS", env_defaults.DEFAULT_NUMBER_OF_MASTERS)))
     workers_count: int = int(get_env("WORKERS_COUNT", get_env("NUM_WORKERS", env_defaults.DEFAULT_WORKERS_COUNT)))
@@ -70,6 +70,14 @@ class _EnvVariablesUtils(ABC):
     vsphere_datacenter: str = get_env("VSPHERE_DATACENTER")
     vsphere_datastore: str = get_env("VSPHERE_DATASTORE")
 
+    __instance: ClassVar = None
+
+    def __new__(cls, *args, **kwargs):
+        """ Prevent creating another env_var instance """
+        if isinstance(cls.__instance, cls):
+            raise Exception("Can't initialized more then one global configuration object")
+        cls.__instance = object.__new__(cls, *args, **kwargs)
+        return cls.__instance
 
     def __post_init__(self):
         self._set("olm_operators", operators_utils.parse_olm_operators_from_env())

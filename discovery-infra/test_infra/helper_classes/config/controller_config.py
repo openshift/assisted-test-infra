@@ -4,10 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from test_infra import consts
-from test_infra.utils.global_variables import GlobalVariables
 from .base_config import _BaseConfig
-
-global_variables = GlobalVariables()
 
 
 @dataclass
