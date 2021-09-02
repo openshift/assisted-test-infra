@@ -125,6 +125,13 @@ class InventoryClient(object):
     def get_infra_env_hosts(self, infra_env_id: str) -> List[Dict[str, Any]]:
         return self.client.v2_list_hosts(infra_env_id=infra_env_id)
 
+    def get_infra_env(self, infra_env_id: str) -> models.infra_env.InfraEnv:
+        return self.client.get_infra_env(infra_env_id=infra_env_id)
+
+    def delete_infra_env(self, infra_env_id: str) -> None:
+        log.info("Deleting infra_env %s", infra_env_id)
+        self.client.deregister_infra_env(infra_env_id=infra_env_id)
+
     def get_cluster_operators(self, cluster_id: str) -> List[models.MonitoredOperator]:
         return self.cluster_get(cluster_id=cluster_id).monitored_operators
 
