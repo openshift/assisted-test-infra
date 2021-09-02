@@ -4,6 +4,7 @@ from typing import List
 
 import waiting
 from logger import log
+from test_infra import consts
 from test_infra.tools.terraform_utils import TerraformUtils
 
 
@@ -44,22 +45,26 @@ class LoadBalancerController:
         )
 
     def _render_load_balancer_config_file(
-        self, load_balancer_ip: str, master_ips: List[str], worker_ips: List[str]
+            self, load_balancer_ip: str, master_ips: List[str], worker_ips: List[str]
     ) -> str:
-        api_stream = [self._render_port_entities(load_balancer_ip, master_ips, port) for port in [6443, 22623]]
-        route_stream = [self._render_port_entities(load_balancer_ip, worker_ips if worker_ips else master_ips, port) for port in [80, 443]]
+        api_stream = [self._render_port_entities(load_balancer_ip, master_ips, port) for port in
+                      [consts.DEFAULT_LOAD_BALANCER_PORT, 22623]]
+        route_stream = [self._render_port_entities(load_balancer_ip, worker_ips if worker_ips else master_ips, port) for
+                        port in [80, 443]]
         return "\n".join(api_stream + route_stream)
 
     def _connect_to_load_balancer(self, load_balancer_ip: str) -> bool:
         family = socket.AF_INET6 if ":" in load_balancer_ip else socket.AF_INET
         try:
             with socket.socket(family, socket.SOCK_STREAM) as s:
-                s.connect((load_balancer_ip, 6443))
+                s.connect((load_balancer_ip, consts.DEFAULT_LOAD_BALANCER_PORT))
+                log.info(f"Successfully connected to load balancer "
+                         f"{load_balancer_ip}:{consts.DEFAULT_LOAD_BALANCER_PORT}")
                 return True
         except Exception as e:
             log.warning(
                 "Could not connect to load balancer endpoint %s: %s",
-                self._render_socket_endpoint(load_balancer_ip, 6443),
+                self._render_socket_endpoint(load_balancer_ip, consts.DEFAULT_LOAD_BALANCER_PORT),
                 e,
             )
             return False
