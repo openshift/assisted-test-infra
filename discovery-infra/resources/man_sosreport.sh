@@ -121,7 +121,7 @@ journalctl -u bootkube.service > ./var/log/bootkube.log 2>> error_log
 journalctl -u crio.service > ./var/log/crio.log 2>> error_log
 
 echo -e "Gathering Openshift data..."
-export KUBECONFIG=/etc/kubernetes/bootstrap-secrets/kubeconfig
+export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/localhost.kubeconfig
 oc describe clusteroperators &> clusteroperators
 oc describe clusterversion &> clusterversion
 oc describe nodes &> nodes
