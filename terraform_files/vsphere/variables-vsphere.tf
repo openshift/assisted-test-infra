@@ -37,6 +37,12 @@ variable "vsphere_network" {
   description = "vSphere publicly accessible network for cluster ingress and access. e.g VM Network"
 }
 
+variable "vsphere_folder" {
+  type        = string
+  description = "Create VSphere resources under this folder for easy management(For the CI). Folder name shouldn't end with a slash"
+  default = ""
+}
+
 ///////////
 // Test infra variables
 ///////////

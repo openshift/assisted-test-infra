@@ -13,12 +13,14 @@ class TerraformUtils:
     VAR_FILE = "terraform.tfvars.json"
     STATE_FILE = "terraform.tfstate"
 
-    def __init__(self, working_dir: str):
+    def __init__(self, working_dir: str, terraform_init: bool = True):
         logging.info("TF FOLDER %s ", working_dir)
         self.working_dir = working_dir
         self.var_file_path = os.path.join(working_dir, self.VAR_FILE)
         self.tf = Terraform(working_dir=working_dir, state=self.STATE_FILE, var_file=self.VAR_FILE)
-        self.init_tf()
+
+        if terraform_init:
+            self.init_tf()
 
     def init_tf(self) -> None:
         self.tf.cmd("init", raise_on_error=True)
@@ -48,6 +50,7 @@ class TerraformUtils:
     def set_and_apply(self, refresh: bool = True, **kwargs) -> None:
         defined_variables = self.select_defined_variables(**kwargs)
         self.change_variables(defined_variables)
+        self.init_tf()
         self.apply(refresh=refresh)
 
     def change_variables(self, variables: Dict[str, str], refresh: bool = True) -> None:
