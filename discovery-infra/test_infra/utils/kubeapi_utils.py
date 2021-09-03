@@ -1,11 +1,12 @@
 import functools
 import logging
 from ipaddress import IPv4Interface, IPv6Interface
+from typing import Union, List, Tuple
 
 import waiting
 from kubernetes.client import ApiException, CoreV1Api, CustomObjectsApi
 
-from test_infra import utils
+from test_infra import utils, consts
 from test_infra.helper_classes.kube_helpers import ClusterDeployment, ClusterImageSet, InfraEnv, NMStateConfig, Secret
 
 logger = logging.getLogger(__name__)
@@ -37,11 +38,11 @@ def get_ip_for_single_node(cluster_deployment, is_ipv4, timeout=300):
 
 
 def set_agents_hostnames(
-    cluster_deployment,
-    is_ipv4,
-    static_network_mode,
-    tf,
-    nodes_number,
+        cluster_deployment,
+        is_ipv4,
+        static_network_mode,
+        tf,
+        nodes_number,
 ):
     if is_ipv4 and not static_network_mode:
         return
@@ -54,6 +55,12 @@ def set_agents_hostnames(
     )
     for agent in cluster_deployment.wait_for_agents(nodes_number):
         set_agent_hostname(agent, nodes_details)
+
+
+def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]], tf_state):
+    nodes = utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
+    nodes.update(utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
+    return nodes
 
 
 def get_nodes_details(cluster_name, namespace, tf):
@@ -104,14 +111,14 @@ def suppress_not_found_error(fn):
 
 
 def delete_kube_api_resources_for_namespace(
-    kube_api_client,
-    name,
-    namespace,
-    *,
-    secret_name=None,
-    infraenv_name=None,
-    nmstate_name=None,
-    image_set_name=None,
+        kube_api_client,
+        name,
+        namespace,
+        *,
+        secret_name=None,
+        infraenv_name=None,
+        nmstate_name=None,
+        image_set_name=None,
 ):
     CoreV1Api.delete_namespaced_secret = suppress_not_found_error(
         fn=CoreV1Api.delete_namespaced_secret,

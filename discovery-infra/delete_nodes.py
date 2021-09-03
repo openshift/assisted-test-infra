@@ -10,6 +10,7 @@ from distutils.util import strtobool
 
 from kubernetes.client import CoreV1Api
 
+import deprecated_utils
 from test_infra import assisted_service_api, utils, consts, warn_deprecate
 from test_infra.controllers.nat_controller import NatController
 from test_infra.helper_classes.kube_helpers import create_kube_api_client
@@ -105,7 +106,7 @@ def _delete_virsh_resources(*filters):
     silent=True
 )
 def delete_clusters_from_all_namespaces():
-    for name, namespace in utils.get_all_namespaced_clusters():
+    for name, namespace in deprecated_utils.get_all_namespaced_clusters():
         delete_cluster(name, namespace)
 
 
