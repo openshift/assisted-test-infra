@@ -110,6 +110,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `DISABLED_HOST_VALIDATIONS`   | comma-separated list of validation IDs to be excluded from the host validation process. |
 | `SSO_URL`                     | URL used to fetch JWT tokens for assisted-service authentication |
 | `CHECK_CLUSTER_VERSION`       | If "True", the controller will wait for CVO to finish |
+| `OS_IMAGES`                   | A list of available OS images (one for each minor OCP version and CPU architecture) |
+| `RELEASE_IMAGES`              | A list of available release images (one for each minor OCP version and CPU architecture) |
 
 ## Installation parameters
 
@@ -135,8 +137,6 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `ROUTE53_SECRET`              | Amazon Route 53 secret to use for DNS domains registration. |
 | `WORKER_MEMORY`               | memory for worker VM, default: 8892MB |
 | `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub |
-| `OS_IMAGES`                   | A list of available OS images (one for each minor OCP version and CPU architecture) |
-| `RELEASE_IMAGES`              | A list of available release images (one for each minor OCP version and CPU architecture) |
 
 ## Instructions
 
