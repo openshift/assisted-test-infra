@@ -135,6 +135,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `ROUTE53_SECRET`              | Amazon Route 53 secret to use for DNS domains registration. |
 | `WORKER_MEMORY`               | memory for worker VM, default: 8892MB |
 | `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub |
+| `OS_IMAGES`                   | A list of available OS images (one for each minor OCP version and CPU architecture) |
+| `RELEASE_IMAGES`              | A list of available release images (one for each minor OCP version and CPU architecture) |
 
 ## Instructions
 
