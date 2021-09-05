@@ -6,14 +6,12 @@ volumes:
   # programs
   - /usr/local/oc:/usr/local/oc
   - /usr/local/bin/oc:/usr/local/bin/oc
-  - /usr/bin/minikube:/usr/bin/minikube
-  - /usr/local/bin/minikube:/usr/local/bin/minikube
+  - /usr/local/bin/k3d:/usr/local/bin/k3d
   - /usr/bin/kubectl:/usr/bin/kubectl
   - /usr/local/bin/kubectl:/usr/local/bin/kubectl
 
   # config
   - $HOME/.kube/:$HOME/.kube/
-  - $HOME/.minikube/:$HOME/.minikube/
   - $HOME/.ssh/:$HOME/.ssh/
 
   # logs

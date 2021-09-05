@@ -276,7 +276,6 @@ class TerraformController(LibvirtController):
     def _delete_virsh_resources(cls, *filters):
         logging.info('Deleting virsh resources (filters: %s)', filters)
         skip_list = virsh_cleanup.DEFAULT_SKIP_LIST
-        skip_list.extend(["minikube", "minikube-net"])
         virsh_cleanup.clean_virsh_resources(
             skip_list=skip_list,
             resource_filter=filters

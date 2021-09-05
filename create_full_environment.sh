@@ -34,11 +34,9 @@ echo "Creating image"
 make image_build
 echo "Done creating image"
 
-echo "Installing minikube and oc"
-scripts/install_minikube.sh
-echo "Done installing minikube and oc"
+echo "Installing cluster tools"
+scripts/install_cluster_tools.sh
+echo "Done installing cluster tools"
 
-if [ -z "${NO_MINIKUBE}" ]; then
-    echo "Install and start minikube"
-    make start_minikube
-fi
+echo "Install and start local cluster"
+make setup_cluster

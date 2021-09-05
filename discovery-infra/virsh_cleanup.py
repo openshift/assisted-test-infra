@@ -89,12 +89,8 @@ def clean_virsh_resources(skip_list, resource_filter):
 def main(p_args):
     skip_list = DEFAULT_SKIP_LIST
     resource_filter = []
-    if p_args.minikube:
-        resource_filter.append("minikube")
-    elif p_args.filter:
+    if p_args.filter:
         resource_filter = p_args.filter
-    else:
-        skip_list.extend(["minikube", "minikube-net"])
 
     clean_virsh_resources(skip_list, resource_filter)
 
@@ -104,15 +100,6 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-a", "--all", help="Clean all virsh resources", action="store_true"
-    )
-    group.add_argument(
-        "-m", "--minikube", help="Clean minikube resources", action="store_true"
-    )
-    group.add_argument(
-        "-sm",
-        "--skip-minikube",
-        help="Clean all but skip minikube resources",
-        action="store_true",
     )
     group.add_argument(
         "-f",

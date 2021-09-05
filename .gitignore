@@ -5,7 +5,6 @@ assisted-service
 .terraform
 reports/
 *__pycache__*
-minikube
 *.log
 **/RCS/**
 *~

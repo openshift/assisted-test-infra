@@ -142,7 +142,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service deploy_assisted_operator create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
+.PHONY: image_build run destroy setup_cluster delete_cluster run destroy deploy_assisted_service deploy_assisted_operator create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
 
 ###########
 # General #
@@ -159,7 +159,7 @@ destroy: destroy_nodes kill_port_forwardings delete_podman_localhost stop_load_b
 create_full_environment:
 	./create_full_environment.sh
 
-create_environment: image_build bring_assisted_service start_minikube
+create_environment: image_build bring_assisted_service setup_cluster
 
 image_build:
 	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
@@ -170,18 +170,16 @@ clean:
 	-find -name '*.pyc' -delete
 	-find -name '*pycache*' -delete
 
-############
-# Minikube #
-############
+###########
+# Cluster #
+###########
 
-start_minikube:
-	scripts/run_minikube.sh
-	eval $(minikube docker-env)
+setup_cluster:
+	./scripts/deploy_local_registry.sh
+	./scripts/deploy_local_cluster.sh
 
-delete_minikube:
-	skipper run python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
-	minikube delete --all
-	skipper run discovery-infra/virsh_cleanup.py -m
+delete_cluster:
+	./scripts/delete_local_cluster.sh
 
 ####################
 # Podman localhost #
@@ -260,7 +258,7 @@ redeploy_all_with_install: destroy run_full_flow_with_install
 set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
-deploy_ui: start_minikube
+deploy_ui: setup_cluster
 	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_ui.sh
 
 deploy_prometheus_ui:
@@ -402,7 +400,7 @@ deploy_assisted_operator: clear_operator
 # Inventory #
 #############
 
-deploy_assisted_service: start_minikube bring_assisted_service
+deploy_assisted_service: setup_cluster bring_assisted_service
 	mkdir -p assisted-service/build
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
@@ -420,7 +418,7 @@ deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring
 	make deploy_prometheus_ui
 
-delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forwardings
+delete_all_virsh_resources: destroy_all_nodes delete_cluster kill_all_port_forwardings
 	skipper run $(SKIPPER_PARAMS) 'discovery-infra/delete_nodes.py -ns $(NAMESPACE) -a'
 
 download_service_logs:

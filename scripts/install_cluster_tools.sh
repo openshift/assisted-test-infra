@@ -1,24 +1,18 @@
 #!/bin/bash
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
-function install_minikube() {
-    if [ "${DEPLOY_TARGET}" != "minikube" ]; then
-        echo "Skips installing minikube when deployment target is ${DEPLOY_TARGET}..."
-        return
-    fi
+function install_k3d() {
+    version="v4.4.7"
+    path=$(command -v k3d)
 
-    minikube_version=v1.20.0
-    minikube_path=$(command -v minikube)
-    if ! [ -x "$minikube_path" ]; then 
-        echo "Installing minikube..."
-        arkade get minikube --version=$minikube_version
-        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube /usr/local/bin/
-    elif [ "$(minikube version | grep version | awk -F'version: *' '{print $2}')" != "$minikube_version" ]; then
-        echo "Upgrading minikube..."
-        arkade get minikube --version=$minikube_version
-        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube $minikube_path
+    if ! [ -x "${path}" ]; then
+        echo "Installing k3d"
+        wget -q -O - https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${version} bash
+    elif [ "$(k3d version | grep 'k3d version' | awk '{print $3}')" != "${version}" ]; then
+        echo "Upgrading k3d"
+        wget -q -O - https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${version} bash
     else
-        echo "minikube is already installed and up-to-date"
+        echo "k3d is already installed and up-to-date"
     fi
 }
 
@@ -55,6 +49,6 @@ function install_arkade() {
 }
 
 install_arkade
-install_minikube
+install_k3d
 install_kubectl
 install_oc

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. Install CentOS8/RHEL8 on the assisted installer host<sup id="a1">[1](#f1)</sup>
-   - This host will run minikube and the UI for deploying OpenShift on Bare Metal
+   - This host will run a local cluster and the UI for deploying OpenShift on Bare Metal
 1. Setup DHCP/DNS records for the following OpenShift nodes and VIPs. List includes
    - Master nodes
    - Worker nodes
