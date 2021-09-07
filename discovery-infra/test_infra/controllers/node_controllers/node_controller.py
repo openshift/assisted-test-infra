@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Any, Tuple, Callable, TypeVar, SupportsAbs
+from typing import List, Any, Tuple, Callable, TypeVar, SupportsAbs, Union
 
 import libvirt
 
@@ -160,7 +160,7 @@ class NodeController(ABC):
     def set_ram_kib(self, node_name: str, ram_kib: int) -> None:
         pass
 
-    def get_machine_cidr(self) -> str:
+    def get_machine_cidr(self) -> Union[str, None]:
         # Default to auto resolve by the cluster. see cluster.get_machine_cidr
         return None
 
