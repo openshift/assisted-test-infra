@@ -40,6 +40,15 @@ class TestKubeAPISNO(BaseTest):
 
         yield cluster_config, tf_config
 
+    @pytest.fixture
+    def kube_test_configs_late_binding(self, infraenv_config, terraform_config):
+        terraform_config.masters_count = 1
+        terraform_config.workers_count = 0
+        terraform_config.master_vcpu = 8
+        terraform_config.master_memory = 35840
+
+        yield infraenv_config, terraform_config
+
     @JunitTestSuite()
     @pytest.mark.kube_api
     def test_kube_api_ipv4(self, kube_test_configs, kube_api_context, get_nodes):
