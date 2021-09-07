@@ -91,7 +91,7 @@ class InfraEnv(BaseCustomResource):
 
     def create(
         self,
-        cluster_deployment: ClusterDeployment,
+        cluster_deployment: Union[ClusterDeployment, None],
         secret: Secret,
         proxy: Optional[Proxy] = None,
         ignition_config_override: Optional[str] = None,
@@ -104,7 +104,6 @@ class InfraEnv(BaseCustomResource):
             "kind": "InfraEnv",
             "metadata": self.ref.as_dict(),
             "spec": {
-                "clusterRef": cluster_deployment.ref.as_dict(),
                 "pullSecretRef": secret.ref.as_dict(),
                 "nmStateConfigLabelSelector": {
                     "matchLabels": {f"{CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label or ""}
@@ -112,6 +111,11 @@ class InfraEnv(BaseCustomResource):
                 "ignitionConfigOverride": ignition_config_override or "",
             },
         }
+
+        # Late-binding infra-envs don't have a clusterRef in the beginning
+        if cluster_deployment is not None:
+            body["spec"]["clusterRef"] = cluster_deployment.ref.as_dict()
+
         spec = body["spec"]
         if proxy:
             spec["proxy"] = proxy.as_dict()
