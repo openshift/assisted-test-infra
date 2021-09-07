@@ -21,7 +21,7 @@ from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
-from tests.config import global_variables
+from tests.config import global_variables, InfraEnvConfig
 
 PROXY_PORT = 3129
 
@@ -66,6 +66,61 @@ class TestKubeAPISNO(BaseTest):
 
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
                       cluster_config, proxy_server, is_ipv4=False)
+
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_kube_api_late_binding_ipv4(self, kube_test_configs_late_binding, kube_api_context, get_nodes_infraenv):
+        infraenv_config, tf_config = kube_test_configs_late_binding
+        kube_api_test_late_binding(kube_api_context, get_nodes_infraenv(tf_config, infraenv_config), infraenv_config)
+
+
+def kube_api_test_late_binding(kube_api_context, nodes: Nodes, infraenv_config: InfraEnvConfig,
+                               *, is_ipv4=True):
+    infraenv_name = infraenv_config.entity_name.get()
+
+    secret = Secret(
+        kube_api_client=kube_api_context.api_client,
+        name=f'{infraenv_name}-secret',
+        namespace=global_variables.spoke_namespace,
+    )
+    secret.create(pull_secret=infraenv_config.pull_secret)
+
+    ignition_config_override = None
+
+    # TODO: Test with proxy
+    # TODO: Test with disconnected
+
+    infra_env = InfraEnv(
+        kube_api_client=kube_api_context.api_client,
+        name=f'{infraenv_name}-infra-env',
+        namespace=global_variables.spoke_namespace,
+    )
+    infra_env.create(
+        cluster_deployment=None,
+        ignition_config_override=ignition_config_override,
+        secret=secret,
+        proxy=None,
+        ssh_pub_key=infraenv_config.ssh_public_key,
+    )
+
+    infra_env.status()
+
+    download_iso_from_infra_env(infra_env, infraenv_config.iso_download_path)
+
+    logger.info('iso downloaded, starting nodes')
+    nodes.start_all()
+
+    logger.info('waiting for host agent')
+    agents = infra_env.wait_for_agents(len(nodes))
+    for agent in agents:
+        agent.approve()
+        set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
+
+    if len(nodes) == 1:
+        set_single_node_ip(infra_env, nodes, is_ipv4)
+
+    logger.info("Waiting for agent status verification")
+    Agent.wait_for_agents_to_be_ready_for_install(agents, len(nodes))
 
 
 def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
