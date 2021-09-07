@@ -351,10 +351,22 @@ class BaseTest:
                     cluster.delete()
 
     @pytest.fixture
-    def configs(self) -> Tuple[ClusterConfig, TerraformConfig]:
+    def infraenv_config(self) -> InfraEnvConfig:
+        yield InfraEnvConfig()
+
+    @pytest.fixture
+    def cluster_config(self) -> ClusterConfig:
+        yield ClusterConfig()
+
+    @pytest.fixture
+    def terraform_config(self) -> TerraformConfig:
+        yield TerraformConfig()
+
+    @pytest.fixture
+    def configs(self, cluster_config, terraform_config) -> Tuple[ClusterConfig, TerraformConfig]:
         """ Get configurations objects - while using configs fixture cluster and tf configs are the same
         For creating new Config object just call it explicitly e.g. ClusterConfig(masters_count=1) """
-        yield ClusterConfig(), TerraformConfig()
+        yield cluster_config, terraform_config
 
     @staticmethod
     def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
