@@ -4,9 +4,19 @@ from test_infra import consts
 
 class ClusterName(BaseName):
     def __init__(self, prefix: str = None, suffix: str = None):
-        super().__init__("CLUSTER_NAME", consts.CLUSTER_PREFIX, prefix=prefix, suffix=suffix)
+        super().__init__(
+            env_var="CLUSTER_NAME",
+            default_prefix=consts.CLUSTER_PREFIX,
+            prefix=prefix,
+            suffix=suffix,
+        )
 
 
 class InfraEnvName(BaseName):
     def __init__(self, prefix: str = None, suffix: str = None):
-        super().__init__("INFRA_ENV_NAME", consts.INFRA_ENV_PREFIX, prefix=prefix, suffix=suffix)
+        super().__init__(
+            env_var="INFRA_ENV_NAME",
+            default_prefix=consts.INFRA_ENV_PREFIX,
+            prefix=prefix,
+            suffix=suffix,
+        )
