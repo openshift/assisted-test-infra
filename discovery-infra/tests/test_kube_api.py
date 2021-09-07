@@ -124,7 +124,7 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
         ssh_pub_key=cluster_config.ssh_public_key,
     )
     infra_env.status()
-    download_iso_from_infra_env(infra_env, cluster_config)
+    download_iso_from_infra_env(infra_env, cluster_config.iso_download_path)
 
     logger.info('iso downloaded, starting nodes')
     nodes.start_all()
@@ -192,12 +192,12 @@ def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
     )
 
 
-def download_iso_from_infra_env(infra_env, cluster_config):
+def download_iso_from_infra_env(infra_env, iso_download_path):
     logger.info('getting iso download url')
     iso_download_url = infra_env.get_iso_download_url()
     logger.info('downloading iso from url=%s', iso_download_url)
-    download_iso(iso_download_url, cluster_config.iso_download_path)
-    assert os.path.isfile(cluster_config.iso_download_path)
+    download_iso(iso_download_url, iso_download_path)
+    assert os.path.isfile(iso_download_path)
 
 
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
