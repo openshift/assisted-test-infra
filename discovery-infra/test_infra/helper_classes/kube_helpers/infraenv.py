@@ -6,7 +6,7 @@ import yaml
 
 import waiting
 
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, List
 from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
@@ -17,8 +17,9 @@ from test_infra.consts.kube_api import (
     CRD_API_GROUP,
     CRD_API_VERSION,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
+    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT, DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
 )
+from .agent import Agent
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
 from .idict import IDict
@@ -317,6 +318,39 @@ class InfraEnv(BaseCustomResource):
             **kwargs,
         )
 
+    def list_agents(self) -> List[Agent]:
+        all_agents = self.crd_api.list_namespaced_custom_object(
+                group=CRD_API_GROUP,
+                version=CRD_API_VERSION,
+                plural=Agent._plural,
+                namespace=self.ref.namespace,
+            ).get("items", [])
+
+        return [
+            Agent(
+                kube_api_client=self.crd_api.api_client,
+                name=agent["metadata"]["name"],
+                namespace=agent["metadata"]["namespace"],
+            )
+            for agent in all_agents
+            if agent["metadata"]["labels"].get("infraenvs.agent-install.openshift.io") == self.ref.name
+        ]
+
+    def wait_for_agents(
+            self,
+            num_agents: int = 1,
+            timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+    ) -> List[Agent]:
+        def _wait_for_sufficient_agents_number() -> List[Agent]:
+            agents = self.list_agents()
+            return agents if len(agents) == num_agents else []
+
+        return waiting.wait(
+            _wait_for_sufficient_agents_number,
+            sleep_seconds=0.5,
+            timeout_seconds=timeout,
+            waiting_for=f"cluster {self.ref} to have {num_agents} agents",
+        )
 
 def deploy_default_infraenv(
     kube_api_client: ApiClient,
