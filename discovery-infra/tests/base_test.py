@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 import libvirt
+from kubernetes.client.exceptions import ApiException as K8sApiException
 import pytest
 import test_infra.utils as infra_utils
 import waiting
@@ -632,6 +633,7 @@ class BaseTest:
                     raise
 
             yield kube_api_context
+            
             if global_variables.test_teardown:
                 v1.delete_namespace(global_variables.spoke_namespace)
 
