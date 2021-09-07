@@ -30,6 +30,7 @@ from test_infra.controllers.node_controllers import (Node, NodeController,
 from test_infra.controllers.proxy_controller.proxy_controller import \
     ProxyController
 from test_infra.helper_classes.cluster import Cluster
+from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.helper_classes.config.vsphere_config import \
     VSphereControllerConfig
@@ -267,12 +268,12 @@ class BaseTest:
         yield cluster
 
     @pytest.fixture(scope="function")
-    def get_nodes(self) -> Callable[[TerraformConfig, ClusterConfig], Nodes]:
+    def get_nodes(self) -> Callable[[BaseTerraformConfig, ClusterConfig], Nodes]:
         """ Currently support only single instance of nodes """
         nodes_data = dict()
 
         @JunitTestCase()
-        def get_nodes_func(tf_config: BaseNodeConfig, cluster_config: ClusterConfig):
+        def get_nodes_func(tf_config: BaseTerraformConfig, cluster_config: ClusterConfig):
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
