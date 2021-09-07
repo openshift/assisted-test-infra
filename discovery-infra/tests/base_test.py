@@ -316,6 +316,55 @@ class BaseTest:
             if _net_asset:
                 _net_asset.release_all()
 
+    @pytest.fixture(scope="function")
+    def get_nodes_infraenv(self) -> Callable[[BaseTerraformConfig, InfraEnvConfig], Nodes]:
+        """ Currently support only single instance of nodes """
+        nodes_data = dict()
+
+        @JunitTestCase()
+        def get_nodes_func(tf_config: BaseTerraformConfig, infraenv_config: InfraEnvConfig):
+            if "nodes" in nodes_data:
+                return nodes_data["nodes"]
+
+            nodes_data["configs"] = infraenv_config, tf_config
+
+            net_asset = LibvirtNetworkAssets()
+            tf_config.net_asset = net_asset.get()
+            nodes_data["net_asset"] = net_asset
+
+            controller = TerraformController(tf_config, entity_config=infraenv_config)
+            nodes = Nodes(controller)
+            nodes_data["nodes"] = nodes
+
+            nodes.prepare_nodes()
+
+            interfaces = BaseTest.nat_interfaces(tf_config)
+            nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
+            nat.add_nat_rules()
+
+            nodes_data["nat"] = nat
+
+            return nodes
+
+        yield get_nodes_func
+
+        _nodes: Nodes = nodes_data.get("nodes")
+        _infraenv_config, _tf_config = nodes_data.get("configs")
+        _nat: NatController = nodes_data.get("nat")
+        _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
+
+        try:
+            if _nodes and global_variables.test_teardown:
+                logging.info('--- TEARDOWN --- node controller\n')
+                _nodes.destroy_all_nodes()
+                logging.info(f'--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n')
+                infra_utils.run_command(f"rm -f {_infraenv_config.iso_download_path}", shell=True)
+                self.teardown_nat(_nat)
+
+        finally:
+            if _net_asset:
+                _net_asset.release_all()
+
     @classmethod
     def nat_interfaces(cls, config: TerraformConfig) -> Tuple[str, str]:
         return config.net_asset.libvirt_network_if, config.net_asset.libvirt_secondary_network_if
