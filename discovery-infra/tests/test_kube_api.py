@@ -15,6 +15,8 @@ from test_infra.helper_classes.kube_helpers import (Agent, AgentClusterInstall,
                                                     ClusterImageSet,
                                                     ClusterImageSetReference,
                                                     InfraEnv, Proxy, Secret)
+
+from test_infra.helper_classes.nodes import Nodes
 from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
@@ -57,7 +59,7 @@ class TestKubeAPISNO(BaseTest):
                       cluster_config, proxy_server, is_ipv4=False)
 
 
-def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
+def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = cluster_config.cluster_name.get()
 
     # TODO resolve it from the service if the node controller doesn't have this information
