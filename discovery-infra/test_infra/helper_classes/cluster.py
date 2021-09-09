@@ -720,15 +720,15 @@ class Cluster:
                consts.Platforms.NONE
 
     @JunitTestCase()
-    def prepare_for_installation(self, static_network_config=None, **kwargs):
+    def prepare_for_installation(self, **kwargs):
         self.update_config(**kwargs)
         log.info(f"Preparing for installation with cluster configurations: cluster_config={self._config}")
         self.nodes.controller.log_configuration()
 
         if self._config.download_image:
-            if static_network_config:
-                static_network_config = static_network. \
-                    generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
+            if self._config.is_static_ip:
+                static_network_config = \
+                    static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
             else:
                 static_network_config = None
 

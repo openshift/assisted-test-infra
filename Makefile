@@ -340,9 +340,6 @@ deploy_nodes_with_install: start_load_balancer
 		$(MAKE) set_dns; \
 	fi
 
-deploy_static_network_config_nodes_with_install:
-	make deploy_nodes_with_install IS_STATIC_IP="true"
-
 deploy_nodes: start_load_balancer
 	TEST_TEARDOWN=no TEST=./discovery-infra/tests/test_targets.py TEST_FUNC=test_target_deploy_nodes $(MAKE) test
 

@@ -6,7 +6,6 @@ import distutils.util
 import ipaddress
 import json
 import os
-from assisted_service_client.models import inventory
 
 import yaml
 import dns.resolver
@@ -15,7 +14,7 @@ from assisted_service_client.rest import ApiException
 from netaddr import IPNetwork
 
 import test_infra.utils.waiting
-from deprecated_utils import get_network_leases, wait_till_nodes_are_ready, get_libvirt_nodes_mac_role_ip_and_name, \
+from deprecated_utils import wait_till_nodes_are_ready, get_libvirt_nodes_mac_role_ip_and_name, \
     get_libvirt_nodes_macs
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
 from test_infra.consts import resources

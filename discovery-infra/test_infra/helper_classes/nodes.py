@@ -18,7 +18,7 @@ class NodeMapping:
 
 
 class Nodes:
-    DEFAULT_STATIC_IP_CONFIG = False
+    DEFAULT_STATIC_IPS_CONFIG = False
 
     def __init__(self, node_controller: NodeController):
         self.controller = node_controller
@@ -88,12 +88,9 @@ class Nodes:
     def notify_iso_ready(self):
         self.controller.notify_iso_ready()
 
-    def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IP_CONFIG):
-        if is_static_ip:
-            skip_ips = False
-        else:
-            skip_ips = True
-        self.run_for_all_nodes("start", skip_ips)
+    def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IPS_CONFIG):
+        check_ips = not is_static_ip  # current check depends on reading DHCP leases
+        self.run_for_all_nodes("start", check_ips)
 
     def start_given(self, nodes):
         self.run_for_given_nodes(nodes, "start")
