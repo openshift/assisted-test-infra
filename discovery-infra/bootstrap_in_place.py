@@ -7,6 +7,8 @@ import sys
 
 import waiting
 import yaml
+
+from deprecated_utils import extract_installer
 from test_infra import utils, consts, warn_deprecate
 from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.controllers.node_controllers.terraform_controller import TerraformController
