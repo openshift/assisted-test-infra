@@ -95,6 +95,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `AUTH_TYPE`                   | configure the type of authentication assisted-service will use, default: none |
 | `IPv4`                        | Boolean value indicating if IPv4 is enabled. Default is yes |
 | `IPv6`                        | Boolean value indicating if IPv6 is enabled. Default is no |
+| `STATIC_IPS`                  | Boolean value indicating if static networking should be enabled. Default is no |
 | `OCM_BASE_URL`                | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/ |
 | `OCM_CLIENT_ID`               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
 | `OCM_CLIENT_SECRET`           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |

@@ -455,7 +455,13 @@ class LibvirtController(NodeController, ABC):
 
     @staticmethod
     def _get_domain_ips_and_macs(domain):
-        interfaces = domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+        interfaces = dict(
+            # getting all DHCP leases IPs
+            **domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE),
+
+            # getting static IPs via ARP
+            **domain.interfaceAddresses(libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
+        )
         ips = []
         macs = []
         if interfaces:

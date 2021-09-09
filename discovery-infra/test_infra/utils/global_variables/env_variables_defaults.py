@@ -36,7 +36,7 @@ class _EnvVariablesDefaults(ABC):
     service_network_cidr: str = get_env("SERVICE_CIDR", env_defaults.DEFAULT_SERVICE_CIDR)
     cluster_network_cidr: str = get_env("CLUSTER_CIDR", env_defaults.DEFAULT_CLUSTER_CIDR)
     cluster_network_host_prefix: int = int(get_env("HOST_PREFIX", env_defaults.DEFAULT_HOST_PREFIX))
-    is_static_ip: bool = bool(strtobool(get_env("IS_STATIC_IP", default=str(env_defaults.DEFAULT_IS_STATIC_IP))))
+    is_static_ip: bool = bool(strtobool(get_env("STATIC_IPS", default=str(env_defaults.DEFAULT_STATIC_IPS))))
     iso_image_type: str = get_env("ISO_IMAGE_TYPE", env_defaults.DEFAULT_IMAGE_TYPE)
     worker_vcpu: str = get_env("WORKER_CPU", resources.DEFAULT_WORKER_CPU)
     master_vcpu: str = get_env("MASTER_CPU", resources.DEFAULT_MASTER_CPU)
