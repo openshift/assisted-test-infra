@@ -2,6 +2,8 @@ import os
 import logging
 from typing import Optional
 from junit_report import JunitTestCase
+
+import test_infra.utils.waiting
 from test_infra import consts, utils
 from test_infra.assisted_service_api import InventoryClient
 from test_infra.helper_classes.config import BaseInfraEnvConfig
@@ -77,7 +79,7 @@ class InfraEnv:
         statuses = [consts.NodesStatus.KNOWN_UNBOUND]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT_UNBOUND)
-        utils.wait_till_all_infra_env_hosts_are_in_status(
+        test_infra.utils.waiting.wait_till_all_infra_env_hosts_are_in_status(
             client=self.api_client,
             infra_env_id=self.id,
             nodes_count=nodes_count,

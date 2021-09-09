@@ -13,6 +13,10 @@ import dns.resolver
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from netaddr import IPNetwork
+
+import test_infra.utils.waiting
+from deprecated_utils import get_network_leases, wait_till_nodes_are_ready, get_libvirt_nodes_mac_role_ip_and_name, \
+    get_libvirt_nodes_macs
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
 from test_infra.consts import resources
 from test_infra.utils import kubeapi_utils
@@ -233,7 +237,7 @@ def wait_until_nodes_are_registered_rest_api(
     # TODO: Check for only new nodes
     if not inventory_client:
         # We will wait for leases only if only nodes are created without connection to s
-        utils.wait_till_nodes_are_ready(
+        wait_till_nodes_are_ready(
             nodes_count=nodes_number,
             network_name=nodes_details["libvirt_network_name"],
         )
@@ -257,7 +261,7 @@ def wait_until_nodes_are_registered_rest_api(
         nat_controller = NatController(input_interfaces, args.ns_index)
         nat_controller.add_nat_rules()
 
-    utils.wait_till_all_hosts_are_in_status(
+    test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
         client=inventory_client,
         cluster_id=cluster.id,
         nodes_count=nodes_number,
@@ -457,13 +461,13 @@ def nodes_flow(
 
     if client:
         cluster_info = client.cluster_get(cluster.id)
-        macs = utils.get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
+        macs = get_libvirt_nodes_macs(nodes_details["libvirt_network_name"])
         if is_none_platform_mode():
-            macs += utils.get_libvirt_nodes_macs(nodes_details["libvirt_secondary_network_name"])
+            macs += get_libvirt_nodes_macs(nodes_details["libvirt_secondary_network_name"])
 
         if not (cluster_info.api_vip and cluster_info.ingress_vip):
             if not args.kube_api:
-                utils.wait_till_hosts_with_macs_are_in_status(
+                test_infra.utils.waiting.wait_till_hosts_with_macs_are_in_status(
                     client=client,
                     cluster_id=cluster.id,
                     macs=macs,
@@ -533,7 +537,7 @@ def nodes_flow(
             lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
         if not args.kube_api:
-            utils.wait_till_hosts_with_macs_are_in_status(
+            test_infra.utils.waiting.wait_till_hosts_with_macs_are_in_status(
                 client=client,
                 cluster_id=cluster.id,
                 macs=macs,
@@ -639,8 +643,8 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
 
     # don't set roles in bip role
     if not machine_net.has_ip_v6:
-        libvirt_nodes = utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
-        libvirt_nodes.update(utils.get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
+        libvirt_nodes = get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
+        libvirt_nodes.update(get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
         if static_network_mode:
             log.info("Setting hostnames when running in static network config mode")
             update_hostnames = True

@@ -215,7 +215,7 @@ def execute_ibip_flow(args):
     controller = create_controller(net_asset)
     setup_files_and_folders(args, net_asset, controller.cluster_name)
 
-    utils.extract_installer(openshift_release_image, BUILD_DIR)
+    extract_installer(openshift_release_image, BUILD_DIR)
     installer_generate(openshift_release_image)
 
     download_live_image(f"{BUILD_DIR}/installer-image.iso")

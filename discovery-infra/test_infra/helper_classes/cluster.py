@@ -16,6 +16,7 @@ from assisted_service_client.models.operator_type import OperatorType
 from junit_report import JunitTestCase
 from netaddr import IPAddress, IPNetwork
 
+import test_infra.utils.waiting
 from test_infra import consts, utils
 from test_infra.assisted_service_api import InventoryClient
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
@@ -143,7 +144,7 @@ class Cluster:
 
     def wait_until_hosts_are_disconnected(self, nodes_count: int = None):
         statuses = [consts.NodesStatus.DISCONNECTED]
-        utils.wait_till_all_hosts_are_in_status(
+        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             nodes_count=nodes_count or self.nodes.nodes_count,
@@ -156,7 +157,7 @@ class Cluster:
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
             statuses.append(consts.NodesStatus.INSUFFICIENT)
-        utils.wait_till_all_hosts_are_in_status(
+        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             nodes_count=nodes_count or self.nodes.nodes_count,
@@ -398,7 +399,7 @@ class Cluster:
         )
 
     def wait_for_installing_in_progress(self, nodes_count: int = MINIMUM_NODES_TO_WAIT):
-        utils.wait_till_at_least_one_host_is_in_status(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS],
@@ -407,7 +408,7 @@ class Cluster:
         )
 
     def wait_for_write_image_to_disk(self, nodes_count: int = MINIMUM_NODES_TO_WAIT):
-        utils.wait_till_at_least_one_host_is_in_stage(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.WRITE_IMAGE_TO_DISK, consts.HostsProgressStages.REBOOTING],
@@ -415,7 +416,7 @@ class Cluster:
         )
 
     def wait_for_host_status(self, statuses, fall_on_error_status=True, nodes_count: int = MINIMUM_NODES_TO_WAIT):
-        utils.wait_till_at_least_one_host_is_in_status(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=statuses,
@@ -424,7 +425,7 @@ class Cluster:
         )
 
     def wait_for_specific_host_status(self, host, statuses, nodes_count: int = MINIMUM_NODES_TO_WAIT):
-        utils.wait_till_specific_host_is_in_status(
+        test_infra.utils.waiting.wait_till_specific_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             host_name=host.get("requested_hostname"),
@@ -434,7 +435,7 @@ class Cluster:
 
     def wait_for_specific_host_stage(self, host: dict, stage: str, inclusive: bool = True):
         index = consts.all_host_stages.index(stage)
-        utils.wait_till_specific_host_is_in_stage(
+        test_infra.utils.waiting.wait_till_specific_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             host_name=host.get("requested_hostname"),
@@ -458,7 +459,7 @@ class Cluster:
         )
 
     def wait_for_at_least_one_host_to_boot_during_install(self, nodes_count: int = MINIMUM_NODES_TO_WAIT):
-        utils.wait_till_at_least_one_host_is_in_stage(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.REBOOTING],
@@ -467,7 +468,7 @@ class Cluster:
 
     def wait_for_non_bootstrap_masters_to_reach_configuring_state_during_install(self, num_masters: int = None):
         num_masters = num_masters if num_masters is not None else self.nodes.masters_count
-        utils.wait_till_at_least_one_host_is_in_stage(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.CONFIGURING],
@@ -476,7 +477,7 @@ class Cluster:
 
     def wait_for_non_bootstrap_masters_to_reach_joined_state_during_install(self, num_masters: int = None):
         num_masters = num_masters if num_masters is not None else self.nodes.masters_count
-        utils.wait_till_at_least_one_host_is_in_stage(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=[consts.HostsProgressStages.JOINED],
@@ -485,7 +486,7 @@ class Cluster:
 
     def wait_for_hosts_stage(self, stage: str, inclusive: bool = True):
         index = consts.all_host_stages.index(stage)
-        utils.wait_till_at_least_one_host_is_in_stage(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1:],
@@ -562,7 +563,7 @@ class Cluster:
         self.nodes.run_for_given_nodes_by_cluster_hosts(cluster_hosts=hosts_to_reboot, func_name="reset")
 
     def wait_for_one_host_to_be_in_wrong_boot_order(self, fall_on_error_status=True):
-        utils.wait_till_at_least_one_host_is_in_status(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
@@ -572,7 +573,7 @@ class Cluster:
         )
 
     def wait_for_at_least_one_host_to_be_in_reboot_timeout(self, fall_on_error_status=True, nodes_count=1):
-        utils.wait_till_at_least_one_host_is_in_status(
+        test_infra.utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
@@ -585,7 +586,7 @@ class Cluster:
     def wait_for_hosts_to_be_in_wrong_boot_order(
             self, nodes_count, timeout=consts.PENDING_USER_ACTION_TIMEOUT, fall_on_error_status=True
     ):
-        utils.wait_till_all_hosts_are_in_status(
+        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
@@ -642,7 +643,7 @@ class Cluster:
     def wait_for_hosts_to_install(
             self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True, nodes_count: int = None
     ):
-        utils.wait_till_all_hosts_are_in_status(
+        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLED],

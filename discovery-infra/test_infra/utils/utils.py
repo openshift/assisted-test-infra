@@ -2,7 +2,6 @@
 import datetime
 import errno
 import ipaddress
-import itertools
 import json
 import logging
 import os
@@ -14,16 +13,14 @@ import subprocess
 import tempfile
 import time
 import warnings
-import xml.dom.minidom as md
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
 from functools import wraps
 from pathlib import Path
 from string import ascii_lowercase
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 import filelock
-import libvirt
 import oc_utils
 import requests
 import test_infra.consts as consts
@@ -34,9 +31,6 @@ from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
 from requests.models import HTTPError
 from retry import retry
-from test_infra.utils import logs_utils
-
-conn = libvirt.open("qemu:///system")
 
 
 def scan_for_free_port(starting_port: int, step: int = 200):
@@ -91,68 +85,6 @@ def run_command_with_output(command, env=None):
         raise subprocess.CalledProcessError(p.returncode, p.args)
 
 
-def wait_till_nodes_are_ready(nodes_count, network_name):
-    log.info("Wait till %s nodes will be ready and have ips", nodes_count)
-    try:
-        waiting.wait(
-            lambda: len(get_network_leases(network_name)) >= nodes_count,
-            timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * nodes_count,
-            sleep_seconds=10,
-            waiting_for="Nodes to have ips",
-        )
-        log.info("All nodes have booted and got ips")
-    except BaseException:
-        log.error(
-            "Not all nodes are ready. Current dhcp leases are %s",
-            get_network_leases(network_name),
-        )
-        raise
-
-
-# Require wait_till_nodes_are_ready has finished and all nodes are up
-def get_libvirt_nodes_mac_role_ip_and_name(network_name):
-    nodes_data = {}
-    try:
-        leases = get_network_leases(network_name)
-        for lease in leases:
-            nodes_data[lease["mac"]] = {
-                "ip": lease["ipaddr"],
-                "name": lease["hostname"],
-                "role": consts.NodeRoles.WORKER
-                if consts.NodeRoles.WORKER in lease["hostname"]
-                else consts.NodeRoles.MASTER,
-            }
-        return nodes_data
-    except BaseException:
-        log.error(
-            "Failed to get nodes macs from libvirt. Output is %s",
-            get_network_leases(network_name),
-        )
-        raise
-
-
-def get_libvirt_nodes_macs(network_name):
-    return [lease["mac"] for lease in get_network_leases(network_name)]
-
-
-def are_all_libvirt_nodes_in_cluster_hosts(client, cluster_id, network_name):
-    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    return all(
-        mac.lower() in map(str.lower, itertools.chain(*hosts_macs.values()))
-        for mac in get_libvirt_nodes_macs(network_name)
-    )
-
-
-def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
-    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    num_macs = len([mac for mac in hosts_macs if mac != ""])
-    return num_macs >= num_nodes
-
-
-def get_cluster_hosts_with_mac(client, cluster_id, macs):
-    return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
-
-
 def to_utc(timestr):
     return time.mktime(datetime.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
 
@@ -193,192 +125,6 @@ def are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_er
         ],
     )
     return False
-
-
-def wait_till_hosts_with_macs_are_in_status(
-    client,
-    cluster_id,
-    macs,
-    statuses,
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
-):
-    log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
-
-    waiting.wait(
-        lambda: are_hosts_in_status(
-            hosts=get_cluster_hosts_with_mac(client, cluster_id, macs),
-            nodes_count=len(macs),
-            statuses=statuses,
-            fall_on_error_status=fall_on_error_status,
-        ),
-        timeout_seconds=timeout,
-        sleep_seconds=interval,
-        waiting_for="Nodes to be in of the statuses %s" % statuses,
-    )
-
-
-def wait_till_all_hosts_are_in_status(
-    client,
-    cluster_id,
-    nodes_count,
-    statuses,
-    status_info="",
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
-):
-    log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
-
-    waiting.wait(
-        lambda: are_hosts_in_status(
-            hosts=client.get_cluster_hosts(cluster_id),
-            nodes_count=nodes_count,
-            statuses=statuses,
-            status_info=status_info,
-            fall_on_error_status=fall_on_error_status,
-        ),
-        timeout_seconds=timeout,
-        sleep_seconds=interval,
-        waiting_for="Nodes to be in of the statuses %s" % statuses,
-    )
-
-
-def wait_till_all_infra_env_hosts_are_in_status(
-        client,
-        infra_env_id,
-        nodes_count,
-        statuses,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-        fall_on_error_status=True,
-        interval=5,
-):
-    log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
-
-    waiting.wait(
-        lambda: are_hosts_in_status(
-            hosts=client.get_infra_env_hosts(infra_env_id),
-            nodes_count=nodes_count,
-            statuses=statuses,
-            fall_on_error_status=fall_on_error_status,
-        ),
-        timeout_seconds=timeout,
-        sleep_seconds=interval,
-        waiting_for="Nodes to be in of the statuses %s" % statuses,
-    )
-
-
-def wait_till_at_least_one_host_is_in_status(
-    client,
-    cluster_id,
-    statuses,
-    status_info="",
-    nodes_count=1,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
-):
-    log.info("Wait till 1 node is in one of the statuses %s", statuses)
-
-    waiting.wait(
-        lambda: are_hosts_in_status(
-            hosts=client.get_cluster_hosts(cluster_id),
-            nodes_count=nodes_count,
-            statuses=statuses,
-            status_info=status_info,
-            fall_on_error_status=fall_on_error_status,
-        ),
-        timeout_seconds=timeout,
-        sleep_seconds=interval,
-        waiting_for="Node to be in of the statuses %s" % statuses,
-    )
-
-
-def wait_till_specific_host_is_in_status(
-    client,
-    cluster_id,
-    host_name,
-    nodes_count,
-    statuses,
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
-    fall_on_error_status=True,
-    interval=5,
-):
-    log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
-
-    waiting.wait(
-        lambda: are_hosts_in_status(
-            hosts=[client.get_host_by_name(cluster_id, host_name)],
-            nodes_count=nodes_count,
-            statuses=statuses,
-            fall_on_error_status=fall_on_error_status,
-        ),
-        timeout_seconds=timeout,
-        sleep_seconds=interval,
-        waiting_for="Node to be in of the statuses %s" % statuses,
-    )
-
-
-def wait_till_at_least_one_host_is_in_stage(
-    client,
-    cluster_id,
-    stages,
-    nodes_count=1,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
-    interval=5,
-):
-    log.info(f"Wait till {nodes_count} node is in stage {stages}")
-    try:
-        waiting.wait(
-            lambda: are_host_progress_in_stage(
-                client.get_cluster_hosts(cluster_id),
-                stages,
-                nodes_count,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="Node to be in of the stage %s" % stages,
-        )
-    except BaseException:
-        hosts = client.get_cluster_hosts(cluster_id)
-        log.error(
-            f"All nodes stages: "
-            f"{[host['progress']['current_stage'] for host in hosts]} "
-            f"when waited for {stages}"
-        )
-        raise
-
-
-def wait_till_specific_host_is_in_stage(
-    client,
-    cluster_id: str,
-    host_name: str,
-    stages: List[str],
-    nodes_count: int = 1,
-    timeout: int = consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
-    interval: int = 5,
-):
-    log.info(f"Wait till {host_name} host is in stage {stages}")
-    try:
-        waiting.wait(
-            lambda: are_host_progress_in_stage(
-                [client.get_host_by_name(cluster_id, host_name)],
-                stages,
-                nodes_count,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="Node to be in of the stage %s" % stages,
-        )
-    except BaseException:
-        hosts = [client.get_host_by_name(cluster_id, host_name)]
-        log.error(
-            f"All nodes stages: "
-            f"{[host['progress']['current_stage'] for host in hosts]} "
-            f"when waited for {stages}"
-        )
-        raise
 
 
 def are_host_progress_in_stage(hosts, stages, nodes_count=1):
@@ -542,31 +288,10 @@ def is_assisted_service_reachable(url):
 
 
 def get_tf_folder(cluster_name, namespace=None):
+    warnings.warn("get_tf_folder is deprecated. Use utils.TerraformControllerUtil.get_folder instead.",
+                  DeprecationWarning)
     folder_name = f"{cluster_name}__{namespace}" if namespace else f"{cluster_name}"
     return os.path.join(consts.TF_FOLDER, folder_name)
-
-
-def get_all_namespaced_clusters():
-    if not os.path.isdir(consts.TF_FOLDER):
-        return
-
-    for dirname in os.listdir(consts.TF_FOLDER):
-        res = get_name_and_namespace_from_dirname(dirname)
-        if not res:
-            continue
-        name, namespace = res
-        yield name, namespace
-
-
-def get_name_and_namespace_from_dirname(dirname):
-    if "__" in dirname:
-        return dirname.rsplit("__", 1)
-
-    log.warning(
-        "Unable to extract cluster name and namespace from directory name %s. "
-        "Directory name convention must be <cluster_name>:<namespace>",
-        dirname,
-    )
 
 
 def on_exception(*, message=None, callback=None, silent=False, errors=(Exception,)):
@@ -607,43 +332,6 @@ def file_lock_context(filepath="/tmp/discovery-infra.lock", timeout=300):
         lock.release()
 
 
-def _get_hosts_from_network(net):
-    desc = md.parseString(net.XMLDesc())
-    try:
-        hosts = (
-            desc.getElementsByTagName("network")[0]
-            .getElementsByTagName("ip")[0]
-            .getElementsByTagName("dhcp")[0]
-            .getElementsByTagName("host")
-        )
-        return list(
-            map(
-                lambda host: {
-                    "mac": host.getAttribute("mac"),
-                    "ipaddr": host.getAttribute("ip"),
-                    "hostname": host.getAttribute("name"),
-                },
-                hosts,
-            )
-        )
-    except IndexError:
-        return []
-
-
-def _merge(leases, hosts):
-    lips = [ls["ipaddr"] for ls in leases]
-    ret = leases + [h for h in hosts if h["ipaddr"] not in lips]
-    return ret
-
-
-def get_network_leases(network_name):
-    with file_lock_context():
-        net = conn.networkLookupByName(network_name)
-        leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
-        hosts = _get_hosts_from_network(net)
-        return _merge(leases, hosts)
-
-
 def create_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 
@@ -663,6 +351,9 @@ def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]],
 
 
 def extract_nodes_from_tf_state(tf_state, network_names, role):
+    """
+    :tags: QE
+    """
     data = {}
     for domains in [r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and role in r["name"]]:
         for d in domains:
@@ -822,15 +513,6 @@ def pull_secret_file():
         yield f.name
 
 
-def extract_installer(release_image, dest):
-    logging.info("Extracting installer from %s to %s", release_image, dest)
-    with pull_secret_file() as pull_secret:
-        run_command(
-            f"oc adm release extract --registry-config '{pull_secret}'"
-            f" --command=openshift-install --to={dest} {release_image}"
-        )
-
-
 def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
     """
     Update names and/or roles of the hosts in a cluster from a dictionary of libvirt nodes.
@@ -911,26 +593,6 @@ def fetch_url(url, timeout=60, max_retries=5):
         return response.content
     except (RequestException, HTTPError) as err:
         raise Exception(f"Failed to GET: {url} ({err})")
-
-
-# Deprecated functions
-
-
-def get_logs_collected_at(client, cluster_id):
-    warnings.warn(
-        "get_logs_collected_at is deprecated and will be deleted soon." "Use test_infra.utils.logs_utils instead",
-        DeprecationWarning,
-    )
-    logs_utils.get_logs_collected_at(client, cluster_id)
-
-
-def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_logs_only=False):
-    warnings.warn(
-        "wait_for_logs_complete is deprecated and will be deleted soon."
-        "Use test_infra.utils.wait_for_logs_complete instead",
-        DeprecationWarning,
-    )
-    return logs_utils.wait_for_logs_complete(client, cluster_id, timeout, interval, check_host_logs_only)
 
 
 def run_marked_fixture(old_value, marker_name, request):

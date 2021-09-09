@@ -115,10 +115,7 @@ class TerraformController(LibvirtController):
         logging.info('Start running terraform')
         self.tf.apply()
         if self.params.running:
-            utils.wait_till_nodes_are_ready(
-                nodes_count=self.params.worker_count + self.params.master_count,
-                network_name=self.params.libvirt_network_name
-            )
+            self.wait_till_nodes_are_ready(network_name=self.params.libvirt_network_name)
 
     # Filling tfvars json files with terraform needed variables to spawn vms
     def _fill_tfvars(self, running=True):

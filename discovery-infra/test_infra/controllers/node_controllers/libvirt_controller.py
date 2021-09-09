@@ -13,12 +13,14 @@ from xml.dom import minidom
 import libvirt
 import waiting
 
+from logger import log
 from test_infra.helper_classes.config import BaseClusterConfig, BaseEntityConfig, BaseInfraEnvConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra import consts, utils
 from test_infra.controllers.node_controllers.disk import Disk, DiskSourceType
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
+import xml.dom.minidom as md
 
 
 class LibvirtController(NodeController, ABC):
@@ -152,7 +154,51 @@ class LibvirtController(NodeController, ABC):
         return self._list_disks(node)
 
     def list_leases(self, network_name):
-        return utils.get_network_leases(network_name)
+        with utils.file_lock_context():
+            net = self.libvirt_connection.networkLookupByName(network_name)
+            leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
+            hosts = self._get_hosts_from_network(net)
+            return leases + [h for h in hosts if h["ipaddr"] not in [ls["ipaddr"] for ls in leases]]
+
+    @staticmethod
+    def _get_hosts_from_network(net):
+        desc = md.parseString(net.XMLDesc())
+        try:
+            hosts = (
+                desc.getElementsByTagName("network")[0]
+                    .getElementsByTagName("ip")[0]
+                    .getElementsByTagName("dhcp")[0]
+                    .getElementsByTagName("host")
+            )
+            return list(
+                map(
+                    lambda host: {
+                        "mac": host.getAttribute("mac"),
+                        "ipaddr": host.getAttribute("ip"),
+                        "hostname": host.getAttribute("name"),
+                    },
+                    hosts,
+                )
+            )
+        except IndexError:
+            return []
+
+    def wait_till_nodes_are_ready(self, network_name):
+        log.info("Wait till %s nodes will be ready and have ips", self._config.nodes_count)
+        try:
+            waiting.wait(
+                lambda: len(self.list_leases(network_name)) >= self._config.nodes_count,
+                timeout_seconds=consts.NODES_REGISTERED_TIMEOUT * self._config.nodes_count,
+                sleep_seconds=10,
+                waiting_for="Nodes to have ips",
+            )
+            log.info("All nodes have booted and got ips")
+        except BaseException:
+            log.error(
+                "Not all nodes are ready. Current dhcp leases are %s",
+                self.list_leases(network_name),
+            )
+            raise
 
     def shutdown_node(self, node_name):
         logging.info("Going to shutdown %s", node_name)

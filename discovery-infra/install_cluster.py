@@ -5,6 +5,8 @@ import argparse
 import os
 
 import waiting
+
+import test_infra.utils.waiting
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import terraform_utils
@@ -41,7 +43,7 @@ def _install_cluster(client, cluster):
         statuses=[consts.ClusterStatus.INSTALLING],
         break_statuses=[consts.ClusterStatus.ERROR]
     )
-    utils.wait_till_all_hosts_are_in_status(
+    test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
         client=client,
         cluster_id=cluster.id,
         nodes_count=len(cluster.hosts),
@@ -56,7 +58,7 @@ def _install_cluster(client, cluster):
 def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
     # TODO: Change host validation for only previous known hosts
     try:
-        utils.wait_till_all_hosts_are_in_status(
+        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
             client=client,
             cluster_id=cluster.id,
             nodes_count=len(cluster.hosts),
