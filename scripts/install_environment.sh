@@ -3,6 +3,7 @@ set -euo pipefail
 
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
+readonly PODMAN_MINIMUM_VERSION="3.2.3"
 
 function version_is_greater() {
     if [ "$(head -n1 <(printf '%s\n' "$2" "$1" | sort -V))" = "$2" ]; then
@@ -80,15 +81,24 @@ function is_libvirtd_tcp_socket_enabled_and_running() {
     fi
 }
 
+function install_podman(){
+  sudo systemctl disable --now podman.socket || true
+  sudo rm -rf /run/user/${UID}/podman
+  sudo rm -rf /run/podman
+  sudo dnf install podman-${PODMAN_MINIMUM_VERSION} -y
+  sudo systemctl enable --now podman.socket
+  systemctl --user enable --now podman.socket
+  sudo loginctl enable-linger $USER
+}
+
 function install_runtime_container() {
     echo "Installing container runtime package"
     if ! [ -x "$(command -v docker)" ] && ! [ -x "$(command -v podman)" ]; then
-        sudo dnf install podman -y
+        install_podman
     elif [ -x "$(command -v podman)" ]; then
         current_version="$(head -n1 <(podman version) | awk '{print $2}')"
-        minimum_version="1.6.4"
-        if ! version_is_greater "$current_version" "$minimum_version"; then
-            sudo dnf install podman-$minimum_version -y
+        if ! version_is_greater "$current_version" "$PODMAN_MINIMUM_VERSION"; then
+            install_podman
         fi
     else
         echo "docker or podman is already installed"
@@ -108,7 +118,7 @@ function install_packages() {
 
 function install_skipper() {
     echo "Installing skipper and adding ~/.local/bin to PATH"
-    pip3 install strato-skipper==1.29.2 --user
+    pip3 install strato-skipper==1.32.0 --user
 
     #grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
     #export PATH="$PATH:~/.local/bin"

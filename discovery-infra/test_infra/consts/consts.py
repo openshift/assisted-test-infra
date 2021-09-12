@@ -54,7 +54,6 @@ TEST_SECONDARY_NETWORK = "test-infra-secondary-network-"
 DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
 WAIT_FOR_BM_API = 15 * MINUTE
 NAMESPACE_POOL_SIZE = 15
-PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_BASE_DNS_DOMAIN = "redhat.com"
 DEFAULT_NAMESPACE = 'assisted-installer'

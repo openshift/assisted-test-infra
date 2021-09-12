@@ -43,13 +43,7 @@ if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
         --dest ./assisted-service/data/default_ocp_versions.json --ocp-override ${OPENSHIFT_INSTALL_RELEASE_IMAGE}
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
-        if [ -x "$(command -v docker)" ]; then
-            make -C assisted-service/ generate-configuration
-        else
-            ln -s $(which podman) /usr/bin/docker
-            make -C assisted-service/ generate-configuration
-            rm -f /usr/bin/docker
-        fi
+         make -C assisted-service/ generate-configuration
     fi
 fi
 
