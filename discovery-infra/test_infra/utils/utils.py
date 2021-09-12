@@ -398,7 +398,7 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
 
 def run_container(container_name, image, flags=None, command=""):
     logging.info(f"Running Container {container_name}")
-    run_container_cmd = f"podman {consts.PODMAN_FLAGS} run --name {container_name}"
+    run_container_cmd = f"podman-remote run --name {container_name}"
 
     flags = flags or []
     for flag in flags:
@@ -412,7 +412,7 @@ def run_container(container_name, image, flags=None, command=""):
 def remove_running_container(container_name):
     logging.info(f"Removing Container {container_name}")
     container_rm_cmd = (
-        f"podman {consts.PODMAN_FLAGS} stop {container_name} && podman" f" {consts.PODMAN_FLAGS} rm {container_name}"
+        f"podman-remote stop {container_name} && podman-remote rm {container_name}"
     )
     run_command(container_rm_cmd, shell=True)
 
