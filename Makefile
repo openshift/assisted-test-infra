@@ -3,13 +3,8 @@
 #############
 
 SHELL=/bin/sh
-CONTAINER_COMMAND := $(shell scripts/utils.sh get_container_runtime_command)
-
-ifneq (,$(findstring podman,$(CONTAINER_COMMAND)))
-    PULL_PARAM = --pull-always
-else
-    PULL_PARAM = --pull
-endif
+CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
+PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
 
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 REPORTS = $(ROOT_DIR)/reports
@@ -204,16 +199,16 @@ delete_podman_localhost:
 # so it will be used by the python code to fill up load balancing definitions
 start_load_balancer:
 	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
-		id=`$(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"`; \
+		id=`podman ps --quiet --filter "name=load_balancer"`; \
 		( test -z "$$id" && echo "Staring load balancer ..." && \
-		$(CONTAINER_COMMAND) run -d --rm --net=host --name=load_balancer \
+		podman run -d --rm --net=host --name=load_balancer \
 			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
 			load_balancer:latest ) || ! test -z "$$id"; \
 	fi
 
 stop_load_balancer:
-	@id=`$(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"`; \
-	test ! -z "$$id"  && $(CONTAINER_COMMAND) rm -f load_balancer; \
+	@id=`podman ps --quiet --filter "name=load_balancer"`; \
+	test ! -z "$$id"  && podman rm -f load_balancer; \
 	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/stream.d/*.conf >& /dev/null || /bin/true
 
 
