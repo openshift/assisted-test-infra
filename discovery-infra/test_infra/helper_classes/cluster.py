@@ -1017,7 +1017,11 @@ class Cluster:
         cidrs = set()
 
         for host in hosts:
-            ips = host.ipv6_addresses() if self.nodes.is_ipv6() else host.ipv4_addresses()
+            ips = []
+            if self.nodes.is_ipv4:
+                ips += host.ipv4_addresses()
+            if self.nodes.is_ipv6:
+                ips += host.ipv6_addresses()
 
             for host_ip in ips:
                 cidr = network_utils.get_cidr_by_interface(host_ip)
@@ -1031,7 +1035,11 @@ class Cluster:
 
         for cidr in cluster_cidrs:
             for host in hosts:
-                interfaces = host.ipv6_addresses() if self.nodes.is_ipv6() else host.ipv4_addresses()
+                interfaces = []
+                if self.nodes.is_ipv4:
+                    interfaces += host.ipv4_addresses()
+                if self.nodes.is_ipv6:
+                    interfaces += host.ipv6_addresses()
 
                 if not network_utils.any_interface_in_cidr(interfaces, cidr):
                     break

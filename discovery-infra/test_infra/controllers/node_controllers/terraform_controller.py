@@ -217,17 +217,17 @@ class TerraformController(LibvirtController):
 
     @utils.on_exception(message='Failed to run terraform delete', silent=True)
     def _create_address_list(self, num, starting_ip_addr):
-        if self.is_ipv6():
+        if self.is_ipv6 and not self.is_ipv4:
             return utils.create_empty_nested_list(num)
         return utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
     def get_machine_cidr(self):
-        if self.is_ipv6():
+        if self.is_ipv6 and not self.is_ipv4:
             return self._config.net_asset.machine_cidr6
         return self._config.net_asset.machine_cidr
 
     def get_provisioning_cidr(self):
-        if self.is_ipv6():
+        if self.is_ipv6 and not self.is_ipv4:
             return self._config.net_asset.provisioning_cidr6
         return self._config.net_asset.provisioning_cidr
 
@@ -331,18 +331,6 @@ class TerraformController(LibvirtController):
         warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
                       "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
         self._entity_config.base_dns_domain = cluster_domain
-
-    @property
-    def ipv6(self):
-        warnings.warn("ipv6 will soon be deprecated. Use controller.config.is_ipv6 instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        return self.is_ipv6()
-
-    @ipv6.setter
-    def ipv6(self, ipv6):
-        warnings.warn("ipv6 will soon be deprecated. Use controller.config.is_ipv6 instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
-        self._config.is_ipv6 = ipv6
 
     @property
     def image_path(self):

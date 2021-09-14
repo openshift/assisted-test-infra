@@ -48,7 +48,8 @@ class _EnvVariablesDefaults(ABC):
     user_managed_networking: bool = env_defaults.DEFAULT_USER_MANAGED_NETWORKING
     high_availability_mode: str = env_defaults.DEFAULT_HIGH_AVAILABILITY_MODE
     download_image: bool = bool(strtobool(get_env("DOWNLOAD_IMAGE", str(env_defaults.DEFAULT_DOWNLOAD_IMAGE))))
-    is_ipv6: bool = bool(strtobool(get_env("IS_IPV6", get_env("IPv6", str(env_defaults.DEFAULT_IS_IPV6)))))
+    is_ipv4: bool = bool(strtobool(get_env("IPv4", str(env_defaults.DEFAULT_IS_IPV4))))
+    is_ipv6: bool = bool(strtobool(get_env("IPv6", str(env_defaults.DEFAULT_IS_IPV6))))
     cluster_id: str = get_env("CLUSTER_ID")
     additional_ntp_source: str = get_env("ADDITIONAL_NTP_SOURCE", env_defaults.DEFAULT_ADDITIONAL_NTP_SOURCE)
     network_name: str = get_env("NETWORK_NAME", env_defaults.DEFAULT_NETWORK_NAME)

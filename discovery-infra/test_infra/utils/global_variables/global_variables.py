@@ -12,14 +12,14 @@ from test_infra.utils.global_variables.env_variables_defaults import \
 
 _triggers = frozendict(
     {
-        ("platform", consts.Platforms.NONE): {
+        (("platform", consts.Platforms.NONE),): {
             "user_managed_networking": True,
             "vip_dhcp_allocation": False,
         },
-        ("platform", consts.Platforms.VSPHERE): {
+        (("platform", consts.Platforms.VSPHERE),): {
             "user_managed_networking": False,
         },
-        ("masters_count", 1): {
+        (("masters_count", 1),): {
             "workers_count": 0,
             "nodes_count": 1,
             "high_availability_mode": consts.HighAvailabilityMode.NONE,
@@ -29,8 +29,7 @@ _triggers = frozendict(
             "master_memory": resources.DEFAULT_MASTER_SNO_MEMORY,
             "master_vcpu": resources.DEFAULT_MASTER_SNO_CPU,
         },
-        ("is_ipv6", True): {
-            "is_ipv4": False,
+        (("is_ipv4", False), ("is_ipv6", True),): {
             "service_network_cidr": consts.DEFAULT_IPV6_SERVICE_CIDR,
             "cluster_network_cidr": consts.DEFAULT_IPV6_CLUSTER_CIDR,
             "cluster_network_host_prefix": consts.DEFAULT_IPV6_HOST_PREFIX,
@@ -53,12 +52,20 @@ class GlobalVariables(_EnvVariablesDefaults):
                 client=self.get_api_client()
         self._set("openshift_version", utils.get_openshift_version(allow_default=True, client=client))
 
-        for (env, expected), values in _triggers.items():
-            if getattr(self, env) == expected:
-                for k, v in values.items():
-                    self._set(k, v)
-                self._triggered.append(env)
-                log.info(f"{env.upper()} is triggered. Updating global variables: {values}")
+        for conditions, values in _triggers.items():
+            assert isinstance(conditions, tuple) and isinstance(conditions[0], tuple), f"Key {conditions} must be tuple of tuples"
+            if all(map(lambda condition: self.is_set(condition[0], condition[1]), conditions)):
+                self._handle_trigger(conditions, values)
+
+    def is_set(self, var, expected):
+        return getattr(self, var) == expected
+
+    def _handle_trigger(self, conditions, values):
+        for k, v in values.items():
+            self._set(k, v)
+
+        self._triggered.append(conditions)
+        log.info(f"{conditions} is triggered. Updating global variables: {values}")
 
     def __getattribute__(self, item):
         try:

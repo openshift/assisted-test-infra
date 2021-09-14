@@ -10,6 +10,7 @@ from .base_config import _BaseConfig
 @dataclass
 class BaseNodeConfig(_BaseConfig, ABC):
     platform: str = None
+    is_ipv4: bool = None
     is_ipv6: bool = None
     bootstrap_in_place: bool = None
     private_ssh_key_path: Path = None

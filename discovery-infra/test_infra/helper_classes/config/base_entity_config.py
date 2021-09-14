@@ -20,6 +20,7 @@ class BaseEntityConfig(_BaseConfig, ABC):
     download_image: bool = None
     platform: str = None
     is_static_ip: bool = None
+    is_ipv4: bool = None
     is_ipv6: bool = None
     base_dns_domain: str = None
     entity_name: BaseName = None

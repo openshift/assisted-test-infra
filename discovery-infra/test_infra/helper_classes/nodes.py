@@ -43,6 +43,14 @@ class Nodes:
             self._nodes = self.controller.list_nodes()
         return self._nodes
 
+    @property
+    def is_ipv4(self):
+        return self.controller.is_ipv4
+
+    @property
+    def is_ipv6(self):
+        return self.controller.is_ipv6
+
     def __getitem__(self, i):
         return self.nodes[i]
 
@@ -178,6 +186,3 @@ class Nodes:
 
     def set_single_node_ip(self, ip):
         self.controller.set_single_node_ip(ip)
-
-    def is_ipv6(self):
-        return self.controller.is_ipv6()

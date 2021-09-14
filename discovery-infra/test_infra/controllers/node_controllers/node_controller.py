@@ -29,6 +29,14 @@ class NodeController(ABC):
     def masters_count(self):
         return self._config.masters_count
 
+    @property
+    def is_ipv4(self):
+        return self._config.is_ipv4
+
+    @property
+    def is_ipv6(self):
+        return self._config.is_ipv6
+
     @abstractmethod
     def list_nodes(self) -> List[Node]:
         pass
@@ -199,6 +207,3 @@ class NodeController(ABC):
 
     def set_dns_for_user_managed_network(self) -> None:
         pass
-
-    def is_ipv6(self):
-        return self._config.is_ipv6
