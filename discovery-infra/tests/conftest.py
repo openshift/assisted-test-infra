@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 import pytest
+from _pytest.nodes import Item
 from test_infra import utils
 from tests.config import global_variables
 
@@ -25,7 +26,7 @@ def get_available_openshift_versions() -> List[str]:
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(item: Item, call):
     outcome = yield
     result = outcome.get_result()
 

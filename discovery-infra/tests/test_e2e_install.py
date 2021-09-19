@@ -2,10 +2,10 @@ import time
 from contextlib import suppress
 
 import pytest
-from _pytest.fixtures import FixtureLookupError
+from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitTestSuite
 
-from test_infra.consts import OperatorStatus
+from test_infra.consts import NetworkType, OperatorStatus
 
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig
@@ -15,14 +15,13 @@ from tests.conftest import get_available_openshift_versions, global_variables
 class TestInstall(BaseTest):
 
     @pytest.fixture
-    def new_cluster_configuration(self, request):
-        # Overriding the default BaseTest.new_cluster_configuration fixture to set the openshift version.
+    def new_cluster_configuration(self, request: FixtureRequest):
+        # Overriding the default BaseTest.new_cluster_configuration fixture to set custom configs.
         config = ClusterConfig()
 
-        with suppress(FixtureLookupError):
-            # Resolving the param value.
-            version = request.getfixturevalue("openshift_version")
-            config.openshift_version = version
+        for fixture_name in ["openshift_version", "network_type", "is_static_ip"]:
+            with suppress(FixtureLookupError):
+                setattr(config, fixture_name, request.getfixturevalue(fixture_name))
 
         return config
 
@@ -36,6 +35,13 @@ class TestInstall(BaseTest):
     @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())
     def test_infra_env_install(self, infra_env, openshift_version):
         infra_env.prepare_infraenv()
+
+    @JunitTestSuite()
+    @pytest.mark.parametrize("is_static_ip", [False , True])
+    @pytest.mark.parametrize("network_type", [NetworkType.OpenShiftSDN, NetworkType.OVNKubernetes])
+    def test_networking(self, cluster, network_type, is_static_ip):
+        cluster.prepare_for_installation()
+        cluster.start_install_and_wait_for_installed()
 
     @JunitTestSuite()
     @pytest.mark.parametrize("operators", sorted(global_variables.get_api_client().get_supported_operators()))
