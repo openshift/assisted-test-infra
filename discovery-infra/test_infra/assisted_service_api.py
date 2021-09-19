@@ -21,7 +21,7 @@ from urllib3 import HTTPResponse
 
 
 class InventoryClient(object):
-    def __init__(self, inventory_url: str, offline_token: Union[str, None], pull_secret: str):
+    def __init__(self, inventory_url: str, offline_token: Optional[str], pull_secret: str):
         self.inventory_url = inventory_url
         configs = Configuration()
         configs.host = self.get_host(configs)
@@ -42,7 +42,7 @@ class InventoryClient(object):
         return parsed_host._replace(netloc=parsed_inventory_url.netloc, scheme=parsed_inventory_url.scheme).geturl()
 
     @classmethod
-    def set_config_auth(cls, c: Configuration, offline_token: Union[str, None]) -> None:
+    def set_config_auth(cls, c: Configuration, offline_token: Optional[str]) -> None:
         if not offline_token:
             log.info("OFFLINE_TOKEN not set, skipping authentication headers")
             return

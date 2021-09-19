@@ -6,7 +6,7 @@ import yaml
 
 import waiting
 
-from typing import Optional, Union, Dict, List
+from typing import Optional, Union, List
 from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
@@ -92,7 +92,7 @@ class InfraEnv(BaseCustomResource):
 
     def create(
         self,
-        cluster_deployment: Union[ClusterDeployment, None],
+        cluster_deployment: Optional[ClusterDeployment],
         secret: Secret,
         proxy: Optional[Proxy] = None,
         ignition_config_override: Optional[str] = None,
