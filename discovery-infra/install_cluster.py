@@ -216,7 +216,7 @@ def run_installation_flow_kube_api(
         agent.approve()
     
     log.info("Waiting for agent status verification")
-    Agent.wait_for_agents_to_install(agents, nodes_number)
+    Agent.wait_for_agents_to_install(agents)
 
     log.info("Waiting for installation to start")
     agent_cluster_install.wait_to_be_installing()

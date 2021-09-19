@@ -14,6 +14,8 @@ from _pytest.fixtures import FixtureRequest
 from assisted_service_client.rest import ApiException
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
+from kubernetes.client import CoreV1Api
+from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 from paramiko import SSHException
 from test_infra import consts
@@ -21,18 +23,26 @@ from test_infra.assisted_service_api import InventoryClient
 from test_infra.consts import OperatorResource
 from test_infra.controllers.iptables import IptableRule
 from test_infra.controllers.nat_controller import NatController
-from test_infra.controllers.node_controllers import Node, NodeController, TerraformController, VSphereController
-from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
+from test_infra.controllers.node_controllers import (Node, NodeController,
+                                                     TerraformController,
+                                                     VSphereController)
+from test_infra.controllers.proxy_controller.proxy_controller import \
+    ProxyController
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
-from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
+from test_infra.helper_classes.config.vsphere_config import \
+    VSphereControllerConfig
 from test_infra.helper_classes.infra_env import InfraEnv
-from test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
+from test_infra.helper_classes.kube_helpers import (KubeAPIContext,
+                                                    create_kube_api_client)
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.utils import utils
-from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
-from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
+from test_infra.utils.operators_utils import (parse_olm_operators_from_env,
+                                              resource_param)
+
+from tests.config import (ClusterConfig, InfraEnvConfig, TerraformConfig,
+                          global_variables)
 
 
 class BaseTest:
@@ -604,7 +614,26 @@ class BaseTest:
         kube_api_context = KubeAPIContext(kube_api_client, clean_on_exit=global_variables.test_teardown)
 
         with kube_api_context:
+            v1 = CoreV1Api(kube_api_client)
+
+            try:
+                v1.create_namespace(body={
+                    "apiVersion": "v1",
+                    "kind": "Namespace",
+                    "metadata": {
+                        "name": global_variables.spoke_namespace,
+                        "labels": {
+                            "name": global_variables.spoke_namespace,
+                        },
+                    },
+                })
+            except K8sApiException as e:
+                if e.status != 409:
+                    raise
+
             yield kube_api_context
+            if global_variables.test_teardown:
+                v1.delete_namespace(global_variables.spoke_namespace)
 
     @pytest.fixture(scope="function")
     def update_olm_config(self) -> Callable:

@@ -1,18 +1,16 @@
 import base64
-import errno
 import json
 import logging
 import os
-import socket
 import uuid
 
 import openshift as oc
 import pytest
+from download_logs import collect_debug_info_from_cluster
 from junit_report import JunitTestSuite
 from netaddr import IPNetwork
-
-from test_infra import utils, consts
-from test_infra.helper_classes.kube_helpers import (AgentClusterInstall,
+from test_infra import consts, utils
+from test_infra.helper_classes.kube_helpers import (Agent, AgentClusterInstall,
                                                     ClusterDeployment,
                                                     ClusterImageSet,
                                                     ClusterImageSetReference,
@@ -22,7 +20,6 @@ from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
 from tests.config import global_variables
-from download_logs import collect_debug_info_from_cluster
 
 PROXY_PORT = 3129
 
@@ -61,7 +58,7 @@ class TestKubeAPISNO(BaseTest):
 
 
 def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
-    cluster_name = cluster_config.cluster_name
+    cluster_name = cluster_config.cluster_name.get()
 
     # TODO resolve it from the service if the node controller doesn't have this information
     #  (please see cluster.get_machine_cidr())
@@ -70,17 +67,20 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
     agent_cluster_install = AgentClusterInstall(
         kube_api_client=kube_api_context.api_client,
         name=f'{cluster_name}-agent-cluster-install',
+        namespace=global_variables.spoke_namespace,
     )
 
     secret = Secret(
         kube_api_client=kube_api_context.api_client,
         name=f'{cluster_name}-secret',
+        namespace=global_variables.spoke_namespace,
     )
     secret.create(pull_secret=cluster_config.pull_secret)
 
     cluster_deployment = ClusterDeployment(
         kube_api_client=kube_api_context.api_client,
         name=cluster_name,
+        namespace=global_variables.spoke_namespace,
     )
     cluster_deployment.create(
         agent_cluster_install_ref=agent_cluster_install.ref,
@@ -114,6 +114,7 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
     infra_env = InfraEnv(
         kube_api_client=kube_api_context.api_client,
         name=f'{cluster_name}-infra-env',
+        namespace=global_variables.spoke_namespace,
     )
     infra_env.create(
         cluster_deployment=cluster_deployment,
@@ -129,12 +130,16 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
     nodes.start_all()
 
     logger.info('waiting for host agent')
-    for agent in cluster_deployment.wait_for_agents(len(nodes)):
+    agents = cluster_deployment.wait_for_agents(len(nodes))
+    for agent in agents:
         agent.approve()
         set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
 
     if len(nodes) == 1:
         set_single_node_ip(cluster_deployment, nodes, is_ipv4)
+
+    logger.info("Waiting for agent status verification")
+    Agent.wait_for_agents_to_install(agents)
 
     agent_cluster_install.wait_to_be_ready(True)
 
@@ -214,7 +219,7 @@ def set_agent_hostname(node, agent, is_ipv4):
 
 def get_ca_bundle_from_hub():
     os.environ['KUBECONFIG'] = global_variables.installer_kubeconfig_path
-    with oc.project(global_variables.namespace):
+    with oc.project(global_variables.spoke_namespace):
         ca_config_map_objects = oc.selector('configmap/registry-ca').objects()
         assert len(ca_config_map_objects) > 0
         ca_config_map_object = ca_config_map_objects[0]
