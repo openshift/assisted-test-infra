@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 import libvirt
+from kubernetes.client.exceptions import ApiException as K8sApiException
 import pytest
 import test_infra.utils as infra_utils
 import waiting
@@ -29,6 +30,7 @@ from test_infra.controllers.node_controllers import (Node, NodeController,
 from test_infra.controllers.proxy_controller.proxy_controller import \
     ProxyController
 from test_infra.helper_classes.cluster import Cluster
+from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.helper_classes.config.vsphere_config import \
     VSphereControllerConfig
@@ -266,12 +268,12 @@ class BaseTest:
         yield cluster
 
     @pytest.fixture(scope="function")
-    def get_nodes(self) -> Callable[[TerraformConfig, ClusterConfig], Nodes]:
+    def get_nodes(self) -> Callable[[BaseTerraformConfig, ClusterConfig], Nodes]:
         """ Currently support only single instance of nodes """
         nodes_data = dict()
 
         @JunitTestCase()
-        def get_nodes_func(tf_config: BaseNodeConfig, cluster_config: ClusterConfig):
+        def get_nodes_func(tf_config: BaseTerraformConfig, cluster_config: ClusterConfig):
             if "nodes" in nodes_data:
                 return nodes_data["nodes"]
 
@@ -314,6 +316,55 @@ class BaseTest:
             if _net_asset:
                 _net_asset.release_all()
 
+    @pytest.fixture(scope="function")
+    def get_nodes_infraenv(self) -> Callable[[BaseTerraformConfig, InfraEnvConfig], Nodes]:
+        """ Currently support only single instance of nodes """
+        nodes_data = dict()
+
+        @JunitTestCase()
+        def get_nodes_func(tf_config: BaseTerraformConfig, infraenv_config: InfraEnvConfig):
+            if "nodes" in nodes_data:
+                return nodes_data["nodes"]
+
+            nodes_data["configs"] = infraenv_config, tf_config
+
+            net_asset = LibvirtNetworkAssets()
+            tf_config.net_asset = net_asset.get()
+            nodes_data["net_asset"] = net_asset
+
+            controller = TerraformController(tf_config, entity_config=infraenv_config)
+            nodes = Nodes(controller)
+            nodes_data["nodes"] = nodes
+
+            nodes.prepare_nodes()
+
+            interfaces = BaseTest.nat_interfaces(tf_config)
+            nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
+            nat.add_nat_rules()
+
+            nodes_data["nat"] = nat
+
+            return nodes
+
+        yield get_nodes_func
+
+        _nodes: Nodes = nodes_data.get("nodes")
+        _infraenv_config, _tf_config = nodes_data.get("configs")
+        _nat: NatController = nodes_data.get("nat")
+        _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
+
+        try:
+            if _nodes and global_variables.test_teardown:
+                logging.info('--- TEARDOWN --- node controller\n')
+                _nodes.destroy_all_nodes()
+                logging.info(f'--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n')
+                infra_utils.run_command(f"rm -f {_infraenv_config.iso_download_path}", shell=True)
+                self.teardown_nat(_nat)
+
+        finally:
+            if _net_asset:
+                _net_asset.release_all()
+
     @classmethod
     def nat_interfaces(cls, config: TerraformConfig) -> Tuple[str, str]:
         return config.net_asset.libvirt_network_if, config.net_asset.libvirt_secondary_network_if
@@ -349,10 +400,22 @@ class BaseTest:
                     cluster.delete()
 
     @pytest.fixture
-    def configs(self) -> Tuple[ClusterConfig, TerraformConfig]:
+    def infraenv_config(self) -> InfraEnvConfig:
+        yield InfraEnvConfig()
+
+    @pytest.fixture
+    def cluster_config(self) -> ClusterConfig:
+        yield ClusterConfig()
+
+    @pytest.fixture
+    def terraform_config(self) -> TerraformConfig:
+        yield TerraformConfig()
+
+    @pytest.fixture
+    def configs(self, cluster_config, terraform_config) -> Tuple[ClusterConfig, TerraformConfig]:
         """ Get configurations objects - while using configs fixture cluster and tf configs are the same
         For creating new Config object just call it explicitly e.g. ClusterConfig(masters_count=1) """
-        yield ClusterConfig(), TerraformConfig()
+        yield cluster_config, terraform_config
 
     @staticmethod
     def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
@@ -632,6 +695,7 @@ class BaseTest:
                     raise
 
             yield kube_api_context
+            
             if global_variables.test_teardown:
                 v1.delete_namespace(global_variables.spoke_namespace)
 

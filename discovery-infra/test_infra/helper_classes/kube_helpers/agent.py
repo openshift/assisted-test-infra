@@ -115,19 +115,25 @@ class Agent(BaseCustomResource):
         self.patch(approved=True)
         logger.info("approved agent %s", self.ref)
 
-    @staticmethod
-    def wait_for_agents_to_install(agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
-        Agent.wait_till_all_agents_are_in_status(
-            agents=agents,
-            statusType=consts.AgentStatus.VALIDATED,
-            timeout=timeout,
-        )
-        Agent.wait_till_all_agents_are_in_status(
-            agents=agents,
-            statusType=consts.AgentStatus.REQUIREMENTS_MET,
-            timeout=timeout,
-        )
-        Agent.wait_till_all_agents_are_in_status(
+    @classmethod
+    def wait_for_agents_to_be_ready_for_install(cls, agents: List["Agent"], nodes_number: int, timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
+        for status_type in (
+            consts.AgentStatus.SPEC_SYNCED,
+            consts.AgentStatus.CONNECTED,
+            consts.AgentStatus.REQUIREMENTS_MET,
+            consts.AgentStatus.VALIDATED,
+        ):
+            cls.wait_till_all_agents_are_in_status(
+                agents=agents,
+                nodes_count=nodes_number,
+                statusType=status_type,
+                timeout=timeout,
+            )
+
+    @classmethod
+    def wait_for_agents_to_install(cls, agents: List["Agent"], nodes_number: int, timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
+        cls.wait_for_agents_to_be_ready_for_install(agents=agents, nodes_number=nodes_number, timeout=timeout)
+        cls.wait_till_all_agents_are_in_status(
             agents=agents,
             statusType=consts.AgentStatus.INSTALLED,
             timeout=timeout,

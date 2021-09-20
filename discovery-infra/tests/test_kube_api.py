@@ -15,11 +15,13 @@ from test_infra.helper_classes.kube_helpers import (Agent, AgentClusterInstall,
                                                     ClusterImageSet,
                                                     ClusterImageSetReference,
                                                     InfraEnv, Proxy, Secret)
+
+from test_infra.helper_classes.nodes import Nodes
 from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
-from tests.config import global_variables
+from tests.config import global_variables, InfraEnvConfig
 
 PROXY_PORT = 3129
 
@@ -37,6 +39,15 @@ class TestKubeAPISNO(BaseTest):
         tf_config.master_memory = 35840
 
         yield cluster_config, tf_config
+
+    @pytest.fixture
+    def kube_test_configs_late_binding(self, infraenv_config, terraform_config):
+        terraform_config.masters_count = 1
+        terraform_config.workers_count = 0
+        terraform_config.master_vcpu = 8
+        terraform_config.master_memory = 35840
+
+        yield infraenv_config, terraform_config
 
     @JunitTestSuite()
     @pytest.mark.kube_api
@@ -56,8 +67,63 @@ class TestKubeAPISNO(BaseTest):
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
                       cluster_config, proxy_server, is_ipv4=False)
 
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_kube_api_late_binding_ipv4(self, kube_test_configs_late_binding, kube_api_context, get_nodes_infraenv):
+        infraenv_config, tf_config = kube_test_configs_late_binding
+        kube_api_test_late_binding(kube_api_context, get_nodes_infraenv(tf_config, infraenv_config), infraenv_config)
 
-def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
+
+def kube_api_test_late_binding(kube_api_context, nodes: Nodes, infraenv_config: InfraEnvConfig,
+                               *, is_ipv4=True):
+    infraenv_name = infraenv_config.entity_name.get()
+
+    secret = Secret(
+        kube_api_client=kube_api_context.api_client,
+        name=f'{infraenv_name}-secret',
+        namespace=global_variables.spoke_namespace,
+    )
+    secret.create(pull_secret=infraenv_config.pull_secret)
+
+    ignition_config_override = None
+
+    # TODO: Test with proxy
+    # TODO: Test with disconnected
+
+    infra_env = InfraEnv(
+        kube_api_client=kube_api_context.api_client,
+        name=f'{infraenv_name}-infra-env',
+        namespace=global_variables.spoke_namespace,
+    )
+    infra_env.create(
+        cluster_deployment=None,
+        ignition_config_override=ignition_config_override,
+        secret=secret,
+        proxy=None,
+        ssh_pub_key=infraenv_config.ssh_public_key,
+    )
+
+    infra_env.status()
+
+    download_iso_from_infra_env(infra_env, infraenv_config.iso_download_path)
+
+    logger.info('iso downloaded, starting nodes')
+    nodes.start_all()
+
+    logger.info('waiting for host agent')
+    agents = infra_env.wait_for_agents(len(nodes))
+    for agent in agents:
+        agent.approve()
+        set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
+
+    if len(nodes) == 1:
+        set_single_node_ip(infra_env, nodes, is_ipv4)
+
+    logger.info("Waiting for agent status verification")
+    Agent.wait_for_agents_to_be_ready_for_install(agents, len(nodes))
+
+
+def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = cluster_config.cluster_name.get()
 
     # TODO resolve it from the service if the node controller doesn't have this information
@@ -124,7 +190,7 @@ def kube_api_test(kube_api_context, nodes, cluster_config, proxy_server=None, *,
         ssh_pub_key=cluster_config.ssh_public_key,
     )
     infra_env.status()
-    download_iso_from_infra_env(infra_env, cluster_config)
+    download_iso_from_infra_env(infra_env, cluster_config.iso_download_path)
 
     logger.info('iso downloaded, starting nodes')
     nodes.start_all()
@@ -192,12 +258,12 @@ def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
     )
 
 
-def download_iso_from_infra_env(infra_env, cluster_config):
+def download_iso_from_infra_env(infra_env, iso_download_path):
     logger.info('getting iso download url')
     iso_download_url = infra_env.get_iso_download_url()
     logger.info('downloading iso from url=%s', iso_download_url)
-    download_iso(iso_download_url, cluster_config.iso_download_path)
-    assert os.path.isfile(cluster_config.iso_download_path)
+    download_iso(iso_download_url, iso_download_path)
+    assert os.path.isfile(iso_download_path)
 
 
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):

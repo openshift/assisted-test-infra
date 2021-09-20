@@ -136,6 +136,8 @@ class HostsProgressStages:
 
 
 class AgentStatus:
+    SPEC_SYNCED = "SpecSynced"
+    CONNECTED = "Connected"
     VALIDATED = "Validated"
     INSTALLED = "Installed"
     REQUIREMENTS_MET = "RequirementsMet"

@@ -433,13 +433,15 @@ def get_kubeconfig_path(cluster_name: str) -> str:
 
 def get_default_openshift_version(client=None) -> str:
     if client:
+        logging.info("Using client to get default openshift version")
         ocp_versions_dict = client.get_openshift_versions()
     else:
+        logging.info(f"Reading {consts.OCP_VERSIONS_JSON_PATH} to get default openshift version")
         with open(consts.OCP_VERSIONS_JSON_PATH, 'r') as f:
             ocp_versions_dict = json.load(f)
 
     d = [k for k, v in ocp_versions_dict.items() if v.get('default', False)]
-    assert len(d) == 1, "There should be only one default version"
+    assert len(d) == 1, f"There should be exactly one default version {ocp_versions_dict}"
     return d[0]
 
 
