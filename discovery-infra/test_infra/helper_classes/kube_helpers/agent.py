@@ -140,7 +140,7 @@ class Agent(BaseCustomResource):
         logger.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
 
     @classmethod
-    def wait_for_agents_to_be_ready_for_install(cls, agents: List["Agent"], nodes_number: int, timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
+    def wait_for_agents_to_be_ready_for_install(cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT) -> None:
         for status_type in (
             consts.AgentStatus.SPEC_SYNCED,
             consts.AgentStatus.CONNECTED,
@@ -149,14 +149,13 @@ class Agent(BaseCustomResource):
         ):
             cls.wait_till_all_agents_are_in_status(
                 agents=agents,
-                nodes_count=nodes_number,
                 statusType=status_type,
                 timeout=timeout,
             )
 
     @classmethod
-    def wait_for_agents_to_install(cls, agents: List["Agent"], nodes_number: int, timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
-        cls.wait_for_agents_to_be_ready_for_install(agents=agents, nodes_number=nodes_number, timeout=timeout)
+    def wait_for_agents_to_install(cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
+        cls.wait_for_agents_to_be_ready_for_install(agents=agents, timeout=timeout)
         cls.wait_till_all_agents_are_in_status(
             agents=agents,
             statusType=consts.AgentStatus.INSTALLED,
@@ -188,8 +187,8 @@ class Agent(BaseCustomResource):
             timeout,
             interval=10,
     ) -> None:
-        logger.info("Now Wait till agents have status as %s", statusType)
-
+        logger.info(f"Now Wait till agents have status as {statusType}")
+        
         waiting.wait(
             lambda: Agent.are_agents_in_status(
                 agents,
@@ -198,5 +197,5 @@ class Agent(BaseCustomResource):
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for="Agents to have %s status" % statusType,
+            waiting_for=f"Agents to have {statusType} status", 
         )
