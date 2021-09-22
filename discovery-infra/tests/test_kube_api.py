@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import uuid
+from typing import List
 
 import openshift as oc
 import pytest
@@ -21,44 +22,105 @@ from test_infra.utils import download_iso, get_openshift_release_image
 from test_infra.utils.kubeapi_utils import get_ip_for_single_node
 
 from tests.base_test import BaseTest
-from tests.config import global_variables, InfraEnvConfig
+from tests.config import global_variables, InfraEnvConfig, ClusterConfig
 
 PROXY_PORT = 3129
 
 logger = logging.getLogger(__name__)
 
 
-class TestKubeAPISNO(BaseTest):
-
-    @pytest.fixture
-    def kube_test_configs(self, configs):
-        cluster_config, tf_config = configs
-        tf_config.masters_count = 1
-        tf_config.workers_count = 0
-        tf_config.master_vcpu = 8
-        tf_config.master_memory = 35840
-
-        yield cluster_config, tf_config
-
-    @pytest.fixture
-    def kube_test_configs_late_binding(self, infraenv_config, terraform_config):
+class TestKubeAPI(BaseTest):
+    @staticmethod
+    def _configure_single_node(terraform_config):
         terraform_config.masters_count = 1
         terraform_config.workers_count = 0
         terraform_config.master_vcpu = 8
         terraform_config.master_memory = 35840
 
+    @staticmethod
+    def _configure_highly_available(terraform_config):
+        terraform_config.masters_count = 3
+        terraform_config.workers_count = 0
+        terraform_config.master_vcpu = 4
+        terraform_config.master_memory = 17920
+
+    @pytest.fixture
+    def kube_test_configs_single_node(self, configs):
+        cluster_config, terraform_config = configs
+        self._configure_single_node(terraform_config)
+        yield cluster_config, terraform_config
+
+    @pytest.fixture
+    def kube_test_configs_highly_available(self, configs):
+        cluster_config, terraform_config = configs
+        self._configure_highly_available(terraform_config)
+        yield cluster_config, terraform_config
+
+    @pytest.fixture
+    def kube_test_configs_late_binding_single_node(self, infraenv_config, terraform_config):
+        self._configure_single_node(terraform_config)
         yield infraenv_config, terraform_config
+
+    @pytest.fixture
+    def kube_test_configs_late_binding_highly_available(self, infraenv_config, terraform_config):
+        self._configure_highly_available(terraform_config)
+        yield infraenv_config, terraform_config
+
+    @classmethod
+    def _get_vips(cls, cluster_config, nodes: Nodes):
+        main_cidr = nodes.controller.get_machine_cidr()
+
+        # Arbitrarily choose 3, 4 (e.g. 192.168.128.3 and 192.168.128.4) for the VIPs
+        # Terraform/libvirt allocates IPs in the 10+ range so these should be safe to use
+        # TODO: Find a more robust solution to choose the VIPs. KubeAPI Assisted does not do
+        #  DHCP for VIPs.
+        api_vip = str(IPNetwork(main_cidr).ip + 3)
+        ingress_vip = str(IPNetwork(main_cidr).ip + 4)
+
+        return api_vip, ingress_vip
+
+    @pytest.fixture
+    def unbound_single_node_infraenv(self, kube_test_configs_late_binding_single_node, kube_api_context,
+                                     get_nodes_infraenv):
+        infraenv_config, tf_config = kube_test_configs_late_binding_single_node
+        nodes = get_nodes_infraenv(tf_config, infraenv_config)
+        infra_env = kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes, infraenv_config)
+
+        return infra_env, nodes
+
+    @pytest.fixture
+    def unbound_highly_available_infraenv(self, kube_test_configs_late_binding_highly_available, kube_api_context,
+                                     get_nodes_infraenv):
+        infraenv_config, tf_config = kube_test_configs_late_binding_highly_available
+        nodes = get_nodes_infraenv(tf_config, infraenv_config)
+        infra_env = kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes, infraenv_config)
+
+        return infra_env, nodes
+
+    @pytest.fixture
+    def unbound_single_node_cluster(self, kube_test_configs_single_node, kube_api_context):
+        cluster_config, _ = kube_test_configs_single_node
+        return kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
+                                                          cluster_config=cluster_config,
+                                                          num_controlplane_agents=1)
+
+    @pytest.fixture
+    def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
+        cluster_config, _ = kube_test_configs_highly_available
+        return kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
+                                                          cluster_config=cluster_config,
+                                                          num_controlplane_agents=3)
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_ipv4(self, kube_test_configs, kube_api_context, get_nodes):
-        cluster_config, tf_config = kube_test_configs
+    def test_kube_api_ipv4(self, kube_test_configs_single_node, kube_api_context, get_nodes):
+        cluster_config, tf_config = kube_test_configs_single_node
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config), cluster_config)
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_ipv6(self, kube_test_configs, kube_api_context, proxy_server, get_nodes):
-        cluster_config, tf_config = kube_test_configs
+    def test_kube_api_ipv6(self, kube_test_configs_single_node, kube_api_context, proxy_server, get_nodes):
+        cluster_config, tf_config = kube_test_configs_single_node
         tf_config.is_ipv6 = True
         cluster_config.service_network_cidr = consts.DEFAULT_IPV6_SERVICE_CIDR
         cluster_config.cluster_network_cidr = consts.DEFAULT_IPV6_CLUSTER_CIDR
@@ -67,15 +129,104 @@ class TestKubeAPISNO(BaseTest):
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
                       cluster_config, proxy_server, is_ipv4=False)
 
+    @staticmethod
+    def _bind_all(cluster_deployment, agents):
+        for agent in agents:
+            agent.bind(cluster_deployment)
+
+    @staticmethod
+    def _wait_for_install(agent_cluster_install, agents):
+        agent_cluster_install.wait_to_be_ready(True)
+        agent_cluster_install.wait_to_be_installing()
+        Agent.wait_for_agents_to_install(agents)
+        agent_cluster_install.wait_to_be_installed()
+
+    @staticmethod
+    def _set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes):
+        machine_cidr = nodes.controller.get_machine_cidr()
+        agent_cluster_install.set_machinenetwork(machine_cidr)
+
+    @classmethod
+    def _late_binding_install(cls, cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4):
+        cls._bind_all(cluster_deployment, agents)
+        cls._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
+        set_single_node_ip(cluster_deployment, nodes, is_ipv4=is_ipv4)
+        cls._wait_for_install(agent_cluster_install, agents)
+
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_late_binding_ipv4(self, kube_test_configs_late_binding, kube_api_context, get_nodes_infraenv):
-        infraenv_config, tf_config = kube_test_configs_late_binding
-        kube_api_test_late_binding(kube_api_context, get_nodes_infraenv(tf_config, infraenv_config), infraenv_config)
+    def test_kube_api_late_binding_ipv4_single_node(self, unbound_single_node_cluster,
+                                                    unbound_single_node_infraenv):
+        infra_env, nodes = unbound_single_node_infraenv
+        cluster_deployment, agent_cluster_install, cluster_config = unbound_single_node_cluster
+
+        agents = infra_env.wait_for_agents(len(nodes))
+        assert len(agents) == 1, f"Expected only one agent, found {len(agents)}"
+
+        self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4=True)
+
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_kube_api_late_binding_ipv4_highly_available(self, unbound_highly_available_cluster,
+                                                         unbound_highly_available_infraenv):
+        infra_env, nodes = unbound_highly_available_infraenv
+        cluster_deployment, agent_cluster_install, cluster_config = unbound_highly_available_cluster
+
+        agents: List[Agent] = infra_env.wait_for_agents(len(nodes))
+        assert len(agents) == len(nodes), f"Expected {len(nodes)} agents, found {len(agents)}"
+
+        api_vip, ingress_vip = self._get_vips(cluster_config, nodes)
+        agent_cluster_install.set_api_vip(api_vip)
+        agent_cluster_install.set_ingress_vip(ingress_vip)
+
+        self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4=True)
 
 
-def kube_api_test_late_binding(kube_api_context, nodes: Nodes, infraenv_config: InfraEnvConfig,
-                               *, is_ipv4=True):
+def kube_api_test_prepare_late_binding_cluster(kube_api_context, cluster_config: ClusterConfig, num_controlplane_agents,
+                                               *, proxy_server=None, is_ipv4=True):
+    cluster_name = cluster_config.cluster_name.get()
+
+    agent_cluster_install = AgentClusterInstall(
+        kube_api_client=kube_api_context.api_client,
+        name=f'{cluster_name}-agent-cluster-install',
+        namespace=global_variables.spoke_namespace,
+    )
+
+    secret = Secret(
+        kube_api_client=kube_api_context.api_client,
+        name=f'{cluster_name}-secret',
+        namespace=global_variables.spoke_namespace,
+    )
+    secret.create(pull_secret=cluster_config.pull_secret)
+
+    cluster_deployment = ClusterDeployment(
+        kube_api_client=kube_api_context.api_client,
+        name=cluster_name,
+        namespace=global_variables.spoke_namespace,
+    )
+    cluster_deployment.create(
+        agent_cluster_install_ref=agent_cluster_install.ref,
+        secret=secret,
+    )
+
+    agent_cluster_install.create(
+        cluster_deployment_ref=cluster_deployment.ref,
+        image_set_ref=deploy_image_set(cluster_name, kube_api_context),
+        cluster_cidr=cluster_config.cluster_network_cidr,
+        host_prefix=cluster_config.cluster_network_host_prefix,
+        service_network=cluster_config.service_network_cidr,
+        ssh_pub_key=cluster_config.ssh_public_key,
+        hyperthreading=cluster_config.hyperthreading,
+        control_plane_agents=num_controlplane_agents,
+        worker_agents=0,
+    )
+    agent_cluster_install.wait_to_be_ready(False)
+
+    return cluster_deployment, agent_cluster_install, cluster_config
+
+
+def kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes: Nodes, infraenv_config: InfraEnvConfig,
+                                                *, is_ipv4=True):
     infraenv_name = infraenv_config.entity_name.get()
 
     secret = Secret(
@@ -86,9 +237,6 @@ def kube_api_test_late_binding(kube_api_context, nodes: Nodes, infraenv_config: 
     secret.create(pull_secret=infraenv_config.pull_secret)
 
     ignition_config_override = None
-
-    # TODO: Test with proxy
-    # TODO: Test with disconnected
 
     infra_env = InfraEnv(
         kube_api_client=kube_api_context.api_client,
@@ -116,11 +264,10 @@ def kube_api_test_late_binding(kube_api_context, nodes: Nodes, infraenv_config: 
         agent.approve()
         set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
 
-    if len(nodes) == 1:
-        set_single_node_ip(infra_env, nodes, is_ipv4)
-
     logger.info("Waiting for agent status verification")
-    Agent.wait_for_agents_to_be_ready_for_install(agents, len(nodes))
+    Agent.wait_for_agents_to_be_ready_for_install(agents)
+
+    return infra_env
 
 
 def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
