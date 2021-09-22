@@ -47,6 +47,10 @@ class Agent(BaseCustomResource):
         )
         assigned_agents = []
         for item in resources.get("items", []):
+            if item["spec"].get("clusterDeploymentName") is None:
+                # Unbound late-binding agent, not part of the given cluster_deployment
+                continue
+            
             assigned_cluster_ref = ObjectReference(
                 name=item["spec"]["clusterDeploymentName"]["name"],
                 namespace=item["spec"]["clusterDeploymentName"]["namespace"],
