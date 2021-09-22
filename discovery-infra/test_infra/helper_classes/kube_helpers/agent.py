@@ -1,5 +1,5 @@
 from pprint import pformat
-from typing import List, Union
+from typing import List, Union, Dict, Optional
 
 import waiting
 
@@ -126,6 +126,18 @@ class Agent(BaseCustomResource):
     def approve(self) -> None:
         self.patch(approved=True)
         logger.info("approved agent %s", self.ref)
+
+    def bind(self, cluster_deployment: "ClusterDeployment") -> None:
+        """
+        Bind an unbound agent to a cluster deployment
+        """
+        self.patch(
+            clusterDeploymentName={
+                "name": cluster_deployment.ref.name,
+                "namespace": cluster_deployment.ref.namespace,
+            }
+        )
+        logger.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
 
     @classmethod
     def wait_for_agents_to_be_ready_for_install(cls, agents: List["Agent"], nodes_number: int, timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
