@@ -267,6 +267,12 @@ def download_iso_from_infra_env(infra_env, iso_download_path):
 
 
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
+    if len(nodes) != 1:
+        # Conveniently do nothing to allow this function to be
+        # used unconditionally where the number of nodes is not
+        # necessarily 1
+        return
+
     logger.info('waiting to have host single node ip')
     single_node_ip = get_ip_for_single_node(cluster_deployment, is_ipv4)
     nodes.controller.tf.change_variables({
