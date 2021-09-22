@@ -95,6 +95,14 @@ class AgentClusterInstall(BaseCustomResource):
 
         logger.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
 
+    def set_machinenetwork(self, machine_cidr):
+        self.patch(networking={
+            "machineNetwork": [
+                {
+                    "cidr": machine_cidr,
+                }
+            ]
+        })
     def _get_spec_dict(
         self,
         cluster_deployment_ref: ObjectReference,
