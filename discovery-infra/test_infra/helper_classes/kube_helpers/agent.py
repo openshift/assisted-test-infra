@@ -167,17 +167,19 @@ class Agent(BaseCustomResource):
     def are_agents_in_status(
         agents: List["Agent"], statusType: str, status: str,
     ) -> bool:
-        logger.info(
-            "Asked agents to have the status [('%s', '%s')] and currently agent statuses are %s",
-            statusType,
-            status,
-            [(condition["type"], condition["status"]) for agent in agents for condition in  agent.status()["conditions"]]
-            )
+        agents_conditions = { 
+                agent.ref.name: { 
+                    condition["type"]: condition["status"]
+                    for condition in agent.status()["conditions"]
+                 }
 
-        agents_in_status = [agent for agent in agents for condition in  agent.status()["conditions"] if condition["type"] == statusType and condition["status"] == status]
-        if len(agents_in_status) >= len(agents):
-            return True
-        return False
+                for agent in agents
+            }
+
+        logger.info(f"Waiting for agents to have the condition '{statusType}' = '{status}' and currently agent conditions are {agents_conditions}")
+
+        return all(agent_conditions.get(statusType, None) == status
+                   for agent_conditions in agents_conditions.values())
 
     @staticmethod
     def wait_till_all_agents_are_in_status(
