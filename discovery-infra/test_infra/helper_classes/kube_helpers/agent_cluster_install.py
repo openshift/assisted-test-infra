@@ -103,6 +103,13 @@ class AgentClusterInstall(BaseCustomResource):
                 }
             ]
         })
+
+    def set_api_vip(self, vip):
+        self.patch(apiVIP=vip)
+
+    def set_ingress_vip(self, vip):
+        self.patch(ingressVIP=vip)
+
     def _get_spec_dict(
         self,
         cluster_deployment_ref: ObjectReference,
