@@ -115,6 +115,14 @@ class Agent(BaseCustomResource):
             expected_exceptions=KeyError,
         )
 
+    @property
+    def role(self) -> Optional[str]:
+        return self.get()["spec"].get("role")
+
+    def set_role(self, role: str) -> None:
+        self.patch(role=role)
+        logger.info(f"set agent {self.ref} role to {role}")
+
     def approve(self) -> None:
         self.patch(approved=True)
         logger.info("approved agent %s", self.ref)
