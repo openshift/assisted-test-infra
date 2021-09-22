@@ -704,6 +704,10 @@ class Cluster:
                 continue
 
             node = Cluster.find_matching_node(host, nodes)
+            if not node:
+                log.warn(f"Failed to find matching node for host with mac address {host.macs()} nodes: {nodes}")
+                continue
+
             role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
             roles.append({"id": host.get_id(), "role": role})
             hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=node.name))
