@@ -150,7 +150,10 @@ class TestKubeAPI(BaseTest):
     def _late_binding_install(cls, cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4):
         cls._bind_all(cluster_deployment, agents)
         cls._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
-        set_single_node_ip(cluster_deployment, nodes, is_ipv4=is_ipv4)
+
+        if len(nodes) == 1:
+            set_single_node_ip(cluster_deployment, nodes, is_ipv4=is_ipv4)
+
         cls._wait_for_install(agent_cluster_install, agents)
 
     @JunitTestSuite()
@@ -414,12 +417,6 @@ def download_iso_from_infra_env(infra_env, iso_download_path):
 
 
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
-    if len(nodes) != 1:
-        # Conveniently do nothing to allow this function to be
-        # used unconditionally where the number of nodes is not
-        # necessarily 1
-        return
-
     logger.info('waiting to have host single node ip')
     single_node_ip = get_ip_for_single_node(cluster_deployment, is_ipv4)
     nodes.controller.tf.change_variables({

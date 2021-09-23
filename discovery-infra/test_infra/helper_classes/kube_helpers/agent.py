@@ -166,14 +166,13 @@ class Agent(BaseCustomResource):
     def are_agents_in_status(
         agents: List["Agent"], statusType: str, status: str,
     ) -> bool:
-        agents_conditions = { 
-                agent.ref.name: { 
-                    condition["type"]: condition["status"]
-                    for condition in agent.status()["conditions"]
-                 }
-
-                for agent in agents
+        agents_conditions = {
+            agent.ref.name: {
+                condition["type"]: condition["status"]
+                for condition in agent.status()["conditions"]
             }
+            for agent in agents
+        }
 
         logger.info(f"Waiting for agents to have the condition '{statusType}' = '{status}' and currently agent conditions are {agents_conditions}")
 
