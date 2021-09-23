@@ -164,6 +164,9 @@ class NodeController(ABC):
         # Default to auto resolve by the cluster. see cluster.get_machine_cidr
         return None
 
+    def get_provisioning_cidr(self) -> Optional[str]:
+        return None
+
     @abstractmethod
     def attach_interface(self, node_name, network_xml: str) -> Tuple[libvirt.virNetwork, str]:
         pass

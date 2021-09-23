@@ -81,25 +81,8 @@ class AgentClusterInstall(BaseCustomResource):
 
         logger.info("created agentclusterinstall %s: %s", self.ref, pformat(body))
 
-    def patch(
-        self,
-        cluster_deployment_ref: ObjectReference,
-        cluster_cidr: str,
-        host_prefix: int,
-        service_network: str,
-        control_plane_agents: int,
-        **kwargs,
-    ) -> None:
-        body = {
-            "spec": self._get_spec_dict(
-                cluster_deployment_ref=cluster_deployment_ref,
-                cluster_cidr=cluster_cidr,
-                host_prefix=host_prefix,
-                service_network=service_network,
-                control_plane_agents=control_plane_agents,
-                **kwargs,
-            )
-        }
+    def patch(self, **kwargs) -> None:
+        body = { "spec": kwargs }
 
         self.crd_api.patch_namespaced_custom_object(
             group=self._api_group,
@@ -111,6 +94,21 @@ class AgentClusterInstall(BaseCustomResource):
         )
 
         logger.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
+
+    def set_machinenetwork(self, machine_cidr):
+        self.patch(networking={
+            "machineNetwork": [
+                {
+                    "cidr": machine_cidr,
+                }
+            ]
+        })
+
+    def set_api_vip(self, vip):
+        self.patch(apiVIP=vip)
+
+    def set_ingress_vip(self, vip):
+        self.patch(ingressVIP=vip)
 
     def _get_spec_dict(
         self,
