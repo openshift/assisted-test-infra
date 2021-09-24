@@ -705,8 +705,8 @@ class Cluster:
 
             node = Cluster.find_matching_node(host, nodes)
             if not node:
-                log.warn(f"Failed to find matching node for host with mac address {host.macs()} nodes: {nodes}")
-                continue
+                node_info = [{n.name: {"ips": n.ips, "macs": n.macs}} for n in nodes]
+                log.warn(f"Failed to find matching node for host with mac address {host.macs()} nodes: {node_info}")
 
             role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
             roles.append({"id": host.get_id(), "role": role})
