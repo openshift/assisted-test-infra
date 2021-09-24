@@ -470,6 +470,7 @@ class LibvirtController(NodeController, ABC):
 
         ips = []
         macs = []
+        logging.info(f"Host {domain.name()} interfaces are {interfaces}")
         if interfaces:
             for (_, val) in interfaces.items():
                 if val['addrs']:
