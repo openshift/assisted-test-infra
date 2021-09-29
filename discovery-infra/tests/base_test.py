@@ -233,7 +233,7 @@ class BaseTest:
         logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
         cluster = Cluster(api_client=api_client, config=cluster_configuration, nodes=prepare_nodes_network)
 
-        if prepare_nodes_network and prepare_nodes_network.is_ipv6():
+        if prepare_nodes_network and prepare_nodes_network.is_ipv6:
             self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
         yield cluster
@@ -381,7 +381,7 @@ class BaseTest:
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
             logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
-            if nodes and nodes.is_ipv6():
+            if nodes and nodes.is_ipv6:
                 self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
 
             clusters.append(_cluster)
@@ -429,7 +429,7 @@ class BaseTest:
                              f".{str(cluster_config.cluster_name)}.redhat.com"])
 
         proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
-                             is_ipv6=cluster.nodes.is_ipv6())
+                             is_ipv6=cluster.nodes.is_ipv6)
         cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy")
