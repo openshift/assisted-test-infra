@@ -201,7 +201,7 @@ start_load_balancer:
 	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
 		id=`podman ps --quiet --filter "name=load_balancer"`; \
 		( test -z "$$id" && echo "Staring load balancer ..." && \
-		podman run -d --rm --net=host --name=load_balancer \
+		podman run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
 			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
 			load_balancer:latest ) || ! test -z "$$id"; \
 	fi
