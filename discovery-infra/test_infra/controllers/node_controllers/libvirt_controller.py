@@ -54,7 +54,6 @@ class LibvirtController(NodeController, ABC):
 
     def list_nodes_with_name_filter(self, name_filter) -> List[Node]:
         logging.info("Listing current hosts with name filter %s", name_filter)
-        vir_domains = list()
         nodes = list()
 
         domains = self.libvirt_connection.listAllDomains()
@@ -66,9 +65,8 @@ class LibvirtController(NodeController, ABC):
                 nodes.append(
                     Node(domain_name, self, self.private_ssh_key_path)
                 )
-                vir_domains.append(domain)
 
-        logging.info("Found domains %s", vir_domains)
+        logging.info("Found domains %s", [node.name for node in nodes])
         return nodes
 
     def list_networks(self):
@@ -235,7 +233,6 @@ class LibvirtController(NodeController, ABC):
         nodes = self.list_nodes()
 
         for node in nodes:
-            # TODO - Parameter 'check_ips' unfilled
             self.start_node(node.name())
         return nodes
 
@@ -427,7 +424,6 @@ class LibvirtController(NodeController, ABC):
     def restart_node(self, node_name):
         logging.info("Restarting %s", node_name)
         self.shutdown_node(node_name=node_name)
-        # TODO - Parameter 'check_ips' unfilled
         self.start_node(node_name=node_name)
 
     def format_all_node_disks(self):
@@ -470,6 +466,7 @@ class LibvirtController(NodeController, ABC):
 
         ips = []
         macs = []
+        logging.debug(f"Host {domain.name()} interfaces are {interfaces}")
         if interfaces:
             for (_, val) in interfaces.items():
                 if val['addrs']:
@@ -486,7 +483,7 @@ class LibvirtController(NodeController, ABC):
         ips, _ = self._get_domain_ips_and_macs(domain)
         return ips
 
-    def _wait_till_domain_has_ips(self, domain, timeout=360, interval=5):
+    def _wait_till_domain_has_ips(self, domain, timeout=360, interval=10):
         logging.info("Waiting till host %s will have ips", domain.name())
         waiting.wait(
             lambda: len(self._get_domain_ips(domain)) > 0,

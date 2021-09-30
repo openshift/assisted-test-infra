@@ -704,6 +704,7 @@ class Cluster:
                 continue
 
             node = Cluster.find_matching_node(host, nodes)
+            assert node is not None, f"Failed to find matching node for host with mac address {host.macs()} nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
             role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
             roles.append({"id": host.get_id(), "role": role})
             hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=node.name))
@@ -739,7 +740,7 @@ class Cluster:
             )
 
         self.nodes.notify_iso_ready()
-        self.nodes.start_all(self._config.is_static_ip)
+        self.nodes.start_all()
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
         self._set_hostnames_and_roles()
 
@@ -805,9 +806,9 @@ class Cluster:
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
-    def setup_nodes(self, nodes, is_static_ip: bool = None):
+    def setup_nodes(self, nodes):
         self.generate_and_download_image()
-        nodes.start_all(is_static_ip if is_static_ip is not None else self._config.is_static_ip)
+        nodes.start_all()
         self.wait_until_hosts_are_discovered()
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 
