@@ -96,9 +96,8 @@ class Nodes:
     def notify_iso_ready(self):
         self.controller.notify_iso_ready()
 
-    def start_all(self, is_static_ip: bool = DEFAULT_STATIC_IPS_CONFIG):
-        check_ips = not is_static_ip  # current check depends on reading DHCP leases
-        self.run_for_all_nodes("start", check_ips)
+    def start_all(self):
+        self.run_for_all_nodes("start")
 
     def start_given(self, nodes):
         self.run_for_given_nodes(nodes, "start")
@@ -137,7 +136,7 @@ class Nodes:
 
     @staticmethod
     def run_for_given_nodes(nodes, func_name, *args):
-        logging.info("Running %s on nodes : %s", func_name, nodes)
+        logging.info("Running %s on nodes : %s", func_name, [node.name for node in nodes])
         return run_concurrently([(getattr(node, func_name), *args) for node in nodes])
 
     def run_for_given_nodes_by_cluster_hosts(self, cluster_hosts, func_name, *args):

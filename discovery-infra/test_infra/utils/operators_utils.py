@@ -60,7 +60,7 @@ def wait_till_all_operators_are_in_status(
     statuses,
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=False,
-    interval=5,
+    interval=10,
 ):
     log.info(f"Wait till {operators_count} {operator_types} operators are in one of the statuses {statuses}")
 
