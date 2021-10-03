@@ -38,8 +38,7 @@ fi
 mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
-    ./assisted-service/tools/handle_ocp_versions.py --src ./assisted-service/data/default_ocp_versions.json \
-        --dest ./assisted-service/data/default_ocp_versions.json --ocp-override ${OPENSHIFT_INSTALL_RELEASE_IMAGE}
+    export RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         if [ -x "$(command -v docker)" ]; then
