@@ -344,13 +344,13 @@ def create_empty_nested_list(node_count):
     return [[] for _ in range(node_count)]
 
 
-def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]], tf_state):
-    nodes = extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
-    nodes.update(extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
+def get_libvirt_nodes_from_tf_state(network_name: str, tf_state):
+    nodes = extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.MASTER)
+    nodes.update(extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.WORKER))
     return nodes
 
 
-def extract_nodes_from_tf_state(tf_state, network_names, role):
+def extract_nodes_from_tf_state(tf_state, network_name_prefix, role):
     """
     :tags: QE
     """
@@ -359,7 +359,7 @@ def extract_nodes_from_tf_state(tf_state, network_names, role):
         for d in domains:
             for nic in d["attributes"]["network_interface"]:
 
-                if nic["network_name"] not in network_names:
+                if network_name_prefix not in nic["network_name"]:
                     continue
 
                 data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}

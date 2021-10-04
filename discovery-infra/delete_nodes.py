@@ -39,19 +39,16 @@ def try_to_delete_cluster(namespace, tfvars):
     client.delete_cluster(cluster_id=cluster_id)
 
 
-def _get_namespace_index(libvirt_network_if):
+def _get_namespace_index(libvirt_network_interface):
     # Hack to retrieve namespace index - does not exist in tests
-    matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+    matcher = re.match(r'^.+-(\d+)$', libvirt_network_interface)
     return int(matcher.groups()[0]) if matcher is not None else 0
 
 
 @utils.on_exception(message='Failed to remove nat', silent=True)
 def _try_remove_nat(tfvars):
-    primary_interface = tfvars.get('libvirt_network_if')
-    if primary_interface is None:
-        raise Exception("Could not get primary interface")
-    secondary_interface = tfvars.get('libvirt_secondary_network_if', f's{primary_interface}')
-    nat_controller = NatController([primary_interface, secondary_interface], _get_namespace_index(primary_interface))
+    interfaces = tfvars['libvirt_network_interfaces']
+    nat_controller = NatController(interfaces, _get_namespace_index(interfaces[0]))
     nat_controller.remove_nat_rules()
 
 
@@ -64,11 +61,9 @@ def delete_nodes(cluster_name, namespace, tf_folder, tfvars):
         _try_to_delete_nodes(tf_folder)
 
     default_network_name = consts.TEST_NETWORK + namespace
-    default_sec_network_name = consts.TEST_SECONDARY_NETWORK + namespace
     _delete_virsh_resources(
         tfvars.get('cluster_name', cluster_name),
         tfvars.get('libvirt_network_name', default_network_name),
-        tfvars.get('libvirt_secondary_network_name', default_sec_network_name),
     )
     if os.path.exists(tf_folder):
         log.info('Deleting %s', tf_folder)
@@ -228,6 +223,4 @@ if __name__ == "__main__":
 
     oc_utils.extend_parser_with_oc_arguments(parser)
     args = parser.parse_args()
-    if not args.kube_api:
-        args.namespace = ""
     main()

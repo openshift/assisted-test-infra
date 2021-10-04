@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     libvirt = {
-      source = "dmacvicar/libvirt"
+      source  = "dmacvicar/libvirt"
       version = "0.6.9"
     }
   }
@@ -20,35 +20,44 @@ resource "libvirt_pool" "storage_pool" {
 locals {
   worker_names = [
     for pair in setproduct(range(var.worker_count), range(var.worker_disk_count)) :
-      "${var.cluster_name}-worker-${pair[0]}-disk-${pair[1]}"
+    "${var.cluster_name}-worker-${pair[0]}-disk-${pair[1]}"
   ]
   master_names = [
     for pair in setproduct(range(var.master_count), range(var.master_disk_count)) :
-      "${var.cluster_name}-master-${pair[0]}-disk-${pair[1]}"
+    "${var.cluster_name}-master-${pair[0]}-disk-${pair[1]}"
   ]
+
+  networks = [
+    for idx in range(length(var.machine_cidr_addresses)) :
+    {
+      name        = "${var.libvirt_network_name}-${idx}"
+      subnet      = var.machine_cidr_addresses[idx]
+      interface   = var.libvirt_network_interfaces[idx]
+  }]
 }
 
 resource "libvirt_volume" "master" {
-  for_each       = {for idx, obj in local.master_names: idx => obj}
-  name           = each.value
-  pool           = libvirt_pool.storage_pool.name
-  size           =  var.libvirt_master_disk
+  for_each = { for idx, obj in local.master_names : idx => obj }
+  name     = each.value
+  pool     = libvirt_pool.storage_pool.name
+  size     = var.libvirt_master_disk
 }
 
 resource "libvirt_volume" "worker" {
-  for_each       = {for idx, obj in local.worker_names: idx => obj}
-  name           = each.value
-  pool           = libvirt_pool.storage_pool.name
-  size           = var.libvirt_worker_disk
+  for_each = { for idx, obj in local.worker_names : idx => obj }
+  name     = each.value
+  pool     = libvirt_pool.storage_pool.name
+  size     = var.libvirt_worker_disk
 }
 
 resource "libvirt_network" "net" {
-  name = var.libvirt_network_name
-  mode   = "nat"
-  bridge = var.libvirt_network_if
-  mtu = var.libvirt_network_mtu
-  domain = "${var.cluster_name}.${var.cluster_domain}"
-  addresses = var.machine_cidr_addresses
+  for_each  = { for idx, obj in local.networks : idx => obj }
+  name      = each.value.name
+  mode      = "nat"
+  bridge    = each.value.interface
+  mtu       = var.libvirt_network_mtu
+  domain    = "${var.cluster_name}.${var.cluster_domain}"
+  addresses = [each.value.subnet]
   autostart = true
 
   dns {
@@ -88,22 +97,13 @@ resource "libvirt_network" "net" {
   }
 }
 
-
-resource "libvirt_network" "secondary_net" {
-  name = var.libvirt_secondary_network_name
-  mode   = "nat"
-  bridge = var.libvirt_secondary_network_if
-  addresses = var.provisioning_cidr_addresses
-  autostart = true
-}
-
 resource "libvirt_domain" "master" {
   count = var.master_count
 
   name = "${var.cluster_name}-master-${count.index}"
 
-  memory = var.libvirt_master_memory
-  vcpu   = var.libvirt_master_vcpu
+  memory  = var.libvirt_master_memory
+  vcpu    = var.libvirt_master_vcpu
   running = var.running
 
   dynamic "disk" {
@@ -128,20 +128,17 @@ resource "libvirt_domain" "master" {
     mode = var.master_cpu_mode
   }
 
-  network_interface {
-    network_name = libvirt_network.net.name
-    hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
-    addresses  = var.libvirt_master_ips[count.index]
-    mac = var.libvirt_master_macs[count.index]
-  }
-   
-  network_interface {
-    network_name = libvirt_network.secondary_net.name
-    addresses = var.libvirt_secondary_master_ips[count.index]
-    mac = var.libvirt_secondary_master_macs[count.index]
+  dynamic "network_interface" {
+    for_each = { for idx, obj in local.networks : idx => obj }
+    content {
+      network_name = libvirt_network.net[network_interface.key].name
+      hostname     = network_interface.key == 0 ? "${var.cluster_name}-net${network_interface.key}-master${count.index}.${var.cluster_domain}" : ""
+      addresses    = length(var.libvirt_master_ips[count.index]) > 0 ? [var.libvirt_master_ips[count.index][network_interface.key]] : []
+      mac          = var.libvirt_master_macs[count.index][network_interface.key]
+    }
   }
 
-  boot_device{
+  boot_device {
     dev = ["hd", "cdrom"]
   }
 
@@ -156,8 +153,8 @@ resource "libvirt_domain" "worker" {
 
   name = "${var.cluster_name}-worker-${count.index}"
 
-  memory = var.libvirt_worker_memory
-  vcpu   = var.libvirt_worker_vcpu
+  memory  = var.libvirt_worker_memory
+  vcpu    = var.libvirt_worker_vcpu
   running = var.running
 
   dynamic "disk" {
@@ -182,20 +179,17 @@ resource "libvirt_domain" "worker" {
     mode = var.worker_cpu_mode
   }
 
-  network_interface {
-    network_name = libvirt_network.net.name
-    hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
-    addresses  = var.libvirt_worker_ips[count.index]
-    mac = var.libvirt_worker_macs[count.index]
+  dynamic "network_interface" {
+    for_each = { for idx, obj in local.networks : idx => obj }
+    content {
+      network_name = libvirt_network.net[network_interface.key].name
+      hostname     = network_interface.key == 0 ? "${var.cluster_name}-net${network_interface.key}-worker${count.index}.${var.cluster_domain}" : ""
+      addresses    = length(var.libvirt_worker_ips[count.index]) > 0 ? [var.libvirt_worker_ips[count.index][network_interface.key]] : []
+      mac          = var.libvirt_worker_macs[count.index][network_interface.key]
+    }
   }
 
-  network_interface {
-    network_name = libvirt_network.secondary_net.name
-    addresses  = var.libvirt_secondary_worker_ips[count.index]
-    mac = var.libvirt_secondary_worker_macs[count.index]
-  }
-
-  boot_device{
+  boot_device {
     dev = ["hd", "cdrom"]
   }
 

@@ -132,8 +132,8 @@ def fill_tfvars(
     tfvars['provisioning_cidr_addresses'] = machine_net.provisioning_cidr_addresses
     tfvars['api_vip'] = _get_vips_ips(machine_net)[0]
     tfvars['libvirt_storage_pool_path'] = storage_path
-    tfvars['libvirt_master_macs'] = static_network.generate_macs(master_count)
-    tfvars['libvirt_worker_macs'] = static_network.generate_macs(worker_count)
+    tfvars['libvirt_master_macs'] = [static_network.generate_macs(master_count)]
+    tfvars['libvirt_worker_macs'] = [static_network.generate_macs(worker_count)]
     tfvars.update(nodes_details)
 
     tfvars.update(_secondary_tfvars(master_count, nodes_details, machine_net))
@@ -373,8 +373,6 @@ def _create_node_details(cluster_name):
         "libvirt_network_if": args.network_bridge,
         "libvirt_worker_disk": args.worker_disk,
         "libvirt_master_disk": args.master_disk,
-        "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + args.namespace,
-        "libvirt_secondary_network_if": f's{args.network_bridge}',
         "bootstrap_in_place": args.master_count == 1,
         "master_disk_count": args.master_disk_count,
         "worker_disk_count": args.worker_disk_count,
@@ -635,15 +633,11 @@ def set_single_node_ip(
 
 
 def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_count, static_network_mode):
-    networks_names = (
-        nodes_details["libvirt_network_name"],
-        nodes_details["libvirt_secondary_network_name"]
-    )
+    networks_name = nodes_details["libvirt_network_name"]
 
     # don't set roles in bip role
     if not machine_net.has_ip_v6:
-        libvirt_nodes = get_libvirt_nodes_mac_role_ip_and_name(networks_names[0])
-        libvirt_nodes.update(get_libvirt_nodes_mac_role_ip_and_name(networks_names[1]))
+        libvirt_nodes = get_libvirt_nodes_mac_role_ip_and_name(networks_name)
         if static_network_mode:
             log.info("Setting hostnames when running in static network config mode")
             update_hostnames = True
@@ -651,7 +645,7 @@ def set_hosts_roles(client, cluster, nodes_details, machine_net, tf, master_coun
             update_hostnames = False
     else:
         log.warning("Work around libvirt for Terrafrom not setting hostnames of IPv6 hosts")
-        libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_names, tf.get_state())
+        libvirt_nodes = utils.get_libvirt_nodes_from_tf_state(networks_name, tf.get_state())
         update_hostnames = True
 
     utils.update_hosts(client, cluster.id, libvirt_nodes, update_hostnames=update_hostnames,

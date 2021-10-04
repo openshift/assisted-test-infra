@@ -23,34 +23,19 @@ variable "machine_cidr_addresses" {
     description = "Addresses for machine CIDR network"
 }
 
-variable "provisioning_cidr_addresses" {
-    type = list(string)
-    description = "Addresses for provisioning CIDR network"
-}
-
 variable "libvirt_uri" {
   type        = string
   description = "libvirt connection URI"
 }
 
-variable "libvirt_network_if" {
-  type        = string
-  description = "The name of the bridge to use"
-}
-
-variable "libvirt_secondary_network_if" {
-  type        = string
-  description = "The name of the second bridge to use"
+variable "libvirt_network_interfaces" {
+  type        = list(string)
+  description = "List of names of the bridges to use"
 }
 
 variable "libvirt_network_name" {
   type        = string
   description = "The name of the network to use"
-}
-
-variable "libvirt_secondary_network_name" {
-  type        = string
-  description = "The name of the second network to use"
 }
 
 variable "libvirt_network_mtu" {
@@ -63,19 +48,9 @@ variable "libvirt_master_ips" {
   description = "the list of desired master ips. Must match master_count"
 }
 
-variable "libvirt_secondary_master_ips" {
-  type        = list(list(string))
-  description = "the list of desired master second interface ips. Must match master_count"
-}
-
 variable "libvirt_worker_ips" {
   type        = list(list(string))
   description = "the list of desired worker ips. Must match master_count"
-}
-
-variable "libvirt_secondary_worker_ips" {
-  type        = list(list(string))
-  description = "the list of desired worker second interface ips. Must match master_count"
 }
 
 variable "api_vip" {

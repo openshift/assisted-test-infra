@@ -57,21 +57,18 @@ def set_agents_hostnames(
         set_agent_hostname(agent, nodes_details)
 
 
-def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]], tf_state):
-    nodes = utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
-    nodes.update(utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
+def get_libvirt_nodes_from_tf_state(network_name: str, tf_state):
+    nodes = utils.extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.MASTER)
+    nodes.update(utils.extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.WORKER))
     return nodes
 
 
 def get_nodes_details(cluster_name, namespace, tf):
     tf_folder = utils.get_tf_folder(cluster_name, namespace)
     tf_vars = utils.get_tfvars(tf_folder)
-    networks_names = (
-        tf_vars["libvirt_network_name"],
-        tf_vars["libvirt_secondary_network_name"],
-    )
+    networks_name = tf_vars["libvirt_network_name"]
     return utils.get_libvirt_nodes_from_tf_state(
-        network_names=networks_names,
+        network_name=networks_name,
         tf_state=tf.get_state(),
     )
 

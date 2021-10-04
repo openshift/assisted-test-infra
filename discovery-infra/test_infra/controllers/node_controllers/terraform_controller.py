@@ -58,36 +58,36 @@ class TerraformController(LibvirtController):
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
     def _terraform_params(self, **kwargs):
         params = {
-            "libvirt_worker_memory": kwargs.get("worker_memory"),
-            "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
-            "libvirt_worker_vcpu": kwargs.get("worker_vcpu", resources.DEFAULT_MASTER_CPU),
-            "libvirt_master_vcpu": kwargs.get("master_vcpu", resources.DEFAULT_MASTER_CPU),
-            "worker_count": kwargs.get("workers_count", 0),
+            # Master domain
             "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
-            "machine_cidr": self.get_machine_cidr(),
+            "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE),
+            "libvirt_master_vcpu": kwargs.get("master_vcpu", resources.DEFAULT_MASTER_CPU),
+            "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
+            "libvirt_master_disk": kwargs.get("master_disk", resources.DEFAULT_MASTER_DISK),
+            "master_disk_count": kwargs.get("master_disk_count", resources.DEFAULT_DISK_COUNT),
+
+            # Worker domain
+            "worker_count": kwargs.get("workers_count", 0),
+            "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
+            "libvirt_worker_vcpu": kwargs.get("worker_vcpu", resources.DEFAULT_MASTER_CPU),
+            "libvirt_worker_memory": kwargs.get("worker_memory"),
+            "libvirt_worker_disk": kwargs.get("worker_disk", resources.DEFAULT_WORKER_DISK),
+            "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
+            
+            # Networking
             "libvirt_network_name": self.network_name,
             "libvirt_network_mtu": kwargs.get("network_mtu", 1500),
             "libvirt_dns_records": kwargs.get("dns_records", {}),
-            # TODO change to namespace index
-            "libvirt_network_if": self._config.net_asset.libvirt_network_if,
-            "libvirt_worker_disk": kwargs.get("worker_disk", resources.DEFAULT_WORKER_DISK),
-            "libvirt_master_disk": kwargs.get("master_disk", resources.DEFAULT_MASTER_DISK),
-            "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self._suffix,
+            "libvirt_network_interfaces": self._config.net_asset.libvirt_network_interfaces,
+            
+            # Misc.
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
-            # TODO change to namespace index
-            "libvirt_secondary_network_if": self._config.net_asset.libvirt_secondary_network_if,
-            "provisioning_cidr": self._config.net_asset.provisioning_cidr,
             "running": True,
             "single_node_ip": kwargs.get("single_node_ip", ''),
-            "master_disk_count": kwargs.get("master_disk_count", resources.DEFAULT_DISK_COUNT),
-            "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
-            "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
-            "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)
         }
 
         params.update(self._get_specific_tf_entity_params())
-        for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
-                    "libvirt_secondary_worker_ips"]:
+        for key in ["libvirt_master_ips", "libvirt_worker_ips"]:
             value = kwargs.get(key)
             if value is not None:
                 params[key] = value
@@ -120,78 +120,58 @@ class TerraformController(LibvirtController):
     # Filling tfvars json files with terraform needed variables to spawn vms
     def _fill_tfvars(self, running=True):
         tfvars_json_file = os.path.join(self.tf_folder, consts.TFVARS_JSON_NAME)
-        logging.info("Filling tfvars")
         with open(tfvars_json_file) as _file:
             tfvars = json.load(_file)
 
-        machine_cidr = self.get_machine_cidr()
-        provisioning_cidr = self.get_provisioning_cidr()
-
-        logging.info("Machine cidr is: %s", machine_cidr)
-        master_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(machine_cidr).network_address
-            )
-            + 10
-        )
-        worker_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(machine_cidr).network_address
-            )
-            + 10
-            + int(tfvars["master_count"])
-        )
-        tfvars['image_path'] = self._entity_config.iso_download_path
+        tfvars.update(self._fill_tfvars_networking())
         tfvars['master_count'] = self.params.master_count
-        self.master_ips = tfvars['libvirt_master_ips'] = self._create_address_list(
-            self.params.master_count, starting_ip_addr=master_starting_ip
-        )
-        tfvars['libvirt_worker_ips'] = self._create_address_list(
-            self.params.worker_count, starting_ip_addr=worker_starting_ip
-        )
-        tfvars['machine_cidr_addresses'] = [machine_cidr]
-        tfvars['provisioning_cidr_addresses'] = [provisioning_cidr]
+        tfvars['image_path'] = self._entity_config.iso_download_path
         tfvars['bootstrap_in_place'] = self._config.bootstrap_in_place
-
-        vips = self.get_ingress_and_api_vips()
-        tfvars['api_vip'] = vips["api_vip"]
-        tfvars['ingress_vip'] = vips["ingress_vip"]
         tfvars['running'] = running
-        tfvars['libvirt_master_macs'] = static_network.generate_macs(self.params.master_count)
-        tfvars['libvirt_worker_macs'] = static_network.generate_macs(self.params.worker_count)
+
         tfvars.update(self.params)
-        tfvars.update(self._secondary_tfvars())
 
         with open(tfvars_json_file, "w") as _file:
             json.dump(tfvars, _file)
 
-    def _secondary_tfvars(self):
-        provisioning_cidr = self.get_provisioning_cidr()
-        secondary_master_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(provisioning_cidr).network_address
-            )
-            + 10
-        )
-        secondary_worker_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(provisioning_cidr).network_address
-            )
-            + 10
-            + int(self.params.master_count)
-        )
-        return {
-            'libvirt_secondary_worker_ips': self._create_address_list(
-                self.params.worker_count,
-                starting_ip_addr=secondary_worker_starting_ip
-            ),
-            'libvirt_secondary_master_ips': self._create_address_list(
-                self.params.master_count,
-                starting_ip_addr=secondary_master_starting_ip
-            ),
-            'libvirt_secondary_master_macs': static_network.generate_macs(self.params.master_count),
-            'libvirt_secondary_worker_macs': static_network.generate_macs(self.params.worker_count)
-        }
+    def _fill_tfvars_networking(self):
+        tfvars = {}
+
+        for key in ('libvirt_master_ips', 'libvirt_master_macs', 'libvirt_worker_ips', 'libvirt_worker_macs'):
+            tfvars[key] = []
+
+        tfvars['machine_cidr_addresses'] = self.get_machine_networks()
+        for network in tfvars['machine_cidr_addresses']:
+            master_ips, worker_ips = self._generate_ips(network)
+            tfvars['libvirt_master_ips'] = self._unite_list_of_lists(tfvars['libvirt_master_ips'], master_ips)
+            tfvars['libvirt_master_macs'] = self._unite_list_of_lists(tfvars['libvirt_master_macs'], 
+                                                                      [[mac] for mac in static_network.generate_macs(len(master_ips))])
+            tfvars['libvirt_worker_ips'] = self._unite_list_of_lists(tfvars['libvirt_worker_ips'], worker_ips)
+            tfvars['libvirt_worker_macs'] = self._unite_list_of_lists(tfvars['libvirt_worker_macs'],
+                                                                      [[mac] for mac in static_network.generate_macs(len(worker_ips))])
+
+        self.master_ips = tfvars['libvirt_master_ips']
+
+        vips = self.get_ingress_and_api_vips()
+        tfvars['api_vip'] = vips["api_vip"]
+        tfvars['ingress_vip'] = vips["ingress_vip"]
+
+        return tfvars
+
+    def _unite_list_of_lists(self, l1, l2):
+        if not l1:
+            return l2
+
+        return [l1[i] + l2[i] for i in range(len(l1))]
+
+    def _generate_ips(self, network):
+        master_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(network).network_address) + 10)
+        worker_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(network).network_address) + 10 + int(self.params.master_count))
+
+        master_ips = self._create_address_list(self.params.master_count, starting_ip_addr=master_starting_ip)
+        worker_ips = self._create_address_list(self.params.worker_count, starting_ip_addr=worker_starting_ip)
+
+        return master_ips, worker_ips
 
     def start_all_nodes(self):
         nodes = self.list_nodes()
@@ -208,7 +188,7 @@ class TerraformController(LibvirtController):
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.ip_network(self.get_machine_cidr()).network_address
+                ipaddress.ip_network(self.get_primary_machine_cidr()).network_address
             )
             + 100
         )
@@ -217,19 +197,30 @@ class TerraformController(LibvirtController):
 
     @utils.on_exception(message='Failed to run terraform delete', silent=True)
     def _create_address_list(self, num, starting_ip_addr):
-        if self.is_ipv6 and not self.is_ipv4:
+        # IPv6 addresses can't be set alongside mac addresses using TF libvirt provider
+        # Otherwise results: "Invalid to specify MAC address '<mac>' in network '<network>' IPv6 static host definition"
+        # see https://github.com/dmacvicar/terraform-provider-libvirt/issues/396
+        if self.is_ipv6:
             return utils.create_empty_nested_list(num)
         return utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
-    def get_machine_cidr(self):
-        if self.is_ipv6 and not self.is_ipv4:
-            return self._config.net_asset.machine_cidr6
-        return self._config.net_asset.machine_cidr
+    def get_primary_machine_cidr(self) -> str:
+        cidrs = self.get_machine_networks()
+        assert cidrs, "There has to be at least one machine network to get a primary"
 
-    def get_provisioning_cidr(self):
-        if self.is_ipv6 and not self.is_ipv4:
-            return self._config.net_asset.provisioning_cidr6
-        return self._config.net_asset.provisioning_cidr
+        return cidrs[0]
+
+    def get_machine_networks(self) -> List[str]:
+        cidrs = []
+
+        # Get only the relevant cidrs from the asset according to the controller networking stack
+        for cidr in self._config.net_asset.cidrs:
+            ip_network = IPNetwork(cidr)
+
+            if (ip_network.version == 4 and self.is_ipv4) or (ip_network.version == 6 and self.is_ipv6):
+                cidrs.append(cidr)
+
+        return cidrs
 
     def set_dns(self, api_vip: str, ingress_vip: str) -> None:
         base_domain = self._entity_config.base_dns_domain
@@ -243,7 +234,7 @@ class TerraformController(LibvirtController):
         )
 
     def set_dns_for_user_managed_network(self) -> None:
-        machine_cidr = self.get_machine_cidr()
+        machine_cidr = self.get_primary_machine_cidr()
         nameserver_ip = str(IPNetwork(machine_cidr).ip + 1)
         self.set_dns(nameserver_ip, nameserver_ip)
 
@@ -260,10 +251,10 @@ class TerraformController(LibvirtController):
         if os.path.exists(self.tf_folder):
             self._try_to_delete_nodes()
 
+        # TODO: Fix delete network names
         self._delete_virsh_resources(
             self._entity_name.get(),
             self.params.libvirt_network_name,
-            self.params.libvirt_secondary_network_name
         )
         if delete_tf_folder:
             logging.info('Deleting %s', self.tf_folder)

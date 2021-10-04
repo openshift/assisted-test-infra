@@ -36,9 +36,9 @@ class NatController:
             self._remove_rule(self._build_nat_string(output_interface))
 
     @classmethod
-    def get_namespace_index(cls, libvirt_network_if):
+    def get_namespace_index(cls, libvirt_network_interface):
         """ Hack to retrieve namespace index - does not exist in tests """
-        matcher = re.match(r'^tt(\d+)$', libvirt_network_if)
+        matcher = re.match(r'^tt(\d+)$', libvirt_network_interface)
         return int(matcher.groups()[0]) if matcher is not None else 0
 
     def _build_mark(self) -> int:

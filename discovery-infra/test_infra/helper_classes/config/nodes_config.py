@@ -18,9 +18,7 @@ class BaseTerraformConfig(BaseNodeConfig, ABC):
     dns_records: Dict[str, str] = field(default_factory=dict)
 
     libvirt_master_ips: List[str] = None
-    libvirt_secondary_master_ips: List[str] = None
     libvirt_worker_ips: List[str] = None
-    libvirt_secondary_worker_ips: List[str] = None
 
     net_asset: Munch = None
     tf_folder: str = None
