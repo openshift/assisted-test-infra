@@ -4,6 +4,7 @@ acl all_auth proxy_auth REQUIRED
 http_access allow all_auth
 {% else %}
 acl all src 0.0.0.0/0
+acl all src ::/0
 {% if denied_port %}
 acl denied_ports port {{ denied_port }}
 http_access deny denied_ports
