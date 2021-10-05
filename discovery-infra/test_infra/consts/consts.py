@@ -18,6 +18,7 @@ class NetworkType:
 WORKING_DIR = "build"
 TF_FOLDER = f"{WORKING_DIR}/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
+TFSTATE_FILE = "terraform.tfstate"
 IMAGE_FOLDER = "/tmp/test_images"
 TF_MAIN_JSON_NAME = "main.tf"
 BASE_IMAGE_FOLDER = "/tmp/images"
