@@ -432,7 +432,7 @@ class BaseTest:
                              is_ipv6=cluster.nodes.is_ipv6)
         cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
         install_config = cluster.get_install_config()
-        proxy_details = install_config.get("proxy")
+        proxy_details = install_config.get("proxy") or install_config.get("Proxy")
         assert proxy_details and proxy_details.get("httpProxy") == proxy.address
         assert proxy_details.get("httpsProxy") == proxy.address
 
