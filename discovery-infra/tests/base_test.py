@@ -426,7 +426,7 @@ class BaseTest:
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
         port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
 
-        machine_cidr = cluster.get_machine_cidr()
+        machine_cidr = cluster.get_primary_machine_cidr()
         host_ip = str(IPNetwork(machine_cidr).ip + 1)
 
         no_proxy = []
@@ -652,7 +652,7 @@ class BaseTest:
     def update_oc_config(nodes, cluster):
         os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
         if nodes.masters_count == 1:
-            main_cidr = cluster.get_machine_cidr()
+            main_cidr = cluster.get_primary_machine_cidr()
             api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, main_cidr)
         else:
             vips = nodes.controller.get_ingress_and_api_vips()

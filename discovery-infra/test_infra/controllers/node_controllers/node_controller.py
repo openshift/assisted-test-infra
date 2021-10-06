@@ -168,8 +168,8 @@ class NodeController(ABC):
     def set_ram_kib(self, node_name: str, ram_kib: int) -> None:
         pass
 
-    def get_machine_cidr(self) -> Optional[str]:
-        # Default to auto resolve by the cluster. see cluster.get_machine_cidr
+    def get_primary_machine_cidr(self) -> Optional[str]:
+        # Default to auto resolve by the cluster. see cluster.get_primary_machine_cidr
         return None
 
     def get_provisioning_cidr(self) -> Optional[str]:

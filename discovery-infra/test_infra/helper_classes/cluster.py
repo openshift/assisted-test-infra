@@ -256,7 +256,7 @@ class Cluster:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
     def get_primary_machine_cidr(self):
-        cidr = self.nodes.controller.get_machine_cidr()
+        cidr = self.nodes.controller.get_primary_machine_cidr()
 
         if not cidr:
             # Support controllers which the machine cidr is not configurable. taking it from the AI instead
@@ -272,7 +272,7 @@ class Cluster:
     def get_machine_networks(self):
         networks = []
 
-        primary_machine_cidr = self.nodes.controller.get_machine_cidr()
+        primary_machine_cidr = self.nodes.controller.get_primary_machine_cidr()
         if primary_machine_cidr:
             networks.append(primary_machine_cidr)
 
@@ -900,7 +900,7 @@ class Cluster:
         return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
 
     def _configure_load_balancer(self):
-        main_cidr = self.get_machine_cidr()
+        main_cidr = self.get_primary_machine_cidr()
         secondary_cidr = self.nodes.controller.get_provisioning_cidr()
 
         master_ips = self.get_master_ips(self.api_client, self.id, main_cidr) + self.get_master_ips(
