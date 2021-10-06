@@ -2,15 +2,17 @@
 
 import filecmp
 import json
-import logging
 import os
 import shutil
 import tempfile
 import time
+import traceback
 from argparse import ArgumentParser
 from collections import Counter
 from contextlib import suppress
 from datetime import datetime
+from types import TracebackType
+from typing import Type
 
 import assisted_service_client
 import requests
@@ -20,7 +22,7 @@ from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
 from scp import SCPException
 
-from logger import log, suppressAndLog, add_log_file_handler
+from logger import log, add_log_file_handler
 from test_infra import warn_deprecate
 from test_infra.assisted_service_api import InventoryClient, create_client
 from test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
@@ -51,6 +53,18 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warn_deprecate()
 
 
+class SuppressAndLog(suppress):
+    def __exit__(self, exctype: Type[Exception], excinst: Exception, exctb: TracebackType):
+        res = super().__exit__(exctype, excinst, exctb)
+
+        if res:
+            with suppress(BaseException):
+                tb_data = traceback.extract_tb(exctb, 1)[0]
+                log.warning(f"Suppressed {exctype.__name__} from {tb_data.name}:{tb_data.lineno} : {excinst}")
+
+        return res
+
+
 def main():
     args = handle_arguments()
 
@@ -79,7 +93,6 @@ def main():
 
 def download_cluster_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool,
                           update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL, pull_secret=""):
-
     @JunitTestSuite(custom_filename=f"junit_download_report_{cluster['id']}")
     def download_logs_suite():
         return download_logs(client, cluster, dest, must_gather, update_by_events, retry_interval, pull_secret)
@@ -115,7 +128,7 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
 
     destination_event_file_path = get_cluster_events_path(cluster, output_folder)
     with tempfile.NamedTemporaryFile() as latest_event_tp:
-        with suppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], latest_event_tp.name)
 
         if filecmp.cmp(destination_event_file_path, latest_event_tp.name):
@@ -133,7 +146,6 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
 @JunitTestCase()
 def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool,
                   update_by_events: bool = False, retry_interval: int = RETRY_INTERVAL, pull_secret=""):
-
     if "hosts" not in cluster or len(cluster["hosts"]) == 0:
         cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"])
 
@@ -149,23 +161,25 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, 'metadata.json'))
 
-        with suppressAndLog(requests.exceptions.RequestException, ConnectionError):
+        with SuppressAndLog(requests.exceptions.RequestException, ConnectionError):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
 
-        for cluster_file in ("bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml", "custom_manifests.yaml", "custom_manifests.json"):
-            with suppressAndLog(assisted_service_client.rest.ApiException):
+        for cluster_file in (
+                "bootstrap.ign", "master.ign", "worker.ign", "install-config.yaml", "custom_manifests.yaml",
+                "custom_manifests.json"):
+            with SuppressAndLog(assisted_service_client.rest.ApiException):
                 client.download_and_save_file(cluster['id'], cluster_file,
                                               os.path.join(output_folder, "cluster_files", cluster_file))
 
         for host_id in map(lambda host: host['id'], cluster['hosts']):
-            with suppressAndLog(assisted_service_client.rest.ApiException):
+            with SuppressAndLog(assisted_service_client.rest.ApiException):
                 client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
 
-        with suppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], get_cluster_events_path(cluster, output_folder))
             shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
-        with suppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException):
             are_masters_in_configuring_state = are_host_progress_in_stage(
                 cluster['hosts'], [HostsProgressStages.CONFIGURING], 2)
             are_masters_in_join_or_done_state = are_host_progress_in_stage(
@@ -196,7 +210,7 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
 
         kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
 
-        with suppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException):
             client.download_kubeconfig_no_ingress(cluster['id'], kubeconfig_path)
 
             if must_gather:
