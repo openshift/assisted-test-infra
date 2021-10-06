@@ -122,9 +122,7 @@ class TestKubeAPI(BaseTest):
     def test_kube_api_ipv6(self, kube_test_configs_single_node, kube_api_context, proxy_server, get_nodes):
         cluster_config, tf_config = kube_test_configs_single_node
         tf_config.is_ipv6 = True
-        cluster_config.service_network_cidr = consts.DEFAULT_IPV6_SERVICE_CIDR
-        cluster_config.cluster_network_cidr = consts.DEFAULT_IPV6_CLUSTER_CIDR
-        cluster_config.cluster_network_host_prefix = consts.DEFAULT_IPV6_HOST_PREFIX
+        tf_config.is_ipv4 = False
 
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
                       cluster_config, proxy_server, is_ipv4=False)

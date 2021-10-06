@@ -217,17 +217,22 @@ class TerraformController(LibvirtController):
 
     @utils.on_exception(message='Failed to run terraform delete', silent=True)
     def _create_address_list(self, num, starting_ip_addr):
-        if self.is_ipv6 and not self.is_ipv4:
+        # IPv6 addresses can't be set alongside mac addresses using TF libvirt provider
+        # Otherwise results: "Invalid to specify MAC address '<mac>' in network '<network>' IPv6 static host definition"
+        # see https://github.com/dmacvicar/terraform-provider-libvirt/issues/396
+        if self.is_ipv6:
             return utils.create_empty_nested_list(num)
         return utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
     def get_machine_cidr(self):
+        # In dualstack mode the primary network is IPv4
         if self.is_ipv6 and not self.is_ipv4:
             return self._config.net_asset.machine_cidr6
         return self._config.net_asset.machine_cidr
 
     def get_provisioning_cidr(self):
-        if self.is_ipv6 and not self.is_ipv4:
+        # In dualstack/IPv6 mode the secondary network is IPv6
+        if self.is_ipv6:
             return self._config.net_asset.provisioning_cidr6
         return self._config.net_asset.provisioning_cidr
 

@@ -30,13 +30,17 @@ _triggers = frozendict(
             "master_vcpu": resources.DEFAULT_MASTER_SNO_CPU,
         },
         (("is_ipv4", False), ("is_ipv6", True),): {
-            "service_network_cidr": consts.DEFAULT_IPV6_SERVICE_CIDR,
-            "cluster_network_cidr": consts.DEFAULT_IPV6_CLUSTER_CIDR,
-            "cluster_network_host_prefix": consts.DEFAULT_IPV6_HOST_PREFIX,
+            "cluster_networks": consts.DEFAULT_CLUSTER_NETWORKS_IPV6,
+            "service_networks": consts.DEFAULT_SERVICE_NETWORKS_IPV6,
             "vip_dhcp_allocation": False,
             "openshift_version": consts.OpenshiftVersion.VERSION_4_8.value,
             "network_type": consts.NetworkType.OVNKubernetes
         },
+        (("is_ipv4", True), ("is_ipv6", True),): {
+            "cluster_networks": consts.DEFAULT_CLUSTER_NETWORKS_IPV4V6,
+            "service_networks": consts.DEFAULT_SERVICE_NETWORKS_IPV4V6,
+            "network_type": consts.NetworkType.OVNKubernetes,
+        }
     }
 )
 
