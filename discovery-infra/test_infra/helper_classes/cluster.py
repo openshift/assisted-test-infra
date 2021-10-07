@@ -703,11 +703,11 @@ class Cluster:
             if host.has_hostname():
                 continue
 
-            node = Cluster.find_matching_node(host, nodes)
-            assert node is not None, f"Failed to find matching node for host with mac address {host.macs()} nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
-            role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in node.name else consts.NodeRoles.WORKER
+            name = self.find_matching_node_name(host, nodes)
+            assert name is not None, f"Failed to find matching node for host with mac address {host.macs()} nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
+            role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
             roles.append({"id": host.get_id(), "role": role})
-            hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=node.name))
+            hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=name))
 
         # no need to update the roles for SNO
         if self.nodes.nodes_count == 1:
@@ -740,7 +740,10 @@ class Cluster:
             )
 
         self.nodes.notify_iso_ready()
-        self.nodes.start_all()
+        if self._config.is_static_ip and self._config.is_ipv6:
+            self.nodes.start_all(check_ips=False)
+        else:
+            self.nodes.start_all()
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
         self._set_hostnames_and_roles()
 
@@ -1127,13 +1130,20 @@ class Cluster:
             lambda: self.get_kube_api_ip(hosts=hosts), timeout_seconds=timeout, sleep_seconds=5, waiting_for="API's IP"
         )
 
-    @staticmethod
-    def find_matching_node(host: ClusterHost, nodes: List[Node]):
+    def find_matching_node_name(self, host: ClusterHost, nodes: List[Node]) -> Union[str, None]:
         # Looking for node matches the given host by its mac address (which is unique)
         for node in nodes:
             for mac in node.macs:
                 if mac.lower() in host.macs():
-                    return node
+                    return node.name
+
+        # IPv6 static ips
+        if self._config.is_static_ip and self._config.is_ipv6:
+            mappings = static_network.get_name_to_mac_addresses_mapping(self.nodes.controller.tf_folder)
+            for mac in host.macs():
+                for name, macs in mappings.items():
+                    if mac in macs:
+                        return name
 
         return None
 

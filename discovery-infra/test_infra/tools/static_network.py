@@ -2,7 +2,7 @@ import json
 import os
 import random
 from ipaddress import ip_address, ip_network
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Set
 
 import yaml
 from test_infra import consts
@@ -69,6 +69,22 @@ def generate_static_network_data_from_tf(tf_folder: str) -> List[Dict[str, List[
         network_config.append(host_data)
 
     return network_config
+
+
+def get_name_to_mac_addresses_mapping(tf_folder: str) -> Dict[str, Set[str]]:
+    tfstate_json_file = os.path.join(tf_folder, consts.TFSTATE_FILE)
+    with open(tfstate_json_file) as _file:
+        tfstate = json.load(_file)
+    ret = dict()
+    for resource in tfstate["resources"]:
+        if resource["mode"] == "managed" and resource["type"] == "libvirt_domain":
+            for domain in resource["instances"]:
+                attributes = domain["attributes"]
+                macs = set()
+                for intf in attributes["network_interface"]:
+                    macs.add(intf["mac"].lower())
+                ret[attributes["name"]] = macs
+    return ret
 
 
 def _prepare_host_static_network_data(

@@ -96,8 +96,8 @@ class Nodes:
     def notify_iso_ready(self):
         self.controller.notify_iso_ready()
 
-    def start_all(self):
-        self.run_for_all_nodes("start")
+    def start_all(self, check_ips=True):
+        self.run_for_all_nodes("start", check_ips)
 
     def start_given(self, nodes):
         self.run_for_given_nodes(nodes, "start")
