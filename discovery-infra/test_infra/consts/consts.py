@@ -1,6 +1,9 @@
 from enum import Enum
+from typing import List
 
 from .durations import MINUTE, HOUR
+
+from assisted_service_client import models
 
 
 class OpenshiftVersion(Enum):
@@ -15,6 +18,7 @@ class NetworkType:
     OVNKubernetes = "OVNKubernetes"
 
 
+# Files & Directories
 WORKING_DIR = "build"
 TF_FOLDER = f"{WORKING_DIR}/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
@@ -24,9 +28,16 @@ TF_MAIN_JSON_NAME = "main.tf"
 BASE_IMAGE_FOLDER = "/tmp/images"
 IMAGE_NAME = "installer-image.iso"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
-HOST_PASSTHROUGH_CPU_MODE = "host-passthrough"
-MASTER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
-WORKER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
+DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
+OCP_VERSIONS_JSON_PATH = "assisted-service/data/default_ocp_versions.json"
+
+TF_TEMPLATES_ROOT = "terraform_files"
+TF_TEMPLATE_BARE_METAL_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal"
+TF_TEMPLATE_NONE_PLATFORM_FLOW = f"{TF_TEMPLATES_ROOT}/none"
+TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal_infra_env"
+TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
+
+# Timeouts
 NODES_REGISTERED_TIMEOUT = 20 * MINUTE
 DEFAULT_CHECK_STATUSES_INTERVAL = 5
 CLUSTER_READY_FOR_INSTALL_TIMEOUT = 10 * MINUTE
@@ -42,19 +53,36 @@ READY_TIMEOUT = 15 * MINUTE
 DISCONNECTED_TIMEOUT = 10 * MINUTE
 PENDING_USER_ACTION_TIMEOUT = 30 * MINUTE
 ERROR_TIMEOUT = 10 * MINUTE
-TF_TEMPLATES_ROOT = "terraform_files"
-TF_TEMPLATE_BARE_METAL_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal"
-TF_TEMPLATE_NONE_PLATFORM_FLOW = f"{TF_TEMPLATES_ROOT}/none"
-TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal_infra_env"
-TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
-NUMBER_OF_MASTERS = 3
+WAIT_FOR_BM_API = 15 * MINUTE
+
+# Networking
+DEFAULT_CLUSTER_NETWORKS_IPV4: List[models.ClusterNetwork] = [models.ClusterNetwork(cidr="172.30.0.0/16", host_prefix=23)]
+DEFAULT_SERVICE_NETWORKS_IPV4: List[models.ServiceNetwork] = [models.ServiceNetwork(cidr="10.128.0.0/14")]
+DEFAULT_MACHINE_NETWORKS_IPV4: List[models.MachineNetwork] = \
+    [models.MachineNetwork(cidr="192.168.127.0/24"), models.MachineNetwork(cidr="192.168.145.0/24")]
+
+DEFAULT_CLUSTER_NETWORKS_IPV6: List[models.ClusterNetwork] = [models.ClusterNetwork(cidr="2002:db8::/53", host_prefix=64)]
+DEFAULT_SERVICE_NETWORKS_IPV6: List[models.ServiceNetwork] = [models.ServiceNetwork(cidr="2003:db8::/112")]
+DEFAULT_MACHINE_NETWORKS_IPV6: List[models.MachineNetwork] = \
+    [models.MachineNetwork(cidr="1001:db9::/120"), models.MachineNetwork(cidr="3001:db9::/120")]
+
+DEFAULT_CLUSTER_NETWORKS_IPV4V6 = DEFAULT_CLUSTER_NETWORKS_IPV4 + DEFAULT_CLUSTER_NETWORKS_IPV6
+DEFAULT_SERVICE_NETWORKS_IPV4V6 = DEFAULT_SERVICE_NETWORKS_IPV4 + DEFAULT_SERVICE_NETWORKS_IPV6
+DEFAULT_MACHINE_NETWORKS_IPV4V6 = [DEFAULT_MACHINE_NETWORKS_IPV4[0], DEFAULT_MACHINE_NETWORKS_IPV6[0]]
+
+DEFAULT_PROXY_SERVER_PORT = 3129
+DEFAULT_LOAD_BALANCER_PORT = 6443
+
 TEST_INFRA = "test-infra"
 CLUSTER = CLUSTER_PREFIX = "%s-cluster" % TEST_INFRA
 INFRA_ENV_PREFIX = "%s-infra-env" % TEST_INFRA
 TEST_NETWORK = "test-infra-net-"
 TEST_SECONDARY_NETWORK = "test-infra-secondary-network-"
-DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
-WAIT_FOR_BM_API = 15 * MINUTE
+
+HOST_PASSTHROUGH_CPU_MODE = "host-passthrough"
+MASTER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
+WORKER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
+NUMBER_OF_MASTERS = 3
 NAMESPACE_POOL_SIZE = 15
 PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
@@ -64,13 +92,6 @@ DEFAULT_SPOKE_NAMESPACE = 'assisted-spoke-cluster'
 DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BASE_DNS_DOMAIN}"
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
-OCP_VERSIONS_JSON_PATH = "assisted-service/data/default_ocp_versions.json"
-
-DEFAULT_IPV6_SERVICE_CIDR = "2003:db8::/112"
-DEFAULT_IPV6_CLUSTER_CIDR = "2002:db8::/53"
-DEFAULT_IPV6_HOST_PREFIX = 64
-DEFAULT_PROXY_SERVER_PORT = 3129
-DEFAULT_LOAD_BALANCER_PORT = 6443
 
 IP_NETWORK_ASSET_FIELDS = (
     "machine_cidr",
@@ -83,7 +104,6 @@ REQUIRED_ASSET_FIELDS = (
     "libvirt_secondary_network_if",
     *IP_NETWORK_ASSET_FIELDS,
 )
-
 
 class ImageType:
     FULL_ISO = "full-iso"
@@ -213,9 +233,9 @@ class HighAvailabilityMode:
 
 
 class BaseAsset:
-    MACHINE_CIDR = "192.168.127.0/24"
-    MACHINE_CIDR6 = "1001:db9::/120"
-    PROVISIONING_CIDR = "192.168.145.0/24"
-    PROVISIONING_CIDR6 = "3001:db9::/120"
+    MACHINE_CIDR = DEFAULT_MACHINE_NETWORKS_IPV4[0].cidr
+    MACHINE_CIDR6 = DEFAULT_MACHINE_NETWORKS_IPV6[0].cidr
+    PROVISIONING_CIDR = DEFAULT_MACHINE_NETWORKS_IPV4[1].cidr
+    PROVISIONING_CIDR6 = DEFAULT_MACHINE_NETWORKS_IPV6[1].cidr
     NETWORK_IF = "tt1"
     SECONDARY_NETWORK_IF = "stt1"
