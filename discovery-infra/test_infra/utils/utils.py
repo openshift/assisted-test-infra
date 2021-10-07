@@ -435,14 +435,15 @@ def get_default_openshift_version(client=None) -> str:
     if client:
         logging.info("Using client to get default openshift version")
         ocp_versions_dict = client.get_openshift_versions()
+        versions = [k for k, v in ocp_versions_dict.items() if v.get('default', False)]
     else:
-        logging.info(f"Reading {consts.OCP_VERSIONS_JSON_PATH} to get default openshift version")
-        with open(consts.OCP_VERSIONS_JSON_PATH, 'r') as f:
-            ocp_versions_dict = json.load(f)
+        logging.info(f"Reading {consts.RELEASE_IMAGES_PATH} to get default openshift version")
+        with open(consts.RELEASE_IMAGES_PATH, 'r') as f:
+            release_images = json.load(f)
+            versions = [v.get('openshift_version') for v in release_images if v.get('default', False)]
 
-    d = [k for k, v in ocp_versions_dict.items() if v.get('default', False)]
-    assert len(d) == 1, f"There should be exactly one default version {ocp_versions_dict}"
-    return d[0]
+    assert len(versions) == 1, f"There should be exactly one default version {versions}"
+    return versions[0]
 
 
 def get_openshift_version(allow_default=True, client=None) -> str:
@@ -486,10 +487,11 @@ def get_openshift_release_image(allow_default=True):
         # TODO: Support remote client. kube-api client needs to respond supported versions
         ocp_version = get_openshift_version(allow_default=allow_default)
 
-        with open(consts.OCP_VERSIONS_JSON_PATH, 'r') as f:
-            ocp_versions_dict = json.load(f)
+        with open(consts.RELEASE_IMAGES_PATH, 'r') as f:
+            release_images = json.load(f)
 
-        return ocp_versions_dict[ocp_version]["release_image"]
+        release_image = [v.get('url') for v in release_images
+            if v.get('openshift_version') == ocp_version and v.get('cpu_architecture') == "x86_64"][0]
 
     return release_image
 
