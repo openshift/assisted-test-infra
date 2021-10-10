@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Dict, List
 
 from dataclasses import dataclass
 
@@ -12,3 +13,6 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     All arguments must have default to None with type hint
     """
     infra_env_id: str = None
+    cluster_id: str = None
+    static_network_config: List[dict] = None
+    ignition_config_override: str = None

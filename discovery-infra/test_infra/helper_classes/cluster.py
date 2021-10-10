@@ -5,8 +5,11 @@ import os
 import random
 import re
 import time
+import warnings
 from collections import Counter
 from typing import List, Union, Optional, Set, Dict, Any
+from assisted_service_client.models import cluster, infra_env
+from kubernetes import config
 
 import requests
 import waiting
@@ -23,11 +26,12 @@ from test_infra.controllers.load_balancer_controller import LoadBalancerControll
 from test_infra.controllers.node_controllers import Node
 from test_infra.helper_classes.cluster_host import ClusterHost
 from test_infra.helper_classes.config import BaseClusterConfig
+from tests.config import InfraEnvConfig
+from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
 from test_infra.utils import operators_utils, logs_utils, log, network_utils
 from test_infra.utils.entity_name import ClusterName
-
 
 class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
@@ -37,6 +41,7 @@ class Cluster:
         self._config = config
         self.api_client = api_client
         self.nodes: Nodes = nodes
+        self._infra_env = None
 
         if config.cluster_id:
             self.id = config.cluster_id
@@ -122,13 +127,42 @@ class Cluster:
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
+#TODO remove in favor of generate_infra_env
     def generate_image(self):
+        warnings.warn("generate_image is deprecated. Use generate_infra_env instead.", DeprecationWarning)
         self.api_client.generate_image(cluster_id=self.id, ssh_key=self._config.ssh_public_key)
 
+    def generate_infra_env(self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None) -> models.infra_env.InfraEnv:
+        infra_env_config = InfraEnvConfig(
+            ssh_public_key=ssh_key or self._config.ssh_public_key,
+            iso_image_type= iso_image_type or self._config.iso_image_type,
+            static_network_config = static_network_config,
+            openshift_version=self._config.openshift_version,
+            pull_secret=self._config.pull_secret,
+            cluster_id=self.id,
+            ignition_config_override=ignition_info
+        )
+        infra_env = InfraEnv(api_client=self.api_client, config=infra_env_config)
+        self._infra_env = infra_env
+        return infra_env
+
+    def download_infra_env_image(self, iso_download_path = None) -> None:
+        iso_download_path = iso_download_path or self._config.iso_download_path
+        self._infra_env.download_image(iso_download_path=iso_download_path)
+
+    @JunitTestCase()
+    def generate_and_download_infra_env(self, iso_download_path = None, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None):
+        self.generate_infra_env(static_network_config=static_network_config, iso_image_type=iso_image_type, ssh_key=ssh_key, ignition_info=ignition_info)
+        iso_download_path = iso_download_path or self._config.iso_download_path
+        self.download_infra_env_image(iso_download_path=iso_download_path)
+
+
+#TODO remove in favor of generate_and_download_infra_env
     @JunitTestCase()
     def generate_and_download_image(
             self, iso_download_path=None, static_network_config=None, iso_image_type=None, ssh_key=None
     ):
+        warnings.warn("generate_and_download_image is deprecated. Use generate_and_download_infra_env instead.", DeprecationWarning)
         iso_download_path = iso_download_path or self._config.iso_download_path
 
         # ensure file path exists before downloading
@@ -229,14 +263,16 @@ class Cluster:
         assigned_roles.extend(
             self._get_matching_hosts(host_type=consts.NodeRoles.WORKER, count=requested_roles["worker"])
         )
-
-        self.api_client.update_hosts(cluster_id=self.id, hosts_with_roles=assigned_roles)
+        for role in assigned_roles:
+            self._infra_env.update_host(
+                host_id=role['id'],
+                host_role=role['role']
+            )
 
         return assigned_roles
 
     def set_specific_host_role(self, host, role):
-        assignment_role = [{"id": host["id"], "role": role}]
-        self.api_client.update_hosts(cluster_id=self.id, hosts_with_roles=assignment_role)
+        self._infra_env.update_host(host_id=host['id'], host_role=role)
 
     def set_network_params(
         self,
@@ -334,8 +370,7 @@ class Cluster:
 
     def set_host_name(self, host_id, requested_name):
         log.info(f"Setting Required Host Name:{requested_name}, for Host ID: {host_id}")
-        host_data = {"hosts_names": [{"id": host_id, "hostname": requested_name}]}
-        self.api_client.update_cluster(self.id, host_data)
+        self._infra_env.update_host(host_id=host_id, host_name=requested_name)
 
     def set_additional_ntp_source(self, ntp_source: List[str]):
         log.info(f"Setting Additional NTP source:{ntp_source}")
@@ -351,7 +386,7 @@ class Cluster:
         self.api_client.update_cluster(self.id, {"additional_ntp_source": ntp_source_string})
 
     def patch_discovery_ignition(self, ignition):
-        self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
+        self._infra_env.patch_discovery_ignition(ignition_info=ignition)
 
     def set_proxy_values(self, http_proxy, https_proxy="", no_proxy=""):
         log.info(
@@ -494,17 +529,17 @@ class Cluster:
     def disable_host(self, host):
         host_name = host["requested_hostname"]
         log.info(f"Going to disable host: {host_name} in cluster: {self.id}")
-        self.api_client.disable_host(cluster_id=self.id, host_id=host["id"])
+        self._infra_env.unbind_host(host_id=host["id"])
 
     def enable_host(self, host):
         host_name = host["requested_hostname"]
         log.info(f"Going to enable host: {host_name} in cluster: {self.id}")
-        self.api_client.enable_host(cluster_id=self.id, host_id=host["id"])
+        self._infra_env.bind_host(host_id=host["id"], cluster_id=self.id)
 
     def delete_host(self, host):
         host_id = host["id"]
         log.info(f"Going to delete host: {host_id} in cluster: {self.id}")
-        self.api_client.deregister_host(cluster_id=self.id, host_id=host_id)
+        self._infra_env.delete_host(host_id=host_id)
 
     def cancel_install(self):
         self.api_client.cancel_cluster_install(cluster_id=self.id)
@@ -671,25 +706,17 @@ class Cluster:
         hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(cluster_id))
         nodes = self.nodes.get_nodes(refresh=True)
 
-        roles = []
-        hostnames: List[models.ClusterupdateparamsHostsNames] = []
-
         for host in hosts:
             if host.has_hostname():
                 continue
 
             name = self.find_matching_node_name(host, nodes)
             assert name is not None, f"Failed to find matching node for host with mac address {host.macs()} nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
-            role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
-            roles.append({"id": host.get_id(), "role": role})
-            hostnames.append(models.ClusterupdateparamsHostsNames(id=host.get_id(), hostname=name))
-
-        # no need to update the roles for SNO
-        if self.nodes.nodes_count == 1:
-            roles = None
-
-        if roles or hostnames:
-            self.api_client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
+            if self.nodes.nodes_count == 1:
+                role = None
+            else:
+                role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
+            self._infra_env.update_host(host_id=host.get_id(), host_role=role, host_name=name)
 
     def _ha_not_none(self):
         return self._high_availability_mode != consts.HighAvailabilityMode.NONE and self._config.platform != \
@@ -708,7 +735,7 @@ class Cluster:
             else:
                 static_network_config = None
 
-            self.generate_and_download_image(
+            self.generate_and_download_infra_env(
                 iso_download_path=self._config.iso_download_path,
                 iso_image_type=self._config.iso_image_type,
                 static_network_config=static_network_config,
@@ -779,7 +806,7 @@ class Cluster:
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
     def setup_nodes(self, nodes):
-        self.generate_and_download_image()
+        self.generate_and_download_infra_env()
         nodes.start_all()
         self.wait_until_hosts_are_discovered()
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
