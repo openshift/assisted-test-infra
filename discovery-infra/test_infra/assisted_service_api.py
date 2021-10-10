@@ -144,16 +144,16 @@ class InventoryClient(object):
         return self.get_hosts_in_statuses(cluster_id, [consts.NodesStatus.ERROR])
 
     def clusters_list(self) -> List[Dict[str, Any]]:
-        return self.client.list_clusters()
+        return self.client.v2_list_clusters()
 
     def infra_envs_list(self) -> List[models.InfraEnv]:
         return self.client.list_infra_envs()
 
     def get_all_clusters(self) -> List[Dict[str, Any]]:
-        return self.client.list_clusters(get_unregistered_clusters=True)
+        return self.client.v2_list_clusters(get_unregistered_clusters=True)
 
     def cluster_get(self, cluster_id: str) -> models.cluster.Cluster:
-        return self.client.get_cluster(cluster_id=cluster_id)
+        return self.client.v2_get_cluster(cluster_id=cluster_id)
     
     def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[models.infra_env.InfraEnv]:
         infra_envs = self.infra_envs_list()
@@ -255,11 +255,11 @@ class InventoryClient(object):
 
     def update_cluster(self, cluster_id, update_params) -> models.cluster.Cluster:
         log.info("Updating cluster %s with params %s", cluster_id, update_params)
-        return self.client.update_cluster(cluster_id=cluster_id, cluster_update_params=update_params)
+        return self.client.v2_update_cluster(cluster_id=cluster_id, cluster_update_params=update_params)
 
     def delete_cluster(self, cluster_id: str):
         log.info("Deleting cluster %s", cluster_id)
-        self.client.deregister_cluster(cluster_id=cluster_id)
+        self.client.v2_deregister_cluster(cluster_id=cluster_id)
 
     def deregister_host(self, infra_env_id: str, host_id: str):
         log.info(f"Deleting host {host_id} in infra_env {infra_env_id}")
@@ -292,7 +292,7 @@ class InventoryClient(object):
 
     def download_and_save_file(self, cluster_id: str, file_name: str, file_path: str) -> None:
         log.info("Downloading %s to %s", file_name, file_path)
-        response = self.client.download_cluster_files(
+        response = self.client.v2_download_cluster_files(
             cluster_id=cluster_id, file_name=file_name, _preload_content=False
         )
         with open(file_path, "wb") as _file:
@@ -315,7 +315,7 @@ class InventoryClient(object):
 
     def download_kubeconfig(self, cluster_id: str, kubeconfig_path: str) -> None:
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
-        response = self.client.download_cluster_kubeconfig(cluster_id=cluster_id, _preload_content=False)
+        response = self.client.v2_download_cluster_credentials(cluster_id=cluster_id, file_name='kubeconfig',_preload_content=False)
         with open(kubeconfig_path, "wb") as _file:
             _file.write(response.data)
 
@@ -333,7 +333,7 @@ class InventoryClient(object):
 
     def install_cluster(self, cluster_id: str) -> models.cluster.Cluster:
         log.info("Installing cluster %s", cluster_id)
-        return self.client.install_cluster(cluster_id=cluster_id)
+        return self.client.v2_install_cluster(cluster_id=cluster_id)
 
     def install_day2_cluster(self, cluster_id: str) -> models.cluster.Cluster:
         log.info("Installing day2 cluster %s", cluster_id)
@@ -345,7 +345,7 @@ class InventoryClient(object):
 
     def download_cluster_logs(self, cluster_id: str, output_file: str) -> None:
         log.info("Downloading cluster logs to %s", output_file)
-        response = self.client.download_cluster_logs(cluster_id=cluster_id, _preload_content=False)
+        response = self.client.v2_download_cluster_logs(cluster_id=cluster_id, _preload_content=False)
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
@@ -364,17 +364,17 @@ class InventoryClient(object):
 
     def download_host_logs(self, cluster_id: str, host_id: str, output_file) -> None:
         log.info("Downloading host logs to %s", output_file)
-        response = self.client.download_host_logs(cluster_id=cluster_id, host_id=host_id, _preload_content=False)
+        response = self.client.v2_download_cluster_logs(cluster_id=cluster_id, host_id=host_id, _preload_content=False)
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
     def cancel_cluster_install(self, cluster_id: str) -> models.cluster.Cluster:
         log.info("Canceling installation of cluster %s", cluster_id)
-        return self.client.cancel_installation(cluster_id=cluster_id)
+        return self.client.v2_cancel_installation(cluster_id=cluster_id)
 
     def reset_cluster_install(self, cluster_id: str) -> models.cluster.Cluster:
         log.info("Reset installation of cluster %s", cluster_id)
-        return self.client.reset_cluster(cluster_id=cluster_id)
+        return self.client.v2_reset_cluster(cluster_id=cluster_id)
 
     def disable_host(self, cluster_id: str, host_id: str) -> models.cluster.Cluster:
         warnings.warn("disable_host is deprecated. Use unbind_host instead.", DeprecationWarning)
@@ -404,7 +404,7 @@ class InventoryClient(object):
 
     def get_cluster_install_config(self, cluster_id: str) -> str:
         log.info("Getting install-config for cluster %s", cluster_id)
-        return self.client.get_cluster_install_config(cluster_id=cluster_id)
+        return self.client.v2_get_cluster_install_config(cluster_id=cluster_id)
 
     def patch_cluster_discovery_ignition(self, cluster_id: str, ignition_info: str) -> None:
         warnings.warn("patch_cluster_discovery_ignition is deprecated. Use patch_discovery_ignition instead.", DeprecationWarning)
@@ -450,10 +450,10 @@ class InventoryClient(object):
 
     def complete_cluster_installation(self, cluster_id: str, is_success: bool, error_info=None) -> None:
         completion_params = models.CompletionParams(is_success=is_success, error_info=error_info)
-        self.client.complete_installation(cluster_id=cluster_id, completion_params=completion_params)
+        self.client.v2_complete_installation(cluster_id=cluster_id, completion_params=completion_params)
 
     def get_cluster_admin_credentials(self, cluster_id: str) -> models.Credentials:
-        return self.client.get_credentials(cluster_id=cluster_id)
+        return self.client.v2_get_credentials(cluster_id=cluster_id)
 
     def get_versions(self) -> dict:
         response = self.versions.list_component_versions()
@@ -465,6 +465,7 @@ class InventoryClient(object):
     def get_supported_operators(self) -> List[str]:
         return self.operators.list_supported_operators()
 
+# TODO remove in favor of get_preflight_requirements
     def get_cluster_host_requirements(self, cluster_id: str) -> models.ClusterHostRequirementsList:
         return self.client.get_cluster_host_requirements(cluster_id=cluster_id)
 
@@ -472,7 +473,7 @@ class InventoryClient(object):
         return self.domains.list_managed_domains()
 
     def get_preflight_requirements(self, cluster_id: str):
-        return self.client.get_preflight_requirements(cluster_id=cluster_id)
+        return self.client.v2_get_preflight_requirements(cluster_id=cluster_id)
 
 
 class ClientFactory:
