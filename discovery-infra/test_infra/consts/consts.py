@@ -29,7 +29,7 @@ BASE_IMAGE_FOLDER = "/tmp/images"
 IMAGE_NAME = "installer-image.iso"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
 DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
-OCP_VERSIONS_JSON_PATH = "assisted-service/data/default_ocp_versions.json"
+RELEASE_IMAGES_PATH = "assisted-service/data/default_release_images.json"
 
 TF_TEMPLATES_ROOT = "terraform_files"
 TF_TEMPLATE_BARE_METAL_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal"
@@ -92,13 +92,6 @@ DEFAULT_SPOKE_NAMESPACE = 'assisted-spoke-cluster'
 DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BASE_DNS_DOMAIN}"
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
-RELEASE_IMAGES_PATH = "assisted-service/data/default_release_images.json"
-
-DEFAULT_IPV6_SERVICE_CIDR = "2003:db8::/112"
-DEFAULT_IPV6_CLUSTER_CIDR = "2002:db8::/53"
-DEFAULT_IPV6_HOST_PREFIX = 64
-DEFAULT_PROXY_SERVER_PORT = 3129
-DEFAULT_LOAD_BALANCER_PORT = 6443
 
 IP_NETWORK_ASSET_FIELDS = (
     "machine_cidr",
