@@ -250,7 +250,7 @@ def write_metadata_file(client: InventoryClient, cluster: dict, file_name: str):
         d['link'] = f"{get_ui_url_from_api_url(client.inventory_url)}/clusters/{cluster['id']}"
 
     with open(file_name, 'w') as metadata_file:
-        json.dump(d, metadata_file, sort_keys=True, indent=4)
+        json.dump(d, metadata_file, sort_keys=True, indent=4, default=str)
 
 
 def get_ui_url_from_api_url(api_url: str):
