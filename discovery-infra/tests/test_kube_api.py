@@ -8,7 +8,7 @@ from typing import List
 import openshift as oc
 import pytest
 from download_logs import collect_debug_info_from_cluster
-from junit_report import JunitTestSuite
+from junit_report import JunitTestSuite, JunitTestCase, JunitFixtureTestCase
 from netaddr import IPNetwork
 from test_infra import consts, utils
 from test_infra.helper_classes.kube_helpers import (Agent, AgentClusterInstall,
@@ -80,6 +80,7 @@ class TestKubeAPI(BaseTest):
         return api_vip, ingress_vip
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def unbound_single_node_infraenv(self, kube_test_configs_late_binding_single_node, kube_api_context,
                                      get_nodes_infraenv):
         infraenv_config, tf_config = kube_test_configs_late_binding_single_node
@@ -89,6 +90,7 @@ class TestKubeAPI(BaseTest):
         return infra_env, nodes
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def unbound_highly_available_infraenv(self, kube_test_configs_late_binding_highly_available, kube_api_context,
                                      get_nodes_infraenv):
         infraenv_config, tf_config = kube_test_configs_late_binding_highly_available
@@ -98,6 +100,7 @@ class TestKubeAPI(BaseTest):
         return infra_env, nodes
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def unbound_single_node_cluster(self, kube_test_configs_single_node, kube_api_context):
         cluster_config, _ = kube_test_configs_single_node
         return kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
@@ -105,6 +108,7 @@ class TestKubeAPI(BaseTest):
                                                           num_controlplane_agents=1)
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
         cluster_config, _ = kube_test_configs_highly_available
         return kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
@@ -156,8 +160,7 @@ class TestKubeAPI(BaseTest):
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_late_binding_ipv4_single_node(self, unbound_single_node_cluster,
-                                                    unbound_single_node_infraenv):
+    def test_kube_api_late_binding_ipv4_single_node(self, unbound_single_node_cluster, unbound_single_node_infraenv):
         infra_env, nodes = unbound_single_node_infraenv
         cluster_deployment, agent_cluster_install, cluster_config = unbound_single_node_cluster
 
@@ -183,6 +186,7 @@ class TestKubeAPI(BaseTest):
         self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4=True)
 
 
+@JunitTestCase()
 def kube_api_test_prepare_late_binding_cluster(kube_api_context, cluster_config: ClusterConfig, num_controlplane_agents,
                                                *, proxy_server=None, is_ipv4=True):
     cluster_name = cluster_config.cluster_name.get()
