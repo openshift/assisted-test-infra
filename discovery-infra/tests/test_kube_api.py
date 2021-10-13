@@ -87,7 +87,7 @@ class TestKubeAPI(BaseTest):
         nodes = get_nodes_infraenv(tf_config, infraenv_config)
         infra_env = kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes, infraenv_config)
 
-        return infra_env, nodes
+        yield infra_env, nodes
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -97,13 +97,13 @@ class TestKubeAPI(BaseTest):
         nodes = get_nodes_infraenv(tf_config, infraenv_config)
         infra_env = kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes, infraenv_config)
 
-        return infra_env, nodes
+        yield infra_env, nodes
 
     @pytest.fixture
     @JunitFixtureTestCase()
     def unbound_single_node_cluster(self, kube_test_configs_single_node, kube_api_context):
         cluster_config, _ = kube_test_configs_single_node
-        return kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
+        yield kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
                                                           cluster_config=cluster_config,
                                                           num_controlplane_agents=1)
 
@@ -111,7 +111,7 @@ class TestKubeAPI(BaseTest):
     @JunitFixtureTestCase()
     def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
         cluster_config, _ = kube_test_configs_highly_available
-        return kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
+        yield kube_api_test_prepare_late_binding_cluster(kube_api_context=kube_api_context,
                                                           cluster_config=cluster_config,
                                                           num_controlplane_agents=3)
 
@@ -217,9 +217,9 @@ def kube_api_test_prepare_late_binding_cluster(kube_api_context, cluster_config:
     agent_cluster_install.create(
         cluster_deployment_ref=cluster_deployment.ref,
         image_set_ref=deploy_image_set(cluster_name, kube_api_context),
-        cluster_cidr=cluster_config.cluster_network_cidr,
-        host_prefix=cluster_config.cluster_network_host_prefix,
-        service_network=cluster_config.service_network_cidr,
+        cluster_cidr=cluster_config.cluster_networks[0].cidr,
+        host_prefix=cluster_config.cluster_networks[0].host_prefix,
+        service_network=cluster_config.service_networks[0].cidr,
         ssh_pub_key=cluster_config.ssh_public_key,
         hyperthreading=cluster_config.hyperthreading,
         control_plane_agents=num_controlplane_agents,
@@ -275,7 +275,7 @@ def kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes: Nodes, 
     return infra_env
 
 
-def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
+def kube_api_test(kube_api_context, nodes: Nodes, cluster_config: ClusterConfig, proxy_server=None, *, is_ipv4=True, is_disconnected=False):
     cluster_name = cluster_config.cluster_name.get()
 
     # TODO resolve it from the service if the node controller doesn't have this information
@@ -308,9 +308,9 @@ def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=N
     agent_cluster_install.create(
         cluster_deployment_ref=cluster_deployment.ref,
         image_set_ref=deploy_image_set(cluster_name, kube_api_context),
-        cluster_cidr=cluster_config.cluster_network_cidr,
-        host_prefix=cluster_config.cluster_network_host_prefix,
-        service_network=cluster_config.service_network_cidr,
+        cluster_cidr=cluster_config.cluster_networks[0].cidr,
+        host_prefix=cluster_config.cluster_networks[0].host_prefix,
+        service_network=cluster_config.service_networks[0].cidr,
         ssh_pub_key=cluster_config.ssh_public_key,
         hyperthreading=cluster_config.hyperthreading,
         control_plane_agents=nodes.controller.params.master_count,
@@ -398,8 +398,8 @@ def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
     no_proxy = ','.join(
         [
             machine_cidr,
-            cluster_config.service_network_cidr,
-            cluster_config.cluster_network_cidr,
+            cluster_config.service_networks[0].cidr,
+            cluster_config.cluster_networks[0].cidr,
             f'.{cluster_name}.redhat.com'
         ]
     )
