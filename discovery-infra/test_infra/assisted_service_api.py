@@ -7,6 +7,7 @@ import time
 import warnings
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
+from assisted_service_client.models import infra_env_update_params
 
 import requests
 import waiting
@@ -103,7 +104,7 @@ class InventoryClient(object):
     ) -> models.cluster.Cluster:
         cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params)
         log.info("Creating cluster with params %s", cluster.__dict__)
-        result = self.client.register_cluster(new_cluster_params=cluster)
+        result = self.client.v2_register_cluster(new_cluster_params=cluster)
         return result
 
     def create_infra_env(self, name: str, ssh_public_key: Optional[str] = None, **infra_env_params
@@ -145,11 +146,18 @@ class InventoryClient(object):
     def clusters_list(self) -> List[Dict[str, Any]]:
         return self.client.list_clusters()
 
+    def infra_envs_list(self) -> List[models.InfraEnv]:
+        return self.client.list_infra_envs()
+
     def get_all_clusters(self) -> List[Dict[str, Any]]:
         return self.client.list_clusters(get_unregistered_clusters=True)
 
     def cluster_get(self, cluster_id: str) -> models.cluster.Cluster:
         return self.client.get_cluster(cluster_id=cluster_id)
+    
+    def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[models.infra_env.InfraEnv]:
+        infra_envs = self.infra_envs_list()
+        return filter(lambda infra_env: infra_env['cluster_id'] == cluster_id, infra_envs)
 
     @classmethod
     def _download(cls, response: HTTPResponse, file_path: str, verify_file_size=False) -> None:
@@ -171,6 +179,7 @@ class InventoryClient(object):
             image_type: str = consts.ImageType.FULL_ISO,
             static_network_config: Optional[list] = None,
     ) -> models.cluster.Cluster:
+        cluster = self.cluster_get(cluster_id=cluster_id)
         log.info("Generating image for cluster %s", cluster_id)
         image_create_params = models.ImageCreateParams(
             ssh_public_key=ssh_key, static_network_config=static_network_config, image_type=image_type
@@ -210,12 +219,18 @@ class InventoryClient(object):
         response_obj = response[0]
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
+#TODO remove and use infraenv
     def update_hosts(
             self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None
     ) -> models.cluster.Cluster:
+        warnings.warn("update_hosts is deprecated. Use update_host instead.", DeprecationWarning)
         log.info("Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id)
         hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles, hosts_names=hosts_names)
         return self.update_cluster(cluster_id=cluster_id, update_params=hosts)
+
+    def update_host(self, infra_env_id: str, host_id: str, host_role: str = None, host_name: str = None):
+        host_update_params = models.HostUpdateParams(host_role=host_role, host_name=host_name)
+        self.client.v2_update_host(infra_env_id=infra_env_id, host_id=host_id, host_update_params=host_update_params)
 
     def select_installation_disk(self, cluster_id: str, hosts_with_diskpaths: List[dict]) -> models.cluster.Cluster:
         log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
@@ -246,9 +261,9 @@ class InventoryClient(object):
         log.info("Deleting cluster %s", cluster_id)
         self.client.deregister_cluster(cluster_id=cluster_id)
 
-    def deregister_host(self, cluster_id: str, host_id: str):
-        log.info(f"Deleting host {host_id} in cluster {cluster_id}")
-        self.client.deregister_host(cluster_id=cluster_id, host_id=host_id)
+    def deregister_host(self, infra_env_id: str, host_id: str):
+        log.info(f"Deleting host {host_id} in infra_env {infra_env_id}")
+        self.client.v2_deregister_host(infra_env_id=infra_env_id, host_id=host_id)
 
     def get_hosts_id_with_macs(self, cluster_id: str) -> Dict[Any, List[str]]:
         hosts = self.get_cluster_hosts(cluster_id)
@@ -362,13 +377,24 @@ class InventoryClient(object):
         return self.client.reset_cluster(cluster_id=cluster_id)
 
     def disable_host(self, cluster_id: str, host_id: str) -> models.cluster.Cluster:
+        warnings.warn("disable_host is deprecated. Use unbind_host instead.", DeprecationWarning)
         log.info(f"Disabling host: {host_id}, in cluster id: {cluster_id}")
         return self.client.disable_host(cluster_id=cluster_id, host_id=host_id)
 
     def enable_host(self, cluster_id: str, host_id: str) -> models.cluster.Cluster:
+        warnings.warn("enable_host is deprecated. Use bind_host instead.", DeprecationWarning)
         log.info(f"Enabling host: {host_id}, in cluster id: {cluster_id}")
         return self.client.enable_host(cluster_id=cluster_id, host_id=host_id)
 
+    def bind_host(self, infra_env_id: str, host_id: str, cluster_id: str) -> None:
+        log.info(f"Enabling host: {host_id}, from infra_env {infra_env_id}, in cluster id: {cluster_id}")
+        bind_host_params = models.BindHostParams(cluster_id=cluster_id)
+        self.client.bind_host(infra_env_id=infra_env_id, host_id=host_id, bind_host_params=bind_host_params)
+
+    def unbind_host(self, infra_env_id: str, host_id: str) -> None:
+        log.info(f"Disabling host: {host_id}, from infra_env {infra_env_id}")
+        self.client.unbind_host(infra_env_id=infra_env_id, host_id=host_id)
+    
     def set_cluster_proxy(
             self, cluster_id: str, http_proxy: str, https_proxy: Optional[str] = "", no_proxy: Optional[str] = ""
     ) -> models.cluster.Cluster:
@@ -381,17 +407,27 @@ class InventoryClient(object):
         return self.client.get_cluster_install_config(cluster_id=cluster_id)
 
     def patch_cluster_discovery_ignition(self, cluster_id: str, ignition_info: str) -> None:
+        warnings.warn("patch_cluster_discovery_ignition is deprecated. Use patch_discovery_ignition instead.", DeprecationWarning)
         log.info("Patching cluster %s discovery ignition", cluster_id)
         return self.client.update_discovery_ignition(
             cluster_id=cluster_id,
             discovery_ignition_params=models.DiscoveryIgnitionParams(config=json.dumps(ignition_info)),
         )
 
+    def patch_discovery_ignition(self, infra_env_id: str, ignition_info: str) -> None:
+        infra_env_update_params = models.InfraEnvUpdateParams(ignition_config_override=json.dumps(ignition_info))
+        self.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
+
     def get_cluster_discovery_ignition(self, cluster_id: str) -> None:
+        warnings.warn("get_cluster_discovery_ignition is deprecated. Use get_discovery_ignition instead.", DeprecationWarning)
         log.info("Getting discovery ignition for cluster %s", cluster_id)
         return self.client.get_discovery_ignition(
             cluster_id=cluster_id,
         )
+
+    def get_discovery_ignition(self, infra_env_id: str) -> str:
+        infra_env = self.get_infra_env(infra_env_id=infra_env_id)
+        return infra_env.ingition_config_override
 
     def register_host(self, infra_env_id: str, host_id: str) -> None:
         log.info(f"Registering host: {host_id} to cluster: {infra_env_id}")

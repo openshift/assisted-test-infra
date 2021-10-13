@@ -458,7 +458,7 @@ class BaseTest:
             cluster_config = cluster.config
 
             if cluster_config.download_image:
-                cluster.generate_and_download_image(
+                cluster.generate_and_download_infra_env(
                     iso_download_path=cluster_config.iso_download_path,
                 )
             cluster.nodes.start_given(given_nodes)

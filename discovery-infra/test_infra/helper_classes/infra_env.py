@@ -1,11 +1,14 @@
 import os
 import logging
+import json
 from typing import Optional
+
+from assisted_service_client.models import cluster
 from junit_report import JunitTestCase
 
 import test_infra.utils.waiting
 from test_infra import consts, utils
-from test_infra.assisted_service_api import InventoryClient
+from test_infra.assisted_service_api import InventoryClient, models
 from test_infra.helper_classes.config import BaseInfraEnvConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
@@ -24,11 +27,18 @@ class InfraEnv:
         self._config.infra_env_id = self.id = infra_env.id
 
     def _create(self):
+        if self._config.ignition_config_override:
+            ignition_config_override = json.dumps(self._config.ignition_config_override)
+        else:
+            ignition_config_override = None
         return self.api_client.create_infra_env(
             self._config.entity_name.get(),
             pull_secret=self._config.pull_secret,
             ssh_public_key=self._config.ssh_public_key,
             openshift_version=self._config.openshift_version,
+            cluster_id=self._config.cluster_id,
+            static_network_config=self._config.static_network_config,
+            ignition_config_override=ignition_config_override
         )
 
     @property
@@ -86,3 +96,32 @@ class InfraEnv:
             statuses=statuses,
             timeout=consts.NODES_REGISTERED_TIMEOUT,
         )
+    
+    def update_host(self, host_id: str, host_role: Optional[str] = None, host_name: Optional[str] = None):
+        self.api_client.update_host(
+            infra_env_id=self.id,
+            host_id=host_id,
+            host_role=host_role,
+            host_name=host_name
+        )
+    
+    def bind_host(self, host_id: str, cluster_id: str) -> None:
+        self.api_client.bind_host(
+            infra_env_id=self.id,
+            host_id=host_id,
+            cluster_id=cluster_id
+        )
+    def unbind_host(self, host_id: str) -> None:
+        self.api_client.unbind_host(infra_env_id=self.id, host_id=host_id)
+
+    def delete_host(self, host_id: str) -> None:
+        self.api_client.deregister_host(infra_env_id=self.id, host_id=host_id)
+
+    def get_discovery_ignition(self) -> str:
+        return self.api_client.get_discovery_ignition(infra_env_id=self.id)
+
+    def patch_discovery_ignition(self, ignition_info: str) -> str:
+        self.api_client.patch_discovery_ignition(infra_env_id=self.id, ignition_info=ignition_info)
+
+    def get_details(self) -> models.infra_env.InfraEnv:
+        return self.api_client.get_infra_env(infra_env_id=self.id)
