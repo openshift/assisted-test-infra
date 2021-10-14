@@ -121,7 +121,8 @@ class InventoryClient(object):
         return result
 
     def get_cluster_hosts(self, cluster_id: str) -> List[Dict[str, Any]]:
-        return self.client.list_hosts(cluster_id=cluster_id)
+        cluster_details = self.cluster_get(cluster_id)
+        return list(map(lambda host: host.to_dict(), cluster_details.hosts))
 
     def get_infra_env_hosts(self, infra_env_id: str) -> List[Dict[str, Any]]:
         return self.client.v2_list_hosts(infra_env_id=infra_env_id)
@@ -306,10 +307,10 @@ class InventoryClient(object):
             file_path=kubeconfig_path,
         )
 
-    def download_host_ignition(self, cluster_id: str, host_id: str, destination: str) -> None:
-        log.info("Downloading host %s cluster %s ignition files to %s", host_id, cluster_id, destination)
+    def download_host_ignition(self, infra_env_id: str, host_id: str, destination: str) -> None:
+        log.info("Downloading host %s infra_env %s ignition files to %s", host_id, infra_env_id, destination)
 
-        response = self.client.download_host_ignition(cluster_id=cluster_id, host_id=host_id, _preload_content=False)
+        response = self.client.v2_download_host_ignition(infra_env_id=infra_env_id, host_id=host_id, _preload_content=False)
         with open(os.path.join(destination, f"host_{host_id}.ign"), "wb") as _file:
             _file.write(response.data)
 
@@ -339,9 +340,9 @@ class InventoryClient(object):
         log.info("Installing day2 cluster %s", cluster_id)
         return self.client.install_hosts(cluster_id=cluster_id)
 
-    def install_day2_host(self, cluster_id: str, host_id: str) -> models.cluster.Cluster:
-        log.info("Installing day2 host %s, cluster %s", host_id, cluster_id)
-        return self.client.install_host(cluster_id=cluster_id, host_id=host_id)
+    def install_day2_host(self, infra_env_id: str, host_id: str) -> models.cluster.Cluster:
+        log.info("Installing day2 host %s, infra_env_id %s", host_id, infra_env_id)
+        return self.client.v2_install_host(infra_env_id=infra_env_id, host_id=host_id)
 
     def download_cluster_logs(self, cluster_id: str, output_file: str) -> None:
         log.info("Downloading cluster logs to %s", output_file)
@@ -443,10 +444,10 @@ class InventoryClient(object):
         self.client.v2_post_step_reply(infra_env_id=infra_env_id, host_id=host_id, reply=reply)
 
     def host_update_progress(
-            self, cluster_id: str, host_id: str, current_stage: models.HostStage, progress_info=None
+            self, infra_env_id: str, host_id: str, current_stage: models.HostStage, progress_info=None
     ) -> None:
         host_progress = models.HostProgress(current_stage=current_stage, progress_info=progress_info)
-        self.client.update_host_install_progress(cluster_id=cluster_id, host_id=host_id, host_progress=host_progress)
+        self.client.v2_update_host_install_progress(infra_env_id=infra_env_id, host_id=host_id, host_progress=host_progress)
 
     def complete_cluster_installation(self, cluster_id: str, is_success: bool, error_info=None) -> None:
         completion_params = models.CompletionParams(is_success=is_success, error_info=error_info)
