@@ -17,6 +17,7 @@ import test_infra.utils.waiting
 from deprecated_utils import wait_till_nodes_are_ready, get_libvirt_nodes_mac_role_ip_and_name, \
     get_libvirt_nodes_macs
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
+from test_infra.assisted_service_api import ClientFactory
 from test_infra.consts import resources
 from test_infra.utils import kubeapi_utils
 from test_infra.helper_classes import cluster as helper_cluster
@@ -847,9 +848,9 @@ def execute_day1_flow():
     if not args.image:
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
         if not client:
-            client = assisted_service_api.create_client(
-                url=utils.get_assisted_service_url_by_args(args=args)
-            )
+            client = ClientFactory.create_client(url=utils.get_assisted_service_url_by_args(args=args),
+                                                 offline_token=utils.get_env("OFFLINE_TOKEN"))
+
         if args.cluster_id:
             cluster = client.cluster_get(cluster_id=args.cluster_id)
         else:
@@ -886,9 +887,9 @@ def is_none_platform_mode():
 def try_get_cluster():
     if args.cluster_id:
         try:
-            client = assisted_service_api.create_client(
-                url=utils.get_assisted_service_url_by_args(args=args)
-            )
+            client = ClientFactory.create_client(url=utils.get_assisted_service_url_by_args(args=args),
+                                                 offline_token=utils.get_env("OFFLINE_TOKEN"))
+
             return client, client.cluster_get(cluster_id=args.cluster_id)
 
         except ApiException as e:

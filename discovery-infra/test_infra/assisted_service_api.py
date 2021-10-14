@@ -461,11 +461,3 @@ class ClientFactory:
         conf = KubeConfiguration()
         load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
         return KubeApiClient(configuration=conf)
-
-
-def create_client(
-        url, offline_token=utils.get_env("OFFLINE_TOKEN"), pull_secret="", wait_for_api=True,
-        timeout=consts.WAIT_FOR_BM_API
-) -> InventoryClient:
-    warnings.warn("create_client is deprecated. Use ClientFactory.create_client instead.", DeprecationWarning)
-    return ClientFactory.create_client(url, offline_token, pull_secret, wait_for_api, timeout)

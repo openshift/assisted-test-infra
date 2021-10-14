@@ -12,6 +12,7 @@ from kubernetes.client import CoreV1Api
 
 import deprecated_utils
 from test_infra import assisted_service_api, utils, consts, warn_deprecate
+from test_infra.assisted_service_api import ClientFactory
 from test_infra.controllers.nat_controller import NatController
 from test_infra.helper_classes.kube_helpers import create_kube_api_client
 from test_infra.utils.kubeapi_utils import delete_kube_api_resources_for_namespace
@@ -33,9 +34,9 @@ def try_to_delete_cluster(namespace, tfvars):
         return
 
     args.namespace = namespace
-    client = assisted_service_api.create_client(
-        url=utils.get_assisted_service_url_by_args(args=args, wait=False)
-    )
+    client = ClientFactory.create_client(url=utils.get_assisted_service_url_by_args(args=args, wait=False),
+                                         offline_token=utils.get_env("OFFLINE_TOKEN"))
+
     client.delete_cluster(cluster_id=cluster_id)
 
 
