@@ -8,8 +8,6 @@ import time
 import warnings
 from collections import Counter
 from typing import List, Union, Optional, Set, Dict, Any
-from assisted_service_client.models import cluster, infra_env
-from kubernetes import config
 
 import requests
 import waiting
@@ -25,20 +23,21 @@ from test_infra.assisted_service_api import InventoryClient
 from test_infra.controllers.load_balancer_controller import LoadBalancerController
 from test_infra.controllers.node_controllers import Node
 from test_infra.helper_classes.cluster_host import ClusterHost
-from test_infra.helper_classes.config import BaseClusterConfig
-from tests.config import InfraEnvConfig
+from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig
 from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
 from test_infra.utils import operators_utils, logs_utils, log, network_utils
 from test_infra.utils.entity_name import ClusterName
 
+
 class Cluster:
     MINIMUM_NODES_TO_WAIT = 1
     EVENTS_THRESHOLD = 500
 
-    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, nodes: Optional[Nodes] = None):
+    def __init__(self, api_client: InventoryClient, config: BaseClusterConfig, infra_env_config: BaseInfraEnvConfig, nodes: Optional[Nodes] = None):
         self._config = config
+        self._infra_env_config = infra_env_config
         self.api_client = api_client
         self.nodes: Nodes = nodes
         self._infra_env = None
@@ -49,6 +48,11 @@ class Cluster:
         else:
             self.id = self._create().id
             config.cluster_id = self.id
+
+        # Update infraEnv configurations
+        self._infra_env_config.cluster_id = config.cluster_id
+        self._infra_env_config.openshift_version = self._config.openshift_version
+        self._infra_env_config.pull_secret = self._config.pull_secret
 
         self._high_availability_mode = config.high_availability_mode
         self.name = config.cluster_name.get()
@@ -127,22 +131,19 @@ class Cluster:
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
-#TODO remove in favor of generate_infra_env
+    # TODO remove in favor of generate_infra_env
     def generate_image(self):
         warnings.warn("generate_image is deprecated. Use generate_infra_env instead.", DeprecationWarning)
         self.api_client.generate_image(cluster_id=self.id, ssh_key=self._config.ssh_public_key)
 
-    def generate_infra_env(self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None) -> models.infra_env.InfraEnv:
-        infra_env_config = InfraEnvConfig(
-            ssh_public_key=ssh_key or self._config.ssh_public_key,
-            iso_image_type= iso_image_type or self._config.iso_image_type,
-            static_network_config = static_network_config,
-            openshift_version=self._config.openshift_version,
-            pull_secret=self._config.pull_secret,
-            cluster_id=self.id,
-            ignition_config_override=ignition_info
-        )
-        infra_env = InfraEnv(api_client=self.api_client, config=infra_env_config)
+    def generate_infra_env(self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None) \
+            -> models.infra_env.InfraEnv:
+        self._infra_env_config.ssh_public_key = ssh_key or self._config.ssh_public_key
+        self._infra_env_config.iso_image_type = iso_image_type or self._config.iso_image_type
+        self._infra_env_config.static_network_config = static_network_config
+        self._infra_env_config.ignition_config_override = ignition_info
+
+        infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config)
         self._infra_env = infra_env
         return infra_env
 
@@ -156,13 +157,13 @@ class Cluster:
         iso_download_path = iso_download_path or self._config.iso_download_path
         self.download_infra_env_image(iso_download_path=iso_download_path)
 
-
-#TODO remove in favor of generate_and_download_infra_env
     @JunitTestCase()
     def generate_and_download_image(
             self, iso_download_path=None, static_network_config=None, iso_image_type=None, ssh_key=None
     ):
-        warnings.warn("generate_and_download_image is deprecated. Use generate_and_download_infra_env instead.", DeprecationWarning)
+        # TODO remove in favor of generate_and_download_infra_env
+        warnings.warn("generate_and_download_image is deprecated. Use generate_and_download_infra_env instead.",
+                      DeprecationWarning)
         iso_download_path = iso_download_path or self._config.iso_download_path
 
         # ensure file path exists before downloading
@@ -805,8 +806,12 @@ class Cluster:
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
-    def setup_nodes(self, nodes):
-        self.generate_and_download_infra_env()
+    def setup_nodes(self, nodes, infra_env_config: BaseInfraEnvConfig):
+        self._infra_env = InfraEnv.generate(self.api_client,
+                                            infra_env_config,
+                                            iso_image_type=self._config.iso_image_type)
+        self._infra_env.download_image(iso_download_path=self._config.iso_download_path)
+
         nodes.start_all()
         self.wait_until_hosts_are_discovered()
         return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
@@ -1169,7 +1174,7 @@ class Cluster:
 def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluster.Cluster], pull_secret):
     import warnings
 
-    from tests.config import ClusterConfig
+    from tests.config import ClusterConfig, InfraEnvConfig
 
     warnings.warn(
         "Soon get_api_vip_from_cluster will be deprecated. Avoid using or adding new functionality to "
@@ -1183,6 +1188,7 @@ def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluste
         cluster_info = models.cluster.Cluster(**cluster_info)
     cluster = Cluster(
         api_client=api_client,
+        infra_env_config=InfraEnvConfig(),
         config=ClusterConfig(
             cluster_name=ClusterName(cluster_info.name),
             pull_secret=pull_secret,

@@ -3,7 +3,6 @@ import logging
 import json
 from typing import Optional
 
-from assisted_service_client.models import cluster
 from junit_report import JunitTestCase
 
 import test_infra.utils.waiting
@@ -11,7 +10,6 @@ from test_infra import consts, utils
 from test_infra.assisted_service_api import InventoryClient, models
 from test_infra.helper_classes.config import BaseInfraEnvConfig
 from test_infra.helper_classes.nodes import Nodes
-from test_infra.tools import static_network, terraform_utils
 
 
 class InfraEnv:
@@ -111,6 +109,7 @@ class InfraEnv:
             host_id=host_id,
             cluster_id=cluster_id
         )
+
     def unbind_host(self, host_id: str) -> None:
         self.api_client.unbind_host(infra_env_id=self.id, host_id=host_id)
 
