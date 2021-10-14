@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 import libvirt
-from kubernetes.client.exceptions import ApiException as K8sApiException
 import pytest
 import test_infra.utils as infra_utils
 import waiting
@@ -24,27 +23,20 @@ from test_infra.assisted_service_api import InventoryClient
 from test_infra.consts import OperatorResource
 from test_infra.controllers.iptables import IptableRule
 from test_infra.controllers.nat_controller import NatController
-from test_infra.controllers.node_controllers import (Node, NodeController,
-                                                     TerraformController,
-                                                     VSphereController)
-from test_infra.controllers.proxy_controller.proxy_controller import \
-    ProxyController
+from test_infra.controllers.node_controllers import Node, NodeController, TerraformController, VSphereController
+from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
-from test_infra.helper_classes.config.vsphere_config import \
-    VSphereControllerConfig
+from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
 from test_infra.helper_classes.infra_env import InfraEnv
-from test_infra.helper_classes.kube_helpers import (KubeAPIContext,
-                                                    create_kube_api_client)
+from test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.utils import utils
-from test_infra.utils.operators_utils import (parse_olm_operators_from_env,
-                                              resource_param)
+from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 
-from tests.config import (ClusterConfig, InfraEnvConfig, TerraformConfig,
-                          global_variables)
+from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 
 
 class BaseTest:
@@ -228,10 +220,11 @@ class BaseTest:
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def cluster(self, api_client: InventoryClient, request: FixtureRequest,
+    def cluster(self, api_client: InventoryClient, request: FixtureRequest, infra_env_configuration: InfraEnvConfig,
                 proxy_server, prepare_nodes_network: Nodes, cluster_configuration: ClusterConfig):
         logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
-        cluster = Cluster(api_client=api_client, config=cluster_configuration, nodes=prepare_nodes_network)
+        cluster = Cluster(api_client=api_client, config=cluster_configuration,
+                          infra_env_config=infra_env_configuration, nodes=prepare_nodes_network)
 
         if self._does_need_proxy_server(prepare_nodes_network):
             self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
@@ -371,7 +364,8 @@ class BaseTest:
 
     @pytest.fixture()
     @JunitFixtureTestCase()
-    def get_cluster(self, api_client, request, proxy_server, get_nodes) -> Callable[[Nodes, ClusterConfig], Cluster]:
+    def get_cluster(self, api_client, request, proxy_server, get_nodes, infra_env_configuration) \
+            -> Callable[[Nodes, ClusterConfig], Cluster]:
         """ Do not use get_nodes fixture in this fixture. It's here only to force pytest teardown
         nodes after cluster """
 
@@ -380,7 +374,9 @@ class BaseTest:
         @JunitTestCase()
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
             logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
-            _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
+            _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes,
+                               infra_env_config=infra_env_configuration)
+
             if self._does_need_proxy_server(nodes):
                 self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
 
