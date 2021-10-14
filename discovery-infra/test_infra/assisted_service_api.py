@@ -456,21 +456,21 @@ class InventoryClient(object):
         return self.client.v2_get_credentials(cluster_id=cluster_id)
 
     def get_versions(self) -> dict:
-        response = self.versions.list_component_versions()
+        response = self.versions.v2_list_component_versions()
         return json.loads(json.dumps(response.to_dict(), sort_keys=True, default=str))
 
     def get_openshift_versions(self) -> models.OpenshiftVersions:
-        return self.versions.list_supported_openshift_versions()
+        return self.versions.v2_list_supported_openshift_versions()
 
     def get_supported_operators(self) -> List[str]:
-        return self.operators.list_supported_operators()
+        return self.operators.v2_list_supported_operators()
 
 # TODO remove in favor of get_preflight_requirements
     def get_cluster_host_requirements(self, cluster_id: str) -> models.ClusterHostRequirementsList:
         return self.client.get_cluster_host_requirements(cluster_id=cluster_id)
 
     def get_managed_domains(self) -> models.ListManagedDomains:
-        return self.domains.list_managed_domains()
+        return self.domains.v2_list_managed_domains()
 
     def get_preflight_requirements(self, cluster_id: str):
         return self.client.v2_get_preflight_requirements(cluster_id=cluster_id)
