@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from dataclasses import dataclass
+from assisted_service_client import models
 
 from .base_config import _BaseConfig
 from ...utils.base_name import BaseName
@@ -24,3 +25,5 @@ class BaseEntityConfig(_BaseConfig, ABC):
     is_ipv6: bool = None
     base_dns_domain: str = None
     entity_name: BaseName = None
+    proxy: models.Proxy = None
+    
