@@ -36,7 +36,8 @@ class InfraEnv:
             openshift_version=self._config.openshift_version,
             cluster_id=self._config.cluster_id,
             static_network_config=self._config.static_network_config,
-            ignition_config_override=ignition_config_override
+            ignition_config_override=ignition_config_override,
+            proxy=self._config.proxy
         )
 
     @property

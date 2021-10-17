@@ -136,13 +136,18 @@ class Cluster:
         warnings.warn("generate_image is deprecated. Use generate_infra_env instead.", DeprecationWarning)
         self.api_client.generate_image(cluster_id=self.id, ssh_key=self._config.ssh_public_key)
 
-    def generate_infra_env(self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None) \
-            -> models.infra_env.InfraEnv:
+    def generate_infra_env(
+        self,
+        static_network_config=None,
+        iso_image_type=None, ssh_key=None,
+        ignition_info=None,
+        proxy=None
+    ) -> models.infra_env.InfraEnv:
         self._infra_env_config.ssh_public_key = ssh_key or self._config.ssh_public_key
         self._infra_env_config.iso_image_type = iso_image_type or self._config.iso_image_type
         self._infra_env_config.static_network_config = static_network_config
         self._infra_env_config.ignition_config_override = ignition_info
-
+        self._infra_env_config.proxy = proxy or self._config.proxy
         infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config)
         self._infra_env = infra_env
         return infra_env
@@ -152,8 +157,16 @@ class Cluster:
         self._infra_env.download_image(iso_download_path=iso_download_path)
 
     @JunitTestCase()
-    def generate_and_download_infra_env(self, iso_download_path = None, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None):
-        self.generate_infra_env(static_network_config=static_network_config, iso_image_type=iso_image_type, ssh_key=ssh_key, ignition_info=ignition_info)
+    def generate_and_download_infra_env(
+        self,
+        iso_download_path = None,
+        static_network_config=None,
+        iso_image_type=None,
+        ssh_key=None,
+        ignition_info=None,
+        proxy=None
+    ):
+        self.generate_infra_env(static_network_config=static_network_config, iso_image_type=iso_image_type, ssh_key=ssh_key, ignition_info=ignition_info, proxy=proxy)
         iso_download_path = iso_download_path or self._config.iso_download_path
         self.download_infra_env_image(iso_download_path=iso_download_path)
 
@@ -394,6 +407,7 @@ class Cluster:
             f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} "
             f"for cluster: {self.id}"
         )
+        self.update_config(proxy=models.Proxy(http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy))
         self.api_client.set_cluster_proxy(self.id, http_proxy, https_proxy, no_proxy)
 
     @JunitTestCase()
