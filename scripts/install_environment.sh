@@ -169,7 +169,7 @@ function config_nginx() {
 
   # Create a container image to be used as the load balancer.  Initially, it starts nginx that opens a stream includes all conf files
   # in directory /etc/nginx/conf.d. The nginx is refreshed every 60 seconds
-  cat <<EOF | podman build --tag load_balancer:latest -
+  cat <<EOF | $CONTAINER_COMMAND build --tag load_balancer:latest -
 FROM quay.io/centos/centos:8.3.2011
 RUN dnf install -y nginx
 RUN sed -i -e '/^http {/,\$d'  /etc/nginx/nginx.conf
