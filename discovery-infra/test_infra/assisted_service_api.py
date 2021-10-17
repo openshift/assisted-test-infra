@@ -469,3 +469,6 @@ def create_client(
 ) -> InventoryClient:
     warnings.warn("create_client is deprecated. Use ClientFactory.create_client instead.", DeprecationWarning)
     return ClientFactory.create_client(url, offline_token, pull_secret, wait_for_api, timeout)
+
+def dummy():
+    pass
