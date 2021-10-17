@@ -931,8 +931,8 @@ class Cluster:
         cluster.wait_until_hosts_are_discovered()
         cluster.wait_for_ready_to_install()
 
-    def get_events(self, host_id=""):
-        return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
+    def get_events(self, host_id="", infra_env_id=""):
+        return self.api_client.get_events(cluster_id=self.id, host_id=host_id, infra_env_id=infra_env_id)
 
     def _configure_load_balancer(self):
         main_cidr = self.get_primary_machine_cidr()
@@ -955,8 +955,8 @@ class Cluster:
         matcher = re.match(r"^tt(\d+)$", libvirt_network_if)
         return int(matcher.groups()[0]) if matcher is not None else 0
 
-    def _find_event(self, event_to_find, reference_time, params_list, host_id):
-        events_list = self.get_events(host_id=host_id)
+    def _find_event(self, event_to_find, reference_time, params_list, host_id, infra_env_id):
+        events_list = self.get_events(host_id=host_id, infra_env_id=infra_env_id)
         for event in events_list:
             if event_to_find in event["message"]:
                 # Adding a 2 sec buffer to account for a small time diff between the machine and the time on staging
@@ -968,19 +968,19 @@ class Cluster:
         else:
             return False
 
-    def wait_for_event(self, event_to_find, reference_time, params_list=None, host_id="", timeout=10):
+    def wait_for_event(self, event_to_find, reference_time, params_list=None, host_id="",infra_env_id="", timeout=10):
         log.info(f"Searching for event: {event_to_find}")
         if params_list is None:
             params_list = list()
         try:
             waiting.wait(
-                lambda: self._find_event(event_to_find, reference_time, params_list, host_id),
+                lambda: self._find_event(event_to_find, reference_time, params_list, host_id, infra_env_id),
                 timeout_seconds=timeout,
                 sleep_seconds=2,
                 waiting_for="Event: %s" % event_to_find,
             )
         except waiting.exceptions.TimeoutExpired:
-            log.error(f"Event: {event_to_find} did't found")
+            log.error(f"Event: {event_to_find} didn't found")
             raise
 
     @staticmethod
