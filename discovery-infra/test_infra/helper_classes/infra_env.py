@@ -29,6 +29,7 @@ class InfraEnv:
             ignition_config_override = json.dumps(self._config.ignition_config_override)
         else:
             ignition_config_override = None
+
         return self.api_client.create_infra_env(
             self._config.entity_name.get(),
             pull_secret=self._config.pull_secret,
@@ -121,3 +122,11 @@ class InfraEnv:
 
     def get_details(self) -> models.infra_env.InfraEnv:
         return self.api_client.get_infra_env(infra_env_id=self.id)
+
+    def update_proxy(self, proxy: models.Proxy) -> None:
+        self.update_config(proxy=proxy)
+        infra_env_update_params = models.InfraEnvUpdateParams(
+                proxy=self._config.proxy
+        )
+        self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
+

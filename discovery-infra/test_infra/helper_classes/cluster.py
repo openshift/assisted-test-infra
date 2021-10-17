@@ -160,6 +160,10 @@ class Cluster:
         self._infra_env = infra_env
         return infra_env
 
+    def update_infra_env_proxy(self, proxy: models.Proxy) -> None:
+        self._infra_env_config.proxy = proxy
+        self._infra_env.update_proxy(proxy=proxy)
+
     def download_infra_env_image(self, iso_download_path = None) -> None:
         iso_download_path = iso_download_path or self._config.iso_download_path
         self._infra_env.download_image(iso_download_path=iso_download_path)
@@ -410,13 +414,14 @@ class Cluster:
     def patch_discovery_ignition(self, ignition):
         self._infra_env.patch_discovery_ignition(ignition_info=ignition)
 
-    def set_proxy_values(self, http_proxy, https_proxy="", no_proxy=""):
+    def set_proxy_values(self, proxy_values: models.Proxy) -> None:
         log.info(
-            f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} "
-            f"for cluster: {self.id}"
+            f"Setting proxy values {proxy_values} for cluster: {self.id}"
         )
-        self.update_config(proxy=models.Proxy(http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy))
-        self.api_client.set_cluster_proxy(self.id, http_proxy, https_proxy, no_proxy)
+        self.update_config(proxy=proxy_values)
+        self.api_client.set_cluster_proxy(
+            self.id, http_proxy=self._config.proxy.http_proxy, https_proxy=self._config.proxy.https_proxy, no_proxy=self._config.proxy.no_proxy
+        )
 
     @JunitTestCase()
     def start_install(self):
