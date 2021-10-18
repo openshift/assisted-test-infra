@@ -1,6 +1,6 @@
-boto3==1.18.63
+boto3==1.18.64
 dataclasses==0.8
-debugpy==1.4.3
+debugpy==1.5.1
 dnspython==2.1.0
 elasticsearch==7.15.0
 filelock==3.3.0
