@@ -68,7 +68,7 @@ class TestKubeAPI(BaseTest):
 
     @classmethod
     def _get_vips(cls, cluster_config, nodes: Nodes):
-        main_cidr = nodes.controller.get_primary_machine_cidr()
+        main_cidr = nodes.controller.get_machine_cidr()
 
         # Arbitrarily choose 3, 4 (e.g. 192.168.128.3 and 192.168.128.4) for the VIPs
         # Terraform/libvirt allocates IPs in the 10+ range so these should be safe to use
@@ -122,7 +122,9 @@ class TestKubeAPI(BaseTest):
     def test_kube_api_ipv6(self, kube_test_configs_single_node, kube_api_context, proxy_server, get_nodes):
         cluster_config, tf_config = kube_test_configs_single_node
         tf_config.is_ipv6 = True
-        tf_config.is_ipv4 = False
+        cluster_config.service_network_cidr = consts.DEFAULT_IPV6_SERVICE_CIDR
+        cluster_config.cluster_network_cidr = consts.DEFAULT_IPV6_CLUSTER_CIDR
+        cluster_config.cluster_network_host_prefix = consts.DEFAULT_IPV6_HOST_PREFIX
 
         kube_api_test(kube_api_context, get_nodes(tf_config, cluster_config),
                       cluster_config, proxy_server, is_ipv4=False)
@@ -141,7 +143,7 @@ class TestKubeAPI(BaseTest):
 
     @staticmethod
     def _set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes):
-        machine_cidr = nodes.controller.get_primary_machine_cidr()
+        machine_cidr = nodes.controller.get_machine_cidr()
         agent_cluster_install.set_machinenetwork(machine_cidr)
 
     @classmethod
@@ -275,8 +277,8 @@ def kube_api_test(kube_api_context, nodes: Nodes, cluster_config, proxy_server=N
     cluster_name = cluster_config.cluster_name.get()
 
     # TODO resolve it from the service if the node controller doesn't have this information
-    #  (please see cluster.get_primary_machine_cidr())
-    machine_cidr = nodes.controller.get_primary_machine_cidr()
+    #  (please see cluster.get_machine_cidr())
+    machine_cidr = nodes.controller.get_machine_cidr()
 
     agent_cluster_install = AgentClusterInstall(
         kube_api_client=kube_api_context.api_client,

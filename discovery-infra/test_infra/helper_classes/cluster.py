@@ -74,8 +74,7 @@ class Cluster:
         The name (key) of each argument must match to one of the BaseClusterConfig arguments.
         If key doesn't exists in config - KeyError exception is raised
         """
-        if kwargs:
-            log.info(f"Updating cluster {self.id} configurations to {kwargs}")
+        log.info(f"Updating cluster {self.id} configurations to {kwargs}")
 
         for k, v in kwargs.items():
             if not hasattr(self._config, k):
@@ -239,24 +238,50 @@ class Cluster:
         self.api_client.update_hosts(cluster_id=self.id, hosts_with_roles=assignment_role)
 
     def set_network_params(
-        self,
-        controller=None,  # Here only for backward compatibility TODO - Remove after QE refactor all e2e tests
+            self,
+            controller=None,  # Here only for backward compatibility TODO - Remove after QE refactor all e2e tests
+            vip_dhcp_allocation: bool = None,
+            service_network_cidr: str = None,
+            cluster_network_cidr: str = None,
+            cluster_network_host_prefix: int = None,
     ):
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
-
-        self.set_advanced_networking(
-            vip_dhcp_allocation=self._config.vip_dhcp_allocation,
-            cluster_networks=self._config.cluster_networks,
-            service_networks=self._config.service_networks,
+        self.update_config(
+            vip_dhcp_allocation=vip_dhcp_allocation
+            if vip_dhcp_allocation is not None
+            else self._config.vip_dhcp_allocation,
+            service_network_cidr=service_network_cidr
+            if service_network_cidr is not None
+            else self._config.service_network_cidr,
+            cluster_network_cidr=cluster_network_cidr
+            if cluster_network_cidr is not None
+            else self._config.cluster_network_cidr,
+            cluster_network_host_prefix=cluster_network_host_prefix
+            if cluster_network_host_prefix is not None
+            else self._config.cluster_network_host_prefix,
         )
 
-        if self._config.vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
-            self.set_machine_networks(self.get_machine_networks())
+        # TODO MGMT-7365: Deprecate single CIDR
+        self.api_client.update_cluster(
+            self.id,
+            {
+                "vip_dhcp_allocation": self._config.vip_dhcp_allocation,
+                "service_network_cidr": self._config.service_network_cidr,
+                "cluster_network_cidr": self._config.cluster_network_cidr,
+                "cluster_network_host_prefix": self._config.cluster_network_host_prefix,
+                "cluster_networks": [models.ClusterNetwork(self.id, self._config.cluster_network_cidr, self._config.cluster_network_host_prefix)],
+                "service_networks": [models.ServiceNetwork(self.id, self._config.service_network_cidr)],
+            },
+        )
+
+        if vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
+            machine_cidr = self.get_machine_cidr()
+            self.set_primary_machine_cidr(machine_cidr)
         elif self._config.platform != consts.Platforms.NONE:
             self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
 
-    def get_primary_machine_cidr(self):
-        cidr = self.nodes.controller.get_primary_machine_cidr()
+    def get_machine_cidr(self):
+        cidr = self.nodes.controller.get_machine_cidr()
 
         if not cidr:
             # Support controllers which the machine cidr is not configurable. taking it from the AI instead
@@ -269,31 +294,13 @@ class Cluster:
 
         return cidr
 
-    def get_machine_networks(self):
-        networks = []
+    def set_primary_machine_cidr(self, machine_cidr):
+        log.info(f"Setting Primary Machine Network CIDR:{machine_cidr} for cluster: {self.id}")
 
-        primary_machine_cidr = self.nodes.controller.get_primary_machine_cidr()
-        if primary_machine_cidr:
-            networks.append(primary_machine_cidr)
-
-        secondary_machine_cidr = self.nodes.controller.get_provisioning_cidr()
-        if secondary_machine_cidr:
-            networks.append(secondary_machine_cidr)
-
-        if not networks:
-            # Support controllers which the machine cidr is not configurable. taking it from the AI instead
-            networks = self.get_cluster_matching_cidrs(Cluster.get_cluster_hosts(self.get_details()))
-
-            if not networks:
-                raise RuntimeError(f"No matching cidr for DHCP")
-
-        return networks
-
-    def set_machine_networks(self, networks):
-        log.info(f"Setting Machine Networks :{networks} for cluster: {self.id}")
-
+        # TODO MGMT-7365: Deprecate single CIDR
         self.api_client.update_cluster(self.id, {
-            "machine_networks": [models.MachineNetwork(cidr=network) for network in networks],
+            "machine_network_cidr": machine_cidr,
+            "machine_networks": [models.MachineNetwork(self.id, machine_cidr)],
         })
 
     def set_ingress_and_api_vips(self, vips):
@@ -310,22 +317,40 @@ class Cluster:
         self.update_config(base_dns_domain=base_dns_domain)
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
 
-    def set_advanced_networking(
-        self,
-        vip_dhcp_allocation: Optional[bool] = None,
-        cluster_networks: Optional[List[models.ClusterNetwork]] = None,
-        service_networks: Optional[List[models.ServiceNetwork]] = None,
-    ):
-        advanced_networking = {
-            "vip_dhcp_allocation": vip_dhcp_allocation if vip_dhcp_allocation is not None else self._config.vip_dhcp_allocation,
-            "cluster_networks": cluster_networks if cluster_networks is not None else self._config.cluster_networks,
-            "service_networks": service_networks if service_networks is not None else self._config.service_networks,
-        }
+    def set_advanced_networking(self, cluster_cidr: str, service_cidr: str, cluster_host_prefix: int):
+        log.info(
+            f"Setting Cluster CIDR: {cluster_cidr}, Service CIDR: {service_cidr}, "
+            f"Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}"
+        )
 
-        log.info(f"Updating advanced networking with {advanced_networking} for cluster: {self.id}")
+        self.update_config(
+            service_network_cidr=service_cidr,
+            cluster_network_cidr=cluster_cidr,
+            cluster_network_host_prefix=cluster_host_prefix,
+        )
+        self.api_client.update_cluster(
+            self.id,
+            {
+                "cluster_network_cidr": cluster_cidr,
+                "service_network_cidr": service_cidr,
+                "cluster_network_host_prefix": cluster_host_prefix,
+            },
+        )
 
-        self.update_config(**advanced_networking)
-        self.api_client.update_cluster(self.id, advanced_networking)
+    def set_advanced_cluster_cidr(self, cluster_cidr: str):
+        log.info(f"Setting Cluster CIDR: {cluster_cidr} for cluster: {self.id}")
+        self.update_config(cluster_network_cidr=cluster_cidr)
+        self.api_client.update_cluster(self.id, {"cluster_network_cidr": cluster_cidr})
+
+    def set_advanced_service_cidr(self, service_cidr: str):
+        log.info(f"Setting Service CIDR: {service_cidr} for cluster: {self.id}")
+        self.update_config(service_network_cidr=service_cidr)
+        self.api_client.update_cluster(self.id, {"service_network_cidr": service_cidr})
+
+    def set_advanced_cluster_host_prefix(self, cluster_host_prefix: int):
+        log.info(f"Setting Cluster Host Prefix: {cluster_host_prefix} for cluster: {self.id}")
+        self.update_config(cluster_network_host_prefix=cluster_host_prefix)
+        self.api_client.update_cluster(self.id, {"cluster_network_host_prefix": cluster_host_prefix})
 
     def set_pull_secret(self, pull_secret: str):
         log.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
@@ -725,14 +750,20 @@ class Cluster:
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
-        self.set_network_params(controller=self.nodes.controller)
+        self.set_network_params(
+            controller=self.nodes.controller,
+            vip_dhcp_allocation=self._config.vip_dhcp_allocation,
+            service_network_cidr=self._config.service_network_cidr,
+            cluster_network_cidr=self._config.cluster_network_cidr,
+            cluster_network_host_prefix=self._config.cluster_network_host_prefix,
+        )
 
         # in case of None platform we need to specify dns records before hosts are ready
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:
-            main_cidr = self.get_primary_machine_cidr()
+            main_cidr = self.get_machine_cidr()
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
             self.nodes.controller.set_single_node_ip(ip)
             self.nodes.controller.set_dns(api_vip=ip, ingress_vip=ip)
@@ -903,7 +934,7 @@ class Cluster:
         return self.api_client.get_events(cluster_id=self.id, host_id=host_id)
 
     def _configure_load_balancer(self):
-        main_cidr = self.get_primary_machine_cidr()
+        main_cidr = self.get_machine_cidr()
         secondary_cidr = self.nodes.controller.get_provisioning_cidr()
 
         master_ips = self.get_master_ips(self.api_client, self.id, main_cidr) + self.get_master_ips(

@@ -64,7 +64,7 @@ class TerraformController(LibvirtController):
             "libvirt_master_vcpu": kwargs.get("master_vcpu", resources.DEFAULT_MASTER_CPU),
             "worker_count": kwargs.get("workers_count", 0),
             "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
-            "machine_cidr": self.get_primary_machine_cidr(),
+            "machine_cidr": self.get_machine_cidr(),
             "libvirt_network_name": self.network_name,
             "libvirt_network_mtu": kwargs.get("network_mtu", 1500),
             "libvirt_dns_records": kwargs.get("dns_records", {}),
@@ -124,7 +124,7 @@ class TerraformController(LibvirtController):
         with open(tfvars_json_file) as _file:
             tfvars = json.load(_file)
 
-        machine_cidr = self.get_primary_machine_cidr()
+        machine_cidr = self.get_machine_cidr()
         provisioning_cidr = self.get_provisioning_cidr()
 
         logging.info("Machine cidr is: %s", machine_cidr)
@@ -208,7 +208,7 @@ class TerraformController(LibvirtController):
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
             ipaddress.ip_address(
-                ipaddress.ip_network(self.get_primary_machine_cidr()).network_address
+                ipaddress.ip_network(self.get_machine_cidr()).network_address
             )
             + 100
         )
@@ -217,22 +217,17 @@ class TerraformController(LibvirtController):
 
     @utils.on_exception(message='Failed to run terraform delete', silent=True)
     def _create_address_list(self, num, starting_ip_addr):
-        # IPv6 addresses can't be set alongside mac addresses using TF libvirt provider
-        # Otherwise results: "Invalid to specify MAC address '<mac>' in network '<network>' IPv6 static host definition"
-        # see https://github.com/dmacvicar/terraform-provider-libvirt/issues/396
-        if self.is_ipv6:
+        if self.is_ipv6 and not self.is_ipv4:
             return utils.create_empty_nested_list(num)
         return utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
-    def get_primary_machine_cidr(self):
-        # In dualstack mode the primary network is IPv4
+    def get_machine_cidr(self):
         if self.is_ipv6 and not self.is_ipv4:
             return self._config.net_asset.machine_cidr6
         return self._config.net_asset.machine_cidr
 
     def get_provisioning_cidr(self):
-        # In dualstack/IPv6 mode the secondary network is IPv6
-        if self.is_ipv6:
+        if self.is_ipv6 and not self.is_ipv4:
             return self._config.net_asset.provisioning_cidr6
         return self._config.net_asset.provisioning_cidr
 
@@ -248,7 +243,7 @@ class TerraformController(LibvirtController):
         )
 
     def set_dns_for_user_managed_network(self) -> None:
-        machine_cidr = self.get_primary_machine_cidr()
+        machine_cidr = self.get_machine_cidr()
         nameserver_ip = str(IPNetwork(machine_cidr).ip + 1)
         self.set_dns(nameserver_ip, nameserver_ip)
 

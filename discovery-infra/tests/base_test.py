@@ -233,7 +233,7 @@ class BaseTest:
         logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
         cluster = Cluster(api_client=api_client, config=cluster_configuration, nodes=prepare_nodes_network)
 
-        if self._does_need_proxy_server(prepare_nodes_network):
+        if prepare_nodes_network and prepare_nodes_network.is_ipv6:
             self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
         yield cluster
@@ -381,7 +381,7 @@ class BaseTest:
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
             logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
-            if self._does_need_proxy_server(nodes):
+            if nodes and nodes.is_ipv6:
                 self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
 
             clusters.append(_cluster)
@@ -418,31 +418,23 @@ class BaseTest:
         yield cluster_config, terraform_config
 
     @staticmethod
-    def _does_need_proxy_server(nodes: Nodes):
-        return nodes and nodes.is_ipv6 and not nodes.is_ipv4
-
-    @staticmethod
-    def _set_up_proxy_server(cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
+    def _set_up_proxy_server(cluster: Cluster, cluster_config, proxy_server):
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
         port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
 
-        machine_cidr = cluster.get_primary_machine_cidr()
+        machine_cidr = cluster.get_machine_cidr()
         host_ip = str(IPNetwork(machine_cidr).ip + 1)
-
-        no_proxy = []
-        no_proxy += [str(cluster_network.cidr) for cluster_network in cluster_config.cluster_networks]
-        no_proxy += [str(service_network.cidr) for service_network in cluster_config.service_networks]
-        no_proxy += [machine_cidr]
-        no_proxy += [f".{str(cluster_config.cluster_name)}.redhat.com"]
-        no_proxy = ",".join(no_proxy)
+        no_proxy = ",".join([machine_cidr, cluster_config.service_network_cidr,
+                             cluster_config.cluster_network_cidr,
+                             f".{str(cluster_config.cluster_name)}.redhat.com"])
 
         proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
                              is_ipv6=cluster.nodes.is_ipv6)
         cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy") or install_config.get("Proxy")
-        assert proxy_details, str(install_config)
-        assert proxy_details.get("httpsProxy") == proxy.address, f"{proxy_details.get('httpsProxy')} should equal {proxy.address}"
+        assert proxy_details and proxy_details.get("httpProxy") == proxy.address
+        assert proxy_details.get("httpsProxy") == proxy.address
 
     @pytest.fixture()
     def iptables(self) -> Callable[[Cluster, List[IptableRule], Optional[List[Node]]], None]:
@@ -652,7 +644,7 @@ class BaseTest:
     def update_oc_config(nodes, cluster):
         os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
         if nodes.masters_count == 1:
-            main_cidr = cluster.get_primary_machine_cidr()
+            main_cidr = cluster.get_machine_cidr()
             api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, main_cidr)
         else:
             vips = nodes.controller.get_ingress_and_api_vips()

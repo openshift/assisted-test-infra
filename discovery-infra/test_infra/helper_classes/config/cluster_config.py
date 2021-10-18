@@ -1,11 +1,11 @@
 from abc import ABC
-from dataclasses import dataclass
 from typing import List
 
-from assisted_service_client import models
-from test_infra.utils.entity_name import ClusterName
+from dataclasses import dataclass
 
 from .base_entity_config import BaseEntityConfig
+
+from test_infra.utils.entity_name import ClusterName
 
 
 @dataclass
@@ -18,7 +18,8 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     cluster_name: ClusterName = None
     olm_operators: List[str] = None
     vip_dhcp_allocation: bool = None
-    cluster_networks: List[models.ClusterNetwork] = None
-    service_networks: List[models.ServiceNetwork] = None
+    service_network_cidr: str = None
+    cluster_network_cidr: str = None
+    cluster_network_host_prefix: int = None
     kubeconfig_path: str = None
     network_type: str = None

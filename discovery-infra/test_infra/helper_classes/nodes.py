@@ -136,7 +136,7 @@ class Nodes:
 
     @staticmethod
     def run_for_given_nodes(nodes, func_name, *args):
-        logging.info("Running <%s> on nodes: %s", func_name, [node.name for node in nodes])
+        logging.info("Running %s on nodes : %s", func_name, [node.name for node in nodes])
         return run_concurrently([(getattr(node, func_name), *args) for node in nodes])
 
     def run_for_given_nodes_by_cluster_hosts(self, cluster_hosts, func_name, *args):
