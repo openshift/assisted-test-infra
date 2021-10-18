@@ -106,13 +106,6 @@ class InventoryClient(object):
         result = self.client.register_cluster(new_cluster_params=cluster)
         return result
 
-    def create_infra_env(self, name: str, ssh_public_key: Optional[str] = None, **infra_env_params
-                         ) -> models.infra_env.InfraEnv:
-        infra_env = models.InfraEnvCreateParams(name=name, ssh_authorized_key=ssh_public_key, **infra_env_params)
-        log.info("Creating infra-env with params %s", infra_env.__dict__)
-        result = self.client.register_infra_env(infraenv_create_params=infra_env)
-        return result
-
     def create_day2_cluster(self, name: str, cluster_uuid: str, **cluster_params) -> models.cluster.Cluster:
         cluster = models.AddHostsClusterCreateParams(name=name, id=cluster_uuid, **cluster_params)
         log.info("Creating day 2 cluster with params %s", cluster.__dict__)
@@ -121,16 +114,6 @@ class InventoryClient(object):
 
     def get_cluster_hosts(self, cluster_id: str) -> List[Dict[str, Any]]:
         return self.client.list_hosts(cluster_id=cluster_id)
-
-    def get_infra_env_hosts(self, infra_env_id: str) -> List[Dict[str, Any]]:
-        return self.client.v2_list_hosts(infra_env_id=infra_env_id)
-
-    def get_infra_env(self, infra_env_id: str) -> models.infra_env.InfraEnv:
-        return self.client.get_infra_env(infra_env_id=infra_env_id)
-
-    def delete_infra_env(self, infra_env_id: str) -> None:
-        log.info("Deleting infra_env %s", infra_env_id)
-        self.client.deregister_infra_env(infra_env_id=infra_env_id)
 
     def get_cluster_operators(self, cluster_id: str) -> List[models.MonitoredOperator]:
         return self.cluster_get(cluster_id=cluster_id).monitored_operators
@@ -197,18 +180,6 @@ class InventoryClient(object):
             cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_network_config=static_network_config
         )
         self.download_image(cluster_id=cluster_id, image_path=image_path)
-
-    def update_infra_env(self, infra_env_id: str, infra_env_update_params):
-        log.info("Updating infra env %s with values %s", infra_env_id, infra_env_update_params)
-        self.client.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
-
-    @retry(exceptions=RuntimeError, tries=2, delay=3)
-    def download_infraenv_image(self, infraenv_id: str, image_path: str) -> None:
-        log.info("Downloading image for infra-env %s to %s", infraenv_id, image_path)
-        response = self.client.download_infra_env_discovery_image_with_http_info(infra_env_id=infraenv_id,
-                                                                                 _preload_content=False)
-        response_obj = response[0]
-        self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
     def update_hosts(
             self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None

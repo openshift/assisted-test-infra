@@ -26,7 +26,7 @@ from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
 from test_infra.utils import operators_utils, logs_utils, log, network_utils
-from test_infra.utils.entity_name import ClusterName
+from test_infra.utils.cluster_name import ClusterName
 
 
 class Cluster:

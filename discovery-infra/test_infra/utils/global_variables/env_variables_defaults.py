@@ -72,15 +72,6 @@ class _EnvVariablesDefaults(ABC):
     vsphere_datacenter: str = get_env("VSPHERE_DATACENTER")
     vsphere_datastore: str = get_env("VSPHERE_DATASTORE")
 
-    __instance: ClassVar = None
-
-    def __new__(cls, *args, **kwargs):
-        """ Prevent creating another env_var instance """
-        if isinstance(cls.__instance, cls):
-            raise Exception("Can't initialized more then one global configuration object")
-        cls.__instance = object.__new__(cls, *args, **kwargs)
-        return cls.__instance
-
     def __post_init__(self):
         self._set("olm_operators", operators_utils.parse_olm_operators_from_env())
 

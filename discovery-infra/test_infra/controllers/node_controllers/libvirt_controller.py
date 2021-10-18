@@ -13,8 +13,7 @@ from xml.dom import minidom
 import libvirt
 import waiting
 
-from logger import log
-from test_infra.helper_classes.config import BaseClusterConfig, BaseEntityConfig, BaseInfraEnvConfig
+from test_infra.helper_classes.config import BaseClusterConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra import consts, utils
 from test_infra.controllers.node_controllers.disk import Disk, DiskSourceType
@@ -26,8 +25,8 @@ import xml.dom.minidom as md
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, config: BaseNodeConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
-        super().__init__(config, entity_config)
+    def __init__(self, config: BaseNodeConfig, cluster_config: BaseClusterConfig):
+        super().__init__(config, cluster_config)
         self.libvirt_connection: libvirt.virConnect = libvirt.open('qemu:///system')
         self.private_ssh_key_path: Path = config.private_ssh_key_path
         self._setup_timestamp: str = utils.run_command("date +\"%Y-%m-%d %T\"")[0]

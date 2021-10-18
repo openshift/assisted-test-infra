@@ -3,13 +3,13 @@ from typing import List
 
 from dataclasses import dataclass
 
-from .base_entity_config import BaseEntityConfig
+from .base_config import _BaseConfig
 
-from test_infra.utils.entity_name import ClusterName
+from test_infra.utils.cluster_name import ClusterName
 
 
 @dataclass
-class BaseClusterConfig(BaseEntityConfig, ABC):
+class BaseClusterConfig(_BaseConfig, ABC):
     """
     Define all configurations variables that are needed for Cluster during it's execution
     All arguments must have default to None with type hint

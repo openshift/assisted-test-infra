@@ -1,14 +1,13 @@
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
-from assisted_service_client import models
 from dataclasses import dataclass
 
 from test_infra.consts import env_defaults
-from test_infra.utils import get_kubeconfig_path
-from test_infra.utils.entity_name import ClusterName, InfraEnvName
+from test_infra.utils import get_kubeconfig_path, utils
+from test_infra.utils.cluster_name import ClusterName
 from test_infra.utils.global_variables import GlobalVariables
-from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
+from test_infra.helper_classes.config import BaseClusterConfig
 
 
 global_variables = GlobalVariables()
@@ -41,28 +40,15 @@ class ClusterConfig(BaseClusterConfig):
             self.iso_download_path = self._get_iso_download_path(self.cluster_name.get())
 
 
-@dataclass
-class InfraEnvConfig(BaseInfraEnvConfig):
-    """ A Cluster configuration with defaults that obtained from EnvConfig """
+def get_api_client(offline_token=None, **kwargs) -> InventoryClient:
+    url = global_variables.remote_service_url
+    offline_token = offline_token or global_variables.offline_token
 
-    @staticmethod
-    def get_default(key, default=None) -> Any:
-        return getattr(global_variables, key)
+    if not url:
+        url = utils.get_local_assisted_service_url(
+            global_variables.namespace, 'assisted-service', utils.get_env('DEPLOY_TARGET'))
 
-    @staticmethod
-    def _get_iso_download_path(infra_env_name: str):
-        return str(
-            Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(
-                f"{infra_env_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}"
-            )
-        ).strip()
-
-    def __post_init__(self):
-        super().__post_init__()
-        if self.entity_name is None or isinstance(self.entity_name, str):
-            self.entity_name = InfraEnvName()
-        if self.iso_download_path is None:
-            self.iso_download_path = self._get_iso_download_path(self.entity_name.get())
+    return ClientFactory.create_client(url, offline_token, **kwargs)
 
 
 @dataclass

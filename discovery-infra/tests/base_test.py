@@ -30,21 +30,13 @@ from test_infra.controllers.node_controllers import (Node, NodeController,
 from test_infra.controllers.proxy_controller.proxy_controller import \
     ProxyController
 from test_infra.helper_classes.cluster import Cluster
-from test_infra.helper_classes.config import BaseTerraformConfig
-from test_infra.helper_classes.config.controller_config import BaseNodeConfig
-from test_infra.helper_classes.config.vsphere_config import \
-    VSphereControllerConfig
-from test_infra.helper_classes.infra_env import InfraEnv
-from test_infra.helper_classes.kube_helpers import (KubeAPIContext,
-                                                    create_kube_api_client)
+from test_infra.helper_classes.config.controller_config import BaseNodeConfig, global_variables
+from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
+from test_infra.helper_classes.kube_helpers import create_kube_api_client, KubeAPIContext
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools.assets import LibvirtNetworkAssets
 from test_infra.utils import utils
-from test_infra.utils.operators_utils import (parse_olm_operators_from_env,
-                                              resource_param)
-
-from tests.config import (ClusterConfig, InfraEnvConfig, TerraformConfig,
-                          global_variables)
+from tests.config import ClusterConfig, TerraformConfig
 
 
 class BaseTest:
@@ -102,15 +94,6 @@ class BaseTest:
         return ClusterConfig()
 
     @pytest.fixture
-    def new_infra_env_configuration(self) -> InfraEnvConfig:
-        """
-        Creates new cluster configuration object.
-        Override this fixture in your test class to provide a custom cluster configuration. (See TestInstall)
-        :rtype: new cluster configuration object
-        """
-        return InfraEnvConfig()
-
-    @pytest.fixture
     def cluster_configuration(self, request: pytest.FixtureRequest,
                               new_cluster_configuration: ClusterConfig) -> ClusterConfig:
         """
@@ -130,49 +113,17 @@ class BaseTest:
         yield utils.run_marked_fixture(new_cluster_configuration, "override_cluster_configuration", request)
 
     @pytest.fixture
-    def infra_env_configuration(self, request: pytest.FixtureRequest,
-                                new_infra_env_configuration: InfraEnvConfig) -> InfraEnvConfig:
-        """
-        Allows the test to modify the cluster configuration by registering a custom fixture.
-        To register the custom fixture you have to mark the test with "override_cluster_configuration" marker.
-
-        For example:
-
-        @pytest.fixture
-        def FIXTURE_NAME(self, new_cluster_configuration):
-            yield new_cluster_configuration
-
-        @pytest.mark.override_cluster_configuration(FIXTURE_NAME.__name__)
-        def test_something(cluster):
-            pass
-        """
-        yield utils.run_marked_fixture(new_infra_env_configuration, "override_infra_env_configuration", request)
-
-    @pytest.fixture
     def controller(self, cluster_configuration: ClusterConfig,
                    controller_configuration: BaseNodeConfig) -> NodeController:
 
         if cluster_configuration.platform == consts.Platforms.VSPHERE:
             return VSphereController(controller_configuration, cluster_configuration)
 
-        return TerraformController(controller_configuration, entity_config=cluster_configuration)
-
-    @pytest.fixture
-    def infraenv_controller(self, infra_env_configuration: InfraEnvConfig,
-                            controller_configuration: BaseNodeConfig) -> NodeController:
-        if infra_env_configuration.platform == consts.Platforms.VSPHERE:
-            # TODO implement for Vsphere
-            raise NotImplementedError
-
-        return TerraformController(controller_configuration, entity_config=infra_env_configuration)
+        return TerraformController(controller_configuration, cluster_config=cluster_configuration)
 
     @pytest.fixture
     def nodes(self, controller: NodeController) -> Nodes:
         return Nodes(controller)
-
-    @pytest.fixture
-    def infraenv_nodes(self, infraenv_controller: NodeController) -> Nodes:
-        return Nodes(infraenv_controller)
 
     @pytest.fixture
     def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
@@ -188,20 +139,7 @@ class BaseTest:
                 infra_utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
 
     @pytest.fixture
-    def prepare_infraenv_nodes(self, infraenv_nodes: Nodes, infra_env_configuration: InfraEnvConfig) -> Nodes:
-        try:
-            infraenv_nodes.prepare_nodes()
-            yield infraenv_nodes
-        finally:
-            if global_variables.test_teardown:
-                logging.info('--- TEARDOWN --- node controller\n')
-                infraenv_nodes.destroy_all_nodes()
-                logging.info(
-                    f'--- TEARDOWN --- deleting iso file from: {infra_env_configuration.iso_download_path}\n')
-                infra_utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
-
-    @classmethod
-    def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
+    def prepare_nodes_network(self, prepare_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
         if global_variables.platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE):
             yield prepared_nodes
             return
@@ -211,20 +149,6 @@ class BaseTest:
         nat.add_nat_rules()
         yield prepared_nodes
         cls.teardown_nat(nat)
-
-    @pytest.fixture
-    def prepare_nodes_network(self, prepare_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
-        yield from self._prepare_nodes_network(prepare_nodes, controller_configuration)
-
-    @pytest.fixture
-    def prepare_infraenv_nodes_network(self, prepare_infraenv_nodes: Nodes,
-                                       controller_configuration: BaseNodeConfig) -> Nodes:
-        yield from self._prepare_nodes_network(prepare_infraenv_nodes, controller_configuration)
-
-    @staticmethod
-    def teardown_nat(nat: NatController) -> None:
-        if global_variables.test_teardown and nat:
-            nat.remove_nat_rules()
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -251,18 +175,6 @@ class BaseTest:
                     cluster.delete()
 
     @pytest.fixture
-    @JunitFixtureTestCase()
-    def infra_env(self, api_client: InventoryClient, request: FixtureRequest, proxy_server,
-                  prepare_infraenv_nodes_network: Nodes, infra_env_configuration: InfraEnvConfig):
-        logging.debug(f'--- SETUP --- Creating InfraEnv for test: {request.node.name}\n')
-        infra_env = InfraEnv(api_client=api_client, config=infra_env_configuration,
-                             nodes=prepare_infraenv_nodes_network)
-
-        yield infra_env
-
-        logging.info('--- TEARDOWN --- Infra env\n')
-
-    @pytest.fixture
     def prepared_cluster(self, cluster):
         cluster.prepare_for_installation()
         yield cluster
@@ -283,7 +195,7 @@ class BaseTest:
             tf_config.net_asset = net_asset.get()
             nodes_data["net_asset"] = net_asset
 
-            controller = TerraformController(tf_config, entity_config=cluster_config)
+            controller = TerraformController(tf_config, cluster_config=cluster_config)
             nodes = Nodes(controller)
             nodes_data["nodes"] = nodes
 
@@ -695,7 +607,7 @@ class BaseTest:
                     raise
 
             yield kube_api_context
-            
+
             if global_variables.test_teardown:
                 v1.delete_namespace(global_variables.spoke_namespace)
 

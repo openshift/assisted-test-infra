@@ -15,7 +15,7 @@ from test_infra.controllers.node_controllers.terraform_controller import Terrafo
 
 from download_logs import download_must_gather, gather_sosreport_data
 from oc_utils import get_operators_status
-from test_infra.utils.entity_name import ClusterName
+from test_infra.utils.cluster_name import ClusterName
 from tests.config import TerraformConfig, ClusterConfig
 
 warn_deprecate()

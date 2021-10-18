@@ -120,11 +120,169 @@ def are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_er
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
         statuses,
         [
-            (i, host["id"], host.get("requested_hostname"), host.get("role"), host["status"], host["status_info"])
+            (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
             for i, host in enumerate(hosts, start=1)
         ],
     )
     return False
+
+
+def wait_till_hosts_with_macs_are_in_status(
+    client,
+    cluster_id,
+    macs,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
+):
+    log.info("Wait till %s nodes are in one of the statuses %s", len(macs), statuses)
+
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            get_cluster_hosts_with_mac(client, cluster_id, macs),
+            len(macs),
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Nodes to be in of the statuses %s" % statuses,
+    )
+
+
+def wait_till_all_hosts_are_in_status(
+    client,
+    cluster_id,
+    nodes_count,
+    statuses,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
+):
+    log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
+
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            client.get_cluster_hosts(cluster_id),
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Nodes to be in of the statuses %s" % statuses,
+    )
+
+
+def wait_till_at_least_one_host_is_in_status(
+    client,
+    cluster_id,
+    statuses,
+    nodes_count=1,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
+):
+    log.info("Wait till 1 node is in one of the statuses %s", statuses)
+
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            client.get_cluster_hosts(cluster_id),
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Node to be in of the statuses %s" % statuses,
+    )
+
+
+def wait_till_specific_host_is_in_status(
+    client,
+    cluster_id,
+    host_name,
+    nodes_count,
+    statuses,
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    fall_on_error_status=True,
+    interval=5,
+):
+    log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
+
+    waiting.wait(
+        lambda: are_hosts_in_status(
+            [client.get_host_by_name(cluster_id, host_name)],
+            nodes_count,
+            statuses,
+            fall_on_error_status,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for="Node to be in of the statuses %s" % statuses,
+    )
+
+
+def wait_till_at_least_one_host_is_in_stage(
+    client,
+    cluster_id,
+    stages,
+    nodes_count=1,
+    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    interval=5,
+):
+    log.info(f"Wait till {nodes_count} node is in stage {stages}")
+    try:
+        waiting.wait(
+            lambda: are_host_progress_in_stage(
+                client.get_cluster_hosts(cluster_id),
+                stages,
+                nodes_count,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Node to be in of the stage %s" % stages,
+        )
+    except BaseException:
+        hosts = client.get_cluster_hosts(cluster_id)
+        log.error(
+            f"All nodes stages: "
+            f"{[host['progress']['current_stage'] for host in hosts]} "
+            f"when waited for {stages}"
+        )
+        raise
+
+
+def wait_till_specific_host_is_in_stage(
+    client,
+    cluster_id: str,
+    host_name: str,
+    stages: List[str],
+    nodes_count: int = 1,
+    timeout: int = consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    interval: int = 5,
+):
+    log.info(f"Wait till {host_name} host is in stage {stages}")
+    try:
+        waiting.wait(
+            lambda: are_host_progress_in_stage(
+                [client.get_host_by_name(cluster_id, host_name)],
+                stages,
+                nodes_count,
+            ),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="Node to be in of the stage %s" % stages,
+        )
+    except BaseException:
+        hosts = [client.get_host_by_name(cluster_id, host_name)]
+        log.error(
+            f"All nodes stages: "
+            f"{[host['progress']['current_stage'] for host in hosts]} "
+            f"when waited for {stages}"
+        )
+        raise
 
 
 def are_host_progress_in_stage(hosts, stages, nodes_count=1):
@@ -496,9 +654,9 @@ def get_openshift_release_image(allow_default=True):
     return release_image
 
 
-def copy_template_tree(dst, none_platform_mode=False, is_infra_env=False):
+def copy_template_tree(dst, none_platform_mode=False):
     copy_tree(
-        src=consts.TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW if is_infra_env else consts.TF_TEMPLATE_NONE_PLATFORM_FLOW if none_platform_mode else consts.TF_TEMPLATE_BARE_METAL_FLOW, dst=dst
+        src=consts.TF_TEMPLATE_NONE_PLATFORM_FLOW if none_platform_mode else consts.TF_TEMPLATE_BARE_METAL_FLOW, dst=dst
     )
 
 
