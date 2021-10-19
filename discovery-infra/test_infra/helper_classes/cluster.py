@@ -58,8 +58,16 @@ class Cluster:
         self.name = config.cluster_name.get()
 
     @property
-    def config(self):
-        return self._config.get_copy()
+    def kubeconfig_path(self):
+        return self._config.kubeconfig_path
+
+    @property
+    def iso_download_path(self):
+        return self._config.iso_download_path
+
+    @property
+    def download_image(self):
+        return self._config.download_image
 
     def _update_day2_config(self, api_client: InventoryClient, cluster_id: str):
         day2_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)

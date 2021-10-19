@@ -40,10 +40,6 @@ class InfraEnv:
             proxy=self._config.proxy
         )
 
-    @property
-    def config(self):
-        return self._config.get_copy()
-
     def update_config(self, **kwargs):
         """
         Note that kwargs can contain values for overriding BaseInfraEnvConfig arguments.
