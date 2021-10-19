@@ -451,12 +451,9 @@ class BaseTest:
         ):
             given_node_ips = []
             given_nodes = given_nodes or cluster.nodes.nodes
-            cluster_config = cluster.config
 
-            if cluster_config.download_image:
-                cluster.generate_and_download_infra_env(
-                    iso_download_path=cluster_config.iso_download_path,
-                )
+            if cluster.download_image:
+                cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
             cluster.nodes.start_given(given_nodes)
             for node in given_nodes:
                 given_node_ips.append(node.ips[0])
@@ -646,7 +643,7 @@ class BaseTest:
 
     @staticmethod
     def update_oc_config(nodes, cluster):
-        os.environ["KUBECONFIG"] = cluster.config.kubeconfig_path
+        os.environ["KUBECONFIG"] = cluster.kubeconfig_path
         if nodes.masters_count == 1:
             main_cidr = cluster.get_primary_machine_cidr()
             api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, main_cidr)
@@ -662,7 +659,7 @@ class BaseTest:
         self.update_oc_config(nodes, cluster)
 
         def check_status():
-            res = infra_utils.get_assisted_controller_status(cluster.config.kubeconfig_path)
+            res = infra_utils.get_assisted_controller_status(cluster.kubeconfig_path)
             return "Running" in str(res, 'utf-8')
 
         waiting.wait(
