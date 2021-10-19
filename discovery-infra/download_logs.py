@@ -24,7 +24,7 @@ from scp import SCPException
 
 from logger import log, add_log_file_handler
 from test_infra import warn_deprecate
-from test_infra.assisted_service_api import InventoryClient, create_client
+from test_infra.assisted_service_api import InventoryClient, ClientFactory
 from test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
 from test_infra.controllers.node_controllers.libvirt_controller import \
     LibvirtController
@@ -33,7 +33,7 @@ from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools.concurrently import run_concurrently
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
                               fetch_url, recreate_folder, run_command,
-                              verify_logs_uploaded)
+                              verify_logs_uploaded, utils)
 from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
@@ -71,7 +71,8 @@ def main():
     if args.sosreport:
         gather_sosreport_data(output_dir=args.dest)
 
-    client = create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT)
+    client = ClientFactory.create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT,
+                                         offline_token=utils.get_env("OFFLINE_TOKEN"))
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
         download_cluster_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
