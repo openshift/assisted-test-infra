@@ -234,21 +234,19 @@ class InventoryClient(object):
         host_update_params = models.HostUpdateParams(host_role=host_role, host_name=host_name)
         self.client.v2_update_host(infra_env_id=infra_env_id, host_id=host_id, host_update_params=host_update_params)
 
-    def select_installation_disk(self, cluster_id: str, hosts_with_diskpaths: List[dict]) -> models.cluster.Cluster:
-        log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
+    def select_installation_disk(self, infra_env_id: str, host_id: str, disk_paths: List[dict]) -> None:
+        log.info("Setting installation disk for host %s in infra_env %s", host_id, infra_env_id)
 
-        def role_to_selected_disk_config(
-            host_id: str, disk_id: str, role: models.DiskRole
-        ) -> models.ClusterupdateparamsDisksSelectedConfig:
-            disk_config_params = models.DiskConfigParams(id=disk_id, role=role)
-            return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
+        def role_to_selected_disk_config(disk_id: str, role: models.DiskRole) -> models.DiskConfigParams:
+            return models.DiskConfigParams(id=disk_id, role=role)
 
         disks_selected_config = [
-            role_to_selected_disk_config(h["id"], h["disk_id"] if "disk_id" in h else h["path"], h["role"])
-            for h in hosts_with_diskpaths
+            role_to_selected_disk_config(disk["disk_id"] if "disk_id" in disk else disk["path"], disk["role"])
+            for disk in disk_paths
         ]
-        params = models.ClusterUpdateParams(disks_selected_config=disks_selected_config)
-        return self.update_cluster(cluster_id=cluster_id, update_params=params)
+
+        params = models.HostUpdateParams(disks_selected_config=disks_selected_config)
+        return self.client.v2_update_host(infra_env_id=infra_env_id, host_id=host_id, host_update_params=params)
 
     def set_pull_secret(self, cluster_id: str, pull_secret: str) -> models.cluster.Cluster:
         log.info("Setting pull secret for cluster %s", cluster_id)
