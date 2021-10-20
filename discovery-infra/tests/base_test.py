@@ -12,6 +12,7 @@ import test_infra.utils as infra_utils
 import waiting
 from _pytest.fixtures import FixtureRequest
 from assisted_service_client.rest import ApiException
+from assisted_service_client import models
 from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from kubernetes.client import CoreV1Api
@@ -434,7 +435,10 @@ class BaseTest:
 
         proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
                              is_ipv6=cluster.nodes.is_ipv6)
-        cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
+        cluster_proxy_values = models.Proxy(
+            http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy
+        )
+        cluster.set_proxy_values(proxy_values=cluster_proxy_values)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy") or install_config.get("Proxy")
         assert proxy_details, str(install_config)
