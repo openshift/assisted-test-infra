@@ -474,7 +474,7 @@ lint:
 	skipper make _lint
 
 _lint:
-	pre-commit run --all-files
+	pre-commit run --files ./discovery-infra/test_infra/* ./discovery-infra/tests/*
 
 test:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
