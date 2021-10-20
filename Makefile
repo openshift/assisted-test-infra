@@ -471,9 +471,6 @@ $(REPORTS):
 
 lint:
 	mkdir -p build
-	skipper make _lint
-
-_lint:
 	pre-commit run --files ./discovery-infra/test_infra/* ./discovery-infra/tests/*
 
 test:
