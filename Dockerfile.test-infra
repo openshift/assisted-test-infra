@@ -2,7 +2,9 @@ FROM quay.io/ocpmetal/assisted-service:latest AS service
 
 FROM quay.io/centos/centos:8.3.2011
 
-RUN yum -y install \
+RUN echo -e '[appstream]\nname=CentOS Linux $releasever - AppStream\nmirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=AppStream&infra=$infra\n#baseurl=http://mirror.centos.org/$contentdir/$releasever/AppStream/$basearch/os/\ngpgcheck=1\nenabled=1\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial' > /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+
+RUN yum -y install --setopt=skip_missing_names_on_install=False \
   make \
   gcc \
   unzip \
@@ -13,8 +15,8 @@ RUN yum -y install \
   httpd-tools \
   jq \
   nss_wrapper \
-  python3 \
-  python3-devel \
+  python39 \
+  python39-devel \
   libvirt-client \
   libvirt-devel \
   libguestfs-tools \
