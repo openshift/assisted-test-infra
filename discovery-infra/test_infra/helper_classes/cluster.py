@@ -244,8 +244,8 @@ class Cluster:
         self.update_config(cluster_name=ClusterName(prefix=cluster_name, suffix=None))
         self.api_client.update_cluster(self.id, {"name": cluster_name})
 
-    def select_installation_disk(self, hosts_with_disk_paths):
-        self.api_client.select_installation_disk(self.id, hosts_with_disk_paths)
+    def select_installation_disk(self, host_id: str, disk_paths: List[dict]) -> None:
+        self._infra_env.select_host_installation_disk(host_id=host_id, disk_paths=disk_paths)
 
     def set_ocs(self, properties=None):
         self.set_olm_operator(consts.OperatorType.OCS, properties=properties)
