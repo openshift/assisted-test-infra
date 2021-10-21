@@ -2,7 +2,7 @@ import json
 import os
 import random
 from ipaddress import ip_address, ip_network
-from typing import Any, Dict, List, Tuple, Set
+from typing import Any, Dict, List, Set, Tuple
 
 import yaml
 from test_infra import consts
@@ -13,7 +13,7 @@ _SECONDARY_LOGICAL_INTERFACE = "eth1"
 
 def generate_macs(count: int) -> List[str]:
     return [
-        "02:00:00:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        f"02:00:00:{random.randint(0, 255):02x}:{random.randint(0, 255):02x}:{random.randint(0, 255):02x}"
         for _ in range(count)
     ]
 
@@ -24,10 +24,11 @@ def generate_day2_static_network_data_from_tf(tf_folder: str, num_day2_workers: 
         tfvars = json.load(_file)
 
     network_config = []
-    primary_macs = tfvars["libvirt_worker_macs"][len(tfvars["libvirt_worker_macs"]) - num_day2_workers:]
+    primary_macs = tfvars["libvirt_worker_macs"][len(tfvars["libvirt_worker_macs"]) - num_day2_workers :]
     secondary_macs = tfvars["libvirt_secondary_worker_macs"][
-        len(tfvars["libvirt_secondary_worker_macs"]) - num_day2_workers:
+        len(tfvars["libvirt_secondary_worker_macs"]) - num_day2_workers :
     ]
+
     for count in range(num_day2_workers):
         host_data = _prepare_host_static_network_data(
             primary_macs[count],

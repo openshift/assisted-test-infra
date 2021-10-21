@@ -1,11 +1,10 @@
 import logging
 from pprint import pformat
-from typing import List, Optional, Tuple, Union, Any
+from typing import List, Optional, Tuple, Union
 
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 from test_infra import consts
-
 from test_infra.consts.kube_api import (
     CRD_API_GROUP,
     DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
@@ -14,6 +13,7 @@ from test_infra.consts.kube_api import (
     HIVE_API_GROUP,
     HIVE_API_VERSION,
 )
+
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .common import ObjectReference

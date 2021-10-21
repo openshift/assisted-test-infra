@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 from builtins import list
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import hcl2
 from python_terraform import IsFlagged, Terraform, Tfstate
@@ -40,8 +40,7 @@ class TerraformUtils:
         return list(map(lambda d: next(iter(d)), results))
 
     def apply(self, refresh: bool = True) -> None:
-        return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh,
-                                                  input=False, skip_plan=True)
+        return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True)
         if return_value != 0:
             message = f"Terraform apply failed with return value {return_value}, output {output} , error {err}"
             logging.error(message)
@@ -68,8 +67,7 @@ class TerraformUtils:
 
     def get_resources(self, resource_type: str = None) -> List[Dict[str, Any]]:
         state = self.get_state()
-        return [resource for resource in state.resources
-                if resource_type is None or resource["type"] == resource_type]
+        return [resource for resource in state.resources if resource_type is None or resource["type"] == resource_type]
 
     def set_new_vips(self, api_vip: str, ingress_vip: str) -> None:
         self.change_variables(variables={"api_vip": api_vip, "ingress_vip": ingress_vip}, refresh=True)

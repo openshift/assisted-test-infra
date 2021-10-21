@@ -9,7 +9,7 @@ from tests.config import global_variables
 
 @pytest.fixture(scope="session")
 def api_client():
-    logging.info('--- SETUP --- api_client\n')
+    logging.info("--- SETUP --- api_client\n")
     yield global_variables.get_api_client()
 
 

@@ -6,10 +6,9 @@ from test_infra.utils import utils
 
 
 class TerraformControllerUtil:
-
     @classmethod
     def get_folder(cls, cluster_name: str, namespace=None):
-        folder_name = f'{cluster_name}__{namespace}' if namespace else f'{cluster_name}'
+        folder_name = f"{cluster_name}__{namespace}" if namespace else f"{cluster_name}"
         return os.path.join(consts.TF_FOLDER, folder_name)
 
     @classmethod

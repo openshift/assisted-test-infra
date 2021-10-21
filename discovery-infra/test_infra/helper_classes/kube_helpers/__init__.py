@@ -21,19 +21,14 @@ When a ClusterDeployment has sufficient data and the assigned agents are
 approved, installation will be started automatically.
 """
 
-from .cluster_image_set import ClusterImageSet, ClusterImageSetReference
-from .cluster_deployment import ClusterDeployment
 from .agent import Agent
-from .nmstate_config import NMStateConfig
-from .secret import deploy_default_secret, Secret
-from .infraenv import deploy_default_infraenv, InfraEnv, Proxy
 from .agent_cluster_install import AgentClusterInstall
-from .common import (
-    create_kube_api_client,
-    UnexpectedStateError,
-    KubeAPIContext,
-    ObjectReference,
-)
+from .cluster_deployment import ClusterDeployment
+from .cluster_image_set import ClusterImageSet, ClusterImageSetReference
+from .common import KubeAPIContext, ObjectReference, UnexpectedStateError, create_kube_api_client
+from .infraenv import InfraEnv, Proxy, deploy_default_infraenv
+from .nmstate_config import NMStateConfig
+from .secret import Secret, deploy_default_secret
 
 __all__ = (
     "ClusterImageSet",
@@ -50,4 +45,5 @@ __all__ = (
     "deploy_default_secret",
     "deploy_default_infraenv",
     "create_kube_api_client",
+    "Proxy",
 )
