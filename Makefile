@@ -11,6 +11,9 @@ REPORTS = $(ROOT_DIR)/reports
 
 SKIPPER_PARAMS ?= -i
 
+# lint
+LINT_CODE_STYLING_DIRS := discovery-infra/tests discovery-infra/test_infra
+
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
 SERVICE_BASE_REF := $(or $(SERVICE_BASE_REF), "master")
@@ -470,8 +473,27 @@ $(REPORTS):
 	-mkdir -p $(REPORTS)
 
 lint:
+	mkdir -p $(REPORTS)
+	make _flake8
+	make _reformat
+
+pre-commit:
+	# TODO not identifying all pep8 violation - WIP
 	mkdir -p build
 	pre-commit run --files ./discovery-infra/test_infra/* ./discovery-infra/tests/*
+
+_reformat:
+	black $(LINT_CODE_STYLING_DIRS) --line-length=120
+	isort $(LINT_CODE_STYLING_DIRS) --profile=black --line-length=120
+
+flake8:
+	skipper make _flake8
+
+_flake8:
+	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS) --statistics
+
+reformat:
+	FLAKE8_EXTRA_PARAMS="$(FLAKE8_EXTRA_PARAMS)" skipper make _reformat
 
 test:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
