@@ -14,6 +14,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     Define all configurations variables that are needed for Cluster during it's execution
     All arguments must have default to None with type hint
     """
+
     cluster_id: str = None
     cluster_name: ClusterName = None
     olm_operators: List[str] = None

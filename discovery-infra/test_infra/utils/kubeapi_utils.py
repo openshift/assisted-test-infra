@@ -1,12 +1,11 @@
 import functools
 import logging
 from ipaddress import IPv4Interface, IPv6Interface
-from typing import Union, List, Tuple
+from typing import List, Tuple, Union
 
 import waiting
 from kubernetes.client import ApiException, CoreV1Api, CustomObjectsApi
-
-from test_infra import utils, consts
+from test_infra import consts, utils
 from test_infra.helper_classes.kube_helpers import ClusterDeployment, ClusterImageSet, InfraEnv, NMStateConfig, Secret
 
 logger = logging.getLogger(__name__)
@@ -38,11 +37,11 @@ def get_ip_for_single_node(cluster_deployment, is_ipv4, timeout=300):
 
 
 def set_agents_hostnames(
-        cluster_deployment,
-        is_ipv4,
-        static_network_mode,
-        tf,
-        nodes_number,
+    cluster_deployment,
+    is_ipv4,
+    static_network_mode,
+    tf,
+    nodes_number,
 ):
     if is_ipv4 and not static_network_mode:
         return
@@ -111,14 +110,14 @@ def suppress_not_found_error(fn):
 
 
 def delete_kube_api_resources_for_namespace(
-        kube_api_client,
-        name,
-        namespace,
-        *,
-        secret_name=None,
-        infraenv_name=None,
-        nmstate_name=None,
-        image_set_name=None,
+    kube_api_client,
+    name,
+    namespace,
+    *,
+    secret_name=None,
+    infraenv_name=None,
+    nmstate_name=None,
+    image_set_name=None,
 ):
     CoreV1Api.delete_namespaced_secret = suppress_not_found_error(
         fn=CoreV1Api.delete_namespaced_secret,

@@ -1,11 +1,10 @@
-import os
-import logging
 import json
+import logging
+import os
 from typing import Optional
 
-from junit_report import JunitTestCase
-
 import test_infra.utils.waiting
+from junit_report import JunitTestCase
 from test_infra import consts, utils
 from test_infra.assisted_service_api import InventoryClient, models
 from test_infra.helper_classes.config import BaseInfraEnvConfig
@@ -38,7 +37,7 @@ class InfraEnv:
             cluster_id=self._config.cluster_id,
             static_network_config=self._config.static_network_config,
             ignition_config_override=ignition_config_override,
-            proxy=self._config.proxy
+            proxy=self._config.proxy,
         )
 
     def update_config(self, **kwargs):
@@ -92,21 +91,12 @@ class InfraEnv:
             statuses=statuses,
             timeout=consts.NODES_REGISTERED_TIMEOUT,
         )
-    
+
     def update_host(self, host_id: str, host_role: Optional[str] = None, host_name: Optional[str] = None):
-        self.api_client.update_host(
-            infra_env_id=self.id,
-            host_id=host_id,
-            host_role=host_role,
-            host_name=host_name
-        )
-    
+        self.api_client.update_host(infra_env_id=self.id, host_id=host_id, host_role=host_role, host_name=host_name)
+
     def bind_host(self, host_id: str, cluster_id: str) -> None:
-        self.api_client.bind_host(
-            infra_env_id=self.id,
-            host_id=host_id,
-            cluster_id=cluster_id
-        )
+        self.api_client.bind_host(infra_env_id=self.id, host_id=host_id, cluster_id=cluster_id)
 
     def unbind_host(self, host_id: str) -> None:
         self.api_client.unbind_host(infra_env_id=self.id, host_id=host_id)
@@ -125,8 +115,5 @@ class InfraEnv:
 
     def update_proxy(self, proxy: models.Proxy) -> None:
         self.update_config(proxy=proxy)
-        infra_env_update_params = models.InfraEnvUpdateParams(
-                proxy=self._config.proxy
-        )
+        infra_env_update_params = models.InfraEnvUpdateParams(proxy=self._config.proxy)
         self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
-

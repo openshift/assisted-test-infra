@@ -5,9 +5,8 @@ import os
 import shutil
 import time
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
-from assisted_service_client.models import infra_env_update_params
 
 import requests
 import waiting
@@ -17,7 +16,7 @@ from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration as KubeConfiguration
 from logger import log
 from retry import retry
-from test_infra import consts, utils
+from test_infra import consts
 from urllib3 import HTTPResponse
 
 
@@ -100,15 +99,16 @@ class InventoryClient(object):
         )
 
     def create_cluster(
-            self, name: str, ssh_public_key: Optional[str] = None, **cluster_params
+        self, name: str, ssh_public_key: Optional[str] = None, **cluster_params
     ) -> models.cluster.Cluster:
         cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params)
         log.info("Creating cluster with params %s", cluster.__dict__)
         result = self.client.v2_register_cluster(new_cluster_params=cluster)
         return result
 
-    def create_infra_env(self, name: str, ssh_public_key: Optional[str] = None, **infra_env_params
-                         ) -> models.infra_env.InfraEnv:
+    def create_infra_env(
+        self, name: str, ssh_public_key: Optional[str] = None, **infra_env_params
+    ) -> models.infra_env.InfraEnv:
         infra_env = models.InfraEnvCreateParams(name=name, ssh_authorized_key=ssh_public_key, **infra_env_params)
         log.info("Creating infra-env with params %s", infra_env.__dict__)
         result = self.client.register_infra_env(infraenv_create_params=infra_env)
@@ -155,10 +155,10 @@ class InventoryClient(object):
 
     def cluster_get(self, cluster_id: str) -> models.cluster.Cluster:
         return self.client.v2_get_cluster(cluster_id=cluster_id)
-    
+
     def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[models.infra_env.InfraEnv]:
         infra_envs = self.infra_envs_list()
-        return filter(lambda infra_env: infra_env['cluster_id'] == cluster_id, infra_envs)
+        return filter(lambda infra_env: infra_env["cluster_id"] == cluster_id, infra_envs)
 
     @classmethod
     def _download(cls, response: HTTPResponse, file_path: str, verify_file_size=False) -> None:
@@ -174,13 +174,13 @@ class InventoryClient(object):
                 )
 
     def generate_image(
-            self,
-            cluster_id: str,
-            ssh_key: str,
-            image_type: str = consts.ImageType.FULL_ISO,
-            static_network_config: Optional[list] = None,
+        self,
+        cluster_id: str,
+        ssh_key: str,
+        image_type: str = consts.ImageType.FULL_ISO,
+        static_network_config: Optional[list] = None,
     ) -> models.cluster.Cluster:
-        cluster = self.cluster_get(cluster_id=cluster_id)
+        self.cluster_get(cluster_id=cluster_id)
         log.info("Generating image for cluster %s", cluster_id)
         image_create_params = models.ImageCreateParams(
             ssh_public_key=ssh_key, static_network_config=static_network_config, image_type=image_type
@@ -196,12 +196,12 @@ class InventoryClient(object):
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
     def generate_and_download_image(
-            self,
-            cluster_id: str,
-            ssh_key: str,
-            image_path: str,
-            image_type: str = consts.ImageType.FULL_ISO,
-            static_network_config: Optional[list] = None,
+        self,
+        cluster_id: str,
+        ssh_key: str,
+        image_path: str,
+        image_type: str = consts.ImageType.FULL_ISO,
+        static_network_config: Optional[list] = None,
     ):
         self.generate_image(
             cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_network_config=static_network_config
@@ -215,14 +215,15 @@ class InventoryClient(object):
     @retry(exceptions=RuntimeError, tries=2, delay=3)
     def download_infraenv_image(self, infraenv_id: str, image_path: str) -> None:
         log.info("Downloading image for infra-env %s to %s", infraenv_id, image_path)
-        response = self.client.download_infra_env_discovery_image_with_http_info(infra_env_id=infraenv_id,
-                                                                                 _preload_content=False)
+        response = self.client.download_infra_env_discovery_image_with_http_info(
+            infra_env_id=infraenv_id, _preload_content=False
+        )
         response_obj = response[0]
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
-#TODO remove and use infraenv
+    # TODO remove and use infraenv
     def update_hosts(
-            self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None
+        self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None
     ) -> models.cluster.Cluster:
         warnings.warn("update_hosts is deprecated. Use update_host instead.", DeprecationWarning)
         log.info("Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id)
@@ -237,7 +238,7 @@ class InventoryClient(object):
         log.info("Setting installation disk for hosts %s in cluster %s", hosts_with_diskpaths, cluster_id)
 
         def role_to_selected_disk_config(
-                host_id: str, disk_id: str, role: models.DiskRole
+            host_id: str, disk_id: str, role: models.DiskRole
         ) -> models.ClusterupdateparamsDisksSelectedConfig:
             disk_config_params = models.DiskConfigParams(id=disk_id, role=role)
             return models.ClusterupdateparamsDisksSelectedConfig(id=host_id, disks_config=[disk_config_params])
@@ -310,13 +311,17 @@ class InventoryClient(object):
     def download_host_ignition(self, infra_env_id: str, host_id: str, destination: str) -> None:
         log.info("Downloading host %s infra_env %s ignition files to %s", host_id, infra_env_id, destination)
 
-        response = self.client.v2_download_host_ignition(infra_env_id=infra_env_id, host_id=host_id, _preload_content=False)
+        response = self.client.v2_download_host_ignition(
+            infra_env_id=infra_env_id, host_id=host_id, _preload_content=False
+        )
         with open(os.path.join(destination, f"host_{host_id}.ign"), "wb") as _file:
             _file.write(response.data)
 
     def download_kubeconfig(self, cluster_id: str, kubeconfig_path: str) -> None:
         log.info("Downloading kubeconfig to %s", kubeconfig_path)
-        response = self.client.v2_download_cluster_credentials(cluster_id=cluster_id, file_name='kubeconfig',_preload_content=False)
+        response = self.client.v2_download_cluster_credentials(
+            cluster_id=cluster_id, file_name="kubeconfig", _preload_content=False
+        )
         with open(kubeconfig_path, "wb") as _file:
             _file.write(response.data)
 
@@ -350,16 +355,29 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             _file.write(response.data)
 
-    def get_events(self, cluster_id: Optional[str] = "", host_id: Optional[str] = "",
-                   infra_env_id: Optional[str] = "", categories=["user"]) -> dict:
+    def get_events(
+        self,
+        cluster_id: Optional[str] = "",
+        host_id: Optional[str] = "",
+        infra_env_id: Optional[str] = "",
+        categories=None,
+    ) -> dict:
+        if categories is None:
+            categories = ["user"]
         # Get users events
-        response = self.events.v2_list_events(cluster_id=cluster_id, host_id=host_id,
-                                              infra_env_id=infra_env_id, categories=categories,
-                                              _preload_content=False)
+        response = self.events.v2_list_events(
+            cluster_id=cluster_id,
+            host_id=host_id,
+            infra_env_id=infra_env_id,
+            categories=categories,
+            _preload_content=False,
+        )
 
         return json.loads(response.data)
 
-    def download_cluster_events(self, cluster_id: str, output_file: str, categories=["user"]) -> None:
+    def download_cluster_events(self, cluster_id: str, output_file: str, categories=None) -> None:
+        if categories is None:
+            categories = ["user"]
         log.info("Downloading cluster events to %s", output_file)
 
         with open(output_file, "wb") as _file:
@@ -397,9 +415,9 @@ class InventoryClient(object):
     def unbind_host(self, infra_env_id: str, host_id: str) -> None:
         log.info(f"Disabling host: {host_id}, from infra_env {infra_env_id}")
         self.client.unbind_host(infra_env_id=infra_env_id, host_id=host_id)
-    
+
     def set_cluster_proxy(
-            self, cluster_id: str, http_proxy: str, https_proxy: Optional[str] = "", no_proxy: Optional[str] = ""
+        self, cluster_id: str, http_proxy: str, https_proxy: Optional[str] = "", no_proxy: Optional[str] = ""
     ) -> models.cluster.Cluster:
         log.info("Setting proxy for cluster %s", cluster_id)
         update_params = models.ClusterUpdateParams(http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy)
@@ -410,7 +428,9 @@ class InventoryClient(object):
         return self.client.v2_get_cluster_install_config(cluster_id=cluster_id)
 
     def patch_cluster_discovery_ignition(self, cluster_id: str, ignition_info: str) -> None:
-        warnings.warn("patch_cluster_discovery_ignition is deprecated. Use patch_discovery_ignition instead.", DeprecationWarning)
+        warnings.warn(
+            "patch_cluster_discovery_ignition is deprecated. Use patch_discovery_ignition instead.", DeprecationWarning
+        )
         log.info("Patching cluster %s discovery ignition", cluster_id)
         return self.client.update_discovery_ignition(
             cluster_id=cluster_id,
@@ -422,7 +442,9 @@ class InventoryClient(object):
         self.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
 
     def get_cluster_discovery_ignition(self, cluster_id: str) -> None:
-        warnings.warn("get_cluster_discovery_ignition is deprecated. Use get_discovery_ignition instead.", DeprecationWarning)
+        warnings.warn(
+            "get_cluster_discovery_ignition is deprecated. Use get_discovery_ignition instead.", DeprecationWarning
+        )
         log.info("Getting discovery ignition for cluster %s", cluster_id)
         return self.client.get_discovery_ignition(
             cluster_id=cluster_id,
@@ -446,10 +468,12 @@ class InventoryClient(object):
         self.client.v2_post_step_reply(infra_env_id=infra_env_id, host_id=host_id, reply=reply)
 
     def host_update_progress(
-            self, infra_env_id: str, host_id: str, current_stage: models.HostStage, progress_info=None
+        self, infra_env_id: str, host_id: str, current_stage: models.HostStage, progress_info=None
     ) -> None:
         host_progress = models.HostProgress(current_stage=current_stage, progress_info=progress_info)
-        self.client.v2_update_host_install_progress(infra_env_id=infra_env_id, host_id=host_id, host_progress=host_progress)
+        self.client.v2_update_host_install_progress(
+            infra_env_id=infra_env_id, host_id=host_id, host_progress=host_progress
+        )
 
     def complete_cluster_installation(self, cluster_id: str, is_success: bool, error_info=None) -> None:
         completion_params = models.CompletionParams(is_success=is_success, error_info=error_info)
@@ -468,7 +492,7 @@ class InventoryClient(object):
     def get_supported_operators(self) -> List[str]:
         return self.operators.v2_list_supported_operators()
 
-# TODO remove in favor of get_preflight_requirements
+    # TODO remove in favor of get_preflight_requirements
     def get_cluster_host_requirements(self, cluster_id: str) -> models.ClusterHostRequirementsList:
         return self.client.get_cluster_host_requirements(cluster_id=cluster_id)
 
@@ -482,11 +506,11 @@ class InventoryClient(object):
 class ClientFactory:
     @staticmethod
     def create_client(
-            url: str,
-            offline_token: str,
-            pull_secret: Optional[str] = "",
-            wait_for_api: Optional[bool] = True,
-            timeout: Optional[int] = consts.WAIT_FOR_BM_API,
+        url: str,
+        offline_token: str,
+        pull_secret: Optional[str] = "",
+        wait_for_api: Optional[bool] = True,
+        timeout: Optional[int] = consts.WAIT_FOR_BM_API,
     ) -> InventoryClient:
         log.info("Creating assisted-service client for url: %s", url)
         c = InventoryClient(url, offline_token, pull_secret)

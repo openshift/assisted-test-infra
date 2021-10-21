@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from assisted_service_client import Inventory, Host, Interface
+from assisted_service_client import Host, Interface, Inventory
 
 DEFAULT_HOSTNAME = "localhost"
 
@@ -18,8 +18,9 @@ class ClusterHost:
         return self.__inventory
 
     def get_hostname(self) -> str:
-        return self.__host_model.requested_hostname \
-            if self.__host_model.requested_hostname else self.__inventory.hostname
+        return (
+            self.__host_model.requested_hostname if self.__host_model.requested_hostname else self.__inventory.hostname
+        )
 
     def has_hostname(self) -> bool:
         return self.get_hostname() != DEFAULT_HOSTNAME

@@ -4,7 +4,6 @@ from typing import List
 import waiting
 from assisted_service_client import MonitoredOperator
 from logger import log
-
 from test_infra import consts
 
 

@@ -4,7 +4,6 @@ import random
 from typing import Dict, Iterator, List
 
 from munch import Munch
-
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
@@ -140,8 +139,9 @@ class Nodes:
         return run_concurrently([(getattr(node, func_name), *args) for node in nodes])
 
     def run_for_given_nodes_by_cluster_hosts(self, cluster_hosts, func_name, *args):
-        return self.run_for_given_nodes([self.get_node_from_cluster_host(host) for
-                                         host in cluster_hosts], func_name, *args)
+        return self.run_for_given_nodes(
+            [self.get_node_from_cluster_host(host) for host in cluster_hosts], func_name, *args
+        )
 
     @staticmethod
     def run_ssh_command_on_given_nodes(nodes, command) -> Dict:
@@ -163,8 +163,7 @@ class Nodes:
         node_mapping_dict = {}
         for cluster_host_object in cluster.get_hosts():
             name = self.get_cluster_hostname(cluster_host_object)
-            node_mapping_dict[name] = NodeMapping(self.nodes_as_dict[name],
-                                                  Munch.fromDict(cluster_host_object))
+            node_mapping_dict[name] = NodeMapping(self.nodes_as_dict[name], Munch.fromDict(cluster_host_object))
         return node_mapping_dict
 
     def get_node_from_cluster_host(self, cluster_host_object):

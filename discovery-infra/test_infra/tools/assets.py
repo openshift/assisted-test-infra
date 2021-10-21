@@ -1,23 +1,20 @@
 import json
 import logging
 import os
+from typing import Dict, List, Optional, Union
 
 import netifaces
-
-from typing import Optional, List, Dict, Union
-
 from munch import Munch
-from netaddr import IPNetwork, IPRange, IPAddress
+from netaddr import IPAddress, IPNetwork, IPRange
 from netaddr.core import AddrFormatError
-
 from test_infra import consts, utils
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 
 
 class LibvirtNetworkAssets:
-    """ An assets class that stores values based on the current available
-        resources, in order to allow multiple installations while avoiding
-        conflicts. """
+    """An assets class that stores values based on the current available
+    resources, in order to allow multiple installations while avoiding
+    conflicts."""
 
     ASSETS_LOCKFILE_DEFAULT_PATH = "/tmp"
     BASE_ASSET = {
@@ -30,14 +27,13 @@ class LibvirtNetworkAssets:
     }
 
     def __init__(
-            self,
-            assets_file: str = consts.TF_NETWORK_POOL_PATH,
-            lock_file: Optional[str] = None,
+        self,
+        assets_file: str = consts.TF_NETWORK_POOL_PATH,
+        lock_file: Optional[str] = None,
     ):
         self._assets_file = assets_file
         self._lock_file = lock_file or os.path.join(
-            self.ASSETS_LOCKFILE_DEFAULT_PATH,
-            os.path.basename(assets_file) + ".lock"
+            self.ASSETS_LOCKFILE_DEFAULT_PATH, os.path.basename(assets_file) + ".lock"
         )
 
         self._allocated_ips_objects = []
@@ -80,7 +76,7 @@ class LibvirtNetworkAssets:
             for ifaddresses in netifaces.ifaddresses(interface).values():
                 for item in ifaddresses:
                     try:
-                        self._add_allocated_ip(IPAddress(item['addr']))
+                        self._add_allocated_ip(IPAddress(item["addr"]))
                     except AddrFormatError:
                         continue
 
@@ -98,11 +94,11 @@ class LibvirtNetworkAssets:
         with LibvirtController.connection_context() as conn:
             for net in conn.listAllNetworks():
                 for lease in net.DHCPLeases():
-                    net_bridge = lease.get('iface')
+                    net_bridge = lease.get("iface")
                     if net_bridge:
                         self._add_allocated_net_bridge(net_bridge)
 
-                    ipaddr = lease.get('ipaddr')
+                    ipaddr = lease.get("ipaddr")
                     if ipaddr:
                         self._add_allocated_ip(IPAddress(ipaddr))
 

@@ -1,24 +1,22 @@
 import logging
 import re
 import warnings
-
-import yaml
+from pprint import pformat
+from typing import List, Optional, Union
 
 import waiting
-
-from typing import Optional, Union, List
-from pprint import pformat
-
+import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
-
 from test_infra import consts
 from test_infra.consts.kube_api import (
     CRD_API_GROUP,
     CRD_API_VERSION,
+    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
     DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT, DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
 )
+
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
@@ -320,11 +318,11 @@ class InfraEnv(BaseCustomResource):
 
     def list_agents(self) -> List[Agent]:
         all_agents = self.crd_api.list_namespaced_custom_object(
-                group=CRD_API_GROUP,
-                version=CRD_API_VERSION,
-                plural=Agent._plural,
-                namespace=self.ref.namespace,
-            ).get("items", [])
+            group=CRD_API_GROUP,
+            version=CRD_API_VERSION,
+            plural=Agent._plural,
+            namespace=self.ref.namespace,
+        ).get("items", [])
 
         return [
             Agent(
@@ -337,9 +335,9 @@ class InfraEnv(BaseCustomResource):
         ]
 
     def wait_for_agents(
-            self,
-            num_agents: int = 1,
-            timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+        self,
+        num_agents: int = 1,
+        timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
     ) -> List[Agent]:
         def _wait_for_sufficient_agents_number() -> List[Agent]:
             agents = self.list_agents()
@@ -351,6 +349,7 @@ class InfraEnv(BaseCustomResource):
             timeout_seconds=timeout,
             waiting_for=f"cluster {self.ref} to have {num_agents} agents",
         )
+
 
 def deploy_default_infraenv(
     kube_api_client: ApiClient,

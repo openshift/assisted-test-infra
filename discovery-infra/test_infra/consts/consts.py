@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import List
 
-from .durations import MINUTE, HOUR
-
 from assisted_service_client import models
+
+from .durations import HOUR, MINUTE
 
 
 class OpenshiftVersion(Enum):
@@ -56,15 +56,23 @@ ERROR_TIMEOUT = 10 * MINUTE
 WAIT_FOR_BM_API = 15 * MINUTE
 
 # Networking
-DEFAULT_CLUSTER_NETWORKS_IPV4: List[models.ClusterNetwork] = [models.ClusterNetwork(cidr="172.30.0.0/16", host_prefix=23)]
+DEFAULT_CLUSTER_NETWORKS_IPV4: List[models.ClusterNetwork] = [
+    models.ClusterNetwork(cidr="172.30.0.0/16", host_prefix=23)
+]
 DEFAULT_SERVICE_NETWORKS_IPV4: List[models.ServiceNetwork] = [models.ServiceNetwork(cidr="10.128.0.0/14")]
-DEFAULT_MACHINE_NETWORKS_IPV4: List[models.MachineNetwork] = \
-    [models.MachineNetwork(cidr="192.168.127.0/24"), models.MachineNetwork(cidr="192.168.145.0/24")]
+DEFAULT_MACHINE_NETWORKS_IPV4: List[models.MachineNetwork] = [
+    models.MachineNetwork(cidr="192.168.127.0/24"),
+    models.MachineNetwork(cidr="192.168.145.0/24"),
+]
 
-DEFAULT_CLUSTER_NETWORKS_IPV6: List[models.ClusterNetwork] = [models.ClusterNetwork(cidr="2002:db8::/53", host_prefix=64)]
+DEFAULT_CLUSTER_NETWORKS_IPV6: List[models.ClusterNetwork] = [
+    models.ClusterNetwork(cidr="2002:db8::/53", host_prefix=64)
+]
 DEFAULT_SERVICE_NETWORKS_IPV6: List[models.ServiceNetwork] = [models.ServiceNetwork(cidr="2003:db8::/112")]
-DEFAULT_MACHINE_NETWORKS_IPV6: List[models.MachineNetwork] = \
-    [models.MachineNetwork(cidr="1001:db9::/120"), models.MachineNetwork(cidr="3001:db9::/120")]
+DEFAULT_MACHINE_NETWORKS_IPV6: List[models.MachineNetwork] = [
+    models.MachineNetwork(cidr="1001:db9::/120"),
+    models.MachineNetwork(cidr="3001:db9::/120"),
+]
 
 DEFAULT_CLUSTER_NETWORKS_IPV4V6 = DEFAULT_CLUSTER_NETWORKS_IPV4 + DEFAULT_CLUSTER_NETWORKS_IPV6
 DEFAULT_SERVICE_NETWORKS_IPV4V6 = DEFAULT_SERVICE_NETWORKS_IPV4 + DEFAULT_SERVICE_NETWORKS_IPV6
@@ -74,8 +82,8 @@ DEFAULT_PROXY_SERVER_PORT = 3129
 DEFAULT_LOAD_BALANCER_PORT = 6443
 
 TEST_INFRA = "test-infra"
-CLUSTER = CLUSTER_PREFIX = "%s-cluster" % TEST_INFRA
-INFRA_ENV_PREFIX = "%s-infra-env" % TEST_INFRA
+CLUSTER = CLUSTER_PREFIX = f"{TEST_INFRA}-cluster"
+INFRA_ENV_PREFIX = f"{TEST_INFRA}-infra-env"
 TEST_NETWORK = "test-infra-net-"
 TEST_SECONDARY_NETWORK = "test-infra-secondary-network-"
 
@@ -87,8 +95,8 @@ NAMESPACE_POOL_SIZE = 15
 PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 DEFAULT_BASE_DNS_DOMAIN = "redhat.com"
-DEFAULT_NAMESPACE = 'assisted-installer'
-DEFAULT_SPOKE_NAMESPACE = 'assisted-spoke-cluster'
+DEFAULT_NAMESPACE = "assisted-installer"
+DEFAULT_SPOKE_NAMESPACE = "assisted-spoke-cluster"
 DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BASE_DNS_DOMAIN}"
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
@@ -104,6 +112,7 @@ REQUIRED_ASSET_FIELDS = (
     "libvirt_secondary_network_if",
     *IP_NETWORK_ASSET_FIELDS,
 )
+
 
 class ImageType:
     FULL_ISO = "full-iso"
@@ -165,10 +174,17 @@ class AgentStatus:
     REQUIREMENTS_MET = "RequirementsMet"
 
 
-all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,
-                   HostsProgressStages.WRITE_IMAGE_TO_DISK, HostsProgressStages.WAIT_FOR_CONTROL_PLANE,
-                   HostsProgressStages.REBOOTING, HostsProgressStages.WAIT_FOR_IGNITION,
-                   HostsProgressStages.CONFIGURING, HostsProgressStages.JOINED, HostsProgressStages.DONE]
+all_host_stages = [
+    HostsProgressStages.START_INSTALLATION,
+    HostsProgressStages.INSTALLING,
+    HostsProgressStages.WRITE_IMAGE_TO_DISK,
+    HostsProgressStages.WAIT_FOR_CONTROL_PLANE,
+    HostsProgressStages.REBOOTING,
+    HostsProgressStages.WAIT_FOR_IGNITION,
+    HostsProgressStages.CONFIGURING,
+    HostsProgressStages.JOINED,
+    HostsProgressStages.DONE,
+]
 
 
 class Events:
@@ -176,22 +192,22 @@ class Events:
     SUCCESSFULLY_REGISTERED_CLUSTER = "Successfully registered cluster"
     PENDING_FOR_INPUT = "to pending-for-input"
     GENERATED_IMAGE = "Generated image (SSH public key is set)"
-    GENERATED_IMAGE_FULL = "Generated image (Image type is \"full-iso\", SSH public key is set)"
-    GENERATED_IMAGE_MINIMAL = "Generated image (Image type is \"minimal-iso\", SSH public key is set)"
+    GENERATED_IMAGE_FULL = 'Generated image (Image type is "full-iso", SSH public key is set)'
+    GENERATED_IMAGE_MINIMAL = 'Generated image (Image type is "minimal-iso", SSH public key is set)'
     DOWNLOAD_IMAGE = "Started image download"
-    STARTED_DOWNLOAD_IMAGE = "Started image download (image type is \"full-iso\")"
+    STARTED_DOWNLOAD_IMAGE = 'Started image download (image type is "full-iso")'
     HOST_REGISTERED_TO_CLUSTER = ": registered to cluster"
     INSUFFICIENT = "insufficient"
-    KNOWN = "to \"known\""
+    KNOWN = 'to "known"'
     READY = "to ready"
-    CLUSTER_VALIDATION = "Cluster validation \'all-hosts-are-ready-to-install\' is now fixed"
-    PREPARING_FOR_INSTALLATION = "updated status from \"known\" to \"preparing-for-installation\""
-    PREPARING_SUCCESSFUL = "updated status from \"preparing-for-installation\" to \"preparing-successful\""
+    CLUSTER_VALIDATION = "Cluster validation 'all-hosts-are-ready-to-install' is now fixed"
+    PREPARING_FOR_INSTALLATION = 'updated status from "known" to "preparing-for-installation"'
+    PREPARING_SUCCESSFUL = 'updated status from "preparing-for-installation" to "preparing-successful"'
     SET_BOOTSTRAP = "set as bootstrap"
-    INSTALLING = "updated status from \"preparing-successful\" to \"installing\""
+    INSTALLING = 'updated status from "preparing-successful" to "installing"'
     CLUSTER_PREPARED = "Cluster was prepared successfully for installation"
     CLUSTER_INSTALLING = "to installing"
-    INSTALLING_IN_PROGRESS = "updated status from \"installing\" to \"installing-in-progress\""
+    INSTALLING_IN_PROGRESS = 'updated status from "installing" to "installing-in-progress"'
     INSTALLATION_STAGE = "reached installation stage Starting installation"
     INSTALLING_PENDING_USER_ACTION = "installing-pending-user-action"
     WRITING_IMAGE_TO_DISK = "reached installation stage Writing image to disk"
@@ -204,11 +220,11 @@ class Events:
     CANCELLED_CLUSTER_INSTALLATION = "Cancelled cluster installation"
     CANCELLED_FOR_HOST = "Installation cancelled for host"
     CLUSTER_VERSION_DONE = "Operator cvo status: available message: Done"
-    CANCELLED_STATUS = "to \"cancelled\""
+    CANCELLED_STATUS = 'to "cancelled"'
     RESET_CLUSTER_INSTALLATION = "Reset cluster installation"
     RESET_FOR_HOST = "Installation reset for host"
-    RESETTING_PENDING_USER_ACTION = "updated status from \"cancelled\" to \"resetting-pending-user-action\""
-    INSTALLED = "updated status from \"installing-in-progress\" to \"installed\""
+    RESETTING_PENDING_USER_ACTION = 'updated status from "cancelled" to "resetting-pending-user-action"'
+    INSTALLED = 'updated status from "installing-in-progress" to "installed"'
     FINALIZING = "to finalizing"
     SUCCESSFULLY_INSTALLED = "Successfully finished installing cluster"
     ERROR = "error"
@@ -222,14 +238,14 @@ class HostStatusInfo:
 
 
 class Platforms:
-    BARE_METAL = 'baremetal'
-    NONE = 'none'
-    VSPHERE = 'vsphere'
+    BARE_METAL = "baremetal"
+    NONE = "none"
+    VSPHERE = "vsphere"
 
 
 class HighAvailabilityMode:
-    FULL = 'Full'
-    NONE = 'None'
+    FULL = "Full"
+    NONE = "None"
 
 
 class BaseAsset:

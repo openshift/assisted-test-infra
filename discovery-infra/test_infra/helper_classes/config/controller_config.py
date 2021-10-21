@@ -1,9 +1,9 @@
 from abc import ABC
+from dataclasses import dataclass
 from pathlib import Path
 
-from dataclasses import dataclass
-
 from test_infra import consts
+
 from .base_config import _BaseConfig
 
 
@@ -21,9 +21,9 @@ class BaseNodeConfig(_BaseConfig, ABC):
     masters_count: int = None
     nodes_count: int = None
     master_cpu_mode: str = None
-    master_disk: int = None   # disk size in MB.
-    master_disk_size_gib: str = None # disk size in GB.
-    master_disk_count: int = None   # number of disks to create
+    master_disk: int = None  # disk size in MB.
+    master_disk_size_gib: str = None  # disk size in GB.
+    master_disk_count: int = None  # number of disks to create
 
     worker_memory: int = None
     worker_vcpu: int = None

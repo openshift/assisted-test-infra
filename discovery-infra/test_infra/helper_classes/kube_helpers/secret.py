@@ -3,8 +3,8 @@ import logging
 
 from kubernetes.client import ApiClient, CoreV1Api
 from kubernetes.client.rest import ApiException
-
 from test_infra import consts
+
 from .base_resource import BaseResource
 
 logger = logging.getLogger(__name__)

@@ -1,18 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import List, Any, Tuple, Callable, TypeVar, SupportsAbs, Optional
+from typing import Any, Callable, List, Optional, SupportsAbs, Tuple, TypeVar
 
 import libvirt
-
-from test_infra.helper_classes.config import BaseClusterConfig,BaseEntityConfig
-from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.controllers.node_controllers.disk import Disk
 from test_infra.controllers.node_controllers.node import Node
+from test_infra.helper_classes.config import BaseEntityConfig
+from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.utils import log
 
 
 class NodeController(ABC):
 
-    T = TypeVar('T', bound=SupportsAbs[BaseNodeConfig])
+    T = TypeVar("T", bound=SupportsAbs[BaseNodeConfig])
 
     def __init__(self, config: T, entity_config: BaseEntityConfig):
         self._config = config

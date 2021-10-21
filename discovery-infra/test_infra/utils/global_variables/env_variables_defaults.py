@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass, field
 from distutils.util import strtobool
 from pathlib import Path
-from typing import Any, List, ClassVar
+from typing import Any, ClassVar, List
 
 from test_infra import consts
 from test_infra.consts import env_defaults, resources
@@ -72,7 +72,7 @@ class _EnvVariablesDefaults(ABC):
     __instance: ClassVar = None
 
     def __new__(cls, *args, **kwargs):
-        """ Prevent creating another env_var instance """
+        """Prevent creating another env_var instance"""
         if isinstance(cls.__instance, cls):
             raise Exception("Can't initialized more then one global configuration object")
         cls.__instance = object.__new__(cls, *args, **kwargs)

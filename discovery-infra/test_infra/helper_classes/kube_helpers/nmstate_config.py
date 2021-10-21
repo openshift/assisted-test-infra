@@ -1,11 +1,11 @@
 import logging
-from typing import Optional, Union
 from pprint import pformat
+from typing import Optional, Union
 
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
-
 from test_infra import consts
+
 from ...consts.kube_api import CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
 from .base_resource import BaseCustomResource
 

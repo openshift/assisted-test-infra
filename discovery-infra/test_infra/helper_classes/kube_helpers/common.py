@@ -1,11 +1,9 @@
 import logging
 import warnings
-
 from typing import Optional
 
 from kubernetes.client import ApiClient
 from kubernetes.client.rest import ApiException
-
 from test_infra.assisted_service_api import ClientFactory
 from test_infra.helper_classes.kube_helpers.idict import IDict
 
@@ -28,8 +26,7 @@ class KubeAPIContext:
 
     resources = set()
 
-    def __init__(self, kube_api_client: Optional[ApiClient] = None,
-                 clean_on_exit: Optional[bool] = True):
+    def __init__(self, kube_api_client: Optional[ApiClient] = None, clean_on_exit: Optional[bool] = True):
 
         self.api_client = kube_api_client
         self._clean_on_exit = clean_on_exit

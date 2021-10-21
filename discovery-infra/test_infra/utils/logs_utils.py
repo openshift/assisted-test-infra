@@ -6,7 +6,6 @@ from tempfile import TemporaryDirectory
 
 import waiting
 from logger import log
-
 from test_infra.consts import NUMBER_OF_MASTERS
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
@@ -104,7 +103,7 @@ def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for="Logs to be in status %s" % statuses,
+            waiting_for=f"Logs to be in status {statuses}",
         )
         log.info("logs are in expected state")
     except BaseException:

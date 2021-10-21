@@ -11,7 +11,7 @@ class OperatorStatus:
 
 
 class OperatorResource:
-    """ operator resource requirements as coded in assisted service """
+    """operator resource requirements as coded in assisted service"""
 
     MASTER_MEMORY_KEY: str = "master_memory"
     WORKER_MEMORY_KEY: str = "worker_memory"

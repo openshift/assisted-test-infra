@@ -1,12 +1,11 @@
 import logging
-
 from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
+from test_infra import consts
 
 from .base_resource import BaseResource
 from .idict import IDict
-from test_infra import consts
 
 logger = logging.getLogger(__name__)
 

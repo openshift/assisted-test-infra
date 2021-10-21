@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
-
+from abc import ABC
 from dataclasses import dataclass
+
 from assisted_service_client import models
 
-from .base_config import _BaseConfig
 from ...utils.base_name import BaseName
+from .base_config import _BaseConfig
 
 
 @dataclass
@@ -26,4 +26,3 @@ class BaseEntityConfig(_BaseConfig, ABC):
     base_dns_domain: str = None
     entity_name: BaseName = None
     proxy: models.Proxy = None
-

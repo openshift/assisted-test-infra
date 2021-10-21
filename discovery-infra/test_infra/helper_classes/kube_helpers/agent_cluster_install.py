@@ -1,17 +1,17 @@
 import logging
 from base64 import b64decode
 from pprint import pformat
-from typing import Optional, Tuple, Union, Dict, Any
+from typing import Any, Dict, Optional, Tuple, Union
 
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
-
 from test_infra import consts
 from test_infra.consts.kube_api import (
     DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
     DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT,
 )
+
 from .base_resource import BaseCustomResource, ObjectReference
 from .cluster_image_set import ClusterImageSetReference
 from .secret import Secret
@@ -82,7 +82,7 @@ class AgentClusterInstall(BaseCustomResource):
         logger.info("created agentclusterinstall %s: %s", self.ref, pformat(body))
 
     def patch(self, **kwargs) -> None:
-        body = { "spec": kwargs }
+        body = {"spec": kwargs}
 
         self.crd_api.patch_namespaced_custom_object(
             group=self._api_group,
@@ -96,13 +96,15 @@ class AgentClusterInstall(BaseCustomResource):
         logger.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
 
     def set_machinenetwork(self, machine_cidr):
-        self.patch(networking={
-            "machineNetwork": [
-                {
-                    "cidr": machine_cidr,
-                }
-            ]
-        })
+        self.patch(
+            networking={
+                "machineNetwork": [
+                    {
+                        "cidr": machine_cidr,
+                    }
+                ]
+            }
+        )
 
     def set_api_vip(self, vip):
         self.patch(apiVIP=vip)
@@ -264,7 +266,8 @@ class AgentClusterInstall(BaseCustomResource):
         def _has_required_condition() -> Optional[bool]:
             status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
             logger.info(
-                f"waiting for condition <{cond_type}> to be in status <{required_status}>. actual status is: {status} {reason} {message}"
+                f"waiting for condition <{cond_type}> to be in status <{required_status}>."
+                f" actual status is: {status} {reason} {message}"
             )
             if status == required_status:
                 if required_reason:

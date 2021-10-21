@@ -1,13 +1,12 @@
 import time
 from builtins import list
-from typing import Tuple, List, Callable, Any, Dict
+from typing import Any, Callable, Dict, List, Tuple
 
 import libvirt
-from pyVim import task
-from pyVim.connect import SmartConnect, Disconnect
-from pyVmomi import vim
-
 from logger import log
+from pyVim import task
+from pyVim.connect import Disconnect, SmartConnect
+from pyVmomi import vim
 from test_infra.controllers.node_controllers.disk import Disk
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
@@ -18,7 +17,6 @@ from test_infra.utils.terraform_util import TerraformControllerUtil
 
 
 class VSphereController(NodeController):
-
     def __init__(self, config: VSphereControllerConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
@@ -41,9 +39,11 @@ class VSphereController(NodeController):
         vms = self.__get_vms()
 
         def vsphere_vm_to_node(terraform_vm_state):
-            return Node(name=terraform_vm_state["attributes"]["name"],
-                        private_ssh_key_path=self._config.private_ssh_key_path,
-                        node_controller=self)
+            return Node(
+                name=terraform_vm_state["attributes"]["name"],
+                private_ssh_key_path=self._config.private_ssh_key_path,
+                node_controller=self,
+            )
 
         return list(map(vsphere_vm_to_node, vms))
 
@@ -60,7 +60,7 @@ class VSphereController(NodeController):
         macs = []
 
         for interface in vm_attributes["network_interface"]:
-            macs.append(interface['mac_address'])
+            macs.append(interface["mac_address"])
 
         return ips, macs
 
@@ -182,10 +182,12 @@ class VSphereController(NodeController):
         return [vm_instance for vms_objects in vms_object_type for vm_instance in vms_objects["instances"]]
 
     def __run_on_vm(self, name: str, folder, action: Callable) -> None:
-        connection = SmartConnect(host=self._config.vsphere_vcenter,
-                                  user=self._config.vsphere_username,
-                                  pwd=self._config.vsphere_password,
-                                  disableSslCertValidation=True)
+        connection = SmartConnect(
+            host=self._config.vsphere_vcenter,
+            user=self._config.vsphere_username,
+            pwd=self._config.vsphere_password,
+            disableSslCertValidation=True,
+        )
         content = connection.RetrieveContent()
         container = content.viewManager.CreateContainerView(content.rootFolder, [vim.VirtualMachine], True)
         vm = None
