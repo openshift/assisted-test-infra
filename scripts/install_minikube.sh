@@ -9,7 +9,7 @@ function install_minikube() {
 
     minikube_version=v1.20.0
     minikube_path=$(command -v minikube)
-    if ! [ -x "$minikube_path" ]; then 
+    if ! [ -x "$minikube_path" ]; then
         echo "Installing minikube..."
         arkade get minikube --version=$minikube_version
         ${SUDO} mv -f ${HOME}/.arkade/bin/minikube /usr/local/bin/
@@ -48,7 +48,7 @@ function install_oc() {
 function install_arkade() {
     if ! [ -x "$(command -v arkade)" ]; then
         echo "Installing arkade..."
-        curl -sLS https://dl.get-arkade.dev | ${SUDO} sh
+        curl -sLS --retry 3 https://dl.get-arkade.dev | ${SUDO} sh
     else
         echo "arkade is already installed"
     fi
