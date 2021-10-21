@@ -9,7 +9,6 @@ repos:
       - id: isort
         name: isort (python)
         args: [--profile=black, --line-length=120]
-
   - repo: https://github.com/python/black
     rev: 21.9b0
     hooks:
@@ -19,4 +18,5 @@ repos:
     rev: 4.0.1
     hooks:
       - id: flake8
-        additional_dependencies: [ flake8-bugbear ]
+        additional_dependencies: [ flake8-bugbear, flake8-eradicate, pep8-naming, flake8-use-fstring, flake8-colors ]
+        args: [--statistics]
