@@ -473,9 +473,7 @@ $(REPORTS):
 	-mkdir -p $(REPORTS)
 
 lint:
-	mkdir -p $(REPORTS)
 	make _flake8
-	make _reformat
 
 pre-commit:
 	# TODO not identifying all pep8 violation - WIP
@@ -490,7 +488,7 @@ flake8:
 	skipper make _flake8
 
 _flake8:
-	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS) --statistics
+	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS)
 
 reformat:
 	FLAKE8_EXTRA_PARAMS="$(FLAKE8_EXTRA_PARAMS)" skipper make _reformat
