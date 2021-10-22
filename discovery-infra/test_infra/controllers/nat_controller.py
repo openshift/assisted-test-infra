@@ -19,7 +19,7 @@ class NatController:
         self._mark = self._build_mark()
 
     def add_nat_rules(self) -> None:
-        """ Add rules for the input interfaces and output interfaces """
+        """Add rules for the input interfaces and output interfaces"""
         logging.info("Adding nat rules for interfaces %s", self._input_interfaces)
 
         for output_interface in self._get_default_interfaces():
