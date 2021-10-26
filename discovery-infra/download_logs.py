@@ -33,7 +33,7 @@ from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools.concurrently import run_concurrently
 from test_infra.utils import (are_host_progress_in_stage, config_etc_hosts,
                               fetch_url, recreate_folder, run_command,
-                              verify_logs_uploaded, utils)
+                              verify_logs_uploaded, get_env)
 from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
@@ -72,7 +72,7 @@ def main():
         gather_sosreport_data(output_dir=args.dest)
 
     client = ClientFactory.create_client(url=args.inventory_url, timeout=CONNECTION_TIMEOUT,
-                                         offline_token=utils.get_env("OFFLINE_TOKEN"))
+                                         offline_token=get_env("OFFLINE_TOKEN"))
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
         download_cluster_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest,
