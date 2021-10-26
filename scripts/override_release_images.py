@@ -63,12 +63,11 @@ def get_release_image(release_images, ocp_version, cpu_architecture="x86_64"):
     if len(release_image) >= 1:
         return release_image[0]
 
-    # else get the last version
-    return {}
+    return {"cpu_architecture": cpu_architecture}
 
 
 def set_release_image(release_image: dict, release_images: list, ocp_version, ocp_full_version):
-    release_image_index = -1 if not release_image else release_images.index(release_image)
+    release_image_index = -1 if "openshift_version" not in release_image else release_images.index(release_image)
 
     release_image["openshift_version"] = ocp_version
     release_image["url"] = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
