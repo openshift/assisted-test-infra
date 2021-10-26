@@ -64,8 +64,7 @@ def get_release_image(release_images, ocp_version, cpu_architecture="x86_64"):
     if len(release_image) >= 1:
         return release_image[0]
 
-    # else get the last version
-    return archs_images[-1]
+    return {}
 
 
 def main():
@@ -81,13 +80,19 @@ def main():
 
     # Find relevant release image
     release_image = get_release_image(release_images, ocp_version)
-    release_image_index = release_images.index(release_image)
+    try:
+        release_image_index = release_images.index(release_image)
+    except ValueError:
+        release_image_index = -1
 
     # Update release image
     release_image["openshift_version"] = ocp_version
     release_image["url"] = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
     release_image["version"] = ocp_full_version
-    release_images[release_image_index] = release_image
+    if release_image_index != -1:
+        release_images[release_image_index] = release_image
+    else:
+        release_images.append(release_image)
 
     # Store release images
     json.dump(release_images, os.sys.stdout, separators=(',', ':'))
