@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
+import logging
+import sys
 from argparse import ArgumentParser
 from contextlib import contextmanager
 
@@ -11,6 +12,13 @@ import subprocess
 import tempfile
 
 import semver
+
+logger = logging.getLogger("override_release_images")
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler(sys.stdout)
+ch.setFormatter(logging.Formatter(
+    "%(asctime)s %(name)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)"))
+logger.addHandler(ch)
 
 
 @contextmanager
@@ -62,33 +70,47 @@ def get_release_image(release_images, ocp_version, cpu_architecture="x86_64"):
     archs_images = [v for v in release_images if v.get('cpu_architecture') == cpu_architecture]
     release_image = [v for v in archs_images if v.get('openshift_version') == ocp_version]
     if len(release_image) >= 1:
-        return release_image[0]
+        return release_image[0], True
 
     # else get the last version
-    return archs_images[-1]
+    return archs_images[-1], False
 
 
 def main():
     # Load default release images
+    logger.info("Loading default release images..")
     with open(args.src, 'r') as f:
-        release_images = json.load(f)
+        release_images: list = json.load(f)
+        logger.info(f"release_images found = {release_images}")
 
-    # Extract version from release image
+    logger.info("Extracting version from release image")
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
+    logger.info(f"Found release_image = {release_image}")
     ocp_full_version = get_full_openshift_version_from_release(release_image)
+    logger.info(f"ocp_full_version = {ocp_full_version}")
     ocp_semver = semver.VersionInfo.parse(ocp_full_version)
+    logger.info(f"ocp_semver = {ocp_semver}")
     ocp_version = "{}.{}".format(ocp_semver.major, ocp_semver.minor)
+    logger.info(f"ocp_version = {ocp_version}")
 
     # Find relevant release image
-    release_image = get_release_image(release_images, ocp_version)
+    release_image, is_exist = get_release_image(release_images, ocp_version)
+    logger.info(f"Got release_image = {release_image}")
+
     release_image_index = release_images.index(release_image)
+    url = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
+    if is_exist:
+        # Update release image
+        release_image["openshift_version"] = ocp_version
+        release_image["url"] = url
+        release_image["version"] = ocp_full_version
+        release_images[release_image_index] = release_image
+    else:
+        # add new version to list
+        release_image = {"openshift_version": ocp_version, "url": url, "version": ocp_full_version}
+        release_images.append(release_image)
 
-    # Update release image
-    release_image["openshift_version"] = ocp_version
-    release_image["url"] = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
-    release_image["version"] = ocp_full_version
-    release_images[release_image_index] = release_image
-
+    logger.info(f"Release image {'override' if is_exist else 'added'} with value release_image = {release_image}")
     # Store release images
     json.dump(release_images, os.sys.stdout, separators=(',', ':'))
 
