@@ -53,6 +53,7 @@ function install_arkade() {
             echo "arkade installation failed. Retrying again in 5 seconds..."
             sleep 5
         done
+        echo "successfully installed arkade!"
     else
         echo "arkade is already installed"
     fi
