@@ -7,7 +7,7 @@ function install_minikube() {
         return
     fi
 
-    minikube_version=v1.20.0
+    minikube_version=v1.23.2
     minikube_path=$(command -v minikube)
     if ! [ -x "$minikube_path" ]; then
         echo "Installing minikube..."
@@ -25,7 +25,7 @@ function install_minikube() {
 function install_kubectl() {
     if ! [ -x "$(command -v kubectl)" ]; then
         echo "Installing kubectl..."
-        arkade get kubectl --version=v1.20.0
+        arkade get kubectl --version=v1.22.0
         ${SUDO} mv ${HOME}/.arkade/bin/kubectl /usr/local/bin/
     else
         echo "kubectl is already installed"
@@ -36,7 +36,7 @@ function install_oc() {
     if ! [ -x "$(command -v oc)" ]; then
         echo "Installing oc..."
         for i in {1..4}; do
-            curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.8.0-rc.0/openshift-client-linux-4.8.0-rc.0.tar.gz | tar -xz -C /usr/local/bin && break
+            curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.8/openshift-install-linux.tar.gz | tar -xz -C /usr/local/bin && break
             echo "oc installation failed. Retrying again in 5 seconds..."
             sleep 5
         done
