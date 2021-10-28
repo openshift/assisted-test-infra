@@ -32,9 +32,6 @@ DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
 RELEASE_IMAGES_PATH = "assisted-service/data/default_release_images.json"
 
 TF_TEMPLATES_ROOT = "terraform_files"
-TF_TEMPLATE_BARE_METAL_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal"
-TF_TEMPLATE_NONE_PLATFORM_FLOW = f"{TF_TEMPLATES_ROOT}/none"
-TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW = f"{TF_TEMPLATES_ROOT}/baremetal_infra_env"
 TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"
 
 # Timeouts

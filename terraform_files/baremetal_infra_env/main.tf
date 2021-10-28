@@ -17,31 +17,6 @@ resource "libvirt_pool" "storage_pool" {
   path = "${var.libvirt_storage_pool_path}/${var.infra_env_name}"
 }
 
-locals {
-  worker_names = [
-    for pair in setproduct(range(var.worker_count), range(var.worker_disk_count)) :
-      "${var.infra_env_name}-worker-${pair[0]}-disk-${pair[1]}"
-  ]
-  master_names = [
-    for pair in setproduct(range(var.master_count), range(var.master_disk_count)) :
-      "${var.infra_env_name}-master-${pair[0]}-disk-${pair[1]}"
-  ]
-}
-
-resource "libvirt_volume" "master" {
-  for_each       = {for idx, obj in local.master_names: idx => obj}
-  name           = each.value
-  pool           = libvirt_pool.storage_pool.name
-  size           =  var.libvirt_master_disk
-}
-
-resource "libvirt_volume" "worker" {
-  for_each       = {for idx, obj in local.worker_names: idx => obj}
-  name           = each.value
-  pool           = libvirt_pool.storage_pool.name
-  size           = var.libvirt_worker_disk
-}
-
 resource "libvirt_network" "net" {
   name = var.libvirt_network_name
   mode   = "nat"
@@ -73,7 +48,6 @@ resource "libvirt_network" "net" {
   }
 }
 
-
 resource "libvirt_network" "secondary_net" {
   name = var.libvirt_secondary_network_name
   mode   = "nat"
@@ -82,113 +56,57 @@ resource "libvirt_network" "secondary_net" {
   autostart = true
 }
 
-resource "libvirt_domain" "master" {
-  count = var.master_count
+module "masters" {
+  source            = "../baremetal_host"
+  count             = var.master_count
 
-  name = "${var.infra_env_name}-master-${count.index}"
+  name              = "${var.infra_env_name}-master-${count.index}"
+  memory            = var.libvirt_master_memory
+  vcpu              = var.libvirt_master_vcpu
+  running           = var.running
+  image_path        = var.image_path
+  cpu_mode          = var.master_cpu_mode
+  cluster_domain    = var.infra_env_domain
 
-  memory = var.libvirt_master_memory
-  vcpu   = var.libvirt_master_vcpu
-  running = var.running
+  primary_network   = libvirt_network.net.name
+  primary_ips       = var.libvirt_master_ips[count.index]
+  primary_mac       = var.libvirt_master_macs[count.index]
 
-  dynamic "disk" {
-    for_each = {
-      for idx, disk in libvirt_volume.master : idx => disk.id if length(regexall(".*-master-${count.index}-disk-.*", disk.name)) > 0
-    }
-    content {
-      volume_id = disk.value
-    }
-  }
+  secondary_network = libvirt_network.secondary_net.name
+  secondary_ips     = var.libvirt_secondary_master_ips[count.index]
+  secondary_mac     = var.libvirt_secondary_master_macs[count.index]
 
-  disk {
-    file = var.image_path
-  }
-
-  console {
-    type        = "pty"
-    target_port = 0
-  }
-
-  cpu = {
-    mode = var.master_cpu_mode
-  }
-
-  network_interface {
-    network_name = libvirt_network.net.name
-    hostname   = "${var.infra_env_name}-master-${count.index}.${var.infra_env_domain}"
-    addresses  = var.libvirt_master_ips[count.index]
-    mac = var.libvirt_master_macs[count.index]
-  }
-   
-  network_interface {
-    network_name = libvirt_network.secondary_net.name
-    addresses = var.libvirt_secondary_master_ips[count.index]
-    mac = var.libvirt_secondary_master_macs[count.index]
-  }
-
-  boot_device{
-    dev = ["hd", "cdrom"]
-  }
-
-  xml {
-    xslt = file("consolemodel.xsl")
-  }
+  pool              = libvirt_pool.storage_pool.name
+  disk_base_name    = "${var.infra_env_name}-master-${count.index}"
+  disk_size         = var.libvirt_master_disk
+  disk_count        = var.master_disk_count
 }
 
+module "workers" {
+  source            = "../baremetal_host"
+  count             = var.worker_count
 
-resource "libvirt_domain" "worker" {
-  count = var.worker_count
+  name              = "${var.infra_env_name}-worker-${count.index}"
+  memory            = var.libvirt_worker_memory
+  vcpu              = var.libvirt_worker_vcpu
+  running           = var.running
+  image_path        = var.image_path
+  cpu_mode          = var.worker_cpu_mode
+  cluster_domain    = var.infra_env_domain
 
-  name = "${var.infra_env_name}-worker-${count.index}"
+  primary_network   = libvirt_network.net.name
+  primary_ips       = var.libvirt_worker_ips[count.index]
+  primary_mac       = var.libvirt_worker_macs[count.index]
 
-  memory = var.libvirt_worker_memory
-  vcpu   = var.libvirt_worker_vcpu
-  running = var.running
+  secondary_network = libvirt_network.secondary_net.name
+  secondary_ips     = var.libvirt_secondary_worker_ips[count.index]
+  secondary_mac     = var.libvirt_secondary_worker_macs[count.index]
 
-  dynamic "disk" {
-    for_each = {
-      for idx, disk in libvirt_volume.worker : idx => disk.id if length(regexall(".*-worker-${count.index}-disk-.*", disk.name)) > 0
-    }
-    content {
-      volume_id = disk.value
-    }
-  }
-
-  disk {
-    file = var.image_path
-  }
-
-  console {
-    type        = "pty"
-    target_port = 0
-  }
-
-  cpu = {
-    mode = var.worker_cpu_mode
-  }
-
-  network_interface {
-    network_name = libvirt_network.net.name
-    hostname   = "${var.infra_env_name}-worker-${count.index}.${var.infra_env_domain}"
-    addresses  = var.libvirt_worker_ips[count.index]
-    mac = var.libvirt_worker_macs[count.index]
-  }
-
-  network_interface {
-    network_name = libvirt_network.secondary_net.name
-    addresses  = var.libvirt_secondary_worker_ips[count.index]
-    mac = var.libvirt_secondary_worker_macs[count.index]
-  }
-
-  boot_device{
-    dev = ["hd", "cdrom"]
-  }
-
-  xml {
-    xslt = file("consolemodel.xsl")
-  }
+  pool              = libvirt_pool.storage_pool.name
+  disk_base_name    = "${var.infra_env_name}-worker-${count.index}"
+  disk_size         = var.libvirt_worker_disk
+  disk_count        = var.worker_disk_count
 }
-
 
 resource "local_file" "dns_forwarding_config" {
   count    = var.dns_forwarding_file != "" && var.dns_forwarding_file_name != "" ? 1 : 0

@@ -17,20 +17,6 @@ resource "libvirt_pool" "storage_pool" {
   path = "${var.libvirt_storage_pool_path}/${var.cluster_name}"
 }
 
-resource "libvirt_volume" "master" {
-  count          = var.master_count
-  name           = "${var.cluster_name}-master-${count.index}"
-  pool           = libvirt_pool.storage_pool.name
-  size           =  var.libvirt_master_disk
-}
-
-resource "libvirt_volume" "worker" {
-  count          = var.worker_count
-  name           = "${var.cluster_name}-worker-${count.index}"
-  pool           = libvirt_pool.storage_pool.name
-  size           =  var.libvirt_worker_disk
-}
-
 resource "libvirt_network" "net" {
   name = var.libvirt_network_name
   mode   = length(var.machine_cidr_addresses) == 1 && replace(var.machine_cidr_addresses[0], ":", "") != var.machine_cidr_addresses[0] ? "nat" : "route"
@@ -83,6 +69,44 @@ resource "libvirt_network" "secondary_net" {
   }
 }
 
+module "masters" {
+  source            = "../baremetal_host"
+  count             = var.master_count
+
+  name              = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
+  memory            = var.libvirt_master_memory
+  vcpu              = var.libvirt_master_vcpu
+  running           = var.running
+  image_path        = var.image_path
+  cluster_domain    = var.cluster_domain
+
+  primary_network   = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+  primary_ips       = count.index % 2 == 0 ? var.libvirt_master_ips[count.index] : var.libvirt_secondary_master_ips[count.index]
+
+  pool              = libvirt_pool.storage_pool.name
+  disk_base_name    = "${var.cluster_name}-master-${count.index}"
+  disk_size         = var.libvirt_master_disk
+}
+
+module "workers" {
+  source            = "../baremetal_host"
+  count             = var.worker_count
+
+  name              = "${var.cluster_name}-worker-${count.index}"
+  memory            = var.libvirt_worker_memory
+  vcpu              = var.libvirt_worker_vcpu
+  running           = var.running
+  image_path        = var.image_path
+  cluster_domain    = var.cluster_domain
+
+  primary_network   = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+  primary_ips       = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
+
+  pool              = libvirt_pool.storage_pool.name
+  disk_base_name    = "${var.cluster_name}-worker-${count.index}"
+  disk_size         = var.libvirt_worker_disk
+}
+
 data "libvirt_network_dns_host_template" "masters" {
   count    = var.load_balancer_ip != "" ? 1 : 0
   ip       = var.load_balancer_ip
@@ -123,128 +147,4 @@ resource "local_file" "dns_forwarding_config" {
   count    = var.dns_forwarding_file != "" && var.dns_forwarding_file_name != "" ? 1 : 0
   content  = var.dns_forwarding_file
   filename = var.dns_forwarding_file_name
-}
-
-resource "libvirt_domain" "master" {
-  count = 2
-
-  name = "${var.cluster_name}-master-${count.index}"
-
-  memory = var.libvirt_master_memory
-  vcpu   = var.libvirt_master_vcpu
-  running = var.running
-
-  disk {
-    volume_id = element(libvirt_volume.master.*.id, count.index)
-
-  }
-  disk {
-    file = var.image_path
-  }
-
-  console {
-    type        = "pty"
-    target_port = 0
-  }
-
-  cpu = {
-    mode = "host-passthrough"
-  }
-
-  network_interface {
-    network_name = libvirt_network.net.name
-    hostname   = "${var.cluster_name}-master-${count.index}.${var.cluster_domain}"
-    addresses  = var.libvirt_master_ips[count.index]
-  }
-
-  boot_device{
-    dev = ["hd", "cdrom"]
-  }
-
-  xml {
-    xslt = file("consolemodel.xsl")
-  }
-}
-
-
-resource "libvirt_domain" "master-sec" {
-  count = 1
-
-  name = "${var.cluster_name}-master-sec-${count.index}"
-
-  memory = var.libvirt_master_memory
-  vcpu   = var.libvirt_master_vcpu
-  running = var.running
-
-  disk {
-    volume_id = element(libvirt_volume.master.*.id, 2)
-
-  }
-  disk {
-    file = var.image_path
-  }
-
-  console {
-    type        = "pty"
-    target_port = 0
-  }
-
-  cpu = {
-    mode = "host-passthrough"
-  }
-
-  network_interface {
-    network_name = libvirt_network.secondary_net.name
-    hostname   = "${var.cluster_name}-master-${count.index}-secondary.${var.cluster_domain}"
-    addresses  = var.libvirt_secondary_master_ips[0]
-  }
-
-  boot_device{
-    dev = ["hd", "cdrom"]
-  }
-
-  xml {
-    xslt = file("consolemodel.xsl")
-  }
-}
-
-resource "libvirt_domain" "worker" {
-  count = var.worker_count
-
-  name = "${var.cluster_name}-worker-${count.index}"
-
-  memory = var.libvirt_worker_memory
-  vcpu   = var.libvirt_worker_vcpu
-  running = var.running
-
-  disk {
-    volume_id = element(libvirt_volume.worker.*.id, count.index)
-  }
-
-  disk {
-    file = var.image_path
-  }
-
-  console {
-    type        = "pty"
-    target_port = 0
-  }
-
-  cpu = {
-    mode = "host-passthrough"
-  }
-
-  network_interface {
-    network_name = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
-    hostname   = "${var.cluster_name}-worker-${count.index}.${var.cluster_domain}"
-    addresses  = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
-  }
-
-  boot_device{
-    dev = ["hd", "cdrom"]
-  }
-
-  xml {
-    xslt = file("consolemodel.xsl")
-  }
 }
