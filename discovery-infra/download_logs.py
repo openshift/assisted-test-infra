@@ -6,13 +6,10 @@ import os
 import shutil
 import tempfile
 import time
-import traceback
 from argparse import ArgumentParser
 from collections import Counter
 from contextlib import suppress
 from datetime import datetime
-from types import TracebackType
-from typing import Type
 
 import assisted_service_client
 import requests
@@ -22,7 +19,7 @@ from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
 from scp import SCPException
 
-from logger import log, add_log_file_handler
+from logger import log, add_log_file_handler, SuppressAndLog
 from test_infra import warn_deprecate
 from test_infra.assisted_service_api import InventoryClient, ClientFactory
 from test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
@@ -51,18 +48,6 @@ SOSREPORT_SCRIPT = os.path.join(
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 warn_deprecate()
-
-
-class SuppressAndLog(suppress):
-    def __exit__(self, exctype: Type[Exception], excinst: Exception, exctb: TracebackType):
-        res = super().__exit__(exctype, excinst, exctb)
-
-        if res:
-            with suppress(BaseException):
-                tb_data = traceback.extract_tb(exctb, 1)[0]
-                log.warning(f"Suppressed {exctype.__name__} from {tb_data.name}:{tb_data.lineno} : {excinst}")
-
-        return res
 
 
 def main():

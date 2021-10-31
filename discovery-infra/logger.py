@@ -2,6 +2,10 @@
 import logging
 import re
 import sys
+import traceback
+from contextlib import suppress
+from types import TracebackType
+from typing import Type
 
 
 class SensitiveFormatter(logging.Formatter):
@@ -52,3 +56,15 @@ def add_log_file_handler(filename: str) -> logging.FileHandler:
 
 
 add_log_file_handler("test_infra.log")
+
+
+class SuppressAndLog(suppress):
+    def __exit__(self, exctype: Type[Exception], excinst: Exception, exctb: TracebackType):
+        res = super().__exit__(exctype, excinst, exctb)
+
+        if res:
+            with suppress(BaseException):
+                tb_data = traceback.extract_tb(exctb, 1)[0]
+                log.warning(f"Suppressed {exctype.__name__} from {tb_data.name}:{tb_data.lineno} : {excinst}")
+
+        return res
