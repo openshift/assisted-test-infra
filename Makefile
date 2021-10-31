@@ -212,7 +212,7 @@ start_load_balancer:
 		( test -z "$$id" && echo "Staring load balancer ..." && \
 		podman run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
 			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
-			load_balancer:latest ) || ! test -z "$$id"; \
+			quay.io/odepaz/dynamic-load-balancer:latest ) || ! test -z "$$id"; \
 	fi
 
 stop_load_balancer:
