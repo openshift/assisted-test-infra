@@ -134,7 +134,7 @@ resource "libvirt_domain" "master" {
     addresses  = var.libvirt_master_ips[count.index]
     mac = var.libvirt_master_macs[count.index]
   }
-   
+
   network_interface {
     network_name = libvirt_network.secondary_net.name
     addresses = var.libvirt_secondary_master_ips[count.index]
@@ -143,6 +143,16 @@ resource "libvirt_domain" "master" {
 
   boot_device{
     dev = ["hd", "cdrom"]
+  }
+
+  dynamic "tpm" {
+    for_each = var.tpm_emulator ? [1] : []
+    content {
+      tpm {
+        backend_type    = "emulator"
+        backend_version = "2.0"
+      }
+    }
   }
 
   xml {
@@ -199,6 +209,16 @@ resource "libvirt_domain" "worker" {
     dev = ["hd", "cdrom"]
   }
 
+  dynamic "tpm" {
+    for_each = var.tpm_emulator ? [1] : []
+    content {
+      tpm {
+        backend_type    = "emulator"
+        backend_version = "2.0"
+      }
+    }
+  }
+
   xml {
     xslt = file("consolemodel.xsl")
   }
@@ -209,7 +229,7 @@ resource "libvirt_domain" "worker" {
 # the count directive to include/exclude elements
 
 data "libvirt_network_dns_host_template" "api" {
-  # API VIP is always present. A value is set by the installation flow that updates 
+  # API VIP is always present. A value is set by the installation flow that updates
   # either the single node IP or API VIP, depending on the scenario
   count    = 1
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip

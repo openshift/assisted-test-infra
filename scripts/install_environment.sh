@@ -14,7 +14,7 @@ function version_is_greater() {
 
 function install_libvirt() {
     echo "Installing libvirt..."
-    sudo dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm libgcrypt
+    sudo dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm libgcrypt swtpm swtpm-tools
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"

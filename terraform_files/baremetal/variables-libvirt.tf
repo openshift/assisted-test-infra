@@ -250,3 +250,8 @@ variable "dns_forwarding_file_name" {
   description = "The file name of dns forwarding file"
   default = ""
 }
+
+variable "tpm_emulator" {
+  type    = bool
+  default = false
+}
