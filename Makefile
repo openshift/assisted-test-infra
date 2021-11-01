@@ -11,6 +11,15 @@ REPORTS = $(ROOT_DIR)/reports
 
 SKIPPER_PARAMS ?= -i
 
+# Openshift CI params
+OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
+JOB_TYPE := $(or ${JOB_TYPE}, "")
+REPO_NAME := $(or ${REPO_NAME}, "")
+PULL_NUMBER := $(or ${PULL_NUMBER}, "")
+
+# lint
+LINT_CODE_STYLING_DIRS := discovery-infra/tests discovery-infra/test_infra
+
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
 SERVICE_BASE_REF := $(or $(SERVICE_BASE_REF), "master")
@@ -408,10 +417,17 @@ bring_assisted_service:
 		git clone $(SERVICE_REPO); \
 	fi
 
+ifeq ($(shell [[ $(OPENSHIFT_CI) == "true" && $(REPO_NAME) == "assisted-service" && $(JOB_TYPE) == "presubmit" ]] && echo true),true)
+	@echo "Running in assisted-service pull request"
+	@cd assisted-service && \
+	git fetch origin pull/$(PULL_NUMBER)/head:assisted-service-pr-$(PULL_NUMBER) && \
+	git checkout assisted-service-pr-$(PULL_NUMBER)
+else
 	@cd assisted-service && \
 	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH) && \
 	git reset --hard FETCH_HEAD && \
 	git rebase FETCH_BASE
+endif
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring
@@ -470,11 +486,25 @@ $(REPORTS):
 	-mkdir -p $(REPORTS)
 
 lint:
-	mkdir -p build
-	skipper make _lint
+	make _flake8
 
-_lint:
-	pre-commit run --all-files
+pre-commit:
+	# TODO not identifying all pep8 violation - WIP
+	mkdir -p build
+	pre-commit run --files ./discovery-infra/test_infra/* ./discovery-infra/tests/*
+
+_reformat:
+	black $(LINT_CODE_STYLING_DIRS) --line-length=120
+	isort $(LINT_CODE_STYLING_DIRS) --profile=black --line-length=120
+
+flake8:
+	skipper make _flake8
+
+_flake8:
+	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS)
+
+reformat:
+	FLAKE8_EXTRA_PARAMS="$(FLAKE8_EXTRA_PARAMS)" skipper make _reformat
 
 test:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true

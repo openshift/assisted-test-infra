@@ -45,12 +45,16 @@ class LoadBalancerController:
         )
 
     def _render_load_balancer_config_file(
-            self, load_balancer_ip: str, master_ips: List[str], worker_ips: List[str]
+        self, load_balancer_ip: str, master_ips: List[str], worker_ips: List[str]
     ) -> str:
-        api_stream = [self._render_port_entities(load_balancer_ip, master_ips, port) for port in
-                      [consts.DEFAULT_LOAD_BALANCER_PORT, 22623]]
-        route_stream = [self._render_port_entities(load_balancer_ip, worker_ips if worker_ips else master_ips, port) for
-                        port in [80, 443]]
+        api_stream = [
+            self._render_port_entities(load_balancer_ip, master_ips, port)
+            for port in [consts.DEFAULT_LOAD_BALANCER_PORT, 22623]
+        ]
+        route_stream = [
+            self._render_port_entities(load_balancer_ip, worker_ips if worker_ips else master_ips, port)
+            for port in [80, 443]
+        ]
         return "\n".join(api_stream + route_stream)
 
     def _connect_to_load_balancer(self, load_balancer_ip: str) -> bool:
@@ -58,8 +62,10 @@ class LoadBalancerController:
         try:
             with socket.socket(family, socket.SOCK_STREAM) as s:
                 s.connect((load_balancer_ip, consts.DEFAULT_LOAD_BALANCER_PORT))
-                log.info(f"Successfully connected to load balancer "
-                         f"{load_balancer_ip}:{consts.DEFAULT_LOAD_BALANCER_PORT}")
+                log.info(
+                    f"Successfully connected to load balancer "
+                    f"{load_balancer_ip}:{consts.DEFAULT_LOAD_BALANCER_PORT}"
+                )
                 return True
         except Exception as e:
             log.warning(

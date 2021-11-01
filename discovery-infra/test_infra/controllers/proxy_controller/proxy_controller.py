@@ -4,7 +4,7 @@ import shutil
 import socket
 
 from jinja2 import Environment, PackageLoader
-from test_infra import utils, consts
+from test_infra import consts, utils
 
 
 class ProxyController:
@@ -19,7 +19,7 @@ class ProxyController:
         authenticated=False,
         dir=None,
         host_ip=None,
-        is_ipv6=False
+        is_ipv6=False,
     ):
 
         if not name:

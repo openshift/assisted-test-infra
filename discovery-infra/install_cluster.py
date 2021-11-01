@@ -8,6 +8,7 @@ import waiting
 
 import test_infra.utils.waiting
 from test_infra import assisted_service_api, consts, utils, warn_deprecate
+from test_infra.assisted_service_api import ClientFactory
 from test_infra.helper_classes import cluster as helper_cluster
 from test_infra.tools import terraform_utils
 from test_infra.helper_classes.kube_helpers import Agent
@@ -254,12 +255,9 @@ def main():
         args.cluster_id = utils.get_tfvars(tf_folder).get('cluster_inventory_id')
         tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
 
-    client = assisted_service_api.create_client(
-        url=utils.get_assisted_service_url_by_args(
-            args=args,
-            wait=False
-        )
-    )
+    client = ClientFactory.create_client(url=utils.get_assisted_service_url_by_args(args=args, wait=False),
+                                         offline_token=utils.get_env("OFFLINE_TOKEN"))
+
     run_install_flow(
         client=client,
         cluster_id=args.cluster_id,

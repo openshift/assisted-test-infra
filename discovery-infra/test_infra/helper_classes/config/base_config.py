@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
 from typing import Any
-
-from dataclasses import dataclass, asdict
 
 
 @dataclass

@@ -103,8 +103,9 @@ def set_tfvars(tf_folder, tfvars_json):
 
 
 def are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_error_status=True):
-    hosts_in_status = [host for host in hosts if (host["status"] in statuses and
-                                                  host["status_info"].startswith(status_info))]
+    hosts_in_status = [
+        host for host in hosts if (host["status"] in statuses and host["status_info"].startswith(status_info))
+    ]
     if len(hosts_in_status) >= nodes_count:
         return True
     elif fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
@@ -156,7 +157,7 @@ def wait_till_cluster_is_in_status(
             lambda: is_cluster_in_status(client=client, cluster_id=cluster_id, statuses=statuses),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for="Cluster to be in status %s" % statuses,
+            waiting_for=f"Cluster to be in status {statuses}",
         )
         if break_statuses and is_cluster_in_status(client, cluster_id, break_statuses):
             raise BaseException(
@@ -225,7 +226,7 @@ def recreate_folder(folder, with_chmod=True, force_recreate=True):
         os.makedirs(folder, exist_ok=True)
 
     if with_chmod:
-        run_command("chmod -R ugo+rx '%s'" % folder)
+        run_command(f"chmod -R ugo+rx '{folder}'")
 
 
 def get_assisted_service_url_by_args(args, wait=True):
@@ -271,8 +272,11 @@ def get_local_assisted_service_url(namespace, service, deploy_target):
         return f"http://{ip}:7000"
     else:
         # Resolve the service ip and port
-        url, _, _ = run_command(f"kubectl get svc {service} -n {namespace} "
-                            f"-o=jsonpath='http://{{.status.loadBalancer.ingress[0].ip}}:{{.spec.ports[?(@.name==\"{service}\")].port}}'")
+        url, _, _ = run_command(
+            f"kubectl get svc {service} -n {namespace} "
+            f"-o=jsonpath='http://{{.status.loadBalancer.ingress[0].ip}}:"
+            f'{{.spec.ports[?(@.name=="{service}")].port}}\''
+        )
         if is_assisted_service_reachable(url):
             return url
 
@@ -288,8 +292,9 @@ def is_assisted_service_reachable(url):
 
 
 def get_tf_folder(cluster_name, namespace=None):
-    warnings.warn("get_tf_folder is deprecated. Use utils.TerraformControllerUtil.get_folder instead.",
-                  DeprecationWarning)
+    warnings.warn(
+        "get_tf_folder is deprecated. Use utils.TerraformControllerUtil.get_folder instead.", DeprecationWarning
+    )
     folder_name = f"{cluster_name}__{namespace}" if namespace else f"{cluster_name}"
     return os.path.join(consts.TF_FOLDER, folder_name)
 
@@ -435,12 +440,12 @@ def get_default_openshift_version(client=None) -> str:
     if client:
         logging.info("Using client to get default openshift version")
         ocp_versions_dict = client.get_openshift_versions()
-        versions = [k for k, v in ocp_versions_dict.items() if v.get('default', False)]
+        versions = [k for k, v in ocp_versions_dict.items() if v.get("default", False)]
     else:
         logging.info(f"Reading {consts.RELEASE_IMAGES_PATH} to get default openshift version")
-        with open(consts.RELEASE_IMAGES_PATH, 'r') as f:
+        with open(consts.RELEASE_IMAGES_PATH, "r") as f:
             release_images = json.load(f)
-            versions = [v.get('openshift_version') for v in release_images if v.get('default', False)]
+            versions = [v.get("openshift_version") for v in release_images if v.get("default", False)]
 
     assert len(versions) == 1, f"There should be exactly one default version {versions}"
     return versions[0]
@@ -487,18 +492,26 @@ def get_openshift_release_image(allow_default=True):
         # TODO: Support remote client. kube-api client needs to respond supported versions
         ocp_version = get_openshift_version(allow_default=allow_default)
 
-        with open(consts.RELEASE_IMAGES_PATH, 'r') as f:
+        with open(consts.RELEASE_IMAGES_PATH, "r") as f:
             release_images = json.load(f)
 
-        release_image = [v.get('url') for v in release_images
-            if v.get('openshift_version') == ocp_version and v.get('cpu_architecture') == "x86_64"][0]
+        release_image = [
+            v.get("url")
+            for v in release_images
+            if v.get("openshift_version") == ocp_version and v.get("cpu_architecture") == "x86_64"
+        ][0]
 
     return release_image
 
 
 def copy_template_tree(dst, none_platform_mode=False, is_infra_env=False):
     copy_tree(
-        src=consts.TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW if is_infra_env else consts.TF_TEMPLATE_NONE_PLATFORM_FLOW if none_platform_mode else consts.TF_TEMPLATE_BARE_METAL_FLOW, dst=dst
+        src=consts.TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW
+        if is_infra_env
+        else consts.TF_TEMPLATE_NONE_PLATFORM_FLOW
+        if none_platform_mode
+        else consts.TF_TEMPLATE_BARE_METAL_FLOW,
+        dst=dst,
     )
 
 

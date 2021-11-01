@@ -5,7 +5,7 @@ import os
 import shutil
 import warnings
 from textwrap import dedent
-from typing import List, Union, Dict
+from typing import Dict, List, Union
 
 from munch import Munch
 from netaddr import IPNetwork
@@ -13,13 +13,12 @@ from test_infra import consts, utils, virsh_cleanup
 from test_infra.consts import resources
 from test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from test_infra.controllers.node_controllers.node import Node
-from test_infra.helper_classes.config import BaseTerraformConfig, BaseClusterConfig, BaseInfraEnvConfig
+from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils.base_name import get_name_suffix, BaseName
+from test_infra.utils.base_name import BaseName, get_name_suffix
 
 
 class TerraformController(LibvirtController):
-
     def __init__(self, config: BaseTerraformConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
         super().__init__(config, entity_config)
         self._entity_name = self._get_entity_name()
@@ -50,8 +49,11 @@ class TerraformController(LibvirtController):
         tf_folder = utils.get_tf_folder(name)
         logging.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder, none_platform_mode=(platform == consts.Platforms.NONE),
-                                 is_infra_env=isinstance(self._entity_config, BaseInfraEnvConfig))
+        utils.copy_template_tree(
+            tf_folder,
+            none_platform_mode=(platform == consts.Platforms.NONE),
+            is_infra_env=isinstance(self._entity_config, BaseInfraEnvConfig),
+        )
         return tf_folder
 
     # TODO move all those to conftest and pass it as kwargs
@@ -78,16 +80,20 @@ class TerraformController(LibvirtController):
             "libvirt_secondary_network_if": self._config.net_asset.libvirt_secondary_network_if,
             "provisioning_cidr": self._config.net_asset.provisioning_cidr,
             "running": True,
-            "single_node_ip": kwargs.get("single_node_ip", ''),
+            "single_node_ip": kwargs.get("single_node_ip", ""),
             "master_disk_count": kwargs.get("master_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
-            "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE)
+            "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE),
         }
 
         params.update(self._get_specific_tf_entity_params())
-        for key in ["libvirt_master_ips", "libvirt_secondary_master_ips", "libvirt_worker_ips",
-                    "libvirt_secondary_worker_ips"]:
+        for key in [
+            "libvirt_master_ips",
+            "libvirt_secondary_master_ips",
+            "libvirt_worker_ips",
+            "libvirt_secondary_worker_ips",
+        ]:
             value = kwargs.get(key)
             if value is not None:
                 params[key] = value
@@ -95,10 +101,7 @@ class TerraformController(LibvirtController):
 
     def _get_specific_tf_entity_params(self) -> Dict[str, str]:
         if isinstance(self._entity_config, BaseClusterConfig):
-            return {
-                "cluster_name": self.entity_name.get(),
-                "cluster_domain": self._entity_config.base_dns_domain
-            }
+            return {"cluster_name": self.entity_name.get(), "cluster_domain": self._entity_config.base_dns_domain}
         elif isinstance(self._entity_config, BaseInfraEnvConfig):
             return {"infra_env_name": self._entity_name.get()}
 
@@ -112,7 +115,7 @@ class TerraformController(LibvirtController):
         logging.info("Creating tfvars")
 
         self._fill_tfvars(running)
-        logging.info('Start running terraform')
+        logging.info("Start running terraform")
         self.tf.apply()
         if self.params.running:
             self.wait_till_nodes_are_ready(network_name=self.params.libvirt_network_name)
@@ -128,37 +131,28 @@ class TerraformController(LibvirtController):
         provisioning_cidr = self.get_provisioning_cidr()
 
         logging.info("Machine cidr is: %s", machine_cidr)
-        master_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(machine_cidr).network_address
-            )
-            + 10
-        )
+        master_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10)
         worker_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(machine_cidr).network_address
-            )
-            + 10
-            + int(tfvars["master_count"])
+            ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10 + int(tfvars["master_count"])
         )
-        tfvars['image_path'] = self._entity_config.iso_download_path
-        tfvars['master_count'] = self.params.master_count
-        self.master_ips = tfvars['libvirt_master_ips'] = self._create_address_list(
+        tfvars["image_path"] = self._entity_config.iso_download_path
+        tfvars["master_count"] = self.params.master_count
+        self.master_ips = tfvars["libvirt_master_ips"] = self._create_address_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
         )
-        tfvars['libvirt_worker_ips'] = self._create_address_list(
+        tfvars["libvirt_worker_ips"] = self._create_address_list(
             self.params.worker_count, starting_ip_addr=worker_starting_ip
         )
-        tfvars['machine_cidr_addresses'] = [machine_cidr]
-        tfvars['provisioning_cidr_addresses'] = [provisioning_cidr]
-        tfvars['bootstrap_in_place'] = self._config.bootstrap_in_place
+        tfvars["machine_cidr_addresses"] = [machine_cidr]
+        tfvars["provisioning_cidr_addresses"] = [provisioning_cidr]
+        tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
 
         vips = self.get_ingress_and_api_vips()
-        tfvars['api_vip'] = vips["api_vip"]
-        tfvars['ingress_vip'] = vips["ingress_vip"]
-        tfvars['running'] = running
-        tfvars['libvirt_master_macs'] = static_network.generate_macs(self.params.master_count)
-        tfvars['libvirt_worker_macs'] = static_network.generate_macs(self.params.worker_count)
+        tfvars["api_vip"] = vips["api_vip"]
+        tfvars["ingress_vip"] = vips["ingress_vip"]
+        tfvars["running"] = running
+        tfvars["libvirt_master_macs"] = static_network.generate_macs(self.params.master_count)
+        tfvars["libvirt_worker_macs"] = static_network.generate_macs(self.params.worker_count)
         tfvars.update(self.params)
         tfvars.update(self._secondary_tfvars())
 
@@ -168,29 +162,22 @@ class TerraformController(LibvirtController):
     def _secondary_tfvars(self):
         provisioning_cidr = self.get_provisioning_cidr()
         secondary_master_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(provisioning_cidr).network_address
-            )
-            + 10
+            ipaddress.ip_address(ipaddress.ip_network(provisioning_cidr).network_address) + 10
         )
         secondary_worker_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(provisioning_cidr).network_address
-            )
+            ipaddress.ip_address(ipaddress.ip_network(provisioning_cidr).network_address)
             + 10
             + int(self.params.master_count)
         )
         return {
-            'libvirt_secondary_worker_ips': self._create_address_list(
-                self.params.worker_count,
-                starting_ip_addr=secondary_worker_starting_ip
+            "libvirt_secondary_worker_ips": self._create_address_list(
+                self.params.worker_count, starting_ip_addr=secondary_worker_starting_ip
             ),
-            'libvirt_secondary_master_ips': self._create_address_list(
-                self.params.master_count,
-                starting_ip_addr=secondary_master_starting_ip
+            "libvirt_secondary_master_ips": self._create_address_list(
+                self.params.master_count, starting_ip_addr=secondary_master_starting_ip
             ),
-            'libvirt_secondary_master_macs': static_network.generate_macs(self.params.master_count),
-            'libvirt_secondary_worker_macs': static_network.generate_macs(self.params.worker_count)
+            "libvirt_secondary_master_macs": static_network.generate_macs(self.params.master_count),
+            "libvirt_secondary_worker_macs": static_network.generate_macs(self.params.worker_count),
         }
 
     def start_all_nodes(self):
@@ -203,19 +190,16 @@ class TerraformController(LibvirtController):
 
     def format_node_disk(self, node_name: str, disk_index: int = 0):
         logging.info("Formatting disk for %s", node_name)
-        self.format_disk(f'{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}')
+        self.format_disk(f"{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
     def get_ingress_and_api_vips(self):
         network_subnet_starting_ip = str(
-            ipaddress.ip_address(
-                ipaddress.ip_network(self.get_primary_machine_cidr()).network_address
-            )
-            + 100
+            ipaddress.ip_address(ipaddress.ip_network(self.get_primary_machine_cidr()).network_address) + 100
         )
         ips = utils.create_ip_address_list(2, starting_ip_addr=str(ipaddress.ip_address(network_subnet_starting_ip)))
         return {"api_vip": ips[0], "ingress_vip": ips[1]}
 
-    @utils.on_exception(message='Failed to run terraform delete', silent=True)
+    @utils.on_exception(message="Failed to run terraform delete", silent=True)
     def _create_address_list(self, num, starting_ip_addr):
         # IPv6 addresses can't be set alongside mac addresses using TF libvirt provider
         # Otherwise results: "Invalid to specify MAC address '<mac>' in network '<network>' IPv6 static host definition"
@@ -239,13 +223,13 @@ class TerraformController(LibvirtController):
     def set_dns(self, api_vip: str, ingress_vip: str) -> None:
         base_domain = self._entity_config.base_dns_domain
         fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{self._entity_name}.conf"
-        contents = dedent(f"""
+        contents = dedent(
+            f"""
                     address=/api.{self._entity_name}.{base_domain}/{api_vip}
                     address=/.apps.{self._entity_name}.{base_domain}/{ingress_vip}
-                    """)
-        self.tf.change_variables(
-            {"dns_forwarding_file": contents, "dns_forwarding_file_name": fname}
+                    """
         )
+        self.tf.change_variables({"dns_forwarding_file": contents, "dns_forwarding_file_name": fname})
 
     def set_dns_for_user_managed_network(self) -> None:
         machine_cidr = self.get_primary_machine_cidr()
@@ -253,12 +237,12 @@ class TerraformController(LibvirtController):
         self.set_dns(nameserver_ip, nameserver_ip)
 
     def _try_to_delete_nodes(self):
-        logging.info('Start running terraform delete')
+        logging.info("Start running terraform delete")
         self.tf.destroy()
 
     def destroy_all_nodes(self, delete_tf_folder=False):
-        """ Runs terraform destroy and then cleans it with virsh cleanup to delete
-            everything relevant.
+        """Runs terraform destroy and then cleans it with virsh cleanup to delete
+        everything relevant.
         """
 
         logging.info("Deleting all nodes")
@@ -266,23 +250,18 @@ class TerraformController(LibvirtController):
             self._try_to_delete_nodes()
 
         self._delete_virsh_resources(
-            self._entity_name.get(),
-            self.params.libvirt_network_name,
-            self.params.libvirt_secondary_network_name
+            self._entity_name.get(), self.params.libvirt_network_name, self.params.libvirt_secondary_network_name
         )
         if delete_tf_folder:
-            logging.info('Deleting %s', self.tf_folder)
+            logging.info("Deleting %s", self.tf_folder)
             shutil.rmtree(self.tf_folder)
 
     @classmethod
     def _delete_virsh_resources(cls, *filters):
-        logging.info('Deleting virsh resources (filters: %s)', filters)
+        logging.info("Deleting virsh resources (filters: %s)", filters)
         skip_list = virsh_cleanup.DEFAULT_SKIP_LIST
         skip_list.extend(["minikube", "minikube-net"])
-        virsh_cleanup.clean_virsh_resources(
-            skip_list=skip_list,
-            resource_filter=filters
-        )
+        virsh_cleanup.clean_virsh_resources(skip_list=skip_list, resource_filter=filters)
 
     def prepare_nodes(self):
         logging.info("Preparing nodes")
@@ -295,7 +274,7 @@ class TerraformController(LibvirtController):
         self._create_nodes()
 
     def get_cluster_network(self):
-        logging.info(f'Cluster network name: {self.network_name}')
+        logging.info(f"Cluster network name: {self.network_name}")
         return self.network_name
 
     def set_single_node_ip(self, ip):
@@ -303,60 +282,90 @@ class TerraformController(LibvirtController):
 
     @property
     def network_conf(self):
-        warnings.warn("network_conf will soon be deprecated. Use controller.config.net_asset instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "network_conf will soon be deprecated. Use controller.config.net_asset instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         return self._config.net_asset
 
     @network_conf.setter
     def network_conf(self, network_conf):
-        warnings.warn("network_conf will soon be deprecated. Use controller.config.net_asset instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "network_conf will soon be deprecated. Use controller.config.net_asset instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         self._config.net_asset = network_conf
 
     @property
     def platform(self):
-        warnings.warn("platform will soon be deprecated. Use controller.config.platform instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "platform will soon be deprecated. Use controller.config.platform instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         return self._config.platform
 
     @platform.setter
     def platform(self, platform):
-        warnings.warn("platform will soon be deprecated. Use controller.config.platform instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "platform will soon be deprecated. Use controller.config.platform instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         self._config.platform = platform
 
     @property
     def cluster_domain(self):
-        warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         return self._entity_config.base_dns_domain
 
     @cluster_domain.setter
     def cluster_domain(self, cluster_domain):
-        warnings.warn("cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "cluster_domain will soon be deprecated. Use controller.config.base_dns_domain instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         self._entity_config.base_dns_domain = cluster_domain
 
     @property
     def image_path(self):
-        warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         return self._entity_config.iso_download_path
 
     @image_path.setter
     def image_path(self, image_path):
-        warnings.warn("image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "image_path will soon be deprecated. Use controller.config.iso_download_path instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         self._entity_config.iso_download_path = image_path
 
     @property
     def bootstrap_in_place(self):
-        warnings.warn("bootstrap_in_place will soon be deprecated. Use controller.config.bootstrap_in_place instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "bootstrap_in_place will soon be deprecated. Use controller.config.bootstrap_in_place instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         return self._config.bootstrap_in_place
 
     @bootstrap_in_place.setter
     def bootstrap_in_place(self, bootstrap_in_place):
-        warnings.warn("bootstrap_in_place will soon be deprecated. Use controller.config.bootstrap_in_place instead. "
-                      "For more information see https://issues.redhat.com/browse/MGMT-4975", PendingDeprecationWarning)
+        warnings.warn(
+            "bootstrap_in_place will soon be deprecated. Use controller.config.bootstrap_in_place instead. "
+            "For more information see https://issues.redhat.com/browse/MGMT-4975",
+            PendingDeprecationWarning,
+        )
         self._config.bootstrap_in_place = bootstrap_in_place

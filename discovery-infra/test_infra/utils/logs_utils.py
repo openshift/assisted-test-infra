@@ -6,7 +6,6 @@ from tempfile import TemporaryDirectory
 
 import waiting
 from logger import log
-
 from test_infra.consts import NUMBER_OF_MASTERS
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
@@ -14,7 +13,12 @@ OC_DOWNLOAD_LOGS_TIMEOUT = 60 * 60
 
 
 def verify_logs_uploaded(
-    cluster_tar_path, expected_min_log_num, installation_success, verify_control_plane=False, check_oc=False
+    cluster_tar_path,
+    expected_min_log_num,
+    installation_success,
+    verify_control_plane=False,
+    check_oc=False,
+    verify_bootstrap_errors=False,
 ):
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
@@ -26,7 +30,7 @@ def verify_logs_uploaded(
             )
             tar.extractall(tempdir)
             for gz in os.listdir(tempdir):
-                if "bootstrap" in gz:
+                if "bootstrap" in gz and verify_bootstrap_errors is True:
                     _verify_node_logs_uploaded(tempdir, gz)
                     _verify_bootstrap_logs_uploaded(tempdir, gz, installation_success, verify_control_plane)
                 elif "master" in gz or "worker" in gz:
@@ -104,7 +108,7 @@ def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for="Logs to be in status %s" % statuses,
+            waiting_for=f"Logs to be in status {statuses}",
         )
         log.info("logs are in expected state")
     except BaseException:

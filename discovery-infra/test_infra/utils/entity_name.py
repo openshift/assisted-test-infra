@@ -1,5 +1,5 @@
-from test_infra.utils.base_name import BaseName
 from test_infra import consts
+from test_infra.utils.base_name import BaseName
 
 
 class ClusterName(BaseName):

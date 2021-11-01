@@ -1,14 +1,10 @@
 from pprint import pformat
-from typing import List, Union, Dict, Optional
+from typing import List, Optional, Union
 
 import waiting
-
-from typing import List, Union
-from pprint import pformat
-
 from kubernetes.client import ApiClient, CustomObjectsApi
-
 from test_infra import consts
+
 from ...consts.kube_api import CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
 from .base_resource import BaseCustomResource
 from .common import ObjectReference, logger
@@ -37,7 +33,7 @@ class Agent(BaseCustomResource):
     def list(
         cls,
         crd_api: CustomObjectsApi,
-        cluster_deployment: "ClusterDeployment",
+        cluster_deployment,
     ) -> List["Agent"]:
         resources = crd_api.list_namespaced_custom_object(
             group=CRD_API_GROUP,
@@ -50,7 +46,7 @@ class Agent(BaseCustomResource):
             if item["spec"].get("clusterDeploymentName") is None:
                 # Unbound late-binding agent, not part of the given cluster_deployment
                 continue
-            
+
             assigned_cluster_ref = ObjectReference(
                 name=item["spec"]["clusterDeploymentName"]["name"],
                 namespace=item["spec"]["clusterDeploymentName"]["namespace"],
@@ -127,7 +123,7 @@ class Agent(BaseCustomResource):
         self.patch(approved=True)
         logger.info("approved agent %s", self.ref)
 
-    def bind(self, cluster_deployment: "ClusterDeployment") -> None:
+    def bind(self, cluster_deployment) -> None:
         """
         Bind an unbound agent to a cluster deployment
         """
@@ -140,7 +136,9 @@ class Agent(BaseCustomResource):
         logger.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
 
     @classmethod
-    def wait_for_agents_to_be_ready_for_install(cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT) -> None:
+    def wait_for_agents_to_be_ready_for_install(
+        cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT
+    ) -> None:
         for status_type in (
             consts.AgentStatus.SPEC_SYNCED,
             consts.AgentStatus.CONNECTED,
@@ -154,7 +152,9 @@ class Agent(BaseCustomResource):
             )
 
     @classmethod
-    def wait_for_agents_to_install(cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT) -> None:
+    def wait_for_agents_to_install(
+        cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT
+    ) -> None:
         cls.wait_for_agents_to_be_ready_for_install(agents=agents, timeout=timeout)
         cls.wait_till_all_agents_are_in_status(
             agents=agents,
@@ -164,30 +164,31 @@ class Agent(BaseCustomResource):
 
     @staticmethod
     def are_agents_in_status(
-        agents: List["Agent"], statusType: str, status: str,
+        agents: List["Agent"],
+        statusType: str,
+        status: str,
     ) -> bool:
         agents_conditions = {
-            agent.ref.name: {
-                condition["type"]: condition["status"]
-                for condition in agent.status()["conditions"]
-            }
+            agent.ref.name: {condition["type"]: condition["status"] for condition in agent.status()["conditions"]}
             for agent in agents
         }
 
-        logger.info(f"Waiting for agents to have the condition '{statusType}' = '{status}' and currently agent conditions are {agents_conditions}")
+        logger.info(
+            f"Waiting for agents to have the condition '{statusType}' ="
+            f" '{status}' and currently agent conditions are {agents_conditions}"
+        )
 
-        return all(agent_conditions.get(statusType, None) == status
-                   for agent_conditions in agents_conditions.values())
+        return all(agent_conditions.get(statusType, None) == status for agent_conditions in agents_conditions.values())
 
     @staticmethod
     def wait_till_all_agents_are_in_status(
-            agents: List["Agent"],
-            statusType: str,
-            timeout,
-            interval=10,
+        agents: List["Agent"],
+        statusType: str,
+        timeout,
+        interval=10,
     ) -> None:
         logger.info(f"Now Wait till agents have status as {statusType}")
-        
+
         waiting.wait(
             lambda: Agent.are_agents_in_status(
                 agents,
@@ -196,5 +197,5 @@ class Agent(BaseCustomResource):
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for=f"Agents to have {statusType} status", 
+            waiting_for=f"Agents to have {statusType} status",
         )

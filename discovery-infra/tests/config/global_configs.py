@@ -1,22 +1,20 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
 
 from assisted_service_client import models
-from dataclasses import dataclass
-
 from test_infra.consts import env_defaults
+from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
 from test_infra.utils import get_kubeconfig_path
 from test_infra.utils.entity_name import ClusterName, InfraEnvName
 from test_infra.utils.global_variables import GlobalVariables
-from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
-
 
 global_variables = GlobalVariables()
 
 
 @dataclass
 class ClusterConfig(BaseClusterConfig):
-    """ A Cluster configuration with defaults that obtained from EnvConfig """
+    """A Cluster configuration with defaults that obtained from EnvConfig"""
 
     @staticmethod
     def get_default(key, default=None) -> Any:
@@ -25,9 +23,7 @@ class ClusterConfig(BaseClusterConfig):
     @staticmethod
     def _get_iso_download_path(cluster_name: str):
         return str(
-            Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(
-                f"{cluster_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}"
-            )
+            Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(f"{cluster_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}")
         ).strip()
 
     def __post_init__(self):
@@ -43,7 +39,7 @@ class ClusterConfig(BaseClusterConfig):
 
 @dataclass
 class InfraEnvConfig(BaseInfraEnvConfig):
-    """ A Cluster configuration with defaults that obtained from EnvConfig """
+    """A Cluster configuration with defaults that obtained from EnvConfig"""
 
     @staticmethod
     def get_default(key, default=None) -> Any:
@@ -52,9 +48,7 @@ class InfraEnvConfig(BaseInfraEnvConfig):
     @staticmethod
     def _get_iso_download_path(infra_env_name: str):
         return str(
-            Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(
-                f"{infra_env_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}"
-            )
+            Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(f"{infra_env_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}")
         ).strip()
 
     def __post_init__(self):
@@ -87,7 +81,7 @@ class Day2ClusterConfig(ClusterConfig):
 
 @dataclass
 class TerraformConfig(BaseTerraformConfig):
-    """ A Nodes configuration with defaults that obtained from EnvConfig """
+    """A Nodes configuration with defaults that obtained from EnvConfig"""
 
     @staticmethod
     def get_default(key, default=None) -> Any:

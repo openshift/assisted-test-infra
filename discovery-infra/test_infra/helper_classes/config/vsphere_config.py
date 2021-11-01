@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 
 

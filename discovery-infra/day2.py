@@ -10,6 +10,7 @@ import waiting
 import test_infra.utils.waiting
 from deprecated_utils import wait_till_nodes_are_ready, are_libvirt_nodes_in_cluster_hosts
 from test_infra import assisted_service_api, utils, consts, warn_deprecate
+from test_infra.assisted_service_api import ClientFactory
 from test_infra.tools import static_network, terraform_utils
 
 from logger import log
@@ -31,9 +32,10 @@ def execute_day2_ocp_flow(cluster_id, args, has_ipv6):
 
 def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
-    client = assisted_service_api.create_client(
-        url=utils.get_assisted_service_url_by_args(args=args)
-    )
+
+    client = ClientFactory.create_client(url=utils.get_assisted_service_url_by_args(args=args),
+                                         offline_token=utils.get_env("OFFLINE_TOKEN"))
+
     cluster = client.cluster_get(cluster_id=cluster_id)
     cluster_name = cluster.name
     openshift_version = cluster.openshift_version

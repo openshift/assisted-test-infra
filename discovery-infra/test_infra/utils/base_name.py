@@ -5,7 +5,7 @@ from test_infra.utils import get_env
 
 
 def get_name_suffix(length: str = consts.SUFFIX_LENGTH):
-    return str(uuid.uuid4())[: length]
+    return str(uuid.uuid4())[:length]
 
 
 class BaseName:

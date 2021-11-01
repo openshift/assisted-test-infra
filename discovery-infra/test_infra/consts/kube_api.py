@@ -1,10 +1,9 @@
 from .durations import HOUR, MINUTE
 
-
-CRD_API_GROUP = 'agent-install.openshift.io'
-CRD_API_VERSION = 'v1beta1'
-HIVE_API_GROUP = 'hive.openshift.io'
-HIVE_API_VERSION = 'v1'
+CRD_API_GROUP = "agent-install.openshift.io"
+CRD_API_VERSION = "v1beta1"
+HIVE_API_GROUP = "hive.openshift.io"
+HIVE_API_VERSION = "v1"
 
 
 DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT = 5 * MINUTE

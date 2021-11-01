@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 from argparse import ArgumentParser
 from contextlib import contextmanager
 
@@ -11,6 +10,7 @@ import subprocess
 import tempfile
 
 import semver
+
 
 @contextmanager
 def pull_secret_file():
@@ -57,27 +57,40 @@ def get_full_openshift_version_from_release(release_image: str) -> str:
     return stdout
 
 
+def get_release_image(release_images, ocp_version, cpu_architecture="x86_64"):
+    archs_images = [v for v in release_images if v.get('cpu_architecture') == cpu_architecture]
+    release_image = [v for v in archs_images if v.get('openshift_version') == ocp_version]
+    if len(release_image) >= 1:
+        return release_image[0]
+
+    return {"cpu_architecture": cpu_architecture}
+
+
+def set_release_image(release_image: dict, release_images: list, ocp_version, ocp_full_version):
+    release_image_index = -1 if "openshift_version" not in release_image else release_images.index(release_image)
+
+    release_image["openshift_version"] = ocp_version
+    release_image["url"] = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
+    release_image["version"] = ocp_full_version
+    if release_image_index != -1:
+        release_images[release_image_index] = release_image
+    else:
+        release_images.append(release_image)
+
+
 def main():
     # Load default release images
     with open(args.src, 'r') as f:
-        release_images = json.load(f)
+        release_images: list = json.load(f)
 
-    # Extract version from release image
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
     ocp_full_version = get_full_openshift_version_from_release(release_image)
     ocp_semver = semver.VersionInfo.parse(ocp_full_version)
     ocp_version = "{}.{}".format(ocp_semver.major, ocp_semver.minor)
 
     # Find relevant release image
-    release_image = [v for v in release_images
-        if v.get('openshift_version') == ocp_version and v.get('cpu_architecture') == "x86_64"][0]
-    release_image_index = release_images.index(release_image)
-
-    # Update release image
-    release_image["openshift_version"] = ocp_version
-    release_image["url"] = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
-    release_image["version"] = ocp_full_version
-    release_images[release_image_index] = release_image
+    release_image = get_release_image(release_images, ocp_version)
+    set_release_image(release_image, release_images, ocp_version, ocp_full_version)
 
     # Store release images
     json.dump(release_images, os.sys.stdout, separators=(',', ':'))

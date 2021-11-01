@@ -1,7 +1,7 @@
 from abc import ABC
+from dataclasses import dataclass, field
 from typing import Dict, List
 
-from dataclasses import dataclass, field
 from munch import Munch
 
 from .controller_config import BaseNodeConfig
@@ -13,7 +13,7 @@ class BaseTerraformConfig(BaseNodeConfig, ABC):
     Define all configurations variables that are needed for Nodes during it's execution
     All arguments must have default to None with type hint
     """
-    # running: bool = True
+
     single_node_ip: str = None
     dns_records: Dict[str, str] = field(default_factory=dict)
 

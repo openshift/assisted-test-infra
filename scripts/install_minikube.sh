@@ -9,7 +9,7 @@ function install_minikube() {
 
     minikube_version=v1.20.0
     minikube_path=$(command -v minikube)
-    if ! [ -x "$minikube_path" ]; then 
+    if ! [ -x "$minikube_path" ]; then
         echo "Installing minikube..."
         arkade get minikube --version=$minikube_version
         ${SUDO} mv -f ${HOME}/.arkade/bin/minikube /usr/local/bin/
@@ -37,7 +37,7 @@ function install_oc() {
         echo "Installing oc..."
         for i in {1..4}; do
             curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.8.0-rc.0/openshift-client-linux-4.8.0-rc.0.tar.gz | tar -xz -C /usr/local/bin && break
-            echo "command failed. Retrying again in 5 seconds..."
+            echo "oc installation failed. Retrying again in 5 seconds..."
             sleep 5
         done
     else
@@ -48,7 +48,12 @@ function install_oc() {
 function install_arkade() {
     if ! [ -x "$(command -v arkade)" ]; then
         echo "Installing arkade..."
-        curl -sLS https://dl.get-arkade.dev | ${SUDO} sh
+        for i in {1..4}; do
+            curl --retry 3 -sLS https://dl.get-arkade.dev | ${SUDO} sh && break
+            echo "arkade installation failed. Retrying again in 5 seconds..."
+            sleep 5
+        done
+        echo "successfully installed arkade!"
     else
         echo "arkade is already installed"
     fi

@@ -1,10 +1,8 @@
 from junit_report import JunitTestSuite
-
 from tests.base_test import BaseTest
 
 
 class TestMakefileTargets(BaseTest):
-
     @JunitTestSuite()
     def test_target_deploy_nodes(self, cluster):
         cluster.prepare_for_installation()

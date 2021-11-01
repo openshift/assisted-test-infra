@@ -13,4 +13,3 @@ def any_interface_in_cidr(interfaces: List[str], cidr: str) -> bool:
 
 def get_ip_from_interface(interface: str) -> str:
     return str(ipaddress.ip_interface(interface).ip)
-

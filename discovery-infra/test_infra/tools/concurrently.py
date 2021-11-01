@@ -1,6 +1,6 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, List, Tuple, Union, Any
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 
 def _safe_run(job, job_id: int, done_handler: Callable[[int], None]):
