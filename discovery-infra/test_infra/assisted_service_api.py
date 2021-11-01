@@ -300,11 +300,11 @@ class InventoryClient(object):
 
     def download_kubeconfig_no_ingress(self, cluster_id: str, kubeconfig_path: str) -> None:
         log.info("Downloading kubeconfig-noingress to %s", kubeconfig_path)
-        self.download_and_save_file(
-            cluster_id=cluster_id,
-            file_name="kubeconfig-noingress",
-            file_path=kubeconfig_path,
+        response = self.client.v2_download_cluster_credentials(
+            cluster_id=cluster_id, file_name="kubeconfig-noingress", _preload_content=False
         )
+        with open(kubeconfig_path, "wb") as _file:
+            _file.write(response.data)
 
     def download_host_ignition(self, infra_env_id: str, host_id: str, destination: str) -> None:
         log.info("Downloading host %s infra_env %s ignition files to %s", host_id, infra_env_id, destination)
