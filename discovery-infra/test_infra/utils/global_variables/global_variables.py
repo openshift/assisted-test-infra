@@ -28,6 +28,9 @@ _triggers = frozendict(
             "master_memory": resources.DEFAULT_MASTER_SNO_MEMORY,
             "master_vcpu": resources.DEFAULT_MASTER_SNO_CPU,
         },
+        (("network_type", consts.NetworkType.OVNKubernetes),): {
+            "vip_dhcp_allocation": False,
+        },
         (("is_ipv4", True), ("is_ipv6", False),): {
             "cluster_networks": consts.DEFAULT_CLUSTER_NETWORKS_IPV4,
             "service_networks": consts.DEFAULT_SERVICE_NETWORKS_IPV4,
