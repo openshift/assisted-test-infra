@@ -23,7 +23,7 @@ class TerraformUtils:
             self.init_tf()
 
     def init_tf(self) -> None:
-        self.tf.cmd("init", raise_on_error=True)
+        self.tf.cmd("init", raise_on_error=True, capture_output=True)
 
     def select_defined_variables(self, **kwargs):
         supported_variables = self.get_variable_list()
