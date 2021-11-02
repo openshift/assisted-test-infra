@@ -65,7 +65,7 @@ def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]],
 
 def get_nodes_details(cluster_name, namespace, tf):
     tf_folder = utils.get_tf_folder(cluster_name, namespace)
-    baremetal_template = os.path.join(tf_folder, "baremetal")
+    baremetal_template = os.path.join(tf_folder, consts.Platforms.BARE_METAL)
 
     tf_vars = utils.get_tfvars(baremetal_template)
     networks_names = (

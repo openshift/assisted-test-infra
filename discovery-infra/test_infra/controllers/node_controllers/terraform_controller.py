@@ -52,12 +52,12 @@ class TerraformController(LibvirtController):
         utils.copy_template_tree(tf_folder)
 
         if platform == consts.Platforms.NONE:
-            return os.path.join(tf_folder, "none")
+            return os.path.join(tf_folder, consts.Platforms.NONE)
 
         if isinstance(self._entity_config, BaseInfraEnvConfig):
             return os.path.join(tf_folder, "baremetal_infra_env")
 
-        return os.path.join(tf_folder, "baremetal")
+        return os.path.join(tf_folder, consts.Platforms.BARE_METAL)
 
     # TODO move all those to conftest and pass it as kwargs
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead

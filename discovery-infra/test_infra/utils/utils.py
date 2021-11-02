@@ -506,7 +506,7 @@ def get_openshift_release_image(allow_default=True):
     return release_image
 
 
-def copy_template_tree(dst):
+def copy_template_tree(dst: str):
     copy_tree(src=consts.TF_TEMPLATES_ROOT, dst=dst)
 
 
