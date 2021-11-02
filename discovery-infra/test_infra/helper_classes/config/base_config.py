@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from test_infra.utils.global_variables.triggerable import Triggerable
+
 
 @dataclass
-class _BaseConfig(ABC):
+class _BaseConfig(Triggerable, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -27,3 +29,7 @@ class _BaseConfig(ABC):
 
     def get_all(self) -> dict:
         return asdict(self)
+
+    def _set(self, key: str, value: Any):
+        if hasattr(self, key):
+            self.__setattr__(key, value)

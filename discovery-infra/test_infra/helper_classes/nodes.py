@@ -3,7 +3,10 @@ import logging
 import random
 from typing import Dict, Iterator, List
 
+import waiting
+from logger import log
 from munch import Munch
+from test_infra.consts import consts
 from test_infra.controllers.node_controllers.node import Node
 from test_infra.controllers.node_controllers.node_controller import NodeController
 from test_infra.tools.concurrently import run_concurrently
@@ -184,3 +187,20 @@ class Nodes:
 
     def set_single_node_ip(self, ip):
         self.controller.set_single_node_ip(ip)
+
+    def wait_for_networking(
+        self,
+        timeout=consts.MINUTE,
+        interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
+    ):
+        log.info("Wait till %s nodes have MAC and IP address", len(self.nodes))
+
+        waiting.wait(
+            lambda: self._are_nodes_network_prepared(),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for="nodes to have IP and MAC addresses",
+        )
+
+    def _are_nodes_network_prepared(self):
+        return all(node.macs and node.ips for node in self.nodes)
