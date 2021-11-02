@@ -32,6 +32,7 @@ function download_service_logs() {
     ${KUBECTL} get ${CRS} -n ${NAMESPACE} -o wide || true
     ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/k8s_{}.log" || true
     ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp > ${LOGS_DEST}/k8s_events.log || true
+    ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp --output json > ${LOGS_DEST}/k8s_events.json || true
     skipper run ./discovery-infra/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
   fi
 }
