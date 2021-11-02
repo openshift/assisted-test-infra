@@ -21,7 +21,7 @@ from test_infra.utils.base_name import BaseName, get_name_suffix
 class TerraformController(LibvirtController):
     def __init__(self, config: BaseTerraformConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
         super().__init__(config, entity_config)
-        self._entity_name = self._get_entity_name()
+        self._entity_name = self._entity_config.entity_name
         self._suffix = self._entity_name.suffix or get_name_suffix()
         self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.platform)
         self.network_name = config.network_name + self._suffix
@@ -37,13 +37,6 @@ class TerraformController(LibvirtController):
     def cluster_name(self) -> str:
         warnings.warn("cluster_name is deprecated. Use Controller.entity_name instead.", DeprecationWarning)
         return self._entity_name.get()
-
-    def _get_entity_name(self) -> BaseName:
-        if isinstance(self._entity_config, BaseClusterConfig):
-            return self._entity_config.cluster_name
-        elif isinstance(self._entity_config, BaseInfraEnvConfig):
-            return self._entity_config.entity_name
-        raise Exception("Unidentified entity config")
 
     def _create_tf_folder(self, name: str, platform: str):
         tf_folder = utils.get_tf_folder(name)

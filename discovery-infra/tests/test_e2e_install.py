@@ -30,7 +30,7 @@ class TestInstall(BaseTest):
     @JunitTestSuite()
     @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())
     def test_infra_env_install(self, infra_env, openshift_version):
-        infra_env.prepare_infraenv()
+        infra_env.prepare_for_installation()
 
     @JunitTestSuite()
     @pytest.mark.parametrize("is_static_ip", [False, True])
