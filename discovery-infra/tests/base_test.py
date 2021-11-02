@@ -477,7 +477,7 @@ class BaseTest:
             given_node_ips = []
             given_nodes = given_nodes or cluster.nodes.nodes
 
-            if cluster.download_image:
+            if cluster.enable_image_download:
                 cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
             cluster.nodes.start_given(given_nodes)
             for node in given_nodes:

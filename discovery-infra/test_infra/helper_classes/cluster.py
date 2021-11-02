@@ -23,6 +23,7 @@ from test_infra.controllers.load_balancer_controller import LoadBalancerControll
 from test_infra.controllers.node_controllers import Node
 from test_infra.helper_classes.cluster_host import ClusterHost
 from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig
+from test_infra.helper_classes.entity import Entity
 from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
@@ -30,9 +31,11 @@ from test_infra.utils import log, logs_utils, network_utils, operators_utils
 from test_infra.utils.entity_name import ClusterName
 
 
-class Cluster:
+class Cluster(Entity):
     MINIMUM_NODES_TO_WAIT = 1
     EVENTS_THRESHOLD = 500
+
+    _config: BaseClusterConfig
 
     def __init__(
         self,
@@ -41,18 +44,9 @@ class Cluster:
         infra_env_config: BaseInfraEnvConfig,
         nodes: Optional[Nodes] = None,
     ):
-        self._config = config
+        super().__init__(api_client, config, nodes)
         self._infra_env_config = infra_env_config
-        self.api_client = api_client
-        self.nodes: Nodes = nodes
         self._infra_env = None
-
-        if config.cluster_id:
-            self.id = config.cluster_id
-            self._update_day2_config(api_client, config.cluster_id)
-        else:
-            self.id = self._create().id
-            config.cluster_id = self.id
 
         # Update infraEnv configurations
         self._infra_env_config.cluster_id = config.cluster_id
@@ -71,7 +65,7 @@ class Cluster:
         return self._config.iso_download_path
 
     @property
-    def download_image(self):
+    def enable_image_download(self):
         return self._config.download_image
 
     def _update_day2_config(self, api_client: InventoryClient, cluster_id: str):
@@ -90,22 +84,13 @@ class Cluster:
             )
         )
 
-    def update_config(self, **kwargs):
-        """
-        Note that kwargs can contain values for overriding BaseClusterConfig arguments.
-        The name (key) of each argument must match to one of the BaseClusterConfig arguments.
-        If key doesn't exists in config - KeyError exception is raised
-        """
-        if kwargs:
-            log.info(f"Updating cluster {self.id} configurations to {kwargs}")
+    def _create(self) -> str:
+        if self._config.cluster_id:
+            log.info(f"Fetching day2 cluster with id {self._config.cluster_id}")
+            self._update_day2_config(self.api_client, self._config.cluster_id)
+            return self._config.cluster_id
 
-        for k, v in kwargs.items():
-            if not hasattr(self._config, k):
-                raise KeyError(f"The key {k} is not present in {self._config.__class__.__name__}")
-            setattr(self._config, k, v)
-
-    def _create(self):
-        return self.api_client.create_cluster(
+        cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
             openshift_version=self._config.openshift_version,
@@ -118,6 +103,9 @@ class Cluster:
             olm_operators=[{"name": name} for name in self._config.olm_operators],
             network_type=self._config.network_type,
         )
+
+        self._config.cluster_id = cluster.id
+        return cluster.id
 
     def delete(self):
         self.api_client.delete_cluster(self.id)
@@ -768,34 +756,23 @@ class Cluster:
             and self._config.platform != consts.Platforms.NONE
         )
 
+    def download_image(self, iso_download_path=None):
+        if self._config.is_static_ip:
+            static_network_config = static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
+        else:
+            static_network_config = None
+
+        self.generate_and_download_infra_env(
+            iso_download_path=iso_download_path or self._config.iso_download_path,
+            iso_image_type=self._config.iso_image_type,
+            static_network_config=static_network_config,
+        )
+
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):
-        self.update_config(**kwargs)
-        log.info(f"Preparing for installation with cluster configurations: cluster_config={self._config}")
-        self.nodes.controller.log_configuration()
+        super(Cluster, self).prepare_for_installation(**kwargs)
 
-        if self._config.download_image:
-            if self._config.is_static_ip:
-                static_network_config = static_network.generate_static_network_data_from_tf(
-                    self.nodes.controller.tf_folder
-                )
-            else:
-                static_network_config = None
-
-            self.generate_and_download_infra_env(
-                iso_download_path=self._config.iso_download_path,
-                iso_image_type=self._config.iso_image_type,
-                static_network_config=static_network_config,
-            )
-
-        self.nodes.notify_iso_ready()
-        if self._config.is_static_ip and self._config.is_ipv6:
-            self.nodes.start_all(check_ips=False)
-        else:
-            self.nodes.start_all()
-        self.wait_until_hosts_are_discovered(allow_insufficient=True)
         self._set_hostnames_and_roles()
-
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
