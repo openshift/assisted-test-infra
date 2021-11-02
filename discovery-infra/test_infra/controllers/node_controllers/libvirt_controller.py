@@ -8,7 +8,7 @@ import xml.dom.minidom as md
 from abc import ABC
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Callable, List, Union
+from typing import Callable, List, Tuple, Union
 from xml.dom import minidom
 
 import libvirt
@@ -455,7 +455,7 @@ class LibvirtController(NodeController, ABC):
         return self._get_domain_ips_and_macs(node)
 
     @staticmethod
-    def _get_domain_ips_and_macs(domain):
+    def _get_domain_ips_and_macs(domain: libvirt.virDomain) -> Tuple[List[str], List[str]]:
         interfaces_sources = [
             # getting all DHCP leases IPs
             libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE,
@@ -465,8 +465,10 @@ class LibvirtController(NodeController, ABC):
 
         interfaces = {}
         for addresses_source in interfaces_sources:
-            with suppress(libvirt.libvirtError):
+            try:
                 interfaces.update(**domain.interfaceAddresses(addresses_source))
+            except libvirt.libvirtError:
+                log.exception("Got an error while updating domain's network addresses")
 
         ips = []
         macs = []

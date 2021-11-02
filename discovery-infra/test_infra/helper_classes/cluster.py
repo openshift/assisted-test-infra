@@ -294,10 +294,8 @@ class Cluster(Entity):
     def set_specific_host_role(self, host, role):
         self._infra_env.update_host(host_id=host["id"], host_role=role)
 
-    def set_network_params(
-        self,
-        controller=None,  # Here only for backward compatibility TODO - Remove after QE refactor all e2e tests
-    ):
+    def set_network_params(self, controller=None):
+        # Controller argument is here only for backward compatibility TODO - Remove after QE refactor all e2e tests
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
 
         self.set_advanced_networking(
@@ -348,12 +346,8 @@ class Cluster(Entity):
     def set_machine_networks(self, networks):
         log.info(f"Setting Machine Networks :{networks} for cluster: {self.id}")
 
-        self.api_client.update_cluster(
-            self.id,
-            {
-                "machine_networks": [models.MachineNetwork(cidr=network) for network in networks],
-            },
-        )
+        machine_networks = {"machine_networks": [models.MachineNetwork(cidr=network) for network in networks]}
+        self.api_client.update_cluster(self.id, machine_networks)
 
     def set_ingress_and_api_vips(self, vips):
         log.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")
@@ -772,6 +766,7 @@ class Cluster(Entity):
     def prepare_for_installation(self, **kwargs):
         super(Cluster, self).prepare_for_installation(**kwargs)
 
+        self.nodes.wait_for_networking()
         self._set_hostnames_and_roles()
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))

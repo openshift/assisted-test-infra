@@ -19,6 +19,7 @@ class TestInstall(BaseTest):
             with suppress(FixtureLookupError):
                 setattr(config, fixture_name, request.getfixturevalue(fixture_name))
 
+        config.trigger()
         return config
 
     @JunitTestSuite()
