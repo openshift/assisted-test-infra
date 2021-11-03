@@ -39,6 +39,7 @@ LOG_FORMAT = r'time="(?P<time>(.*?))" ' \
              r'file="(?P<file>(.*?))" ' \
              r'(error="(?P<error>.*)")?'
 
+LEADER_ELECTION_LOG_FORMAT = r'(?P<level>[IEW](\d{4})) (?P<time>.*?) .*? \d (?P<file>.*?)] (?P<msg>.*)'
 
 EXPORTED_LOG_LEVELS = ("fatal", "error")
 EXPORTED_EVENT_LEVELS = ("critical", "error")
@@ -74,17 +75,31 @@ class LogsConverter:
         return fail_case
 
     @classmethod
+    def get_level(cls, level: str):
+        return {"E": "error", "W": "warning", "F": "fatal"}.get(level, "info")
+
+    @classmethod
+    def get_log_entry(cls, line: str):
+        values_match = re.match(LOG_FORMAT, line) or re.match(LEADER_ELECTION_LOG_FORMAT, line)
+        if values_match is None:
+            return None
+        values = values_match.groupdict()
+
+        # Update values to match assisted-service logs
+        values["level"] = cls.get_level(values["level"])
+        if "func" not in values:
+            values["func"] = values["file"].split(":")[0]
+
+        return LogEntry(**values)
+
+    @classmethod
     def get_failure_cases(cls, log_file_name: Path, suite_name: str) -> List[TestCase]:
         fail_cases: Dict[str, List[TestCase]] = dict()
 
         with open(log_file_name) as f:
             for line in f:
-                values = re.match(LOG_FORMAT, line)
-                if values is None:
-                    continue
-
-                entry = LogEntry(**values.groupdict())
-                if entry.level not in EXPORTED_LOG_LEVELS:
+                entry = cls.get_log_entry(line)
+                if entry is None or (entry.level not in EXPORTED_LOG_LEVELS):
                     continue
 
                 if entry.func not in fail_cases:
