@@ -6,7 +6,8 @@ from builtins import list
 from typing import Any, Dict, List
 
 import hcl2
-from python_terraform import IsFlagged, Terraform, Tfstate
+from retry import retry
+from python_terraform import IsFlagged, Terraform, Tfstate, TerraformCommandError
 
 
 class TerraformUtils:
@@ -22,6 +23,7 @@ class TerraformUtils:
         if terraform_init:
             self.init_tf()
 
+    @retry(exceptions=TerraformCommandError, tries=10, delay=10)
     def init_tf(self) -> None:
         self.tf.cmd("init", raise_on_error=True, capture_output=True)
 
