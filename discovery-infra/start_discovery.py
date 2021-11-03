@@ -74,7 +74,8 @@ def set_tf_config(cluster_name):
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
     utils.recreate_folder(tf_folder)
 
-    utils.copy_template_tree(tf_folder, is_none_platform_mode())
+    utils.copy_template_tree(tf_folder)
+    baremetal_template = os.path.join(tf_folder, consts.Platforms.BARE_METAL)
 
     machine_net = MachineNetwork(args.ipv4, args.ipv6, args.vm_network_cidr, args.vm_network_cidr6, args.ns_index)
     default_image_path = os.path.join(consts.IMAGE_FOLDER, f'{args.namespace}-installer-image.iso')
@@ -83,7 +84,7 @@ def set_tf_config(cluster_name):
         storage_path=args.storage_path,
         master_count=args.master_count,
         nodes_details=nodes_details,
-        tf_folder=tf_folder,
+        tf_folder=baremetal_template,
         machine_net=machine_net
     )
 
@@ -567,8 +568,10 @@ def nodes_flow(
 # If install cluster is set , it will run install cluster command and wait till all nodes will be in installing status
 def nodes_flow_kube_api(cluster_name, machine_net, cluster_deployment, agent_cluster_install):
     tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
-    nodes_details = utils.get_tfvars(tf_folder)
-    tf = terraform_utils.TerraformUtils(working_dir=tf_folder)
+    baremetal_template = os.path.join(tf_folder, consts.Platforms.BARE_METAL)
+
+    nodes_details = utils.get_tfvars(baremetal_template)
+    tf = terraform_utils.TerraformUtils(working_dir=baremetal_template)
     is_ipv4 = machine_net.has_ip_v4 or not machine_net.has_ip_v6
     nodes_number = args.master_count + args.number_of_workers
 

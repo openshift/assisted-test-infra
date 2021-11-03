@@ -19,7 +19,7 @@ def generate_macs(count: int) -> List[str]:
 
 
 def generate_day2_static_network_data_from_tf(tf_folder: str, num_day2_workers: int) -> List[Dict[str, List[dict]]]:
-    tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    tfvars_json_file = os.path.join(tf_folder, consts.Platforms.BARE_METAL, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
         tfvars = json.load(_file)
 
@@ -43,7 +43,7 @@ def generate_day2_static_network_data_from_tf(tf_folder: str, num_day2_workers: 
 
 
 def generate_static_network_data_from_tf(tf_folder: str) -> List[Dict[str, List[dict]]]:
-    tfvars_json_file = os.path.join(tf_folder, consts.TFVARS_JSON_NAME)
+    tfvars_json_file = os.path.join(tf_folder, consts.Platforms.BARE_METAL, consts.TFVARS_JSON_NAME)
     with open(tfvars_json_file) as _file:
         tfvars = json.load(_file)
 

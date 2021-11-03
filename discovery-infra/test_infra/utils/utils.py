@@ -360,7 +360,9 @@ def extract_nodes_from_tf_state(tf_state, network_names, role):
     :tags: QE
     """
     data = {}
-    for domains in [r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and role in r["name"]]:
+    for domains in [
+        r["instances"] for r in tf_state.resources if r["type"] == "libvirt_domain" and role in r["module"]
+    ]:
         for d in domains:
             for nic in d["attributes"]["network_interface"]:
 
@@ -504,15 +506,8 @@ def get_openshift_release_image(allow_default=True):
     return release_image
 
 
-def copy_template_tree(dst, none_platform_mode=False, is_infra_env=False):
-    copy_tree(
-        src=consts.TF_TEMPLATE_BARE_METAL_INFRA_ENV_FLOW
-        if is_infra_env
-        else consts.TF_TEMPLATE_NONE_PLATFORM_FLOW
-        if none_platform_mode
-        else consts.TF_TEMPLATE_BARE_METAL_FLOW,
-        dst=dst,
-    )
+def copy_template_tree(dst: str):
+    copy_tree(src=consts.TF_TEMPLATES_ROOT, dst=dst)
 
 
 @contextmanager
