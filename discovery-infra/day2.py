@@ -59,7 +59,8 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
         f'{args.namespace}-installer-image.iso'
     )
 
-    tf_folder = utils.get_tf_folder(terraform_cluster_dir_prefix, args.namespace)
+    tf_folder = os.path.join(utils.get_tf_folder(terraform_cluster_dir_prefix, args.namespace),
+                             consts.Platforms.BARE_METAL)
     set_day2_tf_configuration(tf_folder, args.number_of_day2_workers, api_vip_ip, api_vip_dnsname)
 
     static_network_config = None
