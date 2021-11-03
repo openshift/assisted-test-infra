@@ -4,7 +4,7 @@ import random
 from typing import Dict, Iterator, List
 
 import waiting
-from logger import log
+from logger import log, SuppressAndLog
 from munch import Munch
 from test_infra.consts import consts
 from test_infra.controllers.node_controllers.node import Node
@@ -195,12 +195,14 @@ class Nodes:
     ):
         log.info("Wait till %s nodes have MAC and IP address", len(self.nodes))
 
-        waiting.wait(
-            lambda: self._are_nodes_network_prepared(),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for="nodes to have IP and MAC addresses",
-        )
+        # Best effort
+        with SuppressAndLog(waiting.TimeoutExpired):
+            waiting.wait(
+                lambda: self._are_nodes_network_prepared(),
+                timeout_seconds=timeout,
+                sleep_seconds=interval,
+                waiting_for="nodes to have IP and MAC addresses",
+            )
 
     def _are_nodes_network_prepared(self):
         return all(node.macs and node.ips for node in self.nodes)
