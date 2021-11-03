@@ -666,7 +666,8 @@ def apply_static_network_config(cluster_name, kube_client):
     if not args.with_static_network_config:
         return None
 
-    tf_folder = utils.get_tf_folder(cluster_name, args.namespace)
+    tf_folder = os.path.join(utils.get_tf_folder(cluster_name, args.namespace),
+                             consts.Platforms.BARE_METAL)
     static_network_config = static_network.generate_static_network_data_from_tf(tf_folder)
     if args.kube_api:
         if args.master_count != 1:
