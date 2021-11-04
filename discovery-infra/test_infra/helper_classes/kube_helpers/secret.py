@@ -68,5 +68,5 @@ def _validate_pull_secret(pull_secret: str) -> None:
         return
     try:
         json.loads(pull_secret)
-    except json.JSONDecodeError:
-        raise ValueError(f"invalid pull secret {pull_secret}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"invalid pull secret {pull_secret}") from e

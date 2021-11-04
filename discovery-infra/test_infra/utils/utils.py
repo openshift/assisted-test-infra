@@ -430,8 +430,10 @@ def get_kubeconfig_path(cluster_name: str) -> str:
     try:
         if kubeconfig_path == str(default):
             kubeconfig_dir.mkdir(parents=True, exist_ok=True)
-    except FileExistsError:
-        raise FileExistsError(f"{kubeconfig_dir} should be a directory. Remove the old kubeconfig file and retry.")
+    except FileExistsError as e:
+        raise FileExistsError(
+            f"{kubeconfig_dir} should be a directory. Remove the old kubeconfig file and retry."
+        ) from e
 
     return kubeconfig_path
 
@@ -609,7 +611,7 @@ def fetch_url(url, timeout=60, max_retries=5):
         response.raise_for_status()
         return response.content
     except (RequestException, HTTPError) as err:
-        raise Exception(f"Failed to GET: {url} ({err})")
+        raise Exception(f"Failed to GET: {url} ({err})") from err
 
 
 def run_marked_fixture(old_value, marker_name, request):

@@ -288,8 +288,8 @@ class LibvirtController(NodeController, ABC):
 
         try:
             result = next(candidate for candidate in string.ascii_lowercase if candidate not in identifiers_in_use)
-        except StopIteration:
-            raise ValueError(f"Couldn't find available scsi disk letter, all are taken: {identifiers_in_use}")
+        except StopIteration as e:
+            raise ValueError(f"Couldn't find available scsi disk letter, all are taken: {identifiers_in_use}") from e
 
         return result
 
