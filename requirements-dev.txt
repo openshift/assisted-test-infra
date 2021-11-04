@@ -5,7 +5,7 @@ flake8-bugbear==21.9.2              # Flake8 plugin that help identify likely bu
 flake8_formatter_junit_xml==0.0.6   # JUnit XML Formatter for flake8.
 flake8-colors==0.1.9                # ANSI colors highlight for Flake8
 flake8-eradicate==1.2.0             # Flake8 plugin to find commented out (or so called "dead") cod
-pep8-naming==0.11.1                 # Check code against PEP 8 naming conventions
+pep8-naming==0.12.1                 # Check code against PEP 8 naming conventions
 flake8-use-fstring==1.2.1           # Jump-start into modern Python by forcing yourself to use f-strings
 flake8-black==0.2.3                 # Check black formatting using flake8
 flake8-isort==4.1.1                 # Check isort formatting using flake8
