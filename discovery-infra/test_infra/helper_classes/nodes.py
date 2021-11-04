@@ -4,7 +4,7 @@ import random
 from typing import Dict, Iterator, List
 
 import waiting
-from logger import log, SuppressAndLog
+from logger import SuppressAndLog, log
 from munch import Munch
 from test_infra.consts import consts
 from test_infra.controllers.node_controllers.node import Node

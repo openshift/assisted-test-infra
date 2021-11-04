@@ -30,6 +30,7 @@ from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
+from test_infra.helper_classes.events_handler import EventsHandler
 from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
 from test_infra.helper_classes.nodes import Nodes
@@ -220,6 +221,10 @@ class BaseTest:
     def teardown_nat(nat: NatController) -> None:
         if global_variables.test_teardown and nat:
             nat.remove_nat_rules()
+
+    @pytest.fixture
+    def events_handler(self, api_client: InventoryClient) -> EventsHandler:
+        yield EventsHandler(api_client)
 
     @pytest.fixture
     @JunitFixtureTestCase()

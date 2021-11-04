@@ -6,8 +6,8 @@ from builtins import list
 from typing import Any, Dict, List
 
 import hcl2
+from python_terraform import IsFlagged, Terraform, TerraformCommandError, Tfstate
 from retry import retry
-from python_terraform import IsFlagged, Terraform, Tfstate, TerraformCommandError
 
 
 class TerraformUtils:
