@@ -93,4 +93,4 @@ def resource_param(base_value: int, resource_name: str, operator: str):
             value = value + resource
         return value
     except KeyError as e:
-        raise ValueError(f"Unknown operator name {e.args[0]}")
+        raise ValueError(f"Unknown operator name {e.args[0]}") from e
