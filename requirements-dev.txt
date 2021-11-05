@@ -1,5 +1,5 @@
 black==21.9b0
-isort==5.8.0
+isort==5.10.0
 flake8==4.0.1
 flake8-bugbear==21.9.2              # Flake8 plugin that help identify likely bugs and design problems
 flake8_formatter_junit_xml==0.0.6   # JUnit XML Formatter for flake8.
