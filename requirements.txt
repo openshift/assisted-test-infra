@@ -4,14 +4,14 @@ debugpy==1.5.1
 dnspython==2.1.0
 elasticsearch==7.15.0
 filelock==3.3.2
-frozendict==2.0.6
+frozendict==2.0.7
 ipdb==0.13.9
 ipython==7.11.1
 Jinja2===3.0.2
 jira==3.0.1
 junit-report==0.1.42
 kubernetes==19.15.0
-libvirt-python==7.8.0
+libvirt-python==7.9.0
 munch==2.5.0
 netaddr==0.8.0
 netifaces==0.11.0
