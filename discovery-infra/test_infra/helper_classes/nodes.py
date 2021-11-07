@@ -190,7 +190,7 @@ class Nodes:
 
     def wait_for_networking(
         self,
-        timeout=consts.MINUTE,
+        timeout=3 * consts.MINUTE,
         interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
     ):
         log.info("Wait till %s nodes have MAC and IP address", len(self.nodes))
