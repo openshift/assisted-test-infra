@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import requests
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
+from junit_report import CaseFormatKeys, JsonJunitExporter
 from kubernetes.client import ApiClient as KubeApiClient
 from kubernetes.config import load_kube_config
 from kubernetes.config.kube_config import Configuration as KubeConfiguration
@@ -35,6 +36,9 @@ class InventoryClient(object):
         self.versions = api.VersionsApi(api_client=self.api)
         self.domains = api.ManagedDomainsApi(api_client=self.api)
         self.operators = api.OperatorsApi(api_client=self.api)
+
+        fmt = CaseFormatKeys(case_name="cluster_id", severity_key="severity", case_timestamp="event_time")
+        self._events_junit_exporter = JsonJunitExporter(fmt)
 
     def get_host(self, configs: Configuration) -> str:
         parsed_host = urlparse(configs.host)
@@ -359,7 +363,7 @@ class InventoryClient(object):
         host_id: Optional[str] = "",
         infra_env_id: Optional[str] = "",
         categories=None,
-    ) -> dict:
+    ) -> List[Dict[str, str]]:
         if categories is None:
             categories = ["user"]
         # Get users events
@@ -379,7 +383,9 @@ class InventoryClient(object):
         log.info("Downloading cluster events to %s", output_file)
 
         with open(output_file, "wb") as _file:
-            _file.write(json.dumps(self.get_events(cluster_id, categories=categories), indent=4).encode())
+            events = self.get_events(cluster_id, categories=categories)
+            _file.write(json.dumps(events, indent=4).encode())
+            self._events_junit_exporter.collect(events, suite_name=f"cluster_events_{cluster_id}")
 
     def download_host_logs(self, cluster_id: str, host_id: str, output_file) -> None:
         log.info("Downloading host logs to %s", output_file)
