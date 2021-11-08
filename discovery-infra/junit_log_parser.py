@@ -76,7 +76,7 @@ class LogsConverter:
 
     @classmethod
     def get_level(cls, level: str):
-        return {"E": "error", "W": "warning", "F": "fatal"}.get(level, "info")
+        return {"e": "error", "w": "warning", "f": "fatal"}.get(level.lower()[0], "info")
 
     @classmethod
     def get_log_entry(cls, line: str):
