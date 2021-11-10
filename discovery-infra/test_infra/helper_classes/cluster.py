@@ -28,7 +28,7 @@ from test_infra.helper_classes.events_handler import EventsHandler
 from test_infra.helper_classes.infra_env import InfraEnv
 from test_infra.helper_classes.nodes import Nodes
 from test_infra.tools import static_network, terraform_utils
-from test_infra.utils import log, logs_utils, network_utils, operators_utils
+from test_infra.utils import Path, log, logs_utils, network_utils, operators_utils
 from test_infra.utils.entity_name import ClusterName
 
 
@@ -140,7 +140,7 @@ class Cluster(Entity):
 
     def generate_infra_env(
         self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None, proxy=None
-    ) -> models.infra_env.InfraEnv:
+    ) -> InfraEnv:
         self._infra_env_config.ssh_public_key = ssh_key or self._config.ssh_public_key
         self._infra_env_config.iso_image_type = iso_image_type or self._config.iso_image_type
         self._infra_env_config.static_network_config = static_network_config
@@ -154,9 +154,9 @@ class Cluster(Entity):
         self._infra_env_config.proxy = proxy
         self._infra_env.update_proxy(proxy=proxy)
 
-    def download_infra_env_image(self, iso_download_path=None) -> None:
+    def download_infra_env_image(self, iso_download_path=None) -> Path:
         iso_download_path = iso_download_path or self._config.iso_download_path
-        self._infra_env.download_image(iso_download_path=iso_download_path)
+        return self._infra_env.download_image(iso_download_path=iso_download_path)
 
     @JunitTestCase()
     def generate_and_download_infra_env(
@@ -167,7 +167,10 @@ class Cluster(Entity):
         ssh_key=None,
         ignition_info=None,
         proxy=None,
-    ):
+    ) -> Path:
+        if self._config.is_static_ip and static_network_config is None:
+            static_network_config = static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
+
         self.generate_infra_env(
             static_network_config=static_network_config,
             iso_image_type=iso_image_type,
@@ -175,14 +178,12 @@ class Cluster(Entity):
             ignition_info=ignition_info,
             proxy=proxy,
         )
-        iso_download_path = iso_download_path or self._config.iso_download_path
-        self.download_infra_env_image(iso_download_path=iso_download_path)
+        return self.download_infra_env_image(iso_download_path=iso_download_path or self._config.iso_download_path)
 
     @JunitTestCase()
     def generate_and_download_image(
         self, iso_download_path=None, static_network_config=None, iso_image_type=None, ssh_key=None
     ):
-        # TODO remove in favor of generate_and_download_infra_env
         warnings.warn(
             "generate_and_download_image is deprecated. Use generate_and_download_infra_env instead.",
             DeprecationWarning,
@@ -751,17 +752,14 @@ class Cluster(Entity):
             and self._config.platform != consts.Platforms.NONE
         )
 
-    def download_image(self, iso_download_path=None):
-        if self._config.is_static_ip:
-            static_network_config = static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
-        else:
-            static_network_config = None
-
-        self.generate_and_download_infra_env(
-            iso_download_path=iso_download_path or self._config.iso_download_path,
-            iso_image_type=self._config.iso_image_type,
-            static_network_config=static_network_config,
-        )
+    def download_image(self, iso_download_path: str = None) -> Path:
+        if self._infra_env is None:
+            log.warning("No infra_env found. Generating infra_env and downloading ISO")
+            return self.generate_and_download_infra_env(
+                iso_download_path=iso_download_path or self._config.iso_download_path,
+                iso_image_type=self._config.iso_image_type,
+            )
+        return self._infra_env.download_image(iso_download_path)
 
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):

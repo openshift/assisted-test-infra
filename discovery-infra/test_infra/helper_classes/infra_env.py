@@ -1,9 +1,11 @@
 import json
 import os
+from pathlib import Path
 from typing import List, Optional
 
 import test_infra.utils.waiting
 from junit_report import JunitTestCase
+from logger import log
 from test_infra import consts, utils
 from test_infra.assisted_service_api import InventoryClient, models
 from test_infra.helper_classes.config import BaseInfraEnvConfig
@@ -37,17 +39,16 @@ class InfraEnv(Entity):
         return infra_env.id
 
     @JunitTestCase()
-    def download_image(self, iso_download_path=None):
+    def download_image(self, iso_download_path: str = None) -> Path:
+        iso_download_url = self.get_details().download_url
         iso_download_path = iso_download_path or self._config.iso_download_path
 
         # ensure file path exists before downloading
         if not os.path.exists(iso_download_path):
             utils.recreate_folder(os.path.dirname(iso_download_path), force_recreate=False)
 
-        self.api_client.download_infraenv_image(
-            infraenv_id=self.id,
-            image_path=iso_download_path,
-        )
+        log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
+        return utils.download_file(iso_download_url, iso_download_path)
 
     @JunitTestCase()
     def wait_until_hosts_are_discovered(self, nodes_count: int, allow_insufficient=False):
