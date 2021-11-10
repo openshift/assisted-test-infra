@@ -60,7 +60,3 @@ class Entity(ABC):
     @abstractmethod
     def wait_until_hosts_are_discovered(self, nodes_count: int = None, allow_insufficient=False):
         pass
-
-    @abstractmethod
-    def download_image(self):
-        pass

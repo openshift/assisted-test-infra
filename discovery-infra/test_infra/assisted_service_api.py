@@ -166,6 +166,12 @@ class InventoryClient(object):
 
     @classmethod
     def _download(cls, response: HTTPResponse, file_path: str, verify_file_size=False) -> None:
+        warnings.warn(
+            "_download is deprecated and soon will be deleted. "
+            "Use infra_env.download_image or cluster.download_image instead.",
+            DeprecationWarning,
+        )
+
         with open(file_path, "wb") as f:
             shutil.copyfileobj(response, f)
         if verify_file_size:
@@ -194,6 +200,12 @@ class InventoryClient(object):
 
     @retry(exceptions=RuntimeError, tries=2, delay=3)
     def download_image(self, cluster_id: str, image_path: str) -> None:
+        warnings.warn(
+            "download_image is deprecated and soon will be deleted. "
+            "Use infra_env.download_image or cluster.download_image instead.",
+            DeprecationWarning,
+        )
+
         log.info("Downloading image for cluster %s to %s", cluster_id, image_path)
         response = self.client.download_cluster_iso_with_http_info(cluster_id=cluster_id, _preload_content=False)
         response_obj = response[0]
@@ -207,6 +219,12 @@ class InventoryClient(object):
         image_type: str = consts.ImageType.FULL_ISO,
         static_network_config: Optional[list] = None,
     ):
+        warnings.warn(
+            "generate_and_download_image is deprecated and soon will be deleted. "
+            "Use infra_env.download_image or cluster.generate_and_download_image instead.",
+            DeprecationWarning,
+        )
+
         self.generate_image(
             cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_network_config=static_network_config
         )
@@ -218,6 +236,12 @@ class InventoryClient(object):
 
     @retry(exceptions=RuntimeError, tries=2, delay=3)
     def download_infraenv_image(self, infraenv_id: str, image_path: str) -> None:
+        warnings.warn(
+            "download_infraenv_image is deprecated and soon will be deleted. "
+            "Use infra_env.download_image or cluster.download_image instead.",
+            DeprecationWarning,
+        )
+
         log.info("Downloading image for infra-env %s to %s", infraenv_id, image_path)
         response = self.client.download_infra_env_discovery_image_with_http_info(
             infra_env_id=infraenv_id, _preload_content=False
