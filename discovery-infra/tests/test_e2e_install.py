@@ -3,6 +3,8 @@ from contextlib import suppress
 import pytest
 from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitTestSuite
+
+from logger import log
 from test_infra.consts import NetworkType, OperatorStatus
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig
@@ -37,6 +39,7 @@ class TestInstall(BaseTest):
     @pytest.mark.parametrize("is_static_ip", [False, True])
     @pytest.mark.parametrize("network_type", [NetworkType.OpenShiftSDN, NetworkType.OVNKubernetes])
     def test_networking(self, cluster, network_type, is_static_ip):
+        log.info("************************ NETWORKING TEST ************************")
         cluster.prepare_for_installation()
         cluster.start_install_and_wait_for_installed()
 

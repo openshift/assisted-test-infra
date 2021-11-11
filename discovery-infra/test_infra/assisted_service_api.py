@@ -529,3 +529,7 @@ class ClientFactory:
         conf = KubeConfiguration()
         load_kube_config(config_file=kubeconfig_path, client_configuration=conf)
         return KubeApiClient(configuration=conf)
+
+
+def dummy():
+    pass
