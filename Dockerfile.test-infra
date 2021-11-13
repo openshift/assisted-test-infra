@@ -2,7 +2,7 @@ FROM quay.io/ocpmetal/assisted-service:latest AS service
 
 FROM quay.io/centos/centos:8.3.2011
 
-RUN yum -y install \
+RUN yum install -y \
   make \
   gcc \
   unzip \

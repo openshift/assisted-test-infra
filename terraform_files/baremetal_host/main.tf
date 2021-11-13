@@ -1,8 +1,13 @@
 terraform {
   required_providers {
+    # TODO: revert to upstream package when newer version than v0.6.11 has been released
+    # libvirt = {
+    #   source = "dmacvicar/libvirt"
+    #   version = "0.6.9"
+    # }
     libvirt = {
-      source = "dmacvicar/libvirt"
-      version = "0.6.9"
+      source = "osherdp/libvirt"
+      version = "99.9.0"
     }
   }
 }
@@ -39,7 +44,7 @@ resource "libvirt_domain" "host" {
     target_port = 0
   }
 
-  cpu = {
+  cpu {
     mode = var.cpu_mode
   }
 
@@ -58,6 +63,15 @@ resource "libvirt_domain" "host" {
 
   boot_device{
     dev = ["hd", "cdrom"]
+  }
+
+  dynamic "tpm" {
+    for_each = var.vtpm2 ? [1] : []
+
+    content {
+      backend_type    = "emulator"
+      backend_version = "2.0"
+    }
   }
 
   xml {

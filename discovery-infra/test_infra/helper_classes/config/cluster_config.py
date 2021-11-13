@@ -11,8 +11,8 @@ from .base_entity_config import BaseEntityConfig
 @dataclass
 class BaseClusterConfig(BaseEntityConfig, ABC):
     """
-    Define all configurations variables that are needed for Cluster during it's execution
-    All arguments must have default to None with type hint
+    Define all configurations variables that are needed for Cluster during its execution.
+    All arguments must default to None and be type annotated.
     """
 
     cluster_id: str = None
@@ -23,3 +23,5 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     service_networks: List[models.ServiceNetwork] = None
     kubeconfig_path: str = None
     network_type: str = None
+    disk_encryption_mode: str = None
+    disk_encryption_roles: str = None
