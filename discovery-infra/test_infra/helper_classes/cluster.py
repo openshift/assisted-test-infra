@@ -1145,7 +1145,7 @@ class Cluster(Entity):
                     return node.name
 
         # IPv6 static ips
-        if self._config.is_static_ip and self._config.is_ipv6:
+        if self._config.is_static_ip:
             mappings = static_network.get_name_to_mac_addresses_mapping(self.nodes.controller.tf_folder)
             for mac in host.macs():
                 for name, macs in mappings.items():
