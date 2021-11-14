@@ -300,16 +300,36 @@ class Cluster(Entity):
         # Controller argument is here only for backward compatibility TODO - Remove after QE refactor all e2e tests
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
 
+        if self._config.platform == consts.Platforms.NONE:
+            log.info("On None platform, leaving network management to the user")
+            api_vip = ingress_vip = machine_networks = None
+
+        elif self._config.vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
+            log.info("Letting access VIPs be deducted from machine networks")
+            api_vip = ingress_vip = None
+            machine_networks = self.get_machine_networks()
+
+        else:
+            log.info("Assigning VIPs statically")
+            access_vips = controller.get_ingress_and_api_vips()
+            api_vip = access_vips["api_vip"]
+            ingress_vip = access_vips["ingress_vip"]
+            machine_networks = None
+
         self.set_advanced_networking(
             vip_dhcp_allocation=self._config.vip_dhcp_allocation,
             cluster_networks=self._config.cluster_networks,
             service_networks=self._config.service_networks,
+            machine_networks=machine_networks,
+            api_vip=api_vip,
+            ingress_vip=ingress_vip,
         )
 
-        if self._config.vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
-            self.set_machine_networks(self.get_machine_networks())
-        elif self._config.platform != consts.Platforms.NONE:
-            self.set_ingress_and_api_vips(controller.get_ingress_and_api_vips())
+        # TODO: when assisted-service supports configuring dual-stack networks on one go,
+        # change it so that we call set_advanced_networking only once
+        if self._config.is_ipv4 and self._config.is_ipv6:
+            machine_networks = controller.get_all_machine_addresses()
+            self.set_advanced_networking(machine_networks=machine_networks)
 
     def get_primary_machine_cidr(self):
         cidr = self.nodes.controller.get_primary_machine_cidr()
@@ -345,14 +365,8 @@ class Cluster(Entity):
 
         return networks
 
-    def set_machine_networks(self, networks):
-        log.info(f"Setting Machine Networks :{networks} for cluster: {self.id}")
-
-        machine_networks = {"machine_networks": [models.MachineNetwork(cidr=network) for network in networks]}
-        self.api_client.update_cluster(self.id, machine_networks)
-
     def set_ingress_and_api_vips(self, vips):
-        log.info(f"Setting API VIP:{vips['api_vip']} and ingres VIP:{vips['ingress_vip']} for cluster: {self.id}")
+        log.info(f"Setting API VIP:{vips['api_vip']} and ingress VIP:{vips['ingress_vip']} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, vips)
 
     def set_ssh_key(self, ssh_key: str):
@@ -370,13 +384,25 @@ class Cluster(Entity):
         vip_dhcp_allocation: Optional[bool] = None,
         cluster_networks: Optional[List[models.ClusterNetwork]] = None,
         service_networks: Optional[List[models.ServiceNetwork]] = None,
+        machine_networks: Optional[List[models.MachineNetwork]] = None,
+        api_vip: Optional[str] = None,
+        ingress_vip: Optional[str] = None,
     ):
+        if machine_networks is None:
+            machine_networks = self._config.machine_networks
+        else:
+            machine_networks = [models.MachineNetwork(cidr=cidr) for cidr in machine_networks]
+
+        if vip_dhcp_allocation is None:
+            vip_dhcp_allocation = self._config.vip_dhcp_allocation
+
         advanced_networking = {
-            "vip_dhcp_allocation": vip_dhcp_allocation
-            if vip_dhcp_allocation is not None
-            else self._config.vip_dhcp_allocation,
+            "vip_dhcp_allocation": vip_dhcp_allocation,
             "cluster_networks": cluster_networks if cluster_networks is not None else self._config.cluster_networks,
             "service_networks": service_networks if service_networks is not None else self._config.service_networks,
+            "machine_networks": machine_networks,
+            "api_vip": api_vip if api_vip is not None else self._config.api_vip,
+            "ingress_vip": ingress_vip if ingress_vip is not None else self._config.ingress_vip,
         }
 
         log.info(f"Updating advanced networking with {advanced_networking} for cluster: {self.id}")

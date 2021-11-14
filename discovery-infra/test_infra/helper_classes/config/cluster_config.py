@@ -21,5 +21,8 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     vip_dhcp_allocation: bool = None
     cluster_networks: List[models.ClusterNetwork] = None
     service_networks: List[models.ServiceNetwork] = None
+    machine_networks: List[models.MachineNetwork] = None
     kubeconfig_path: str = None
     network_type: str = None
+    api_vip: str = None
+    ingress_vip: str = None
