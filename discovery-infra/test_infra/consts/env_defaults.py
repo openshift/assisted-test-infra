@@ -3,7 +3,7 @@ from pathlib import Path
 from test_infra import consts
 
 DEFAULT_NUMBER_OF_MASTERS: int = consts.NUMBER_OF_MASTERS
-DEFAULT_DAY2_WORKERS_COUNT: int = 0
+DEFAULT_DAY2_WORKERS_COUNT: int = 1
 DEFAULT_WORKERS_COUNT: int = 0
 DEFAULT_STORAGE_POOL_PATH: Path = Path.cwd().joinpath("storage_pool")
 DEFAULT_SSH_PRIVATE_KEY_PATH: Path = Path.home() / ".ssh" / "id_rsa"
