@@ -50,7 +50,7 @@ class MachineNetwork(object):
         self.has_ip_v6 = ip_v6.lower() in MachineNetwork.YES_VALUES
 
         if not (self.has_ip_v4 or self.has_ip_v6):
-            raise Exception("At least one of IPv4 or IPv6 must be enabled")
+            raise ValueError("At least one of IPv4 or IPv6 must be enabled")
 
         self.cidr_v4 = machine_cidr_4
         self.cidr_v6 = machine_cidr_6
