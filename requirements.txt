@@ -7,7 +7,7 @@ frozendict==2.0.7
 ipdb==0.13.9
 ipython==7.11.1
 Jinja2===3.0.2
-jira==3.0.1
+jira==3.1.1
 junit-report==0.2.3
 kubernetes==19.15.0
 libvirt-python==7.9.0
