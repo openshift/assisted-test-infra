@@ -30,9 +30,9 @@ function install_libvirt() {
     if ! version_is_greater "$current_version" "$minimum_version"; then
         add_libvirt_listen_flag
     else
-        if ! rpm -qa | grep libgcrypt-1.8.5-4; then
+        if ! rpm -qa | grep libgcrypt-1.8.5-6; then
             mkdir -p build
-            curl -Lo build/libgcrypt-1.8.5-4.el8.x86_64.rpm https://rpmfind.net/linux/centos/8/BaseOS/x86_64/os/Packages/libgcrypt-1.8.5-4.el8.x86_64.rpm && sudo dnf -y install build/libgcrypt-1.8.5-4.el8.x86_64.rpm
+            curl -Lo build/libgcrypt-1.8.5-6.el8.x86_64.rpm https://rpmfind.net/linux/centos/8/BaseOS/x86_64/os/Packages/libgcrypt-1.8.5-6.el8.x86_64.rpm && sudo dnf -y install build/libgcrypt-1.8.5-6.el8.x86_64.rpm
         fi
         start_and_enable_libvirtd_tcp_socket
     fi
