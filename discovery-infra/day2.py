@@ -33,9 +33,7 @@ def execute_day2_ocp_flow(cluster_id, args, has_ipv6):
 def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
     utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
 
-    client = ClientFactory.create_client(url=utils.get_assisted_service_url_by_args(args=args),
-                                         offline_token=utils.get_env("OFFLINE_TOKEN"))
-
+    client = args.api_client
     cluster = client.cluster_get(cluster_id=cluster_id)
     cluster_name = cluster.name
     openshift_version = cluster.openshift_version
@@ -46,26 +44,24 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
         terraform_cluster_dir_prefix = f"{consts.CLUSTER_PREFIX}-{consts.DEFAULT_NAMESPACE}"
     else:
         cluster_id = str(uuid.uuid4())
-        copy_proxy_from_cluster = cluster
         cluster = client.create_day2_cluster(
             cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(openshift_version, api_vip_dnsname)
         )
         set_cluster_pull_secret(client, cluster_id, args.pull_secret)
-        set_cluster_proxy(client, cluster_id, copy_proxy_from_cluster, args)
+        set_cluster_proxy(client, cluster_id, args)
 
     config_etc_hosts(api_vip_ip, api_vip_dnsname)
     image_path = os.path.join(
         consts.IMAGE_FOLDER,
-        f'{args.namespace}-installer-image.iso'
+        f'{cluster_name}-installer-image.iso'
     )
 
-    tf_folder = os.path.join(utils.get_tf_folder(terraform_cluster_dir_prefix, args.namespace),
-                             consts.Platforms.BARE_METAL)
-    set_day2_tf_configuration(tf_folder, args.number_of_day2_workers, api_vip_ip, api_vip_dnsname)
+    tf_folder = os.path.join(utils.get_tf_folder(terraform_cluster_dir_prefix), consts.Platforms.BARE_METAL)
+    set_day2_tf_configuration(tf_folder, args.num_day2_workers, api_vip_ip, api_vip_dnsname)
 
     static_network_config = None
     if args.with_static_network_config:
-        static_network_config = static_network.generate_day2_static_network_data_from_tf(tf_folder, args.number_of_day2_workers)
+        static_network_config = static_network.generate_day2_static_network_data_from_tf(tf_folder, args.num_day2_workers)
 
     client.generate_and_download_image(
         cluster_id=cluster.id,
@@ -80,9 +76,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
         tf_folder,
         cluster,
         has_ipv6,
-        args.number_of_day2_workers,
-        api_vip_ip,
-        api_vip_dnsname,
+        args.num_day2_workers,
         args.install_cluster,
         day2_type_flag,
         args.with_static_network_config,
@@ -96,17 +90,18 @@ def day2_nodes_flow(client,
                     cluster,
                     has_ipv_6,
                     num_worker_nodes,
-                    api_vip_ip,
-                    api_vip_dnsname,
                     install_cluster_flag,
                     day2_type_flag,
                     with_static_network_config,
                     base_cluster_name):
     tf_network_name, total_num_nodes = get_network_num_nodes_from_tf(tf_folder)
-    with utils.file_lock_context():
-        utils.run_command(
-            f'make _apply_terraform CLUSTER_NAME={terraform_cluster_dir_prefix}'
-        )
+
+    # Running twice as a workaround for an issue with terraform not spawning a new node on first apply.    
+    for _ in range(2):
+        with utils.file_lock_context():
+            utils.run_command(
+                f'make _apply_terraform CLUSTER_NAME={terraform_cluster_dir_prefix} PLATFORM={consts.Platforms.BARE_METAL}'
+            )
     time.sleep(5)
 
     if day2_type_flag == "ocp":
@@ -300,15 +295,17 @@ def _day2_cluster_create_params(openshift_version, api_vip_dnsname):
     return params
 
 
-def set_cluster_proxy(client, cluster_id, copy_proxy_from_cluster, args):
+def set_cluster_proxy(client, cluster_id, args):
     """
     Set cluster proxy - copy proxy configuration from another (e.g. day 1) cluster,
     or allow setting/overriding it via command arguments
     """
-    http_proxy = args.http_proxy if args.http_proxy else copy_proxy_from_cluster.http_proxy
-    https_proxy = args.https_proxy if args.https_proxy else copy_proxy_from_cluster.https_proxy
-    no_proxy = args.no_proxy if args.no_proxy else copy_proxy_from_cluster.no_proxy
-    client.set_cluster_proxy(cluster_id, http_proxy, https_proxy, no_proxy)
+    http_proxy = getattr(args, "http_proxy", None)
+    https_proxy = getattr(args, "https_proxy", None)
+    no_proxy = getattr(args, "no_proxy", None)
+
+    if http_proxy or https_proxy or no_proxy:
+        client.set_cluster_proxy(cluster_id, http_proxy, https_proxy, no_proxy)
 
 
 def set_nodes_hostnames_if_needed(client,

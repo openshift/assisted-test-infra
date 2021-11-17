@@ -106,7 +106,11 @@ def get_libvirt_nodes_macs(network_name):
 
 
 def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
-    hosts_macs = client.get_hosts_id_with_macs(cluster_id)
+    try:
+        hosts_macs = client.get_hosts_id_with_macs(cluster_id)
+    except BaseException as e:
+        log.error("Failed to get nodes macs for cluster: %s", cluster_id)
+        return False
     num_macs = len([mac for mac in hosts_macs if mac != ""])
     return num_macs >= num_nodes
 
