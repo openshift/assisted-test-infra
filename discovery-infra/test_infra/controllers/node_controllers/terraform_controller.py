@@ -124,7 +124,6 @@ class TerraformController(LibvirtController):
             tfvars = json.load(_file)
 
         machine_cidr = self.get_primary_machine_cidr()
-        provisioning_cidr = self.get_provisioning_cidr()
 
         logging.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10)
@@ -139,8 +138,8 @@ class TerraformController(LibvirtController):
         tfvars["libvirt_worker_ips"] = self._create_address_list(
             self.params.worker_count, starting_ip_addr=worker_starting_ip
         )
-        tfvars["machine_cidr_addresses"] = [machine_cidr]
-        tfvars["provisioning_cidr_addresses"] = [provisioning_cidr]
+        tfvars["machine_cidr_addresses"] = self.get_all_machine_addresses()
+        tfvars["provisioning_cidr_addresses"] = self.get_all_provisioning_addresses()
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
 
         vips = self.get_ingress_and_api_vips()
@@ -211,10 +210,34 @@ class TerraformController(LibvirtController):
         return self._config.net_asset.machine_cidr
 
     def get_provisioning_cidr(self):
-        # In dualstack/IPv6 mode the secondary network is IPv6
-        if self.is_ipv6:
+        # In dualstack mode the primary network is IPv4
+        if self.is_ipv6 and not self.is_ipv4:
             return self._config.net_asset.provisioning_cidr6
         return self._config.net_asset.provisioning_cidr
+
+    def get_all_machine_addresses(self) -> List[str]:
+        """Get all subnets that belong to the primary NIC."""
+        addresses = []
+
+        if self.is_ipv4:
+            addresses.append(self._config.net_asset.machine_cidr)
+
+        if self.is_ipv6:
+            addresses.append(self._config.net_asset.machine_cidr6)
+
+        return addresses
+
+    def get_all_provisioning_addresses(self) -> List[str]:
+        """Get all subnets that belong to the secondary NIC."""
+        addresses = []
+
+        if self.is_ipv4:
+            addresses.append(self._config.net_asset.provisioning_cidr)
+
+        if self.is_ipv6:
+            addresses.append(self._config.net_asset.provisioning_cidr6)
+
+        return addresses
 
     def set_dns(self, api_vip: str, ingress_vip: str) -> None:
         base_domain = self._entity_config.base_dns_domain
