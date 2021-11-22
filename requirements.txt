@@ -5,7 +5,7 @@ dnspython==2.1.0
 filelock==3.4.0
 frozendict==2.1.0
 ipdb==0.13.9
-ipython==7.11.1
+ipython==7.29.0
 Jinja2===3.0.2
 junit-report==0.2.3
 kubernetes==19.15.0
