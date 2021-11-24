@@ -5,3 +5,6 @@ approvers:
 - osherdp
 - michaellevy101
 - eliorerz
+
+reviewers:
+- pme-bot
