@@ -1202,3 +1202,7 @@ def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluste
         nodes=None,
     )
     return cluster.get_api_vip(cluster=cluster_info)
+
+
+def dummy():
+    pass
