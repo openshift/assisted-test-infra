@@ -33,6 +33,18 @@ from requests.models import HTTPError
 from retry import retry
 
 
+def download_file(url: str, local_filename: str, tries=3) -> Path:
+    @retry(exceptions=RuntimeError, tries=tries, delay=5)
+    def _download_file() -> Path:
+        with requests.get(url, stream=True) as r:
+            with open(local_filename, "wb") as f:
+                shutil.copyfileobj(r.raw, f)
+
+        return Path(local_filename)
+
+    return _download_file()
+
+
 def scan_for_free_port(starting_port: int, step: int = 200):
     for port in range(starting_port, starting_port + step):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
