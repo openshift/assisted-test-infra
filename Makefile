@@ -11,6 +11,8 @@ REPORTS = $(ROOT_DIR)/reports
 
 SKIPPER_PARAMS ?= -i
 
+TEST_INFRA_DOCKERFILE := $(or ${TEST_INFRA_DOCKERFILE}, "Dockerfile.test-infra")
+
 # Openshift CI params
 OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
 JOB_TYPE := $(or ${JOB_TYPE}, "")
@@ -160,7 +162,7 @@ create_full_environment:
 create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
-	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
+	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' ${TEST_INFRA_DOCKERFILE} | \
 	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
