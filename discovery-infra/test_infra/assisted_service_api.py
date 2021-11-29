@@ -5,6 +5,7 @@ import os
 import shutil
 import time
 import warnings
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
@@ -178,12 +179,15 @@ class InventoryClient(object):
         log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
 
-    @retry(exceptions=RuntimeError, tries=2, delay=3)
-    def download_image(self, cluster_id: str, image_path: str) -> None:
-        log.info("Downloading image for cluster %s to %s", cluster_id, image_path)
-        response = self.client.download_cluster_iso_with_http_info(cluster_id=cluster_id, _preload_content=False)
-        response_obj = response[0]
-        self._download(response=response_obj, file_path=image_path, verify_file_size=True)
+    def download_image(self, cluster_id: str, image_path: str) -> Path:
+        iso_download_url = self.cluster_get(cluster_id).image_info.download_url
+
+        # ensure file path exists before downloading
+        if not os.path.exists(image_path):
+            utils.recreate_folder(os.path.dirname(image_path), force_recreate=False)
+
+        log.info(f"Downloading image {iso_download_url} to {image_path}")
+        return utils.download_file(iso_download_url, image_path)
 
     def generate_and_download_image(
             self,
