@@ -79,7 +79,18 @@ API_VIP_DNSNAME := $(or $(API_VIP_DNSNAME),"")
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ~/.ssh/id_rsa.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
+
+# elasticsearch
+ES_SERVER := $(or $(ES_SERVER), "")
+ES_USER := $(or $(ES_USER), "")
+ES_PASS := $(or $(ES_PASS), "")
+ES_INDEX := $(or $(ES_INDEX), "")
+BACKUP_DESTINATION := $(or $(BACKUP_DESTINATION), "")
 OFFLINE_TOKEN := $(or $(OFFLINE_TOKEN), "")
+
+# manage
+offline_token := $(or $(OFFLINE_TOKEN), "")
+
 
 # deploy
 IMAGE_TAG := latest
@@ -430,6 +441,19 @@ download_service_logs:
 
 download_cluster_logs:
 	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_cluster_logs
+
+##############
+# monitoring #
+##############
+
+_scrape_service_events:
+	discovery-infra/log_scrap.py --inventory-url $(REMOTE_SERVICE_URL) --offline-token $(OFFLINE_TOKEN) --index $(ES_INDEX) -es $(ES_SERVER) -eu $(ES_USER) -ep $(ES_PASS) --backup-destination $(BACKUP_DESTINATION)
+
+scrape_service_events:
+	skipper make $(SKIPPER_PARAMS) _scrape_service_events
+
+deploy_elasticsearch:
+	docker-compose -f discovery-infra/monitoring/docker-compose.yml up -d
 
 ##########
 # manage #

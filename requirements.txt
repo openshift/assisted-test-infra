@@ -2,8 +2,9 @@ boto3==1.20.11
 dataclasses==0.8
 debugpy==1.5.1
 dnspython==2.1.0
-filelock==3.4.0
-frozendict==2.1.0
+elasticsearch==7.15.0
+filelock==3.3.2
+frozendict==2.0.7
 ipdb==0.13.9
 ipython==7.11.1
 Jinja2===3.0.2
