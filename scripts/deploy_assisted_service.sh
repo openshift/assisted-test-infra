@@ -112,7 +112,7 @@ EOF
     export ASSISTED_NAMESPACE=${NAMESPACE}
     export SERVICE_IMAGE=${SERVICE}
 
-    ./assisted-service/deploy/operator/deploy.sh
+    ./scripts/operator/deploy.sh
     echo "Installation of Assisted Install operator passed successfully!"
 
     # Update the LB configuration to point to the service route endpoint
