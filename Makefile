@@ -387,7 +387,7 @@ redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 ############
 
 clear_operator:
-	DISKS="${LSO_DISKS}" ./assisted-service/deploy/operator/destroy.sh
+	DISKS="${LSO_DISKS}" ./scripts/operator/destroy.sh
 
 deploy_assisted_operator: clear_operator
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
