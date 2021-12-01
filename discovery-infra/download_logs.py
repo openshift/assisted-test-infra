@@ -157,9 +157,9 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather
                 client.download_and_save_file(cluster['id'], cluster_file,
                                               os.path.join(output_folder, "cluster_files", cluster_file))
 
-        for host_id in map(lambda host: host['id'], cluster['hosts']):
+        for host_id, infra_env_id in map(lambda host: (host['id'], host["infra_env_id"]), cluster['hosts']):
             with SuppressAndLog(assisted_service_client.rest.ApiException):
-                client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
+                client.download_host_ignition(infra_env_id, host_id, os.path.join(output_folder, "cluster_files"))
 
         with SuppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster['id'], get_cluster_events_path(cluster, output_folder))
