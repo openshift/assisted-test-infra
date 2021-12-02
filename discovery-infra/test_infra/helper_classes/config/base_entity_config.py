@@ -24,3 +24,4 @@ class BaseEntityConfig(_BaseConfig, ABC):
     is_ipv6: bool = None
     base_dns_domain: str = None
     entity_name: BaseName = None
+    verify_download_iso_ssl: bool = None

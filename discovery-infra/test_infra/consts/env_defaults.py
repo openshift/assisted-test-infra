@@ -28,3 +28,4 @@ DEFAULT_IMAGE_FOLDER: Path = Path(consts.IMAGE_FOLDER)
 DEFAULT_IMAGE_FILENAME: str = "installer-image.iso"
 DEFAULT_NETWORK_TYPE: str = consts.NetworkType.OpenShiftSDN
 DEFAULT_IS_KUBE_API: bool = False
+DEFAULT_VERIFY_SSL: bool = True

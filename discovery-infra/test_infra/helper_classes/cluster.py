@@ -141,6 +141,7 @@ class Cluster:
             image_path=iso_download_path,
             image_type=iso_image_type or self._config.iso_image_type,
             static_network_config=static_network_config,
+            verify_ssl=self._config.verify_download_iso_ssl
         )
 
     def wait_until_hosts_are_disconnected(self, nodes_count: int = None):

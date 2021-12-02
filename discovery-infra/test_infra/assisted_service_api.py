@@ -179,7 +179,7 @@ class InventoryClient(object):
         log.info("Generating image with params %s", image_create_params.__dict__)
         return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
 
-    def download_image(self, cluster_id: str, image_path: str) -> Path:
+    def download_image(self, cluster_id: str, image_path: str, verify_ssl: bool = True) -> Path:
         iso_download_url = self.cluster_get(cluster_id).image_info.download_url
 
         # ensure file path exists before downloading
@@ -187,7 +187,7 @@ class InventoryClient(object):
             utils.recreate_folder(os.path.dirname(image_path), force_recreate=False)
 
         log.info(f"Downloading image {iso_download_url} to {image_path}")
-        return utils.download_file(iso_download_url, image_path)
+        return utils.download_file(iso_download_url, image_path, verify_ssl=verify_ssl)
 
     def generate_and_download_image(
             self,
@@ -196,11 +196,12 @@ class InventoryClient(object):
             image_path: str,
             image_type: str = consts.ImageType.FULL_ISO,
             static_network_config: Optional[list] = None,
+            verify_ssl: bool = True,
     ):
         self.generate_image(
             cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_network_config=static_network_config
         )
-        self.download_image(cluster_id=cluster_id, image_path=image_path)
+        self.download_image(cluster_id=cluster_id, image_path=image_path, verify_ssl=verify_ssl)
 
     def update_infra_env(self, infra_env_id: str, infra_env_update_params):
         log.info("Updating infra env %s with values %s", infra_env_id, infra_env_update_params)
