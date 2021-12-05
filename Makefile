@@ -200,14 +200,14 @@ delete_podman_localhost:
 start_load_balancer:
 	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
 		id=$(shell $(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"); \
-		( test -z "$$id" && echo "Staring load balancer ..." && \
+		( test -z "$$id" && echo "Starting load balancer ..." && \
 		$(CONTAINER_COMMAND) run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
 			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
 			quay.io/odepaz/dynamic-load-balancer:latest ) || ! test -z "$$id"; \
 	fi
 
 stop_load_balancer:
-	@id=$(shell $(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"); \
+	@id=$(shell $(CONTAINER_COMMAND) ps --all --quiet --filter "name=load_balancer"); \
 	test ! -z "$$id"  && $(CONTAINER_COMMAND) rm -f load_balancer; \
 	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/stream.d/*.conf >& /dev/null || /bin/true
 
