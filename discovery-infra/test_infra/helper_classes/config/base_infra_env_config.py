@@ -16,3 +16,4 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     cluster_id: str = None
     static_network_config: List[dict] = None
     ignition_config_override: str = None
+    verify_download_iso_ssl: bool = None

@@ -45,6 +45,9 @@ class _EnvVariablesDefaults(ABC):
     user_managed_networking: bool = env_defaults.DEFAULT_USER_MANAGED_NETWORKING
     high_availability_mode: str = env_defaults.DEFAULT_HIGH_AVAILABILITY_MODE
     download_image: bool = bool(strtobool(get_env("DOWNLOAD_IMAGE", str(env_defaults.DEFAULT_DOWNLOAD_IMAGE))))
+    verify_download_iso_ssl: bool = bool(
+        strtobool(get_env("VERIFY_DOWNLOAD_ISO_SSL", str(env_defaults.DEFAULT_VERIFY_SSL)))
+    )
     is_ipv4: bool = bool(strtobool(get_env("IPv4", str(env_defaults.DEFAULT_IS_IPV4))))
     is_ipv6: bool = bool(strtobool(get_env("IPv6", str(env_defaults.DEFAULT_IS_IPV6))))
     cluster_id: str = get_env("CLUSTER_ID")
