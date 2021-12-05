@@ -48,7 +48,7 @@ class InfraEnv(Entity):
             utils.recreate_folder(os.path.dirname(iso_download_path), force_recreate=False)
 
         log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
-        return utils.download_file(iso_download_url, iso_download_path)
+        return utils.download_file(iso_download_url, iso_download_path, self._config.verify_download_iso_ssl)
 
     @JunitTestCase()
     def wait_until_hosts_are_discovered(self, nodes_count: int, allow_insufficient=False):
