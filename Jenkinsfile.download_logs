@@ -3,6 +3,7 @@ pipeline {
 
     parameters {
         string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
+        string(name: 'ASSISTED_INSTALLER_DEPLOYMENT_BRANCH', defaultValue: 'master', description: 'Branch on assisted-installer-deployment repo to use')
     }
 
     triggers { cron('H/30 * * * *') }
@@ -38,7 +39,7 @@ pipeline {
         stage('Create tickets') {
             steps {
                 sh "rm -rf assisted-installer-deployment"
-                sh "git clone 'https://github.com/openshift-assisted/assisted-installer-deployment'"
+                sh "git clone https://github.com/openshift-assisted/assisted-installer-deployment --branch ${ASSISTED_INSTALLER_DEPLOYMENT_BRANCH}"
 
                 dir ('assisted-installer-deployment') {
                     sh "skipper run ./tools/create_triage_tickets.py --user-password ${JIRA_CREDS} -v"
