@@ -15,7 +15,7 @@ pipeline {
 
         // Credentials
         OFFLINE_TOKEN = credentials('admin_offline_token')
-        JIRA_CREDS = credentials('Ronnie-jira')
+        JIRA_ACCESS_TOKEN = credentials('assisted-installer-bot-jira-access-token')
         SLACK_TOKEN = credentials('slack-token')
     }
     options {
@@ -42,8 +42,8 @@ pipeline {
                 sh "git clone https://github.com/openshift-assisted/assisted-installer-deployment --branch ${ASSISTED_INSTALLER_DEPLOYMENT_BRANCH}"
 
                 dir ('assisted-installer-deployment') {
-                    sh "skipper run ./tools/create_triage_tickets.py --user-password ${JIRA_CREDS} -v"
-                    sh "skipper run ./tools/create_testgrid_tickets.py --user-password ${JIRA_CREDS} -v"
+                    sh "skipper run ./tools/create_triage_tickets.py --jira-access-token ${JIRA_ACCESS_TOKEN} -v"
+                    sh "skipper run ./tools/create_testgrid_tickets.py --jira-access-token ${JIRA_ACCESS_TOKEN} -v"
                 }
             }
         }
