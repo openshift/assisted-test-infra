@@ -86,6 +86,11 @@ class Cluster(Entity):
         )
 
     def _create(self) -> str:
+        disk_encryption = models.DiskEncryption(
+            enable_on=self._config.disk_encryption_roles,
+            mode=self._config.disk_encryption_mode,
+        )
+
         if self._config.cluster_id:
             log.info(f"Fetching day2 cluster with id {self._config.cluster_id}")
             self._update_day2_config(self.api_client, self._config.cluster_id)
@@ -103,6 +108,7 @@ class Cluster(Entity):
             high_availability_mode=self._config.high_availability_mode,
             olm_operators=[{"name": name} for name in self._config.olm_operators],
             network_type=self._config.network_type,
+            disk_encryption=disk_encryption,
         )
 
         self._config.cluster_id = cluster.id

@@ -18,6 +18,18 @@ class NetworkType:
     OVNKubernetes = "OVNKubernetes"
 
 
+class DiskEncryptionMode:
+    TPM_VERSION_2 = "tpmv2"
+    # TODO: fully support tang mode
+
+
+class DiskEncryptionRoles:
+    NONE = "none"
+    ALL = "all"
+    MASTERS = "masters"
+    WORKERS = "workers"
+
+
 # Files & Directories
 WORKING_DIR = "build"
 TF_FOLDER = f"{WORKING_DIR}/terraform"

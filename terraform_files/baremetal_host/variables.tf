@@ -90,3 +90,9 @@ variable "disk_count" {
   description = "Number of disks to attach to the host."
   default     = 1
 }
+
+variable "vtpm2" {
+  type        = bool
+  description = "Whether of not to emulate TPM v2 device on the host."
+  default     = false
+}

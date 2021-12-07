@@ -62,6 +62,8 @@ class _EnvVariablesDefaults(ABC):
     iso_download_path: str = get_env("ISO_DOWNLOAD_PATH", get_env("ISO"))  # todo replace ISO env var->ISO_DOWNLOAD_PATH
     hyperthreading: str = get_env("HYPERTHREADING")
     network_type: str = get_env("NETWORK_TYPE", env_defaults.DEFAULT_NETWORK_TYPE)
+    disk_encryption_mode: str = get_env("DISK_ENCRYPTION_MODE", env_defaults.DEFAULT_DISK_ENCRYPTION_MODE)
+    disk_encryption_roles: str = get_env("DISK_ENCRYPTION_ROLES", env_defaults.DEFAULT_DISK_ENCRYPTION_ROLES)
     is_kube_api: bool = bool(strtobool(get_env("KUBE_API", str(env_defaults.DEFAULT_IS_KUBE_API))))
 
     vsphere_cluster: str = get_env("VSPHERE_CLUSTER")
