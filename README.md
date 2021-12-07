@@ -43,6 +43,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Single Node - Bootstrap in place with Assisted Service and IPv6](#single-node---bootstrap-in-place-with-assisted-service-and-ipv6)
   - [On-prem](#on-prem)
   - [Run operator](#run-operator)
+  - [Cluster-API-provider-agent](#Cluster-API-provider-agent)
 
 ## Prerequisites
 
@@ -450,4 +451,30 @@ export TEST_FUNC=test_kube_api_ipv4
 export TEST=./discovery-infra/tests/test_kube_api.py
 export TEST_TEARDOWN=false
 make test
+```
+
+## Cluster-API-provider-agent
+To test capi-provider e2e flow, few additonal environment variables need to be set:
+these environment variables result a bigger minikube instance required for this flow
+```bash
+# The following exports are required since the capi test flow requires more resources than the default minikube deployment provides
+export MINIKUBE_HOME=/home
+export MINIKUBE_DISK_SIZE=100g
+export MINIKUBE_RAM_MB=12288
+```
+Setup minikube with assisted-installer (kube-api enabled)
+```bash
+export PULL_SECRET=<your pull secret>
+# This is a temporary hack - MGMT-8265
+export DISABLED_HOST_VALIDATIONS=api-vip-connected
+ENABLE_KUBE_API=true make run
+```
+
+Deploy capi-provider-agent and hypershift
+```bash
+make deploy_capi_env
+```
+Run the test:
+```bash
+ENABLE_KUBE_API=true make test TEST=./discovery-infra/tests/test_kube_api.py TEST_FUNC=test_capi_provider KUBECONFIG=$HOME/.kube/config
 ```
