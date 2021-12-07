@@ -34,12 +34,14 @@ class Agent(BaseCustomResource):
         cls,
         crd_api: CustomObjectsApi,
         cluster_deployment,
+        agents_namespace=None,
     ) -> List["Agent"]:
+        agents_namespace = agents_namespace or cluster_deployment.ref.namespace
         resources = crd_api.list_namespaced_custom_object(
             group=CRD_API_GROUP,
             version=CRD_API_VERSION,
             plural=cls._plural,
-            namespace=cluster_deployment.ref.namespace,
+            namespace=agents_namespace,
         )
         assigned_agents = []
         for item in resources.get("items", []):

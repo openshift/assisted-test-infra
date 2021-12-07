@@ -61,10 +61,10 @@ def scan_for_free_port(starting_port: int, step: int = 200):
     raise RuntimeError("could not allocate free port for proxy")
 
 
-def run_command(command, shell=False, raise_errors=True, env=None):
+def run_command(command, shell=False, raise_errors=True, env=None, cwd=None):
     command = command if shell else shlex.split(command)
     process = subprocess.run(
-        command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True
+        command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True, cwd=cwd
     )
 
     def _io_buffer_to_str(buf):
@@ -81,7 +81,7 @@ def run_command(command, shell=False, raise_errors=True, env=None):
     return out, err, process.returncode
 
 
-def run_command_with_output(command, env=None):
+def run_command_with_output(command, env=None, cwd=None):
     with subprocess.Popen(
         command,
         shell=True,
@@ -89,6 +89,7 @@ def run_command_with_output(command, env=None):
         bufsize=1,
         universal_newlines=True,
         env=env,
+        cwd=cwd,
     ) as p:
         for line in p.stdout:
             print(line, end="")  # process line here
