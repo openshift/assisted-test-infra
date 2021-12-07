@@ -10,3 +10,4 @@ minikube
 **/RCS/**
 *~
 .env
+capi

@@ -504,3 +504,9 @@ _test_setup:
 
 _test_parallel: $(REPORTS) _test_setup
 	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
+
+########
+# Capi #
+########
+deploy_capi_env: start_minikube
+	scripts/setup_capi_provider_agent_env.sh
