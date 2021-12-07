@@ -2,15 +2,18 @@ import base64
 import json
 import logging
 import os
+import tempfile
 import uuid
 from typing import List
 
 import openshift as oc
 import pytest
+import waiting
 from download_logs import collect_debug_info_from_cluster
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 from netaddr import IPNetwork
 from test_infra import utils
+from test_infra.helper_classes.hypershift import HyperShift
 from test_infra.helper_classes.kube_helpers import (
     Agent,
     AgentClusterInstall,
@@ -136,6 +139,12 @@ class TestKubeAPI(BaseTest):
         kube_api_test(
             kube_api_context, get_nodes(tf_config, cluster_config), cluster_config, proxy_server, is_ipv4=False
         )
+
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_capi_provider(self, kube_test_configs_single_node, kube_api_context, get_nodes):
+        cluster_config, tf_config = kube_test_configs_single_node
+        capi_test(kube_api_context, get_nodes(tf_config, cluster_config), cluster_config)
 
     @staticmethod
     def _bind_all(cluster_deployment, agents):
@@ -282,6 +291,105 @@ def kube_api_test_prepare_late_binding_infraenv(
     Agent.wait_for_agents_to_be_ready_for_install(agents)
 
     return infra_env
+
+
+def capi_test(
+    kube_api_context,
+    nodes: Nodes,
+    cluster_config: ClusterConfig,
+    proxy_server=None,
+    *,
+    is_ipv4=True,
+    is_disconnected=False,
+):
+    cluster_name = cluster_config.cluster_name.get()
+
+    # TODO resolve it from the service if the node controller doesn't have this information
+    #  (please see cluster.get_primary_machine_cidr())
+    machine_cidr = nodes.controller.get_primary_machine_cidr()
+
+    secret = Secret(
+        kube_api_client=kube_api_context.api_client,
+        name=f"{cluster_name}-secret",
+        namespace=global_variables.spoke_namespace,
+    )
+    secret.create(pull_secret=cluster_config.pull_secret)
+
+    if is_disconnected:
+        logger.info("getting igntion and install config override for disconected install")
+        ca_bundle = get_ca_bundle_from_hub()
+        ignition_config_override = get_ignition_config_override(ca_bundle)
+    else:
+        ignition_config_override = None
+
+    proxy = setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server)
+
+    infra_env = InfraEnv(
+        kube_api_client=kube_api_context.api_client,
+        name=f"{cluster_name}-infra-env",
+        namespace=global_variables.spoke_namespace,
+    )
+    infra_env.create(
+        cluster_deployment=None,
+        ignition_config_override=ignition_config_override,
+        secret=secret,
+        proxy=proxy,
+        ssh_pub_key=cluster_config.ssh_public_key,
+    )
+    infra_env.status()
+    download_iso_from_infra_env(infra_env, cluster_config.iso_download_path)
+
+    logger.info("iso downloaded, starting nodes")
+    nodes.start_all()
+
+    logger.info("waiting for host agent")
+    agents = infra_env.wait_for_agents(len(nodes))
+    for agent in agents:
+        agent.approve()
+        set_agent_hostname(nodes[0], agent, is_ipv4)
+
+    hypershift = HyperShift(name=cluster_name)
+
+    with utils.pull_secret_file() as ps:
+        with tempfile.NamedTemporaryFile(mode="w") as f:
+            f.write(cluster_config.ssh_public_key)
+            f.flush()
+            ssh_public_key_file = f.name
+            hypershift.create(pull_secret_file=ps, ssh_key=ssh_public_key_file)
+
+    cluster_deployment = ClusterDeployment(
+        kube_api_client=kube_api_context.api_client, name=cluster_name, namespace=f"clusters-{cluster_name}"
+    )
+
+    def _cluster_deployment_installed() -> bool:
+        return cluster_deployment.get().get("spec", {}).get("installed")
+
+    waiting.wait(
+        _cluster_deployment_installed,
+        sleep_seconds=1,
+        timeout_seconds=60,
+        waiting_for="clusterDeployment to get created",
+        expected_exceptions=Exception,
+    )
+    node_count = 1
+    hypershift.set_nodepool_node_count(kube_api_context.api_client, node_count)
+    logger.info("waiting for capi provider to set clusterDeployment ref on the agent")
+    agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=global_variables.spoke_namespace)
+
+    logger.info("Waiting for agent status verification")
+    for agent in agents:
+        agent.wait_for_agents_to_install(agents)
+
+    hypershift.download_kubeconfig(kube_api_context.api_client)
+
+    logger.info("Waiting for node to join the cluster")
+    hypershift.wait_for_nodes(node_count)
+    # TODO: validate node is ready
+
+    hypershift.set_nodepool_node_count(kube_api_context.api_client, 0)
+    logger.info("Waiting for node to get deleted")
+    nodes = hypershift.wait_for_nodes(node_count)
+    logger.info(nodes)
 
 
 def kube_api_test(

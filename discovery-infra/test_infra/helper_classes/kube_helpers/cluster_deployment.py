@@ -214,16 +214,14 @@ class ClusterDeployment(BaseCustomResource):
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
-    def list_agents(self) -> List[Agent]:
-        return Agent.list(self.crd_api, self)
+    def list_agents(self, agents_namespace=None) -> List[Agent]:
+        return Agent.list(self.crd_api, self, agents_namespace)
 
     def wait_for_agents(
-        self,
-        num_agents: int = 1,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+        self, num_agents: int = 1, timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT, agents_namespace=None
     ) -> List[Agent]:
         def _wait_for_sufficient_agents_number() -> List[Agent]:
-            agents = self.list_agents()
+            agents = self.list_agents(agents_namespace)
             return agents if len(agents) == num_agents else []
 
         return waiting.wait(
