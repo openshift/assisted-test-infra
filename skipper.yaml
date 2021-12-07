@@ -10,7 +10,7 @@ volumes:
   - /usr/local/bin/minikube:/usr/local/bin/minikube
   - /usr/bin/kubectl:/usr/bin/kubectl
   - /usr/local/bin/kubectl:/usr/local/bin/kubectl
-
+  - $MINIKUBE_HOME:$MINIKUBE_HOME
   # config
   - $HOME/.kube/:$HOME/.kube/
   - $HOME/.minikube/:$HOME/.minikube/
