@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euxo pipefail
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
 function install_minikube() {
@@ -8,20 +9,26 @@ function install_minikube() {
     fi
 
     minikube_version=v1.23.2
-    minikube_path=$(command -v minikube)
-    if ! [ -x "$minikube_path" ]; then
+    if ! [ -x "$(command -v minikube)" ]; then
         echo "Installing minikube..."
-        arkade get minikube --version=$minikube_version
+        download_minikube $minikube_version
         ${SUDO} mv -f ${HOME}/.arkade/bin/minikube /usr/local/bin/
     elif [ "$(minikube version | grep version | awk -F'version: *' '{print $2}')" != "$minikube_version" ]; then
         echo "Upgrading minikube..."
-        arkade get minikube --version=$minikube_version
-        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube $minikube_path
+        download_minikube $minikube_version
+        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube $(command -v minikube)
     else
         echo "minikube is already installed and up-to-date"
     fi
 }
 
+function download_minikube() {
+    for i in {1..4}; do
+        arkade get minikube --version=$1 && break
+        echo "minikube installation failed. Retrying again in 5 seconds..."
+        sleep 5
+    done
+}
 function install_kubectl() {
     if ! [ -x "$(command -v kubectl)" ]; then
         echo "Installing kubectl..."
