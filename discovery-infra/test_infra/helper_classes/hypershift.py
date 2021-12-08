@@ -18,7 +18,7 @@ class HyperShift:
     """
 
     NODEPOOL_NAMESPACE = "clusters"
-    NODEPOOL_PLOURAL = "nodepool"
+    NODEPOOL_PLOURAL = "nodepools"
     HYPERSHIFT_API_GROUP = "hypershift.openshift.io"
     HYPERSHIFT_API_VERSION = "v1alpha1"
 
