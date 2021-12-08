@@ -1,8 +1,13 @@
 terraform {
   required_providers {
+    # TODO: revert to upstream package when newer version than v0.6.11 has been released
+    # libvirt = {
+    #   source = "dmacvicar/libvirt"
+    #   version = "0.6.9"
+    # }
     libvirt = {
-      source = "dmacvicar/libvirt"
-      version = "0.6.9"
+      source = "osherdp/libvirt"
+      version = "99.9.0"
     }
   }
 }
@@ -67,6 +72,7 @@ module "masters" {
   image_path        = var.image_path
   cpu_mode          = var.master_cpu_mode
   cluster_domain    = var.infra_env_domain
+  vtpm2             = var.master_vtpm2
 
   primary_network   = libvirt_network.net.name
   primary_ips       = var.libvirt_master_ips[count.index]
@@ -93,6 +99,7 @@ module "workers" {
   image_path        = var.image_path
   cpu_mode          = var.worker_cpu_mode
   cluster_domain    = var.infra_env_domain
+  vtpm2             = var.worker_vtpm2
 
   primary_network   = libvirt_network.net.name
   primary_ips       = var.libvirt_worker_ips[count.index]

@@ -13,8 +13,38 @@ function version_is_greater() {
 }
 
 function install_libvirt() {
+    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+
+    # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
+    case "${PRETTY_NAME}" in
+    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        ;;
+    "Red Hat Enterprise Linux 7"* | "CentOS Linux 7"*)
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        ;;
+    esac
+
+    # The package selinux-policy should be installed first because otherwise, RPMs install will fail due to a lack of SELinux config.
+    # Some RPMs have SELinux plugins that will search for /etc/selinux/targeted/contexts/files/file_contexts
+    # See https://access.redhat.com/solutions/6062341
+    echo "Install selinux-policy RPM"
+    sudo dnf install -y selinux-policy
+    echo "RPMs update"
+    sudo dnf update -y
+
     echo "Installing libvirt..."
-    sudo dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm libgcrypt
+    sudo dnf install -y \
+        libvirt \
+        libvirt-devel \
+        libvirt-daemon-kvm \
+        qemu-kvm \
+        libgcrypt \
+        swtpm \
+        swtpm-tools
+
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
@@ -207,8 +237,8 @@ function additional_configs() {
     fi
     touch ~/.gitconfig
     sudo chmod ugo+rx "$(dirname "$(pwd)")"
-    echo "disabling selinux by setenforce 0"
-    sudo setenforce 0 || true
+    echo "make selinux to only print warnings"
+    sudo setenforce permissive || true
 
     if [ ! -f ~/.ssh/id_rsa ]; then
         ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''

@@ -52,6 +52,26 @@ class TerraformController(LibvirtController):
 
         return os.path.join(tf_folder, consts.Platforms.BARE_METAL)
 
+    def _get_disk_encryption_appliance(self):
+        if isinstance(self._entity_config, BaseInfraEnvConfig):
+            logging.debug("Infra-env is not associated with any disk-encryption configuration")
+            return {}
+
+        assert (
+            self._entity_config.disk_encryption_mode == consts.DiskEncryptionMode.TPM_VERSION_2
+        ), "Currently only supporting TPMv2"
+
+        master_vtpm2 = worker_vtpm2 = False
+
+        if self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.ALL:
+            master_vtpm2 = worker_vtpm2 = True
+        elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.MASTERS:
+            master_vtpm2 = True
+        elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.WORKERS:
+            worker_vtpm2 = True
+
+        return {"master_vtpm2": master_vtpm2, "worker_vtpm2": worker_vtpm2}
+
     # TODO move all those to conftest and pass it as kwargs
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
     def _terraform_params(self, **kwargs):
@@ -81,6 +101,7 @@ class TerraformController(LibvirtController):
             "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE),
+            **self._get_disk_encryption_appliance(),
         }
 
         params.update(self._get_specific_tf_entity_params())

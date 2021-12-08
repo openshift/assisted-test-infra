@@ -133,6 +133,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `NUM_WORKERS`                 | number of VMs to spawn as workers, default: 0 |
 | `OPENSHIFT_VERSION`           | OpenShift version to install, default: "4.7" |
 | `HYPERTHREADING`              | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all |
+| `DISK_ENCRYPTION_MODE`        | Set disk encryption mode. Right now assisted-test-infra only supports "tpmv2", which is also the default. |
+| `DISK_ENCRYPTION_ROLES`       | Set node roles to apply disk encryption. Values are: all, none, masters, workers. default: none |
 | `PULL_SECRET`                 | pull secret to use for cluster installation command, no option to install cluster without it. |
 | `PULL_SECRET_FILE`            | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it. |
 | `REMOTE_SERVICE_URL`          | URL to remote assisted-service - run infra on existing deployment |
