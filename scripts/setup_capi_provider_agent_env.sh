@@ -8,7 +8,7 @@ PROVIDER_IMAGE="${PROVIDER_IMAGE:-quay.io/eranco74/cluster-api-provider-agent:la
 HYPERSHIFT_REPO="${HYPERSHIFT_REPO:-https://github.com/avishayt/hypershift}"
 HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-master}"
 HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/eranco74/hypershift:latest}"
-BASE_DIR=capi
+BASE_DIR=build
 
 function clone_repo()
 {
@@ -21,7 +21,7 @@ function clone_repo()
 
 function checkout_branch()
 {
-  	(cd capi/$1;
+  	(cd $BASE_DIR/$1;
   	git fetch;
   	git checkout $2)
 }
@@ -30,7 +30,7 @@ deploy_provider()
 {
   clone_repo "$PROVIDER_REPO" provider
   checkout_branch provider "$PROVIDER_BRANCH"
-  make -C capi/provider deploy IMG="$PROVIDER_IMAGE"
+  make -C $BASE_DIR/provider deploy IMG="$PROVIDER_IMAGE"
 }
 
 deploy_hypershift()
@@ -38,8 +38,8 @@ deploy_hypershift()
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.51.1/bundle.yaml || true
   clone_repo $HYPERSHIFT_REPO hypershift
   checkout_branch hypershift "$HYPERSHIFT_BRANCH"
-  make -C capi/hypershift build
-  capi/hypershift/bin/hypershift install --hypershift-image "$HYPERSHIFT_IMAGE"
+  make -C $BASE_DIR/hypershift build
+  $BASE_DIR/hypershift/bin/hypershift install --hypershift-image "$HYPERSHIFT_IMAGE"
 }
 
 source scripts/install_golang.sh
