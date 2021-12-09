@@ -425,6 +425,7 @@ make destroy
 
 The current implementation installs an OCP cluster using assisted service on minikube.
 Afterwards, we install the assisted-service-operator on top of that cluster.
+
 The first step would be removed once we could either:
 
 - Have an OCP cluster easily (i.e. [CRC](https://developers.redhat.com/products/codeready-containers/overview))
