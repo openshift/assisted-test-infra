@@ -42,7 +42,6 @@ deploy_hypershift()
   $BASE_DIR/hypershift/bin/hypershift install --hypershift-image "$HYPERSHIFT_IMAGE"
 }
 
-source scripts/install_golang.sh
 mkdir -p $BASE_DIR
 deploy_provider
 deploy_hypershift

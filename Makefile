@@ -509,4 +509,4 @@ _test_parallel: $(REPORTS) _test_setup
 # Capi #
 ########
 deploy_capi_env: start_minikube
-	scripts/setup_capi_provider_agent_env.sh
+	skipper run scripts/setup_capi_provider_agent_env.sh
