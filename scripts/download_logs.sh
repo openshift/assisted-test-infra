@@ -33,7 +33,7 @@ function download_service_logs() {
     ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/k8s_{}.log" || true
     ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp > ${LOGS_DEST}/k8s_events.log || true
     ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp --output json > ${LOGS_DEST}/k8s_events.json || true
-    skipper run ./discovery-infra/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
+    skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
   fi
 }
 
@@ -48,7 +48,7 @@ function download_cluster_logs() {
     fi
   fi
 
-  skipper run -e JUNIT_REPORT_DIR ./discovery-infra/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
+  skipper run -e JUNIT_REPORT_DIR ./src/download_logs.py ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
 }
 
 function collect_kube_api_resources() {

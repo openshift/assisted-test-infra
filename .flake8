@@ -8,5 +8,5 @@ format = ${cyan}%(path)s${reset}:${yellow_bold}%(row)d${reset}:${green_bold}%(co
 ; Exclude consts and utils __init__ files due to violation of F401 - imported but unused
 ; TODO - After removing import * from those init files delete this excluded files
 exclude =
-    discovery-infra/test_infra/consts/__init__.py
-    discovery-infra/test_infra/utils/__init__.py
+    src/test_infra/consts/__init__.py
+    src/test_infra/utils/__init__.py

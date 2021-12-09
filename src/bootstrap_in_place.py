@@ -24,7 +24,7 @@ warn_deprecate()
 BUILD_DIR = "build"
 INSTALL_CONFIG_FILE_NAME = "install-config.yaml"
 IBIP_DIR = os.path.join(BUILD_DIR, "ibip")
-RESOURCES_DIR = os.path.join("discovery-infra", "resources")
+RESOURCES_DIR = os.path.join("src", "resources")
 INSTALL_CONFIG = os.path.join(IBIP_DIR, INSTALL_CONFIG_FILE_NAME)
 INSTALLER_BINARY = os.path.join(BUILD_DIR, "openshift-install")
 EMBED_IMAGE_NAME = "installer-SNO-image.iso"

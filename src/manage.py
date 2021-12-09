@@ -23,7 +23,7 @@ class Manage:
 
         self.client = ClientFactory.create_client(url=inventory_url, offline_token=offline_token)
 
-        with open("discovery-infra/manage/manageable_options.yaml", "r") as f:
+        with open("src/manage/manageable_options.yaml", "r") as f:
             options = yaml.load(f, Loader=yaml.FullLoader)
 
         manage_config = options.get(type, None)

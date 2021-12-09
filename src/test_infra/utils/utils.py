@@ -334,7 +334,7 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
 
 
 @contextmanager
-def file_lock_context(filepath="/tmp/discovery-infra.lock", timeout=300):
+def file_lock_context(filepath="/tmp/src.lock", timeout=300):
     logging.getLogger("filelock").setLevel(logging.ERROR)
 
     lock = filelock.FileLock(filepath, timeout)
