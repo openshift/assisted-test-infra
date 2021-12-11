@@ -20,7 +20,7 @@ REPO_NAME := $(or ${REPO_NAME}, "")
 PULL_NUMBER := $(or ${PULL_NUMBER}, "")
 
 # lint
-LINT_CODE_STYLING_DIRS := src/tests src/test_infra
+LINT_CODE_STYLING_DIRS := src/tests src/assisted_test_infra/test_infra
 
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
@@ -438,7 +438,7 @@ download_cluster_logs:
 ##########
 
 _manage_deployment:
-	src/manage.py --inventory-url=$(REMOTE_SERVICE_URL) --type deregister_clusters --offline-token=$(OFFLINE_TOKEN)
+	src/manage/manage.py --inventory-url=$(REMOTE_SERVICE_URL) --type deregister_clusters --offline-token=$(OFFLINE_TOKEN)
 
 manage_deployment:
 	skipper make $(SKIPPER_PARAMS) _manage_deployment
@@ -469,7 +469,7 @@ lint:
 pre-commit:
 	# TODO not identifying all pep8 violation - WIP
 	mkdir -p build
-	pre-commit run --files ./src/test_infra/* ./src/tests/*
+	pre-commit run --files ./src/assisted_test_infra/test_infra/* ./src/tests/*
 
 _reformat:
 	black $(LINT_CODE_STYLING_DIRS) --line-length=120

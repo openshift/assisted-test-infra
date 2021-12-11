@@ -11,17 +11,17 @@ from distutils.util import strtobool
 from kubernetes.client import CoreV1Api
 
 import deprecated_utils
-from test_infra import assisted_service_api, utils, consts, warn_deprecate
-from test_infra.assisted_service_api import ClientFactory
-from test_infra.controllers.nat_controller import NatController
-from test_infra.helper_classes.kube_helpers import create_kube_api_client
-from test_infra.utils.kubeapi_utils import delete_kube_api_resources_for_namespace
+from assisted_test_infra.test_infra import utils, consts
+from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
+from assisted_test_infra.test_infra.controllers.nat_controller import NatController
+from assisted_test_infra.test_infra.helper_classes.kube_helpers import create_kube_api_client
+from assisted_test_infra.test_infra.utils.kubeapi_utils import delete_kube_api_resources_for_namespace
 
-import oc_utils
+from assisted_test_infra.test_infra.utils import oc_utils
 import virsh_cleanup
-from logger import log
+from assisted_test_infra.test_infra.logger import log
 
-warn_deprecate()
+deprecated_utils.warn_deprecate()
 
 
 @utils.on_exception(message='Failed to delete cluster', silent=True)

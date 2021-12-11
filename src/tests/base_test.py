@@ -8,35 +8,37 @@ from typing import Callable, List, Optional, Tuple
 
 import libvirt
 import pytest
-import test_infra.utils as infra_utils
 import waiting
 from _pytest.fixtures import FixtureRequest
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
-from download_logs import download_logs
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from kubernetes.client import CoreV1Api
 from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 from paramiko import SSHException
-from test_infra import consts
-from test_infra.assisted_service_api import InventoryClient
-from test_infra.consts import OperatorResource
-from test_infra.controllers.iptables import IptableRule
-from test_infra.controllers.nat_controller import NatController
-from test_infra.controllers.node_controllers import Node, NodeController, TerraformController, VSphereController
-from test_infra.controllers.proxy_controller.proxy_controller import ProxyController
-from test_infra.helper_classes.cluster import Cluster
-from test_infra.helper_classes.config import BaseTerraformConfig
-from test_infra.helper_classes.config.controller_config import BaseNodeConfig
-from test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
-from test_infra.helper_classes.events_handler import EventsHandler
-from test_infra.helper_classes.infra_env import InfraEnv
-from test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
-from test_infra.helper_classes.nodes import Nodes
-from test_infra.tools.assets import LibvirtNetworkAssets
-from test_infra.utils import utils
-from test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
+
+from assisted_test_infra import test_infra as infra_utils
+from assisted_test_infra.download_logs.download_logs import download_logs
+from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, consts, utils
+from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
+from assisted_test_infra.test_infra.consts import OperatorResource
+from assisted_test_infra.test_infra.controllers import (
+    IptableRule,
+    NatController,
+    Node,
+    NodeController,
+    ProxyController,
+    TerraformController,
+    VSphereController,
+)
+from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
+from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig, VSphereControllerConfig
+from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
+from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
+from assisted_test_infra.test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
+from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
+from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 
 
@@ -181,7 +183,7 @@ class BaseTest:
                 logging.info("--- TEARDOWN --- node controller\n")
                 nodes.destroy_all_nodes()
                 logging.info(f"--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n")
-                infra_utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
+                utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
 
     @pytest.fixture
     def prepare_infraenv_nodes(self, infraenv_nodes: Nodes, infra_env_configuration: InfraEnvConfig) -> Nodes:

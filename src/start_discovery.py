@@ -13,17 +13,18 @@ from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from netaddr import IPNetwork
 
-import test_infra.utils.waiting
+from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status, \
+    wait_till_hosts_with_macs_are_in_status
 from deprecated_utils import wait_till_nodes_are_ready, get_libvirt_nodes_mac_role_ip_and_name, \
-    get_libvirt_nodes_macs
-from test_infra import assisted_service_api, consts, utils, warn_deprecate
-from test_infra.assisted_service_api import ClientFactory
-from test_infra.consts import resources
-from test_infra.utils import kubeapi_utils
-from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.tools import static_network, terraform_utils
+    get_libvirt_nodes_macs, warn_deprecate
+from assisted_test_infra.test_infra import assisted_service_api, consts, utils
+from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
+from assisted_test_infra.test_infra.consts import resources
+from assisted_test_infra.test_infra.utils import kubeapi_utils, oc_utils
+from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
+from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 
-from test_infra.helper_classes.kube_helpers import (
+from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     create_kube_api_client, ClusterDeployment, Secret, InfraEnv, Proxy,
     NMStateConfig,
     ClusterImageSet, ClusterImageSetReference,
@@ -33,11 +34,10 @@ from test_infra.helper_classes.kube_helpers import (
 import bootstrap_in_place as ibip
 import day2
 import install_cluster
-import oc_utils
-from logger import log
-from test_infra.controllers.load_balancer_controller import LoadBalancerController
-from test_infra.controllers.nat_controller import NatController
-from test_infra.utils import operators_utils
+from assisted_test_infra.test_infra.logger import log
+from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
+from assisted_test_infra.test_infra.controllers.nat_controller import NatController
+from assisted_test_infra.test_infra.utils import operators_utils
 
 warn_deprecate()
 
@@ -262,7 +262,7 @@ def wait_until_nodes_are_registered_rest_api(
         nat_controller = NatController(input_interfaces, args.ns_index)
         nat_controller.add_nat_rules()
 
-    test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
+    wait_till_all_hosts_are_in_status(
         client=inventory_client,
         cluster_id=cluster.id,
         nodes_count=nodes_number,
@@ -468,7 +468,7 @@ def nodes_flow(
 
         if not (cluster_info.api_vip and cluster_info.ingress_vip):
             if not args.kube_api:
-                test_infra.utils.waiting.wait_till_hosts_with_macs_are_in_status(
+                wait_till_hosts_with_macs_are_in_status(
                     client=client,
                     cluster_id=cluster.id,
                     macs=macs,
@@ -538,7 +538,7 @@ def nodes_flow(
             lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
         if not args.kube_api:
-            test_infra.utils.waiting.wait_till_hosts_with_macs_are_in_status(
+            wait_till_hosts_with_macs_are_in_status(
                 client=client,
                 cluster_id=cluster.id,
                 macs=macs,

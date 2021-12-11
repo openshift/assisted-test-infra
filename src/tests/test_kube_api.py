@@ -9,12 +9,13 @@ from typing import List
 import openshift as oc
 import pytest
 import waiting
-from download_logs import collect_debug_info_from_cluster
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 from netaddr import IPNetwork
-from test_infra import utils
-from test_infra.helper_classes.hypershift import HyperShift
-from test_infra.helper_classes.kube_helpers import (
+
+from assisted_test_infra.download_logs import collect_debug_info_from_cluster
+from assisted_test_infra.test_infra import Nodes, download_iso, get_openshift_release_image, utils
+from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
+from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Agent,
     AgentClusterInstall,
     ClusterDeployment,
@@ -24,9 +25,7 @@ from test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
-from test_infra.helper_classes.nodes import Nodes
-from test_infra.utils import download_iso, get_openshift_release_image
-from test_infra.utils.kubeapi_utils import get_ip_for_single_node
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
 

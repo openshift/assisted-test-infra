@@ -6,18 +6,18 @@ import os
 
 import waiting
 
-import test_infra.utils.waiting
-from test_infra import assisted_service_api, consts, utils, warn_deprecate
-from test_infra.assisted_service_api import ClientFactory
-from test_infra.helper_classes import cluster as helper_cluster
-from test_infra.tools import terraform_utils
-from test_infra.helper_classes.kube_helpers import Agent
+from assisted_test_infra.test_infra import consts, utils
+from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
+from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
+from assisted_test_infra.test_infra.tools import terraform_utils
+from assisted_test_infra.test_infra.helper_classes.kube_helpers import Agent
 
 from assisted_service_client.models.operator_type import OperatorType
 
-import oc_utils
-from logger import log
-from test_infra.utils import operators_utils
+from assisted_test_infra.test_infra.logger import log
+from assisted_test_infra.test_infra.utils import operators_utils, oc_utils
+from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
+from deprecated_utils import warn_deprecate
 
 warn_deprecate()
 
@@ -44,7 +44,7 @@ def _install_cluster(client, cluster):
         statuses=[consts.ClusterStatus.INSTALLING],
         break_statuses=[consts.ClusterStatus.ERROR]
     )
-    test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
+    wait_till_all_hosts_are_in_status(
         client=client,
         cluster_id=cluster.id,
         nodes_count=len(cluster.hosts),
@@ -59,7 +59,7 @@ def _install_cluster(client, cluster):
 def wait_till_installed(client, cluster, timeout=60 * 60 * 2):
     # TODO: Change host validation for only previous known hosts
     try:
-        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
+        wait_till_all_hosts_are_in_status(
             client=client,
             cluster_id=cluster.id,
             nodes_count=len(cluster.hosts),

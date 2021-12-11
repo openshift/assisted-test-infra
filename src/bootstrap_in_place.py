@@ -8,14 +8,14 @@ import sys
 import waiting
 import yaml
 
-from deprecated_utils import extract_installer
-from test_infra import utils, consts, warn_deprecate
-from test_infra.tools.assets import LibvirtNetworkAssets
-from test_infra.controllers.node_controllers.terraform_controller import TerraformController
+from deprecated_utils import extract_installer, warn_deprecate
+from assisted_test_infra.test_infra import utils, consts
+from assisted_test_infra.test_infra.tools.assets import LibvirtNetworkAssets
+from assisted_test_infra.test_infra.controllers.node_controllers.terraform_controller import TerraformController
 
-from download_logs import download_must_gather, gather_sosreport_data
-from oc_utils import get_operators_status
-from test_infra.utils.entity_name import ClusterName
+from assisted_test_infra.download_logs import download_must_gather, gather_sosreport_data
+from assisted_test_infra.test_infra.utils.oc_utils import get_operators_status
+from assisted_test_infra.test_infra.utils.entity_name import ClusterName
 from tests.config import TerraformConfig, ClusterConfig
 
 warn_deprecate()
@@ -24,7 +24,7 @@ warn_deprecate()
 BUILD_DIR = "build"
 INSTALL_CONFIG_FILE_NAME = "install-config.yaml"
 IBIP_DIR = os.path.join(BUILD_DIR, "ibip")
-RESOURCES_DIR = os.path.join("src", "resources")
+RESOURCES_DIR = os.path.join("src", "assisted_test_infra/download_logs/resources")
 INSTALL_CONFIG = os.path.join(IBIP_DIR, INSTALL_CONFIG_FILE_NAME)
 INSTALLER_BINARY = os.path.join(BUILD_DIR, "openshift-install")
 EMBED_IMAGE_NAME = "installer-SNO-image.iso"

@@ -7,13 +7,12 @@ import uuid
 
 import waiting
 
-import test_infra.utils.waiting
-from deprecated_utils import wait_till_nodes_are_ready, are_libvirt_nodes_in_cluster_hosts
-from test_infra import assisted_service_api, utils, consts, warn_deprecate
-from test_infra.assisted_service_api import ClientFactory
-from test_infra.tools import static_network, terraform_utils
+from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
+from deprecated_utils import wait_till_nodes_are_ready, are_libvirt_nodes_in_cluster_hosts, warn_deprecate
+from assisted_test_infra.test_infra import utils, consts
+from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 
-from logger import log
+from assisted_test_infra.test_infra.logger import log
 
 warn_deprecate()
 
@@ -131,7 +130,7 @@ def day2_nodes_flow(client,
                                   tf_network_name,
                                   cluster.id)
 
-    test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
+    wait_till_all_hosts_are_in_status(
         client=client,
         cluster_id=cluster.id,
         nodes_count=num_worker_nodes,
@@ -151,7 +150,7 @@ def day2_nodes_flow(client,
         log.info(
             "Start waiting until all nodes of cluster %s have been installed( reached added-to-existing-clustertate)",
             cluster.id)
-        test_infra.utils.waiting.wait_till_all_hosts_are_in_status(
+        wait_till_all_hosts_are_in_status(
             client=client,
             cluster_id=cluster.id,
             nodes_count=num_nodes_to_wait,

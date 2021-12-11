@@ -3,11 +3,17 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from assisted_service_client import models
-from test_infra.consts import env_defaults
-from test_infra.helper_classes.config import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig
-from test_infra.utils import get_kubeconfig_path
-from test_infra.utils.entity_name import ClusterName, InfraEnvName
-from test_infra.utils.global_variables import GlobalVariables
+
+from assisted_test_infra.test_infra import (
+    BaseClusterConfig,
+    BaseInfraEnvConfig,
+    BaseTerraformConfig,
+    ClusterName,
+    GlobalVariables,
+    InfraEnvName,
+    utils,
+)
+from assisted_test_infra.test_infra.consts import env_defaults
 
 global_variables = GlobalVariables()
 
@@ -32,7 +38,7 @@ class ClusterConfig(BaseClusterConfig):
             self.cluster_name = ClusterName()  # todo rm cluster_name after removing config.cluster_name dependencies
         self.entity_name = self.cluster_name
         if self.kubeconfig_path is None:
-            self.kubeconfig_path = get_kubeconfig_path(self.cluster_name.get())
+            self.kubeconfig_path = utils.get_kubeconfig_path(self.cluster_name.get())
         if self.iso_download_path is None:
             self.iso_download_path = self._get_iso_download_path(self.cluster_name.get())
 

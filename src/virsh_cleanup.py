@@ -4,9 +4,10 @@
 import argparse
 import subprocess
 
-from test_infra import utils, warn_deprecate
+from assisted_test_infra.test_infra import utils
 
-from logger import log
+from assisted_test_infra.test_infra.logger import log
+from deprecated_utils import warn_deprecate
 
 DEFAULT_SKIP_LIST = ["default"]
 

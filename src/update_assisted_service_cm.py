@@ -15,7 +15,7 @@ import json
 import os
 import yaml
 
-from test_infra import warn_deprecate
+from deprecated_utils import warn_deprecate
 
 warn_deprecate()
 

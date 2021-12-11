@@ -3,7 +3,8 @@ from typing import List
 
 import pytest
 from _pytest.nodes import Item
-from test_infra import utils
+
+from assisted_test_infra.test_infra import utils
 from tests.config import global_variables
 
 

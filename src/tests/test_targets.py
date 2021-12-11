@@ -1,4 +1,5 @@
 from junit_report import JunitTestSuite
+
 from tests.base_test import BaseTest
 
 

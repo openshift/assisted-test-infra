@@ -1,18 +1,36 @@
-import json
 import logging
 import os
-import tempfile
-import warnings
-from contextlib import contextmanager
 
 import libvirt
 import waiting
 import xml.dom.minidom as md
 
-from logger import log
-from test_infra import consts, utils, consts as consts
+from assisted_test_infra.test_infra.logger import log
+from assisted_test_infra.test_infra import utils, consts as consts
+import sys
+import time
+import warnings
 
+
+__displayed_warnings = list()
 conn = libvirt.open("qemu:///system")
+
+
+def warn_deprecate():
+    if sys.argv[0] not in __displayed_warnings:
+        if sys.argv[0].endswith("__main__.py"):
+            return
+        warnings.filterwarnings("default", category=PendingDeprecationWarning)
+
+        deprecation_format = (
+            f"\033[93mWARNING {sys.argv[0]} module will soon be deprecated."
+            " Avoid adding new functionality to this module. For more information see "
+            "https://issues.redhat.com/browse/MGMT-4975\033[0m"
+        )
+
+        warnings.warn(deprecation_format, PendingDeprecationWarning)
+        __displayed_warnings.append(sys.argv[0])
+        time.sleep(5)
 
 
 def wait_till_nodes_are_ready(nodes_count, network_name):

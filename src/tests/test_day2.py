@@ -1,8 +1,9 @@
 from types import SimpleNamespace
 
-import day2
 import pytest
 from junit_report import JunitTestSuite
+
+import day2
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, global_variables
 

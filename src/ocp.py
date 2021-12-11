@@ -4,11 +4,12 @@
 import argparse
 import sys
 
-from test_infra import assisted_service_api, utils, consts, warn_deprecate
+from assisted_test_infra.test_infra import utils, consts
 
 import day2
-import oc_utils
-from test_infra.assisted_service_api import ClientFactory
+from assisted_test_infra.test_infra.utils import oc_utils
+from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
+from deprecated_utils import warn_deprecate
 
 warn_deprecate()
 

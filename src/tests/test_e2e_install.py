@@ -3,7 +3,8 @@ from contextlib import suppress
 import pytest
 from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitTestSuite
-from test_infra.consts import NetworkType, OperatorStatus
+
+from assisted_test_infra.test_infra.consts import NetworkType, OperatorStatus
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig
 from tests.conftest import get_available_openshift_versions, global_variables
