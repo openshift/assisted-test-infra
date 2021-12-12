@@ -4,9 +4,9 @@ from distutils.util import strtobool
 from pathlib import Path
 from typing import Any, ClassVar, List
 
-from assisted_test_infra.test_infra import consts
-from assisted_test_infra.test_infra.consts import env_defaults, resources
+import consts
 from assisted_test_infra.test_infra.utils import get_env, operators_utils
+from consts import env_defaults, resources
 
 
 @dataclass(frozen=True)

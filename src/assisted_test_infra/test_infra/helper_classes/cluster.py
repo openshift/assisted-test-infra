@@ -18,8 +18,8 @@ from assisted_service_client.models.operator_type import OperatorType
 from junit_report import JunitTestCase
 from netaddr import IPAddress, IPNetwork
 
-from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, ClusterName, consts, utils
-from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
+import consts
+from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, ClusterName, utils
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
 from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHost
@@ -27,10 +27,10 @@ from assisted_test_infra.test_infra.helper_classes.entity import Entity
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
-from assisted_test_infra.test_infra.logger import log
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
+from service_client import InventoryClient, log
 
 
 class Cluster(Entity):

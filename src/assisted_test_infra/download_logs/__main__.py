@@ -4,8 +4,8 @@ from collections import Counter
 
 from assisted_test_infra.download_logs import gather_sosreport_data
 from assisted_test_infra.download_logs.download_logs import download_cluster_logs, get_clusters, should_download_logs
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
-from assisted_test_infra.test_infra.utils import get_env, log
+from assisted_test_infra.test_infra.utils import get_env
+from service_client import ClientFactory, log
 
 CONNECTION_TIMEOUT = 30
 

@@ -4,9 +4,8 @@ from typing import Optional, Union
 from assisted_service_client import models
 
 from assisted_test_infra.test_infra import BaseEntityConfig
-from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
-from assisted_test_infra.test_infra.logger import log
+from service_client import InventoryClient, log
 
 
 class Entity(ABC):

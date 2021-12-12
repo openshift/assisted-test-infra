@@ -29,9 +29,9 @@ from requests.exceptions import RequestException
 from requests.models import HTTPError
 from retry import retry
 
-from assisted_test_infra.test_infra import consts
-from assisted_test_infra.test_infra.logger import log
+import consts
 from assisted_test_infra.test_infra.utils import oc_utils
+from service_client import log
 
 
 def download_file(url: str, local_filename: str, verify_ssl: bool, tries=5) -> Path:

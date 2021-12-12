@@ -4,7 +4,7 @@ from typing import Callable, Optional
 
 from scp import SCPException
 
-from assisted_test_infra.test_infra import consts
+import consts
 from assisted_test_infra.test_infra.controllers.node_controllers import ssh
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 

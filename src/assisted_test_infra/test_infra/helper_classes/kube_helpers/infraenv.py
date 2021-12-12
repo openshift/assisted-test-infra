@@ -9,15 +9,8 @@ import yaml
 from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 
-from assisted_test_infra.test_infra.consts.kube_api import (
-    CRD_API_GROUP,
-    CRD_API_VERSION,
-    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
-)
+import consts
 
-from ... import consts
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
@@ -80,8 +73,8 @@ class InfraEnv(BaseCustomResource):
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace,
@@ -100,13 +93,13 @@ class InfraEnv(BaseCustomResource):
         **kwargs,
     ) -> None:
         body = {
-            "apiVersion": f"{CRD_API_GROUP}/{CRD_API_VERSION}",
+            "apiVersion": f"{consts.CRD_API_GROUP}/{consts.CRD_API_VERSION}",
             "kind": "InfraEnv",
             "metadata": self.ref.as_dict(),
             "spec": {
                 "pullSecretRef": secret.ref.as_dict(),
                 "nmStateConfigLabelSelector": {
-                    "matchLabels": {f"{CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label or ""}
+                    "matchLabels": {f"{consts.CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label or ""}
                 },
                 "ignitionConfigOverride": ignition_config_override or "",
             },
@@ -124,8 +117,8 @@ class InfraEnv(BaseCustomResource):
 
         spec.update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace,
@@ -158,7 +151,7 @@ class InfraEnv(BaseCustomResource):
         if nmstate_label:
             spec["nmStateConfigLabelSelector"] = {
                 "matchLabels": {
-                    f"{CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label,
+                    f"{consts.CRD_API_GROUP}/selector-nmstate-config-name": nmstate_label,
                 }
             }
 
@@ -169,8 +162,8 @@ class InfraEnv(BaseCustomResource):
             spec["sshAuthorizedKey"] = ssh_pub_key
 
         self.crd_api.patch_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -181,8 +174,8 @@ class InfraEnv(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -190,8 +183,8 @@ class InfraEnv(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -201,7 +194,7 @@ class InfraEnv(BaseCustomResource):
 
     def status(
         self,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     ) -> dict:
         """
         Status is a section in the CRD that is created after registration to
@@ -223,7 +216,7 @@ class InfraEnv(BaseCustomResource):
 
     def get_iso_download_url(
         self,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT,
     ):
         def _attempt_to_get_image_url() -> str:
             return self.get()["status"]["isoDownloadURL"]
@@ -319,8 +312,8 @@ class InfraEnv(BaseCustomResource):
 
     def list_agents(self) -> List[Agent]:
         all_agents = self.crd_api.list_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=Agent._plural,
             namespace=self.ref.namespace,
         ).get("items", [])
@@ -338,7 +331,7 @@ class InfraEnv(BaseCustomResource):
     def wait_for_agents(
         self,
         num_agents: int = 1,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
     ) -> List[Agent]:
         def _wait_for_sufficient_agents_number() -> List[Agent]:
             agents = self.list_agents()

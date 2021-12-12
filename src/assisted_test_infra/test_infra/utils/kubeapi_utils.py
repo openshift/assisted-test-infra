@@ -7,7 +7,8 @@ from typing import List, Tuple, Union
 import waiting
 from kubernetes.client import ApiException, CoreV1Api, CustomObjectsApi
 
-from assisted_test_infra.test_infra import consts, utils
+import consts
+from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     ClusterDeployment,
     ClusterImageSet,

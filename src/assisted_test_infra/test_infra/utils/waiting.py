@@ -2,8 +2,9 @@ from typing import List
 
 import waiting
 
-from assisted_test_infra.test_infra import consts, utils
-from assisted_test_infra.test_infra.logger import log
+import consts
+from assisted_test_infra.test_infra import utils
+from service_client import log
 
 
 def _get_cluster_hosts_with_mac(client, cluster_id, macs):

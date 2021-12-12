@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, Tuple
 
-from assisted_test_infra.test_infra.logger import log
+from service_client import log
 
 
 class Triggerable(ABC):

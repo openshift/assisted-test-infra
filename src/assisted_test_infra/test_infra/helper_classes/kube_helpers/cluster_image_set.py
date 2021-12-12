@@ -3,7 +3,8 @@ from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from ... import consts
+import consts
+
 from .base_resource import BaseResource
 from .idict import IDict
 

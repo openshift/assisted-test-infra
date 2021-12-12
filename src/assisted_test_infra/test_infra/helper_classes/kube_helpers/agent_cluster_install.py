@@ -6,13 +6,8 @@ from typing import Any, Dict, Optional, Tuple, Union
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from assisted_test_infra.test_infra.consts.kube_api import (
-    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
-    DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT,
-)
+import consts
 
-from ... import consts
 from .base_resource import BaseCustomResource, ObjectReference
 from .cluster_image_set import ClusterImageSetReference
 from .secret import Secret
@@ -200,7 +195,7 @@ class AgentClusterInstall(BaseCustomResource):
 
         logger.info("deleted agentclusterinstall %s", self.ref)
 
-    def status(self, timeout: Union[int] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT) -> dict:
+    def status(self, timeout: Union[int] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
             return self.get()["status"]
 
@@ -215,7 +210,7 @@ class AgentClusterInstall(BaseCustomResource):
     def wait_to_be_ready(
         self,
         ready: bool,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         return self.wait_for_condition(
             cond_type=self._requirements_met_condition_name,
@@ -225,7 +220,7 @@ class AgentClusterInstall(BaseCustomResource):
 
     def wait_to_be_installing(
         self,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         return self.wait_for_condition(
             cond_type=self._requirements_met_condition_name,
@@ -236,7 +231,7 @@ class AgentClusterInstall(BaseCustomResource):
 
     def wait_to_be_installed(
         self,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_INSTALLATION_COMPLETE_TIMEOUT,
     ) -> None:
         return self.wait_for_condition(
             cond_type=self._completed_condition_name,
@@ -254,7 +249,7 @@ class AgentClusterInstall(BaseCustomResource):
         required_reason: Optional[str] = None,
         exception_status: Optional[str] = None,
         exception_reason: Optional[str] = None,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
 
         logger.info(
@@ -288,7 +283,7 @@ class AgentClusterInstall(BaseCustomResource):
     def condition(
         self,
         cond_type,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
@@ -303,7 +298,7 @@ class AgentClusterInstall(BaseCustomResource):
         secret_ref = waiting.wait(
             _get_kubeconfig_secret,
             sleep_seconds=1,
-            timeout_seconds=DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT,
+            timeout_seconds=consts.DEFAULT_WAIT_FOR_KUBECONFIG_TIMEOUT,
             expected_exceptions=KeyError,
             waiting_for=f"kubeconfig secret creation for cluster {self.ref}",
         )

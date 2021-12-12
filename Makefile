@@ -21,7 +21,7 @@ REPO_NAME := $(or ${REPO_NAME}, "")
 PULL_NUMBER := $(or ${PULL_NUMBER}, "")
 
 # lint
-LINT_CODE_STYLING_DIRS := src/tests src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs
+LINT_CODE_STYLING_DIRS := src/tests src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts
 
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")

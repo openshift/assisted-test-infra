@@ -1,4 +1,4 @@
-from assisted_test_infra.test_infra import consts
+import consts
 from assisted_test_infra.test_infra.utils.base_name import BaseName
 
 

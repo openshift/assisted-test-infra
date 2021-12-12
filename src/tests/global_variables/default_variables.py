@@ -1,9 +1,9 @@
 from contextlib import suppress
 from typing import Any
 
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory, InventoryClient
 from assisted_test_infra.test_infra.helper_classes.config.base_config import Triggerable
 from assisted_test_infra.test_infra.utils import utils
+from service_client import ClientFactory, InventoryClient
 from tests.global_variables.env_variables_defaults import _EnvVariablesDefaults
 from tests.global_variables.triggers import get_default_triggers
 

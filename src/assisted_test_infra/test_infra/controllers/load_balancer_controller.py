@@ -4,9 +4,9 @@ from typing import List
 
 import waiting
 
-from assisted_test_infra.test_infra import consts
-from assisted_test_infra.test_infra.logger import log
+import consts
 from assisted_test_infra.test_infra.tools import TerraformUtils
+from service_client import log
 
 
 class LoadBalancerController:

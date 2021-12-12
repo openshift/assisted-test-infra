@@ -8,7 +8,8 @@ from munch import Munch
 from netaddr import IPAddress, IPNetwork, IPRange
 from netaddr.core import AddrFormatError
 
-from assisted_test_infra.test_infra import consts, utils
+import consts
+from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 
 

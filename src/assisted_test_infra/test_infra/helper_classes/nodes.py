@@ -6,11 +6,11 @@ from typing import Dict, Iterator, List
 import waiting
 from munch import Munch
 
-from assisted_test_infra.test_infra.consts import consts
+import consts
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
-from assisted_test_infra.test_infra.logger import SuppressAndLog, log
 from assisted_test_infra.test_infra.tools import run_concurrently
+from service_client.logger import SuppressAndLog, log
 
 
 class NodeMapping:

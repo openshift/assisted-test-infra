@@ -12,7 +12,7 @@ from assisted_test_infra.test_infra import (
     InfraEnvName,
     utils,
 )
-from assisted_test_infra.test_infra.consts import env_defaults
+from consts import env_defaults
 from tests.global_variables import DefaultVariables
 
 global_variables = DefaultVariables()

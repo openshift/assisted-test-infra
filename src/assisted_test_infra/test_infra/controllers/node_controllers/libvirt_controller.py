@@ -14,12 +14,13 @@ from xml.dom import minidom
 import libvirt
 import waiting
 
-from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, consts, utils
+import consts
+from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk, DiskSourceType
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
-from assisted_test_infra.test_infra.logger import log
+from service_client import log
 
 
 class LibvirtController(NodeController, ABC):

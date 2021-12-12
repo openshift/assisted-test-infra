@@ -6,15 +6,15 @@ import os
 
 import waiting
 
-from assisted_test_infra.test_infra import consts, utils
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
+from assisted_test_infra.test_infra import utils
+import consts
+from service_client import ClientFactory, log
 from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
 from assisted_test_infra.test_infra.tools import terraform_utils
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import Agent
 
 from assisted_service_client.models.operator_type import OperatorType
 
-from assisted_test_infra.test_infra.logger import log
 from assisted_test_infra.test_infra.utils import operators_utils, oc_utils
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from deprecated_utils import warn_deprecate

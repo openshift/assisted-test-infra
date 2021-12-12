@@ -6,8 +6,8 @@ from tempfile import TemporaryDirectory
 
 import waiting
 
-from assisted_test_infra.test_infra.consts import NUMBER_OF_MASTERS
-from assisted_test_infra.test_infra.logger import log
+from consts import NUMBER_OF_MASTERS
+from service_client import log
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
 OC_DOWNLOAD_LOGS_TIMEOUT = 60 * 60

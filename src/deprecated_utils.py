@@ -5,8 +5,9 @@ import libvirt
 import waiting
 import xml.dom.minidom as md
 
-from assisted_test_infra.test_infra.logger import log
-from assisted_test_infra.test_infra import utils, consts as consts
+from service_client import log
+from assisted_test_infra.test_infra import utils
+import consts as consts
 import sys
 import time
 import warnings

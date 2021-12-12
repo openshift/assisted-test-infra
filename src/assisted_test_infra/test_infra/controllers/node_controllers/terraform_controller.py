@@ -10,20 +10,20 @@ from typing import Dict, List, Union
 from munch import Munch
 from netaddr import IPNetwork
 
+import consts
 from assisted_test_infra.test_infra import (
     BaseClusterConfig,
     BaseInfraEnvConfig,
     BaseTerraformConfig,
-    consts,
     utils,
     virsh_cleanup,
 )
-from assisted_test_infra.test_infra.consts import resources
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 from assisted_test_infra.test_infra.utils import TerraformControllerUtil
 from assisted_test_infra.test_infra.utils.base_name import BaseName, get_name_suffix
+from consts import resources
 
 
 class TerraformController(LibvirtController):

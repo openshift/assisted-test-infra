@@ -9,7 +9,7 @@ from typing import List, Dict, Optional
 
 from junit_xml import TestCase, TestSuite, to_xml_report_string
 
-from assisted_test_infra.test_infra.logger import log, SuppressAndLog
+from service_client import log, SuppressAndLog
 
 
 @dataclass

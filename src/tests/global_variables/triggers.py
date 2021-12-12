@@ -2,7 +2,7 @@ from typing import Any, Dict, Tuple
 
 from frozendict import frozendict
 
-from assisted_test_infra.test_infra.consts import NetworkType, consts, resources
+from consts import consts, resources
 
 _default_triggers = frozendict(
     {
@@ -39,7 +39,7 @@ _default_triggers = frozendict(
             "service_networks": consts.DEFAULT_SERVICE_NETWORKS_IPV4V6,
             "network_type": consts.NetworkType.OVNKubernetes,
         },
-        (("network_type", NetworkType.OVNKubernetes),): {
+        (("network_type", consts.NetworkType.OVNKubernetes),): {
             "vip_dhcp_allocation": False,
         },
     }

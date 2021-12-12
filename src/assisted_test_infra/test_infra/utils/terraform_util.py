@@ -1,8 +1,8 @@
 import logging
 import os
 
-from assisted_test_infra.test_infra.consts import consts
 from assisted_test_infra.test_infra.utils import utils
+from consts import consts
 
 
 class TerraformControllerUtil:

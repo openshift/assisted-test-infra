@@ -17,9 +17,10 @@ from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are
     wait_till_hosts_with_macs_are_in_status
 from deprecated_utils import wait_till_nodes_are_ready, get_libvirt_nodes_mac_role_ip_and_name, \
     get_libvirt_nodes_macs, warn_deprecate
-from assisted_test_infra.test_infra import assisted_service_api, consts, utils
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
-from assisted_test_infra.test_infra.consts import resources
+from assisted_test_infra.test_infra import utils
+import consts
+from service_client import ClientFactory, assisted_service_api, log
+from consts import resources
 from assisted_test_infra.test_infra.utils import kubeapi_utils, oc_utils
 from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
@@ -34,7 +35,6 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
 import bootstrap_in_place as ibip
 import day2
 import install_cluster
-from assisted_test_infra.test_infra.logger import log
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
 from assisted_test_infra.test_infra.controllers.nat_controller import NatController
 from assisted_test_infra.test_infra.utils import operators_utils

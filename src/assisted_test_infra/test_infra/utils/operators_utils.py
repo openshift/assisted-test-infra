@@ -4,8 +4,8 @@ from typing import List
 import waiting
 from assisted_service_client import MonitoredOperator
 
-from assisted_test_infra.test_infra import consts
-from assisted_test_infra.test_infra.logger import log
+import consts
+from service_client import log
 
 
 def get_env(env, default=None):

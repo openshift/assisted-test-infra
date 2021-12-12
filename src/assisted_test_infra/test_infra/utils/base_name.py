@@ -1,6 +1,7 @@
 import uuid
 
-from assisted_test_infra.test_infra import consts, utils
+import consts
+from assisted_test_infra.test_infra import utils
 
 
 def get_name_suffix(length: str = consts.SUFFIX_LENGTH):

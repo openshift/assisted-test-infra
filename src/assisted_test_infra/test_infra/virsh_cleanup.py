@@ -1,7 +1,7 @@
 import subprocess
 
 from assisted_test_infra.test_infra import utils
-from assisted_test_infra.test_infra.logger import log
+from service_client import log
 
 DEFAULT_SKIP_LIST = ["default"]
 

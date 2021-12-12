@@ -2,7 +2,8 @@ from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 
-from ... import consts
+import consts
+
 from .base_config import _BaseConfig
 
 

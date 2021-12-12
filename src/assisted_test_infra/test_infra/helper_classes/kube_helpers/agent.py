@@ -4,8 +4,8 @@ from typing import List, Optional, Union
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from ... import consts
-from ...consts.kube_api import CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+import consts
+
 from .base_resource import BaseCustomResource
 from .common import ObjectReference, logger
 
@@ -38,8 +38,8 @@ class Agent(BaseCustomResource):
     ) -> List["Agent"]:
         agents_namespace = agents_namespace or cluster_deployment.ref.namespace
         resources = crd_api.list_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=cls._plural,
             namespace=agents_namespace,
         )
@@ -69,8 +69,8 @@ class Agent(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -80,8 +80,8 @@ class Agent(BaseCustomResource):
         body = {"spec": kwargs}
 
         self.crd_api.patch_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -92,8 +92,8 @@ class Agent(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -101,7 +101,7 @@ class Agent(BaseCustomResource):
 
         logger.info("deleted agent %s", self.ref)
 
-    def status(self, timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
+    def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
             return self.get()["status"]
 

@@ -17,12 +17,9 @@ from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
 from scp import SCPException
 
-from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
-from assisted_test_infra.test_infra.consts import ClusterStatus, HostsProgressStages, env_defaults
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
-from assisted_test_infra.test_infra.logger import SuppressAndLog, add_log_file_handler, log
 from assisted_test_infra.test_infra.tools.concurrently import run_concurrently
 from assisted_test_infra.test_infra.utils import (
     are_host_progress_in_stage,
@@ -32,6 +29,8 @@ from assisted_test_infra.test_infra.utils import (
     run_command,
     verify_logs_uploaded,
 )
+from consts import ClusterStatus, HostsProgressStages, env_defaults
+from service_client import InventoryClient, SuppressAndLog, add_log_file_handler, log
 from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))

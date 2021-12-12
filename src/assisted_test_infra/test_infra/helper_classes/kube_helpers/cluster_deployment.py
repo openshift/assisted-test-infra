@@ -5,16 +5,8 @@ from typing import List, Optional, Tuple, Union
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from assisted_test_infra.test_infra.consts.kube_api import (
-    CRD_API_GROUP,
-    DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
-    DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
-    DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    HIVE_API_GROUP,
-    HIVE_API_VERSION,
-)
+import consts
 
-from ... import consts
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .common import ObjectReference
@@ -45,8 +37,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=HIVE_API_GROUP,
-            version=HIVE_API_VERSION,
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace,
@@ -62,7 +54,7 @@ class ClusterDeployment(BaseCustomResource):
         **kwargs,
     ):
         body = {
-            "apiVersion": f"{HIVE_API_GROUP}/{HIVE_API_VERSION}",
+            "apiVersion": f"{consts.HIVE_API_GROUP}/{consts.HIVE_API_VERSION}",
             "kind": "ClusterDeployment",
             "metadata": self.ref.as_dict(),
             "spec": {
@@ -78,8 +70,8 @@ class ClusterDeployment(BaseCustomResource):
 
         body["spec"].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=HIVE_API_GROUP,
-            version=HIVE_API_VERSION,
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace,
@@ -105,8 +97,8 @@ class ClusterDeployment(BaseCustomResource):
             spec["clusterInstallRef"] = kwargs["agent_cluster_install_ref"].as_dict()
 
         self.crd_api.patch_namespaced_custom_object(
-            group=HIVE_API_GROUP,
-            version=HIVE_API_VERSION,
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -116,11 +108,11 @@ class ClusterDeployment(BaseCustomResource):
         logger.info("patching cluster deployment %s: %s", self.ref, pformat(body))
 
     def annotate_install_config(self, install_config: str) -> None:
-        body = {"metadata": {"annotations": {f"{CRD_API_GROUP}/install-config-overrides": install_config}}}
+        body = {"metadata": {"annotations": {f"{consts.CRD_API_GROUP}/install-config-overrides": install_config}}}
 
         self.crd_api.patch_namespaced_custom_object(
-            group=HIVE_API_GROUP,
-            version=HIVE_API_VERSION,
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -131,8 +123,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=HIVE_API_GROUP,
-            version=HIVE_API_VERSION,
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -140,8 +132,8 @@ class ClusterDeployment(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=HIVE_API_GROUP,
-            version=HIVE_API_VERSION,
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -151,7 +143,7 @@ class ClusterDeployment(BaseCustomResource):
 
     def status(
         self,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
     ) -> dict:
         """
         Status is a section in the CRD that is created after registration to
@@ -174,7 +166,7 @@ class ClusterDeployment(BaseCustomResource):
     def condition(
         self,
         cond_type,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         for condition in self.status(timeout).get("conditions", []):
             if cond_type == condition.get("type"):
@@ -186,7 +178,7 @@ class ClusterDeployment(BaseCustomResource):
         cond_type: str,
         required_status: str,
         required_reason: Optional[str] = None,
-        timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
         def _has_required_condition() -> Optional[bool]:
             status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
@@ -219,7 +211,10 @@ class ClusterDeployment(BaseCustomResource):
         return Agent.list(self.crd_api, self, agents_namespace)
 
     def wait_for_agents(
-        self, num_agents: int = 1, timeout: Union[int, float] = DEFAULT_WAIT_FOR_AGENTS_TIMEOUT, agents_namespace=None
+        self,
+        num_agents: int = 1,
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_AGENTS_TIMEOUT,
+        agents_namespace=None,
     ) -> List[Agent]:
         def _wait_for_sufficient_agents_number() -> List[Agent]:
             agents = self.list_agents(agents_namespace)

@@ -2,9 +2,8 @@ from typing import List
 
 import waiting
 
-from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
-from assisted_test_infra.test_infra.logger import log
 from assisted_test_infra.test_infra.utils import utils
+from service_client import InventoryClient, log
 
 
 class EventsHandler:

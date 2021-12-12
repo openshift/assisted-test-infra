@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 import yaml
 
-from assisted_test_infra.test_infra import consts
+import consts
 
 _PRIMARY_LOGICAL_INTERFACE = "eth0"
 _SECONDARY_LOGICAL_INTERFACE = "eth1"

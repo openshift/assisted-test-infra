@@ -9,7 +9,8 @@ import waiting
 import yaml
 
 from deprecated_utils import extract_installer, warn_deprecate
-from assisted_test_infra.test_infra import utils, consts
+from assisted_test_infra.test_infra import utils
+import consts
 from assisted_test_infra.test_infra.tools.assets import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.controllers.node_controllers.terraform_controller import TerraformController
 

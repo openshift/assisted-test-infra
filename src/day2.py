@@ -9,10 +9,11 @@ import waiting
 
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from deprecated_utils import wait_till_nodes_are_ready, are_libvirt_nodes_in_cluster_hosts, warn_deprecate
-from assisted_test_infra.test_infra import utils, consts
+from assisted_test_infra.test_infra import utils
+import consts
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 
-from assisted_test_infra.test_infra.logger import log
+from service_client import log
 
 warn_deprecate()
 

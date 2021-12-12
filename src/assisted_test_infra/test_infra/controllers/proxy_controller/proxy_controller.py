@@ -5,7 +5,8 @@ import socket
 
 from jinja2 import Environment, PackageLoader
 
-from assisted_test_infra.test_infra import consts, utils
+import consts
+from assisted_test_infra.test_infra import utils
 
 
 class ProxyController:

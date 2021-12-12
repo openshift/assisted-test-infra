@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from assisted_test_infra.test_infra import consts
+import consts
 
 DEFAULT_NUMBER_OF_MASTERS: int = consts.NUMBER_OF_MASTERS
 DEFAULT_DAY2_WORKERS_COUNT: int = 1

@@ -18,10 +18,9 @@ from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 from paramiko import SSHException
 
+import consts
 from assisted_test_infra.download_logs.download_logs import download_logs
-from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, consts, utils
-from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
-from assisted_test_infra.test_infra.consts import OperatorResource
+from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, utils
 from assisted_test_infra.test_infra.controllers import (
     IptableRule,
     NatController,
@@ -38,6 +37,8 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
+from consts import OperatorResource
+from service_client import InventoryClient
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 
 

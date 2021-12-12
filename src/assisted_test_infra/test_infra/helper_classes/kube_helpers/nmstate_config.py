@@ -5,8 +5,8 @@ from typing import Optional, Union
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
-from ... import consts
-from ...consts.kube_api import CRD_API_GROUP, CRD_API_VERSION, DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+import consts
+
 from .base_resource import BaseCustomResource
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,8 @@ class NMStateConfig(BaseCustomResource):
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             body=yaml_data,
             namespace=self.ref.namespace,
@@ -45,11 +45,11 @@ class NMStateConfig(BaseCustomResource):
         **kwargs,
     ) -> None:
         body = {
-            "apiVersion": f"{CRD_API_GROUP}/{CRD_API_VERSION}",
+            "apiVersion": f"{consts.CRD_API_GROUP}/{consts.CRD_API_VERSION}",
             "kind": "NMStateConfig",
             "metadata": {
                 "labels": {
-                    f"{CRD_API_GROUP}/selector-nmstate-config-name": label,
+                    f"{consts.CRD_API_GROUP}/selector-nmstate-config-name": label,
                 },
                 **self.ref.as_dict(),
             },
@@ -60,8 +60,8 @@ class NMStateConfig(BaseCustomResource):
         }
         body["spec"].update(kwargs)
         self.crd_api.create_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             body=body,
             namespace=self.ref.namespace,
@@ -85,8 +85,8 @@ class NMStateConfig(BaseCustomResource):
             spec["interfaces"] = interfaces
 
         self.crd_api.patch_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -97,8 +97,8 @@ class NMStateConfig(BaseCustomResource):
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -106,8 +106,8 @@ class NMStateConfig(BaseCustomResource):
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
-            group=CRD_API_GROUP,
-            version=CRD_API_VERSION,
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
             plural=self._plural,
             name=self.ref.name,
             namespace=self.ref.namespace,
@@ -115,7 +115,7 @@ class NMStateConfig(BaseCustomResource):
 
         logger.info("deleted nmstate config %s", self.ref)
 
-    def status(self, timeout: Union[int, float] = DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
+    def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
         """
         Status is a section in the CRD that is created after registration to
         assisted service and it defines the observed state of NMStateConfig.

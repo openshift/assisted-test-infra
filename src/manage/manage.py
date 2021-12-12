@@ -4,12 +4,11 @@ import sys
 import yaml
 import urllib3
 
-from assisted_test_infra.test_infra.logger import log
+from deprecated_utils import warn_deprecate
+from service_client import ClientFactory, log
 from datetime import datetime
 from argparse import ArgumentParser
-from assisted_test_infra import warn_deprecate
 from assisted_service_client.rest import ApiException
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
 
 warn_deprecate()
 

@@ -5,8 +5,8 @@ from typing import Optional
 from kubernetes.client import ApiClient
 from kubernetes.client.rest import ApiException
 
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
 from assisted_test_infra.test_infra.helper_classes.kube_helpers.idict import IDict
+from service_client import ClientFactory
 
 # silence kubernetes debug messages.
 logging.getLogger("kubernetes").setLevel(logging.INFO)

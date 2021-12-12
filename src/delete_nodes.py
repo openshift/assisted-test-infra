@@ -11,15 +11,15 @@ from distutils.util import strtobool
 from kubernetes.client import CoreV1Api
 
 import deprecated_utils
-from assisted_test_infra.test_infra import utils, consts
-from assisted_test_infra.test_infra.assisted_service_api import ClientFactory
+from assisted_test_infra.test_infra import utils
+import consts
+from service_client import ClientFactory, log
 from assisted_test_infra.test_infra.controllers.nat_controller import NatController
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import create_kube_api_client
 from assisted_test_infra.test_infra.utils.kubeapi_utils import delete_kube_api_resources_for_namespace
 
 from assisted_test_infra.test_infra.utils import oc_utils
 import virsh_cleanup
-from assisted_test_infra.test_infra.logger import log
 
 deprecated_utils.warn_deprecate()
 

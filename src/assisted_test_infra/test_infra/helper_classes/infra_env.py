@@ -3,14 +3,15 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
+from assisted_service_client import models
 from junit_report import JunitTestCase
 
-from assisted_test_infra.test_infra import BaseInfraEnvConfig, consts, utils
-from assisted_test_infra.test_infra.assisted_service_api import InventoryClient, models
+import consts
+from assisted_test_infra.test_infra import BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.helper_classes.entity import Entity
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
-from assisted_test_infra.test_infra.logger import log
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_infra_env_hosts_are_in_status
+from service_client import InventoryClient, log
 
 
 class InfraEnv(Entity):
