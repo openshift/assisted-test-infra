@@ -18,7 +18,6 @@ from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 from paramiko import SSHException
 
-from assisted_test_infra import test_infra as infra_utils
 from assisted_test_infra.download_logs.download_logs import download_logs
 from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, consts, utils
 from assisted_test_infra.test_infra.assisted_service_api import InventoryClient
@@ -195,7 +194,7 @@ class BaseTest:
                 logging.info("--- TEARDOWN --- node controller\n")
                 infraenv_nodes.destroy_all_nodes()
                 logging.info(f"--- TEARDOWN --- deleting iso file from: {infra_env_configuration.iso_download_path}\n")
-                infra_utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
+                utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
 
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
@@ -330,7 +329,7 @@ class BaseTest:
                 logging.info("--- TEARDOWN --- node controller\n")
                 _nodes.destroy_all_nodes()
                 logging.info(f"--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n")
-                infra_utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
+                utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
                 self.teardown_nat(_nat)
 
         finally:
@@ -379,7 +378,7 @@ class BaseTest:
                 logging.info("--- TEARDOWN --- node controller\n")
                 _nodes.destroy_all_nodes()
                 logging.info(f"--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n")
-                infra_utils.run_command(f"rm -f {_infraenv_config.iso_download_path}", shell=True)
+                utils.run_command(f"rm -f {_infraenv_config.iso_download_path}", shell=True)
                 self.teardown_nat(_nat)
 
         finally:
@@ -450,7 +449,7 @@ class BaseTest:
     @staticmethod
     def _set_up_proxy_server(cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
-        port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
+        port = utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
 
         machine_cidr = cluster.get_primary_machine_cidr()
         host_ip = str(IPNetwork(machine_cidr).ip + 1)
@@ -585,7 +584,7 @@ class BaseTest:
 
     @staticmethod
     def assert_cluster_validation(cluster_info, validation_section, validation_id, expected_status):
-        found_status = infra_utils.get_cluster_validation_value(cluster_info, validation_section, validation_id)
+        found_status = utils.get_cluster_validation_value(cluster_info, validation_section, validation_id)
         assert found_status == expected_status, (
             "Found validation status "
             + found_status
@@ -633,14 +632,14 @@ class BaseTest:
         os.makedirs(virsh_log_path, exist_ok=False)
 
         libvirt_list_path = os.path.join(virsh_log_path, "virsh_list")
-        infra_utils.run_command(f"virsh list --all >> {libvirt_list_path}", shell=True)
+        utils.run_command(f"virsh list --all >> {libvirt_list_path}", shell=True)
 
         libvirt_net_list_path = os.path.join(virsh_log_path, "virsh_net_list")
-        infra_utils.run_command(f"virsh net-list --all >> {libvirt_net_list_path}", shell=True)
+        utils.run_command(f"virsh net-list --all >> {libvirt_net_list_path}", shell=True)
 
         network_name = nodes.get_cluster_network()
         virsh_leases_path = os.path.join(virsh_log_path, "net_dhcp_leases")
-        infra_utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
+        utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
 
         messages_log_path = os.path.join(virsh_log_path, "messages.log")
         try:
@@ -667,7 +666,7 @@ class BaseTest:
                 logging.warning(f"Failed to copy {node.name} console log, file does not exist")
 
         libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
-        infra_utils.run_command(
+        utils.run_command(
             f'journalctl --since "{nodes.setup_time}" ' f"-u libvirtd -D /run/log/journal >> {libvird_log_path}",
             shell=True,
         )
@@ -675,9 +674,9 @@ class BaseTest:
     @staticmethod
     def _collect_journalctl(nodes: Nodes, log_dir_name):
         logging.info("Collecting journalctl\n")
-        infra_utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
+        utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
         journal_ctl_path = Path(log_dir_name) / "nodes_journalctl"
-        infra_utils.recreate_folder(journal_ctl_path, with_chmod=False)
+        utils.recreate_folder(journal_ctl_path, with_chmod=False)
         for node in nodes:
             try:
                 node.run_command(f"sudo journalctl >> /tmp/{node.name}-journalctl")
@@ -701,7 +700,7 @@ class BaseTest:
         else:
             vips = nodes.controller.get_ingress_and_api_vips()
             api_vip = vips["api_vip"]
-        infra_utils.config_etc_hosts(
+        utils.config_etc_hosts(
             cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vip=api_vip
         )
 
@@ -710,7 +709,7 @@ class BaseTest:
         self.update_oc_config(nodes, cluster)
 
         def check_status():
-            res = infra_utils.get_assisted_controller_status(cluster.kubeconfig_path)
+            res = utils.get_assisted_controller_status(cluster.kubeconfig_path)
             return "Running" in str(res, "utf-8")
 
         waiting.wait(

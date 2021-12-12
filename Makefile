@@ -7,6 +7,7 @@ CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "do
 PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
 
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+PYTHONPATH=${ROOT_DIR}/src
 REPORTS = $(ROOT_DIR)/reports
 
 SKIPPER_PARAMS ?= -i
@@ -431,8 +432,8 @@ download_service_logs:
 	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_service_logs
 
 download_cluster_logs:
-	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_cluster_logs
 
+	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_cluster_logs
 ##########
 # manage #
 ##########

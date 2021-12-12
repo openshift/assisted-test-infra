@@ -4,8 +4,8 @@ from typing import Any, Callable, List, Optional, SupportsAbs, Tuple, TypeVar
 import libvirt
 
 from assisted_test_infra.test_infra import BaseEntityConfig
-from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
+from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from assisted_test_infra.test_infra.logger import log
 

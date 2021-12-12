@@ -13,7 +13,7 @@ from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 from netaddr import IPNetwork
 
 from assisted_test_infra.download_logs import collect_debug_info_from_cluster
-from assisted_test_infra.test_infra import Nodes, download_iso, get_openshift_release_image, utils
+from assisted_test_infra.test_infra import Nodes, utils
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Agent,
@@ -495,7 +495,7 @@ def kube_api_test(
 
 
 def deploy_image_set(cluster_name, kube_api_context):
-    openshift_release_image = get_openshift_release_image()
+    openshift_release_image = utils.get_openshift_release_image()
 
     image_set_name = f"{cluster_name}-image-set"
     image_set = ClusterImageSet(
@@ -531,7 +531,7 @@ def download_iso_from_infra_env(infra_env, iso_download_path):
     logger.info("getting iso download url")
     iso_download_url = infra_env.get_iso_download_url()
     logger.info("downloading iso from url=%s", iso_download_url)
-    download_iso(iso_download_url, iso_download_path)
+    utils.download_iso(iso_download_url, iso_download_path)
     assert os.path.isfile(iso_download_path)
 
 

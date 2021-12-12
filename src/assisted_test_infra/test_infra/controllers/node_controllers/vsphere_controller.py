@@ -8,8 +8,8 @@ from pyVim.connect import Disconnect, SmartConnect
 from pyVmomi import vim
 
 from assisted_test_infra.test_infra import BaseClusterConfig
-from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
+from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
 from assisted_test_infra.test_infra.logger import log

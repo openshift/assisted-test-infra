@@ -21,7 +21,9 @@ class _EnvVariablesDefaults(ABC):
     workers_count: int = int(get_env("WORKERS_COUNT", get_env("NUM_WORKERS", env_defaults.DEFAULT_WORKERS_COUNT)))
     nodes_count: int = masters_count + workers_count
     num_day2_workers: int = int(get_env("NUM_DAY2_WORKERS", env_defaults.DEFAULT_DAY2_WORKERS_COUNT))
-    vip_dhcp_allocation: bool = bool(strtobool(get_env("VIP_DHCP_ALLOCATION")))
+    vip_dhcp_allocation: bool = bool(
+        strtobool(get_env("VIP_DHCP_ALLOCATION", str(env_defaults.DEFAULT_VIP_DHCP_ALLOCATION)))
+    )
     worker_memory: int = int(get_env("WORKER_MEMORY", resources.DEFAULT_WORKER_MEMORY))
     master_memory: int = int(get_env("MASTER_MEMORY", resources.DEFAULT_MASTER_MEMORY))
     network_mtu: int = int(get_env("NETWORK_MTU", resources.DEFAULT_MTU))

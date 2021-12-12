@@ -68,7 +68,9 @@ class ProxyController:
         self.config_dir_path = f"/tmp/{self.dir}/{self.name}"
         os.mkdir(self.config_dir_path)
 
-        env = Environment(loader=PackageLoader("test_infra.controllers.proxy_controller", "templates"))
+        env = Environment(
+            loader=PackageLoader("assisted_test_infra.test_infra.controllers.proxy_controller", "templates")
+        )
         template = env.get_template("squid.conf.j2")
         config = template.render(port=self.port, denied_port=denied_port, authenticated=self.authenticated)
 
