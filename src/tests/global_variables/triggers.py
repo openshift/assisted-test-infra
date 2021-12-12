@@ -1,11 +1,8 @@
-from abc import ABC, abstractmethod
-from copy import copy
 from typing import Any, Dict, Tuple
 
 from frozendict import frozendict
 
 from assisted_test_infra.test_infra.consts import NetworkType, consts, resources
-from assisted_test_infra.test_infra.logger import log
 
 _default_triggers = frozendict(
     {
@@ -49,31 +46,6 @@ _default_triggers = frozendict(
 )
 
 
-class Triggerable(ABC):
-    @classmethod
-    def get_default_triggers(cls) -> Dict[Tuple[Tuple[str, Any]], Dict[str, Any]]:
-        return copy(_default_triggers)
-
-    def trigger(self, triggers: Dict[Tuple[Tuple[str, Any]], Dict[str, Any]] = None):
-        if triggers is None:
-            triggers = self.get_default_triggers()
-
-        for conditions, values in triggers.items():
-            assert isinstance(conditions, tuple) and all(
-                isinstance(condition, tuple) for condition in conditions
-            ), f"Key {conditions} must be tuple of tuples"
-
-            if all(self._is_set(param, expected_value) for param, expected_value in conditions):
-                self._handle_trigger(conditions, values)
-
-    def _is_set(self, var, expected_value):
-        return getattr(self, var, None) == expected_value
-
-    def _handle_trigger(self, conditions: Tuple[Tuple[str, Any]], values: Dict[str, Any]) -> None:
-        for k, v in values.items():
-            self._set(k, v)
-        log.info(f"{conditions} is triggered. Updating global variables: {values}")
-
-    @abstractmethod
-    def _set(self, key: str, value: Any):
-        pass
+def get_default_triggers() -> Dict[Tuple[Tuple[str, Any]], Dict[str, Any]]:
+    """Make _triggers read only"""
+    return _default_triggers

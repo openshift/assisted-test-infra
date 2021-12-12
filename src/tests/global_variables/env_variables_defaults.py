@@ -16,7 +16,7 @@ class _EnvVariablesDefaults(ABC):
     pull_secret: str = get_env("PULL_SECRET")
     offline_token: str = get_env("OFFLINE_TOKEN")
     openshift_version: str = ""
-    base_dns_domain: str = get_env("BASE_DOMAIN", consts.DEFAULT_BASE_DNS_DOMAIN)
+    base_dns_domain: str = get_env("BASE_DOMAIN", env_defaults.DEFAULT_BASE_DNS_DOMAIN)
     masters_count: int = int(get_env("MASTERS_COUNT", get_env("NUM_MASTERS", env_defaults.DEFAULT_NUMBER_OF_MASTERS)))
     workers_count: int = int(get_env("WORKERS_COUNT", get_env("NUM_WORKERS", env_defaults.DEFAULT_WORKERS_COUNT)))
     nodes_count: int = masters_count + workers_count

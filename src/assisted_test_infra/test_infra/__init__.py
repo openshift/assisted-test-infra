@@ -7,7 +7,6 @@ from assisted_test_infra.test_infra.helper_classes.config import (
 )
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName, InfraEnvName
-from assisted_test_infra.test_infra.utils.global_variables.global_variables import GlobalVariables
 
 __all__ = [
     "InfraEnvName",
@@ -16,7 +15,6 @@ __all__ = [
     "BaseTerraformConfig",
     "BaseClusterConfig",
     "utils",
-    "GlobalVariables",
     "BaseEntityConfig",
     "Nodes",
 ]

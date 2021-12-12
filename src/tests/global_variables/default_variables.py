@@ -2,12 +2,13 @@ from contextlib import suppress
 from typing import Any
 
 from assisted_test_infra.test_infra.assisted_service_api import ClientFactory, InventoryClient
+from assisted_test_infra.test_infra.helper_classes.config.base_config import Triggerable
 from assisted_test_infra.test_infra.utils import utils
-from assisted_test_infra.test_infra.utils.global_variables.env_variables_defaults import _EnvVariablesDefaults
-from assisted_test_infra.test_infra.utils.global_variables.triggerable import Triggerable
+from tests.global_variables.env_variables_defaults import _EnvVariablesDefaults
+from tests.global_variables.triggers import get_default_triggers
 
 
-class GlobalVariables(_EnvVariablesDefaults, Triggerable):
+class DefaultVariables(_EnvVariablesDefaults, Triggerable):
     def __post_init__(self):
         super().__post_init__()
         client = None
@@ -15,7 +16,7 @@ class GlobalVariables(_EnvVariablesDefaults, Triggerable):
             with suppress(RuntimeError, TimeoutError):
                 client = self.get_api_client()
         self._set("openshift_version", utils.get_openshift_version(allow_default=True, client=client))
-        self.trigger(self.get_default_triggers())
+        self.trigger(get_default_triggers())
 
     def _set(self, key: str, value: Any):
         _EnvVariablesDefaults._set(self, key, value)

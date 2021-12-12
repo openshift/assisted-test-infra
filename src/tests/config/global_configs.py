@@ -9,13 +9,13 @@ from assisted_test_infra.test_infra import (
     BaseInfraEnvConfig,
     BaseTerraformConfig,
     ClusterName,
-    GlobalVariables,
     InfraEnvName,
     utils,
 )
 from assisted_test_infra.test_infra.consts import env_defaults
+from tests.global_variables import DefaultVariables
 
-global_variables = GlobalVariables()
+global_variables = DefaultVariables()
 
 
 @dataclass

@@ -4,10 +4,11 @@ import pytest
 from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitTestSuite
 
-from assisted_test_infra.test_infra.consts import NetworkType, OperatorStatus
+from assisted_test_infra.test_infra import consts
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig
 from tests.conftest import get_available_openshift_versions, global_variables
+from tests.global_variables import get_default_triggers
 
 
 class TestInstall(BaseTest):
@@ -20,7 +21,7 @@ class TestInstall(BaseTest):
             with suppress(FixtureLookupError):
                 setattr(config, fixture_name, request.getfixturevalue(fixture_name))
 
-        config.trigger()
+        config.trigger(get_default_triggers())
         return config
 
     @JunitTestSuite()
@@ -36,7 +37,7 @@ class TestInstall(BaseTest):
 
     @JunitTestSuite()
     @pytest.mark.parametrize("is_static_ip", [False, True])
-    @pytest.mark.parametrize("network_type", [NetworkType.OpenShiftSDN, NetworkType.OVNKubernetes])
+    @pytest.mark.parametrize("network_type", [consts.NetworkType.OpenShiftSDN, consts.NetworkType.OVNKubernetes])
     def test_networking(self, cluster, network_type, is_static_ip):
         cluster.prepare_for_installation()
         cluster.start_install_and_wait_for_installed()
@@ -50,4 +51,4 @@ class TestInstall(BaseTest):
         new_cluster = get_cluster(get_nodes(tf_config, cluster_config), cluster_config)
         new_cluster.prepare_for_installation()
         new_cluster.start_install_and_wait_for_installed()
-        assert new_cluster.is_operator_in_status(operators, OperatorStatus.AVAILABLE)
+        assert new_cluster.is_operator_in_status(operators, consts.OperatorStatus.AVAILABLE)

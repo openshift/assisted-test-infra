@@ -57,7 +57,7 @@ class ClusterDeployment(BaseCustomResource):
     def create(
         self,
         secret: Secret,
-        base_domain: str = consts.DEFAULT_BASE_DNS_DOMAIN,
+        base_domain: str = consts.env_defaults.DEFAULT_BASE_DNS_DOMAIN,
         agent_cluster_install_ref: Optional[ObjectReference] = None,
         **kwargs,
     ):
