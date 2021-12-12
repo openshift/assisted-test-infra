@@ -479,7 +479,7 @@ flake8:
 	skipper make _flake8
 
 _flake8:
-	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS)
+	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS) || (tput setaf 3; echo "If you keep seeing this error[s] try to make reformat"; tput sgr0; exit 1)
 
 reformat:
 	FLAKE8_EXTRA_PARAMS="$(FLAKE8_EXTRA_PARAMS)" skipper make _reformat
