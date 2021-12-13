@@ -322,6 +322,9 @@ class Cluster(Entity):
             ingress_vip = access_vips["ingress_vip"]
             machine_networks = None
 
+        if self._config.is_ipv4 and self._config.is_ipv6:
+            machine_networks = controller.get_all_machine_addresses()
+
         self.set_advanced_networking(
             vip_dhcp_allocation=self._config.vip_dhcp_allocation,
             cluster_networks=self._config.cluster_networks,
@@ -330,12 +333,6 @@ class Cluster(Entity):
             api_vip=api_vip,
             ingress_vip=ingress_vip,
         )
-
-        # TODO: when assisted-service supports configuring dual-stack networks on one go,
-        # change it so that we call set_advanced_networking only once
-        if self._config.is_ipv4 and self._config.is_ipv6:
-            machine_networks = controller.get_all_machine_addresses()
-            self.set_advanced_networking(machine_networks=machine_networks)
 
     def get_primary_machine_cidr(self):
         cidr = self.nodes.controller.get_primary_machine_cidr()
