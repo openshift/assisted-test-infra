@@ -80,7 +80,7 @@ class HyperShift:
             return filterNodeByReadyStatus(nodes)
         return nodes
 
-    def wait_for_nodes(self, node_count: int, ready: bool) -> V1NodeList:
+    def wait_for_nodes(self, node_count: int, ready: bool = False) -> V1NodeList:
         def _sufficint_nodes() -> bool:
             return len(self.get_nodes(ready).items) == node_count
 
