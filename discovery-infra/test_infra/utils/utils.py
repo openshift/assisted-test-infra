@@ -33,10 +33,11 @@ from requests.models import HTTPError
 from retry import retry
 
 
-def download_file(url: str, local_filename: str, verify_ssl: bool, tries=3) -> Path:
-    @retry(exceptions=RuntimeError, tries=tries, delay=5)
+def download_file(url: str, local_filename: str, verify_ssl: bool, tries=5) -> Path:
+    @retry(exceptions=(RuntimeError, HTTPError), tries=tries, delay=10, logger=log)
     def _download_file() -> Path:
         with requests.get(url, stream=True, verify=verify_ssl) as r:
+            r.raise_for_status()
             with open(local_filename, "wb") as f:
                 shutil.copyfileobj(r.raw, f)
 
