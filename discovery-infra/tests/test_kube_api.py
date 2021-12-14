@@ -385,11 +385,8 @@ def capi_test(
     logger.info("Waiting for node to join the cluster")
     hypershift.wait_for_nodes(node_count)
     # TODO: validate node is ready
-
-    hypershift.set_nodepool_node_count(kube_api_context.api_client, 0)
-    logger.info("Waiting for node to get deleted")
-    nodes = hypershift.wait_for_nodes(node_count)
-    logger.info(nodes)
+    logger.info("Waiting for node to become ready")
+    hypershift.wait_for_nodes(node_count, ready=True)
 
 
 def kube_api_test(

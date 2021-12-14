@@ -71,16 +71,18 @@ class HyperShift:
             body=body,
         )
 
-    def get_nodes(self) -> V1NodeList:
+    def get_nodes(self, ready: bool = False) -> V1NodeList:
         if self.hypershift_cluster_client is None:
             hypershift_cluter_kubeapi_client = create_kube_api_client(self.kubeconfig_path)
             self.hypershift_cluster_client = CoreV1Api(hypershift_cluter_kubeapi_client)
+        nodes = self.hypershift_cluster_client.list_node()
+        if ready:
+            return filterNodeByReadyStatus(nodes)
+        return nodes
 
-        return self.hypershift_cluster_client.list_node()
-
-    def wait_for_nodes(self, node_count: int) -> V1NodeList:
+    def wait_for_nodes(self, node_count: int, ready: bool) -> V1NodeList:
         def _sufficint_nodes() -> bool:
-            return len(self.get_nodes().items) == node_count
+            return len(self.get_nodes(ready).items) == node_count
 
         return waiting.wait(
             lambda: _sufficint_nodes,
@@ -90,3 +92,13 @@ class HyperShift:
             expected_exceptions=Exception,
         )
         # TODO: validate the nodes ready condition
+
+
+def filterNodeByReadyStatus(nodes: V1NodeList) -> V1NodeList:
+    ret = []
+    for node in nodes:
+        for condition in node.status.conditions:
+            # if the node is ready add it to the return list
+            if condition.type == "Ready" and condition.status == "True":
+                ret.append(node)
+    return ret
