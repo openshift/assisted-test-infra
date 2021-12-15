@@ -4,7 +4,7 @@ set -euo pipefail
 source scripts/utils.sh
 
 export NODE_IP=$(get_main_ip)
-export UI_SERVICE_NAME=ocp-metal-ui
+export UI_SERVICE_NAME=assisted-installer-ui
 export NO_UI=${NO_UI:-n}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
