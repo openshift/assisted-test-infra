@@ -450,7 +450,7 @@ Run installation with the operator
 ```bash
 export INSTALLER_KUBECONFIG=./build/kubeconfig
 export TEST_FUNC=test_kube_api_ipv4
-export TEST=./discovery-infra/tests/test_kube_api.py
+export TEST=./src/tests/test_kube_api.py
 export TEST_TEARDOWN=false
 make test
 ```
@@ -478,5 +478,5 @@ make deploy_capi_env
 ```
 Run the test:
 ```bash
-ENABLE_KUBE_API=true make test TEST=./discovery-infra/tests/test_kube_api.py TEST_FUNC=test_capi_provider KUBECONFIG=$HOME/.kube/config
+ENABLE_KUBE_API=true make test TEST=./src/tests/test_kube_api.py TEST_FUNC=test_capi_provider KUBECONFIG=$HOME/.kube/config
 ```

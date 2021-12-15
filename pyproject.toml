@@ -1,5 +1,5 @@
 [tool.pyright]
-extraPaths = [ "discovery-infra" ]
+extraPaths = [ "src" ]
 
 [tool.black]
 line-length = 120
