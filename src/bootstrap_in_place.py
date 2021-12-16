@@ -38,6 +38,7 @@ INSTALLER_GATHER_DEBUG_STDERR = os.path.join(INSTALLER_GATHER_DIR, "gather.stder
 
 def installer_generate(openshift_release_image):
     logging.info("Installer generate ignitions")
+
     bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
     utils.run_command_with_output(f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}",
                                   env=bip_env)
