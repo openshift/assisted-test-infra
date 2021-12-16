@@ -512,3 +512,10 @@ _test_parallel: $(REPORTS) _test_setup
 ########
 deploy_capi_env: start_minikube
 	skipper run scripts/setup_capi_provider_agent_env.sh
+
+
+#########
+# Tests #
+#########
+test_kube_api_parallel:
+	TEST=./src/tests/test_kube_api.py make test_parallel
