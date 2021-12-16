@@ -188,6 +188,8 @@ function configure_none_platform_iptables_rules() {
 function get_pythonpath() {
   root_dir=$1
   project_path=${root_dir}/src
+  PYTHONPATH="${PYTHONPATH:-$project_path}"
+
   if [[ ":${PYTHONPATH}:" != *":${project_path}:"* ]] && [[ ":${PYTHONPATH}:" != *":${project_path}/:"* ]];then
     echo "${PYTHONPATH:+"$PYTHONPATH:"}$project_path" ;
   else echo "${PYTHONPATH}";
