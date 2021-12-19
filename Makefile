@@ -10,7 +10,7 @@ ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 PYTHONPATH=$(shell scripts/utils.sh get_pythonpath ${ROOT_DIR})
 
 REPORTS = $(ROOT_DIR)/reports
-
+UNITTEST_JUNIT_FILE=$(shell mktemp -u "$(REPORTS)/unittest_XXXXXXXXX.xml")
 SKIPPER_PARAMS ?= -i
 
 TEST_INFRA_DOCKERFILE := $(or ${TEST_INFRA_DOCKERFILE}, "Dockerfile.test-infra")
@@ -491,7 +491,7 @@ test:
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS) _test_setup
-	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
+	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
 
 test_parallel:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
@@ -505,7 +505,7 @@ _test_setup:
 	rm -f /tmp/tf_network_pool.json
 
 _test_parallel: $(REPORTS) _test_setup
-	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
+	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
 
 ########
 # Capi #
