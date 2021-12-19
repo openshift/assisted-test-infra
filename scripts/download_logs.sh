@@ -19,7 +19,7 @@ function download_service_logs() {
   if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
     podman ps -a || true
 
-    for service in "installer" "db"; do
+    for service in "installer" "image-service" "ui" "db"; do
       podman logs ${service} > ${LOGS_DEST}/onprem_${service}.log || true
     done
   else
