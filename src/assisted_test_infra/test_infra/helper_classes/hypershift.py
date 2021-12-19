@@ -83,7 +83,7 @@ class HyperShift:
 
     def wait_for_nodes(self, node_count: int, ready: bool = False) -> V1NodeList:
         def _sufficint_nodes() -> bool:
-            return len(self.get_nodes(ready).items) == node_count
+            return len(self.get_nodes(ready).items, ready) == node_count
 
         return waiting.wait(
             lambda: _sufficint_nodes,
