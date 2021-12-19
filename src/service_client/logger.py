@@ -3,6 +3,7 @@ import logging
 import re
 import sys
 import traceback
+import uuid
 from contextlib import suppress
 from types import TracebackType
 from typing import Type
@@ -53,7 +54,8 @@ def add_log_file_handler(filename: str) -> logging.FileHandler:
     return fh
 
 
-add_log_file_handler("test_infra.log")
+log_filename = f"test_infra_{str(uuid.uuid4())[:8]}.log"
+add_log_file_handler(log_filename)
 
 
 class SuppressAndLog(suppress):

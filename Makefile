@@ -168,7 +168,7 @@ image_build:
 	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
-	-rm -rf build assisted-service test_infra.log
+	-rm -rf build assisted-service test_infra_*.log
 	-find -name '*.pyc' -delete
 	-find -name '*pycache*' -delete
 
@@ -486,14 +486,19 @@ _flake8:
 reformat:
 	FLAKE8_EXTRA_PARAMS="$(FLAKE8_EXTRA_PARAMS)" skipper make _reformat
 
-test:
+delete_log_files:
+	@if [ -z ${CI} ]; then \
+		rm -f test_infra*.log; \
+	fi
+
+test: delete_log_files
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS) _test_setup
 	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
 
-test_parallel:
+test_parallel: delete_log_files
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	skipper make $(SKIPPER_PARAMS) _test_parallel
 	scripts/assisted_deployment.sh set_all_vips_dns
