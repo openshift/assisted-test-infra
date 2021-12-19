@@ -185,15 +185,4 @@ function configure_none_platform_iptables_rules() {
     iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT --source $sec_network --to-source $ip
 }
 
-function get_pythonpath() {
-  root_dir=$1
-  project_path=${root_dir}/src
-  PYTHONPATH="${PYTHONPATH:-$project_path}"
-
-  if [[ ":${PYTHONPATH}:" != *":${project_path}:"* ]] && [[ ":${PYTHONPATH}:" != *":${project_path}/:"* ]];then
-    echo "${PYTHONPATH:+"$PYTHONPATH:"}$project_path" ;
-  else echo "${PYTHONPATH}";
-  fi
-}
-
 "$@"
