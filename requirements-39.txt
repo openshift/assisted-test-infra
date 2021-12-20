@@ -8,7 +8,7 @@ ipython==7.17.0
 jedi==0.18.1
 Jinja2===3.0.2
 junit-report==0.2.3
-kubernetes==20.13.0
+kubernetes==21.7.0
 libvirt-python==7.10.0
 munch==2.5.0
 netaddr==0.8.0
@@ -17,7 +17,7 @@ openshift-client==1.0.14
 paramiko==2.7.2
 pre-commit==2.16.0
 pycharm_remote_debugger==0.1.13
-pytest-xdist==2.4.0
+pytest-xdist==2.5.0
 pytest==6.2.5
 python-dateutil==2.8.2
 python-hcl2==3.0.1
