@@ -14,6 +14,7 @@ function version_is_greater() {
 
 function install_libvirt() {
     source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+    cat /etc/os-release # Show the os-release info for debugging
 
     # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
     case "${PRETTY_NAME}" in
@@ -33,6 +34,11 @@ function install_libvirt() {
     echo "Install selinux-policy RPM"
     sudo dnf install -y selinux-policy
 
+    cat /etc/fapolicyd/fapolicyd.rules
+    # Carve out an exception for dracut
+    #sed '%Prevent execution by ld.so%i allow uid=0 dir=/var/tmp/\nallow uid=0 exe=/usr/lib64/ld-2.28.so dir=systemdir' /etc/fapolicyd/fapolicyd.rules
+    #sudo systemctl restart fapolicyd.service
+    
     echo "Installing libvirt..."
     sudo dnf install -y \
         libvirt \
