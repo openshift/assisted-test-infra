@@ -27,8 +27,10 @@ def main():
     # If OS image for latest OCP versions doesn't exists, clone latest OS image and override 'openshift_version'
     os_image = get_os_image(os_images, latest_ocp_version)
     if os_image["openshift_version"] != latest_ocp_version:
-        os_image["openshift_version"] = latest_ocp_version
-        os_images.append(os_image)
+        new_image = os_image.copy()
+        new_image["openshift_version"] = latest_ocp_version
+        new_image["version"] = f"{os_image['openshift_version']}-assisted-override"
+        os_images.append(new_image)
 
     json.dump(os_images, os.sys.stdout, separators=(',', ':'))
 
