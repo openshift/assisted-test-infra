@@ -144,6 +144,9 @@ class AgentClusterInstall(BaseCustomResource):
         if "ssh_pub_key" in kwargs:
             spec["sshPublicKey"] = kwargs.pop("ssh_pub_key")
 
+        if "hold_installation" in kwargs:
+            spec["holdInstallation"] = kwargs.pop("hold_installation")
+
         if "machine_cidr" in kwargs:
             spec["networking"]["machineNetwork"] = [{"cidr": kwargs.pop("machine_cidr")}]
 
@@ -195,7 +198,7 @@ class AgentClusterInstall(BaseCustomResource):
 
         logger.info("deleted agentclusterinstall %s", self.ref)
 
-    def status(self, timeout: Union[int] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT) -> dict:
+    def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
             return self.get()["status"]
 

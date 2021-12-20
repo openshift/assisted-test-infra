@@ -138,6 +138,16 @@ class Agent(BaseCustomResource):
         logger.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
 
     @classmethod
+    def wait_for_agents_to_be_bound(
+        cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT
+    ) -> None:
+        cls.wait_till_all_agents_are_in_status(
+            agents=agents,
+            statusType=consts.AgentStatus.BOUND,
+            timeout=timeout,
+        )
+
+    @classmethod
     def wait_for_agents_to_be_ready_for_install(
         cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT
     ) -> None:
@@ -152,6 +162,18 @@ class Agent(BaseCustomResource):
                 statusType=status_type,
                 timeout=timeout,
             )
+
+    @classmethod
+    def wait_for_agents_to_unbound(
+        cls, agents: List["Agent"], timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT
+    ) -> None:
+        cls.wait_for_agents_to_be_ready_for_install(agents=agents, timeout=timeout)
+        cls.wait_till_all_agents_are_in_status(
+            agents=agents,
+            statusType=consts.AgentStatus.BOUND,
+            status="False",
+            timeout=timeout,
+        )
 
     @classmethod
     def wait_for_agents_to_install(
@@ -187,6 +209,7 @@ class Agent(BaseCustomResource):
         agents: List["Agent"],
         statusType: str,
         timeout,
+        status="True",
         interval=10,
     ) -> None:
         logger.info(f"Now Wait till agents have status as {statusType}")
@@ -195,7 +218,7 @@ class Agent(BaseCustomResource):
             lambda: Agent.are_agents_in_status(
                 agents,
                 statusType,
-                status="True",
+                status=status,
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
