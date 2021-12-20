@@ -467,8 +467,6 @@ export MINIKUBE_RAM_MB=12288
 Setup minikube with assisted-installer (kube-api enabled)
 ```bash
 export PULL_SECRET=<your pull secret>
-# This is a temporary hack - MGMT-8265
-export DISABLED_HOST_VALIDATIONS=api-vip-connected
 ENABLE_KUBE_API=true make run
 ```
 
