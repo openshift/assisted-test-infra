@@ -17,6 +17,8 @@ SKIPPER_PARAMS ?= -i
 
 TEST_INFRA_DOCKERFILE := $(or ${TEST_INFRA_DOCKERFILE}, "Dockerfile.test-infra")
 
+ASSISTED_SERVICE_HOST := $(or ${ASSISTED_SERVICE_HOST},$(shell hostname))
+
 # Openshift CI params
 OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
 JOB_TYPE := $(or ${JOB_TYPE}, "")

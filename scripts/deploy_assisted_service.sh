@@ -62,10 +62,12 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "${AGENT_DOCKER_IMAGE:-}" ]; then
         echo "AGENT_DOCKER_IMAGE=${AGENT_DOCKER_IMAGE}" >> assisted-service/onprem-environment
     fi
-    if [ -n "$PUBLIC_CONTAINER_REGISTRIES" ]; then
+    if [ -n "${PUBLIC_CONTAINER_REGISTRIES:-}" ]; then
         sed -i "s|PUBLIC_CONTAINER_REGISTRIES=.*|PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/onprem-environment
     fi
-    sed -i "s/SERVICE_BASE_URL=http:\/\/127.0.0.1/SERVICE_BASE_URL=http:\/\/${ASSISTED_SERVICE_HOST}/" assisted-service/onprem-environment
+    if [ -n "${ASSISTED_SERVICE_HOST:-}" ]; then
+	sed -i "s|SERVICE_BASE_URL=http://127.0.0.1|SERVICE_BASE_URL=http://${ASSISTED_SERVICE_HOST}|" assisted-service/onprem-environment
+    fi
 
     validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/onprem-environment | cut -d '=' -f2)
     HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb, .[].sno.disk_size_gb) |= 20' | tr -d "\n\t ")
