@@ -1,6 +1,7 @@
 class OperatorType:
     CNV = "cnv"
     OCS = "ocs"
+    ODF = "odf"
     LSO = "lso"
 
 
