@@ -1,13 +1,8 @@
 terraform {
   required_providers {
-    # TODO: revert to upstream package when newer version than v0.6.11 has been released
-    # libvirt = {
-    #   source = "dmacvicar/libvirt"
-    #   version = "0.6.9"
-    # }
     libvirt = {
-      source = "osherdp/libvirt"
-      version = "99.9.0"
+      source = "dmacvicar/libvirt"
+      version = "0.6.12"
     }
   }
 }
