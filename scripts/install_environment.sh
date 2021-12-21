@@ -32,8 +32,6 @@ function install_libvirt() {
     # See https://access.redhat.com/solutions/6062341
     echo "Install selinux-policy RPM"
     sudo dnf install -y selinux-policy
-    echo "RPMs update"
-    sudo dnf update -y
 
     echo "Installing libvirt..."
     sudo dnf install -y \
