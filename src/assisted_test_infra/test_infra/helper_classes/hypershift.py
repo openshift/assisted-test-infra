@@ -10,7 +10,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import Secret, c
 logger = logging.getLogger(__name__)
 
 HYPERSHIFT_DIR = "build/hypershift/"
-DEFAULT_WAIT_FOR_NODES_TIMEOUT = 5 * 60
+DEFAULT_WAIT_FOR_NODES_TIMEOUT = 10 * 60
 
 
 class HyperShift:
@@ -82,24 +82,24 @@ class HyperShift:
         return nodes
 
     def wait_for_nodes(self, node_count: int, ready: bool = False) -> V1NodeList:
-        def _sufficint_nodes() -> bool:
-            return len(self.get_nodes(ready).items, ready) == node_count
+        def _sufficient_nodes() -> bool:
+            return len(self.get_nodes(ready).items) == node_count
 
         return waiting.wait(
-            lambda: _sufficint_nodes,
+            lambda: _sufficient_nodes(),
             sleep_seconds=1,
             timeout_seconds=DEFAULT_WAIT_FOR_NODES_TIMEOUT,
             waiting_for="nodes to join the hypershift cluster",
-            expected_exceptions=Exception,
         )
         # TODO: validate the nodes ready condition
 
 
 def filterNodeByReadyStatus(nodes: V1NodeList) -> V1NodeList:
-    ret = []
-    for node in nodes:
+    filtered_items = []
+    for node in nodes.items:
         for condition in node.status.conditions:
             # if the node is ready add it to the return list
             if condition.type == "Ready" and condition.status == "True":
-                ret.append(node)
-    return ret
+                filtered_items.append(node)
+    nodes.items = filtered_items
+    return nodes

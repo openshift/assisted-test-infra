@@ -22,9 +22,9 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     ClusterImageSet,
     ClusterImageSetReference,
     InfraEnv,
+    KubeAPIContext,
     Proxy,
     Secret,
-    KubeAPIContext,
 )
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from tests.base_test import BaseTest
@@ -153,8 +153,8 @@ class TestKubeAPI(BaseTest):
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_capi_provider(self, kube_test_configs_single_node, kube_api_context, get_nodes):
-        cluster_config, tf_config = kube_test_configs_single_node
+    def test_capi_provider(self, kube_test_configs_highly_available, kube_api_context, get_nodes):
+        cluster_config, tf_config = kube_test_configs_highly_available
         capi_test(kube_api_context, get_nodes(tf_config, cluster_config), cluster_config)
 
     @staticmethod
@@ -349,7 +349,7 @@ def capi_test(
     is_disconnected=False,
 ):
     cluster_name = cluster_config.cluster_name.get()
-
+    cluster_config
     # TODO resolve it from the service if the node controller doesn't have this information
     #  (please see cluster.get_primary_machine_cidr())
     machine_cidr = nodes.controller.get_primary_machine_cidr()
@@ -417,20 +417,22 @@ def capi_test(
         waiting_for="clusterDeployment to get created",
         expected_exceptions=Exception,
     )
-    node_count = 1
+    set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, kube_api_context, 1)
+    set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, kube_api_context, 2)
+
+
+def set_node_count_and_wait_for_ready_nodes(
+    cluster_deployment: ClusterDeployment, hypershift: HyperShift, kube_api_context, node_count: int
+):
+    logger.info("Setting node count to %s", node_count)
     hypershift.set_nodepool_node_count(kube_api_context.api_client, node_count)
     logger.info("waiting for capi provider to set clusterDeployment ref on the agent")
     agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=global_variables.spoke_namespace)
-
-    logger.info("Waiting for agent status verification")
-    for agent in agents:
-        agent.wait_for_agents_to_install(agents)
-
+    logger.info("Waiting for agents status verification")
+    Agent.wait_for_agents_to_install(agents)
     hypershift.download_kubeconfig(kube_api_context.api_client)
-
     logger.info("Waiting for node to join the cluster")
     hypershift.wait_for_nodes(node_count)
-    # TODO: validate node is ready
     logger.info("Waiting for node to become ready")
     hypershift.wait_for_nodes(node_count, ready=True)
 
