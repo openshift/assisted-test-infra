@@ -2,12 +2,12 @@
 set -euo pipefail
 set -o xtrace
 
-PROVIDER_REPO="${PROVIDER_REPO:-https://github.com/eranco74/cluster-api-provider-agent.git}"
+PROVIDER_REPO="${PROVIDER_REPO:-https://github.com/openshift/cluster-api-provider-agent.git}"
 PROVIDER_BRANCH="${PROVIDER_BRANCH:-master}"
-PROVIDER_IMAGE="${PROVIDER_IMAGE:-quay.io/eranco74/cluster-api-provider-agent:latest}"
-HYPERSHIFT_REPO="${HYPERSHIFT_REPO:-https://github.com/avishayt/hypershift}"
-HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-master}"
-HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/eranco74/hypershift:latest}"
+PROVIDER_IMAGE="${PROVIDER_IMAGE:-quay.io/edge-infrastructure/cluster-api-provider-agent:latest}"
+HYPERSHIFT_REPO="${HYPERSHIFT_REPO:-https://github.com/openshift/hypershift}"
+HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-main}"
+HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-registry.ci.openshift.org/hypershift/hypershift:latest}"
 BASE_DIR=build
 
 function clone_repo()
