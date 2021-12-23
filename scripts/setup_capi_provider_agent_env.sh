@@ -10,31 +10,28 @@ HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-main}"
 HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-registry.ci.openshift.org/hypershift/hypershift:latest}"
 BASE_DIR=build
 
-function clone_repo()
-{
-  if [[ ! -d "$BASE_DIR/$2" ]]
-  then
-    echo "Cloning $1.";
-    git clone $1 $BASE_DIR/$2;
-	fi
+function clone_repo() {
+  if [[ ! -d "$BASE_DIR/$2" ]]; then
+    echo "Cloning $1."
+    git clone $1 $BASE_DIR/$2
+  fi
 }
 
-function checkout_branch()
-{
-  	(cd $BASE_DIR/$1;
-  	git fetch;
-  	git checkout $2)
+function checkout_branch() {
+  (
+    cd $BASE_DIR/$1
+    git fetch
+    git checkout -B $2 origin/$2
+  )
 }
 
-deploy_provider()
-{
+deploy_provider() {
   clone_repo "$PROVIDER_REPO" provider
   checkout_branch provider "$PROVIDER_BRANCH"
   make -C $BASE_DIR/provider deploy IMG="$PROVIDER_IMAGE"
 }
 
-deploy_hypershift()
-{
+deploy_hypershift() {
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.51.1/bundle.yaml || true
   clone_repo $HYPERSHIFT_REPO hypershift
   checkout_branch hypershift "$HYPERSHIFT_BRANCH"
