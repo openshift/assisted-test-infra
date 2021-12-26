@@ -30,6 +30,8 @@ function init_minikube() {
 
         if minikube status ; then
             break
+        else
+          minikube logs
         fi
     done
 
