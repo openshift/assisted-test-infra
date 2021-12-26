@@ -32,6 +32,7 @@ function init_minikube() {
             break
         else
           minikube logs
+          systemctl restart libvirtd.service
         fi
     done
 
