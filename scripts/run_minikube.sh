@@ -31,8 +31,8 @@ function init_minikube() {
         if minikube status ; then
             break
         else
-          minikube logs
-          systemctl restart libvirtd.service
+          minikube logs || true
+          systemctl restart libvirtd.service || true
         fi
     done
 
