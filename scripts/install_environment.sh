@@ -39,11 +39,18 @@ function install_libvirt() {
         libvirt-devel \
         libvirt-daemon-kvm \
         qemu-kvm \
-        libgcrypt \
+        libgcrypt
+
+    sudo systemctl enable libvirtd
+    sudo systemctl restart libvirtd
+
+    echo "Installing swtpm..."
+    sudo dnf install -y \
         swtpm \
         swtpm-tools
 
-    sudo systemctl enable libvirtd
+    sudo systemctl restart libvirtd
+
 
     current_version="$(libvirtd --version | awk '{print $3}')"
     minimum_version="5.5.100"
