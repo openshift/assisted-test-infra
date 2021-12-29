@@ -69,13 +69,19 @@ module "masters" {
   cluster_domain    = var.infra_env_domain
   vtpm2             = var.master_vtpm2
 
-  primary_network   = libvirt_network.net.name
-  primary_ips       = var.libvirt_master_ips[count.index]
-  primary_mac       = var.libvirt_master_macs[count.index]
-
-  secondary_network = libvirt_network.secondary_net.name
-  secondary_ips     = var.libvirt_secondary_master_ips[count.index]
-  secondary_mac     = var.libvirt_secondary_master_macs[count.index]
+  networks          = [
+                        {
+                          name     = libvirt_network.net.name
+                          hostname = "${var.infra_env_name}-master-${count.index}"
+                          ips      = var.libvirt_master_ips[count.index]
+                          mac      = var.libvirt_master_macs[count.index]
+                        },
+                        {
+                          name     = libvirt_network.secondary_net.name
+                          ips      = var.libvirt_secondary_master_ips[count.index]
+                          mac      = var.libvirt_secondary_master_macs[count.index]
+                        },
+                      ]
 
   pool              = libvirt_pool.storage_pool.name
   disk_base_name    = "${var.infra_env_name}-master-${count.index}"
@@ -96,13 +102,19 @@ module "workers" {
   cluster_domain    = var.infra_env_domain
   vtpm2             = var.worker_vtpm2
 
-  primary_network   = libvirt_network.net.name
-  primary_ips       = var.libvirt_worker_ips[count.index]
-  primary_mac       = var.libvirt_worker_macs[count.index]
-
-  secondary_network = libvirt_network.secondary_net.name
-  secondary_ips     = var.libvirt_secondary_worker_ips[count.index]
-  secondary_mac     = var.libvirt_secondary_worker_macs[count.index]
+  networks          = [
+                        {
+                          name     = libvirt_network.net.name
+                          hostname = "${var.infra_env_name}-worker-${count.index}"
+                          ips      = var.libvirt_worker_ips[count.index]
+                          mac      = var.libvirt_worker_macs[count.index]
+                        },
+                        {
+                          name     = libvirt_network.secondary_net.name
+                          ips      = var.libvirt_secondary_worker_ips[count.index]
+                          mac      = var.libvirt_secondary_worker_macs[count.index]
+                        },
+                      ]
 
   pool              = libvirt_pool.storage_pool.name
   disk_base_name    = "${var.infra_env_name}-worker-${count.index}"

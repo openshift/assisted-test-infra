@@ -5,6 +5,8 @@ terraform {
       version = "0.6.12"
     }
   }
+
+  experiments = [module_variable_optional_attrs]
 }
 
 locals {
@@ -43,17 +45,14 @@ resource "libvirt_domain" "host" {
     mode = var.cpu_mode
   }
 
-  network_interface {
-    network_name = var.primary_network
-    hostname   = "${var.name}.${var.cluster_domain}"
-    addresses  = var.primary_ips
-    mac = var.primary_mac
-  }
-
-  network_interface {
-    network_name = var.secondary_network
-    addresses  = var.secondary_ips
-    mac = var.secondary_mac
+  dynamic "network_interface" {
+    for_each = var.networks
+    content {
+      network_name = network_interface.value.name
+      hostname     = network_interface.value.hostname
+      addresses    = network_interface.value.ips
+      mac          = network_interface.value.mac
+    }
   }
 
   boot_device{

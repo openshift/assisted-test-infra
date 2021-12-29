@@ -34,40 +34,15 @@ variable "cluster_domain" {
   description = "The domain for the cluster that all DNS records must belong."
 }
 
-variable "primary_network" {
-  type        = string
-  description = "Name of the libvirt network that should act as the node's primary network."
-  default     = ""
-}
-
-variable "primary_ips" {
-  type        = list(string)
-  description = "IP addresses to assign to the host in the primary network."
+variable "networks" {
+  type        = list(object({
+    name     = string,
+    hostname = optional(string),
+    ips      = list(string),
+    mac      = string
+  }))
+  description = "Network devices configuration for the host."
   default     = []
-}
-
-variable "primary_mac" {
-  type        = string
-  description = "MAC address to assign to the host in the primary network."
-  default     = ""
-}
-
-variable "secondary_network" {
-  type        = string
-  description = "Name of the libvirt network that should act as the node's secondary network."
-  default     = ""
-}
-
-variable "secondary_ips" {
-  type        = list(string)
-  description = "IP addresses to assign to the host in the secondary network."
-  default     = []
-}
-
-variable "secondary_mac" {
-  type        = string
-  description = "MAC address to assign to the host in the secondary network."
-  default     = ""
 }
 
 variable "pool" {
