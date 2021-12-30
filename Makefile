@@ -437,8 +437,11 @@ download_service_logs:
 	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_service_logs
 
 download_cluster_logs:
-
 	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_cluster_logs
+
+download_capi_logs:
+	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_capi_logs
+
 ##########
 # manage #
 ##########
