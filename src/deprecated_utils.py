@@ -141,26 +141,3 @@ def extract_installer(release_image, dest):
             f"oc adm release extract --registry-config '{pull_secret}'"
             f" --command=openshift-install --to={dest} {release_image}"
         )
-
-
-def get_all_namespaced_clusters():
-    if not os.path.isdir(consts.TF_FOLDER):
-        return
-
-    for dirname in os.listdir(consts.TF_FOLDER):
-        res = get_name_and_namespace_from_dirname(dirname)
-        if not res:
-            continue
-        name, namespace = res
-        yield name, namespace
-
-
-def get_name_and_namespace_from_dirname(dirname):
-    if "__" in dirname:
-        return dirname.rsplit("__", 1)
-
-    log.warning(
-        "Unable to extract cluster name and namespace from directory name %s. "
-        "Directory name convention must be <cluster_name>:<namespace>",
-        dirname,
-    )

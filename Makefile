@@ -26,7 +26,7 @@ REPO_NAME := $(or ${REPO_NAME}, "")
 PULL_NUMBER := $(or ${PULL_NUMBER}, "")
 
 # lint
-LINT_CODE_STYLING_DIRS := src/tests src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts
+LINT_CODE_STYLING_DIRS := src/tests src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup
 
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
@@ -157,7 +157,7 @@ endif
 all: create_full_environment run_full_flow_with_install
 
 
-destroy: destroy_nodes kill_port_forwardings delete_podman_localhost stop_load_balancer
+destroy: destroy_nodes kill_port_forwardings destroy_onprem stop_load_balancer
 
 ###############
 # Environment #
@@ -187,13 +187,13 @@ start_minikube:
 delete_minikube:
 	skipper run python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 	minikube delete --all
-	skipper run src/virsh_cleanup.py -m
+	skipper run "python3 -m virsh_cleanup"
 
 ####################
 # Podman localhost #
 ####################
 
-delete_podman_localhost:
+destroy_onprem:
 	make -C assisted-service/ clean-onprem || true
 
 ####################
@@ -243,8 +243,7 @@ destroy_terraform:
 	skipper make $(SKIPPER_PARAMS) _destroy_terraform
 
 _destroy_terraform:
-	cd build/terraform/  && terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json || echo "Failed cleanup terraform"
-	src/virsh_cleanup.py -f test-infra
+	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
 
 #######
 # Run #
@@ -370,15 +369,8 @@ deploy_static_network_config_day2_nodes_with_install:
 install_day1_and_day2_cloud:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
 
-destroy_nodes:
-	skipper run $(SKIPPER_PARAMS) 'src/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) -cn $(CLUSTER_NAME) $(OC_PARAMS) --kube-api $(KUBE_API)'
-	rm -rf build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
+destroy_nodes: destroy_terraform
 
-destroy_all_nodes_from_namespaces:
-	skipper run $(SKIPPER_PARAMS) 'src/delete_nodes.py -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -cn $(CLUSTER_NAME) --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns all --kube-api $(KUBE_API)'
-
-destroy_all_nodes:
-	skipper run $(SKIPPER_PARAMS) 'src/delete_nodes.py --delete-all --kube-api $(KUBE_API)'
 
 deploy_ibip: _test_setup
 ifdef SKIPPER_USERNAME
@@ -430,8 +422,7 @@ deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring
 	make deploy_prometheus_ui
 
-delete_all_virsh_resources: destroy_all_nodes delete_minikube kill_all_port_forwardings
-	skipper run $(SKIPPER_PARAMS) 'src/delete_nodes.py -ns $(NAMESPACE) -a'
+delete_all_virsh_resources: destroy_nodes delete_minikube kill_all_port_forwardings
 
 download_service_logs:
 	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_service_logs
