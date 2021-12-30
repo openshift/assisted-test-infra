@@ -81,8 +81,14 @@ module "masters" {
   cluster_domain    = var.cluster_domain
   vtpm2             = var.master_vtpm2
 
-  primary_network   = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
-  primary_ips       = count.index % 2 == 0 ? var.libvirt_master_ips[count.index] : var.libvirt_secondary_master_ips[count.index]
+  networks          = [
+                        {
+                          name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+                          hostname = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
+                          ips      = count.index % 2 == 0 ? var.libvirt_master_ips[count.index] : var.libvirt_secondary_master_ips[count.index]
+                          mac      = var.libvirt_master_macs[count.index]
+                        }
+                      ]
 
   pool              = libvirt_pool.storage_pool.name
   disk_base_name    = "${var.cluster_name}-master-${count.index}"
@@ -101,8 +107,14 @@ module "workers" {
   cluster_domain    = var.cluster_domain
   vtpm2             = var.worker_vtpm2
 
-  primary_network   = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
-  primary_ips       = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
+  networks          = [
+                        {
+                          name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+                          hostname = "${var.cluster_name}-worker-${count.index}"
+                          ips      = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
+                          mac      = var.libvirt_worker_macs[count.index]
+                        }
+                      ]
 
   pool              = libvirt_pool.storage_pool.name
   disk_base_name    = "${var.cluster_name}-worker-${count.index}"
