@@ -11,13 +11,8 @@ from munch import Munch
 from netaddr import IPNetwork
 
 import consts
-from assisted_test_infra.test_infra import (
-    BaseClusterConfig,
-    BaseInfraEnvConfig,
-    BaseTerraformConfig,
-    utils,
-    virsh_cleanup,
-)
+import virsh_cleanup
+from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, BaseTerraformConfig, utils
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils

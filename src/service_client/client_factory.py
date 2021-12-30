@@ -26,7 +26,7 @@ class ClientFactory:
         return c
 
     @staticmethod
-    def create_kube_api_client(kubeconfig_path: str) -> ApiClient:
+    def create_kube_api_client(kubeconfig_path: Optional[str] = None) -> ApiClient:
         log.info("creating kube client with config file: %s", kubeconfig_path)
 
         conf = KubeConfiguration()
