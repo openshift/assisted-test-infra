@@ -2,6 +2,7 @@
 # Variables #
 #############
 
+SKIPPER_INTERACTIVE ?= True
 SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
@@ -13,7 +14,6 @@ PATH := ${PATH}:/usr/local/bin
 
 REPORTS = $(ROOT_DIR)/reports
 UNITTEST_JUNIT_FILE=$(shell mktemp -u "$(REPORTS)/unittest_XXXXXXXXX.xml")
-SKIPPER_PARAMS ?= -i
 
 TEST_INFRA_DOCKERFILE := $(or ${TEST_INFRA_DOCKERFILE}, "Dockerfile.test-infra")
 
@@ -228,7 +228,7 @@ copy_terraform_files:
 	cp -r terraform_files/* build/terraform/$(CLUSTER_NAME)__$(NAMESPACE);\
 
 run_terraform: copy_terraform_files
-	skipper make $(SKIPPER_PARAMS) _run_terraform
+	skipper make _run_terraform
 
 _run_terraform:
 		cd build/terraform/$(CLUSTER_NAME)__$(NAMESPACE) && \
@@ -240,7 +240,7 @@ _apply_terraform:
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 destroy_terraform:
-	skipper make $(SKIPPER_PARAMS) _destroy_terraform
+	skipper make _destroy_terraform
 
 _destroy_terraform:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
@@ -326,7 +326,7 @@ _install_cluster:
 	src/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME)
 
 install_cluster:
-	skipper make $(SKIPPER_PARAMS) _install_cluster
+	skipper make _install_cluster
 
 
 #########
@@ -341,7 +341,7 @@ deploy_nodes_with_install: start_load_balancer
 		TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_install_with_deploy_nodes $(MAKE) test; \
 	else \
 		bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG); \
-		skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" $(SKIPPER_PARAMS) DAY1_PARAMS=--day1-cluster; \
+		skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" DAY1_PARAMS=--day1-cluster; \
 		$(MAKE) set_dns; \
 	fi
 
@@ -352,22 +352,22 @@ deploy_static_network_config_nodes:
 	make deploy_nodes ADDITIONAL_PARAMS="'--with-static-network-config'"
 
 deploy_day2_nodes:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster'"
+	skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'--day2-cloud-cluster'"
 
 deploy_day2_cloud_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster ${ADDITIONAL_PARAMS}'" DEPLOY_TARGET=minikube
+	skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster ${ADDITIONAL_PARAMS}'" DEPLOY_TARGET=minikube
 
 deploy_day2_ocp_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-ocp-cluster'" DEPLOY_TARGET=ocp
+	skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in --day2-ocp-cluster'" DEPLOY_TARGET=ocp
 
 deploy_static_network_config_day2_nodes:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster --with-static-network-config'"
+	skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'--day2-cloud-cluster --with-static-network-config'"
 
 deploy_static_network_config_day2_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --with-static-network-config'"
+	skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --with-static-network-config'"
 
 install_day1_and_day2_cloud:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
+	skipper make _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
 
 destroy_nodes: destroy_terraform
 
@@ -376,7 +376,7 @@ deploy_ibip: _test_setup
 ifdef SKIPPER_USERNAME
 	$(error Running this target using skipper is not supported, try `make deploy_ibip` instead)
 endif
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--bootstrap-in-place'" NUM_WORKERS=0 NUM_MASTERS=1 NAMESPACE_INDEX=0
+	skipper make _deploy_nodes ADDITIONAL_PARAMS="'--bootstrap-in-place'" NUM_WORKERS=0 NUM_MASTERS=1 NAMESPACE_INDEX=0
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
@@ -441,7 +441,7 @@ _manage_deployment:
 	src/manage/manage.py --inventory-url=$(REMOTE_SERVICE_URL) --type deregister_clusters --offline-token=$(OFFLINE_TOKEN)
 
 manage_deployment:
-	skipper make $(SKIPPER_PARAMS) _manage_deployment
+	skipper make _manage_deployment
 
 #######
 # ISO #
@@ -451,10 +451,10 @@ _download_iso:
 	src/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) -iO --day1-cluster
 
 download_iso:
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
+	skipper make _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
 download_iso_for_remote_use: deploy_assisted_service
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) $(OC_FLAG))
+	skipper make _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) $(OC_FLAG))
 
 ########
 # Test #
@@ -486,14 +486,14 @@ reformat:
 
 test:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
-	skipper make $(SKIPPER_PARAMS) _test
+	skipper make _test
 
 _test: $(REPORTS) _test_setup
 	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
 
 test_parallel:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
-	skipper make $(SKIPPER_PARAMS) _test_parallel
+	skipper make _test_parallel
 	scripts/assisted_deployment.sh set_all_vips_dns
 
 _test_setup:
