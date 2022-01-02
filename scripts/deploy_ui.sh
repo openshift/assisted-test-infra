@@ -19,7 +19,7 @@ mkdir -p build
 
 print_log "Starting ui"
 if [ "${DEPLOY_TARGET}" == "minikube" ]; then
-    skipper run "make -C assisted-service/ deploy-ui" ${SKIPPER_PARAMS} DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE}
+    skipper run "make -C assisted-service/ deploy-ui" DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE}
 
     print_log "Wait till ui api is ready"
     wait_for_url_and_run "$(minikube service ${UI_SERVICE_NAME} -n ${NAMESPACE} --url)" "echo \"waiting for ${UI_SERVICE_NAME}\""
