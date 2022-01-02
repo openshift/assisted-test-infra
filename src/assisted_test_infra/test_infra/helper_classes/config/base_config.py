@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 from service_client import log
 
@@ -42,6 +42,19 @@ class _BaseConfig(Triggerable, ABC):
             if v is None:
                 setattr(self, k, self.get_default(k))
 
+    @classmethod
+    def get_annotations(cls):
+        """Get attributes with annotations - same as obj.__annotations__ but recursive"""
+
+        annotations = {}
+        for c in cls.mro():
+            try:
+                annotations.update(**c.__annotations__)
+            except AttributeError:
+                # object, at least, has no __annotations__ attribute.
+                pass
+        return annotations
+
     @staticmethod
     @abstractmethod
     def get_default(key, default=None) -> Any:
@@ -56,3 +69,20 @@ class _BaseConfig(Triggerable, ABC):
     def _set(self, key: str, value: Any):
         if hasattr(self, key):
             self.__setattr__(key, value)
+
+    def set_value(self, attr: str, new_val):
+        setattr(self, attr, self._get_correct_value(attr, new_val))
+
+    def _get_correct_value(self, attr: str, new_val):
+        """Get value in it's correct type"""
+        annotations = self.get_annotations()
+        if not hasattr(self, attr):
+            raise AttributeError(f"Can't find {attr} among {annotations}")
+
+        _type = annotations[attr]
+
+        if hasattr(_type, "_gorg") and _type._gorg == List:
+            return [new_val]
+
+        # str, int, float, bool, Path, and more
+        return new_val if isinstance(new_val, _type) else _type(new_val)
