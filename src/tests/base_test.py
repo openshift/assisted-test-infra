@@ -753,37 +753,22 @@ class BaseTest:
             if global_variables.test_teardown:
                 v1.delete_namespace(global_variables.spoke_namespace)
 
-    @pytest.fixture(scope="function")
-    def update_olm_config(self) -> Callable:
-        def update_config(tf_config: TerraformConfig, cluster_config: ClusterConfig, operators=None):
-            if tf_config is None:
-                tf_config = TerraformConfig()
-            if cluster_config is None:
-                cluster_config = ClusterConfig()
-            if operators is None:
-                operators = parse_olm_operators_from_env()
+    @classmethod
+    def update_olm_configuration(cls, tf_config: BaseNodeConfig, operators=None) -> None:
+        if operators is None:
+            operators = parse_olm_operators_from_env()
 
-            tf_config.worker_memory = resource_param(
-                tf_config.worker_memory, OperatorResource.WORKER_MEMORY_KEY, operators
-            )
-            tf_config.master_memory = resource_param(
-                tf_config.master_memory, OperatorResource.MASTER_MEMORY_KEY, operators
-            )
-            tf_config.worker_vcpu = resource_param(tf_config.worker_vcpu, OperatorResource.WORKER_VCPU_KEY, operators)
-            tf_config.master_vcpu = resource_param(tf_config.master_vcpu, OperatorResource.MASTER_VCPU_KEY, operators)
-            tf_config.workers_count = resource_param(
-                tf_config.workers_count, OperatorResource.WORKER_COUNT_KEY, operators
-            )
-            tf_config.worker_disk = resource_param(tf_config.worker_disk, OperatorResource.WORKER_DISK_KEY, operators)
-            tf_config.master_disk = resource_param(tf_config.master_disk, OperatorResource.MASTER_DISK_KEY, operators)
-            tf_config.master_disk_count = resource_param(
-                tf_config.master_disk_count, OperatorResource.MASTER_DISK_COUNT_KEY, operators
-            )
-            tf_config.worker_disk_count = resource_param(
-                tf_config.worker_disk_count, OperatorResource.WORKER_DISK_COUNT_KEY, operators
-            )
-
-            tf_config.nodes_count = tf_config.masters_count + tf_config.workers_count
-            cluster_config.olm_operators = [operators]
-
-        yield update_config
+        tf_config.worker_memory = resource_param(tf_config.worker_memory, OperatorResource.WORKER_MEMORY_KEY, operators)
+        tf_config.master_memory = resource_param(tf_config.master_memory, OperatorResource.MASTER_MEMORY_KEY, operators)
+        tf_config.worker_vcpu = resource_param(tf_config.worker_vcpu, OperatorResource.WORKER_VCPU_KEY, operators)
+        tf_config.master_vcpu = resource_param(tf_config.master_vcpu, OperatorResource.MASTER_VCPU_KEY, operators)
+        tf_config.workers_count = resource_param(tf_config.workers_count, OperatorResource.WORKER_COUNT_KEY, operators)
+        tf_config.worker_disk = resource_param(tf_config.worker_disk, OperatorResource.WORKER_DISK_KEY, operators)
+        tf_config.master_disk = resource_param(tf_config.master_disk, OperatorResource.MASTER_DISK_KEY, operators)
+        tf_config.master_disk_count = resource_param(
+            tf_config.master_disk_count, OperatorResource.MASTER_DISK_COUNT_KEY, operators
+        )
+        tf_config.worker_disk_count = resource_param(
+            tf_config.worker_disk_count, OperatorResource.WORKER_DISK_COUNT_KEY, operators
+        )
+        tf_config.nodes_count = tf_config.masters_count + tf_config.workers_count

@@ -28,16 +28,14 @@ def _are_operators_in_status(
         [(operator.name, operator.status, operator.status_info) for operator in operators],
     )
 
-    if len([operator for operator in operators if operator.status in statuses]) >= operators_count:
-        return True
-
     if fall_on_error_status:
         for operator in operators:
             if operator.status == consts.OperatorStatus.FAILED:
-                raise ValueError(
-                    f"Operator {operator.name} status is {consts.OperatorStatus.FAILED} "
-                    f"with info {operator.status_info}"
-                )
+                _Exception = consts.olm_operators.get_exception_factory(operator.name)
+                raise _Exception(f"Operator {operator.name} status is failed with info {operator.status_info}")
+
+    if len([operator for operator in operators if operator.status in statuses]) >= operators_count:
+        return True
 
     return False
 

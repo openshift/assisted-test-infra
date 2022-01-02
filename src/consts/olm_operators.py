@@ -68,3 +68,39 @@ class OperatorResource:
             ),
             OperatorType.LSO: cls._get_resource_dict(),
         }
+
+
+class OperatorFailedError(Exception):
+    """Raised on failed status"""
+
+
+class CNVOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class OCSOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class ODFOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class LSOOperatorFailedError(OperatorFailedError):
+    pass
+
+
+def get_exception_factory(operator: str):
+    if operator == OperatorType.CNV:
+        return CNVOperatorFailedError
+
+    if operator == OperatorType.OCS:
+        return OCSOperatorFailedError
+
+    if operator == OperatorType.ODF:
+        return ODFOperatorFailedError
+
+    if operator == OperatorType.LSO:
+        return LSOOperatorFailedError
+
+    return OperatorFailedError
