@@ -30,6 +30,11 @@ RUN pip3 install --upgrade pip && \
       pip3 install --no-cache-dir -I -r ./requirements-39.txt -r ./requirements-dev.txt && \
       pip3 install --upgrade /build/pip/*
 
+RUN curl -s https://storage.googleapis.com/golang/go1.17.4.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV GOPATH=/go
+ENV GOCACHE=/go/.cache
+ENV PATH=$PATH:/usr/local/go/bin:/go/bin
+
 COPY . .
 
 # setting pre-commit env
