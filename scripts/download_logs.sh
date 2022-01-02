@@ -26,7 +26,7 @@ function download_service_logs() {
   else
     CRS=node,pod,svc,deployment,pv,pvc
     if [ ${ENABLE_KUBE_API} == "true" ]; then
-      collect_kube_api_resources $KUBE_CRS
+      collect_kube_api_resources "${KUBE_CRS[@]}"
       CRS+=$(printf ",%s" "${KUBE_CRS[@]}")
     fi
     ${KUBECTL} cluster-info
@@ -54,7 +54,7 @@ function download_cluster_logs() {
 
 
 function download_capi_logs() {
-  collect_kube_api_resources $CAPI_PROVIDER_CRS
+  collect_kube_api_resources "${CAPI_PROVIDER_CRS[@]}"
   NAMESPACE=$(get_pod_namespace cluster-api-provider-agent)
   ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/k8s_{}.log" || true
   skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
@@ -66,10 +66,12 @@ function get_pod_namespace() {
 
 # This function will get the content of all given CRs from all namespaces
 function collect_kube_api_resources() {
-  CR_ARRAY=$1
+  CR_ARRAY=("$@")
   for CR in "${CR_ARRAY[@]}"; do
-    for namespaced_name in $(${KUBECTL} get ${CR} --all-namespaces -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}' --no-headers); do
-      ${KUBECTL} get -o json ${CR} -n ${namespaced_name} >${LOGS_DEST}/${CR}_"${namespaced_name}".json || true
+    for namespace in $(${KUBECTL} get ${CR} --all-namespaces -o jsonpath='{.items..metadata.namespace}' --no-headers); do
+      for name in $(${KUBECTL} get ${CR} -n ${namespace} -o jsonpath='{.items..metadata.name}' --no-headers); do
+        ${KUBECTL} get -o json ${CR} -n ${namespace} ${name} > ${LOGS_DEST}/${CR}_${namespace}_${name}.json || true
+      done
     done
   done
 }
