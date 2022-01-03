@@ -1,4 +1,3 @@
-import logging
 from pprint import pformat
 from typing import Optional, Union
 
@@ -6,10 +5,9 @@ import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
 import consts
+from service_client import log
 
 from .base_resource import BaseCustomResource
-
-logger = logging.getLogger(__name__)
 
 
 class NMStateConfig(BaseCustomResource):
@@ -35,7 +33,7 @@ class NMStateConfig(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created nmstate config %s: %s", self.ref, pformat(yaml_data))
+        log.info("created nmstate config %s: %s", self.ref, pformat(yaml_data))
 
     def create(
         self,
@@ -67,7 +65,7 @@ class NMStateConfig(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created nmstate config %s: %s", self.ref, pformat(body))
+        log.info("created nmstate config %s: %s", self.ref, pformat(body))
 
     def patch(
         self,
@@ -93,7 +91,7 @@ class NMStateConfig(BaseCustomResource):
             body=body,
         )
 
-        logger.info("patching nmstate config %s: %s", self.ref, pformat(body))
+        log.info("patching nmstate config %s: %s", self.ref, pformat(body))
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
@@ -113,7 +111,7 @@ class NMStateConfig(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("deleted nmstate config %s", self.ref)
+        log.info("deleted nmstate config %s", self.ref)
 
     def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
         """

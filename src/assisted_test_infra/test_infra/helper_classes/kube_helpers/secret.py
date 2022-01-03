@@ -1,14 +1,12 @@
 import json
-import logging
 
 from kubernetes.client import ApiClient, CoreV1Api
 from kubernetes.client.rest import ApiException
 
 import consts
+from service_client import log
 
 from .base_resource import BaseResource
-
-logger = logging.getLogger(__name__)
 
 
 class Secret(BaseResource):
@@ -36,12 +34,12 @@ class Secret(BaseResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created secret %s", self.ref)
+        log.info("created secret %s", self.ref)
 
     def delete(self) -> None:
         self.v1_api.delete_namespaced_secret(name=self.ref.name, namespace=self.ref.namespace)
 
-        logger.info("deleted secret %s", self.ref)
+        log.info("deleted secret %s", self.ref)
 
     def get(self) -> dict:
         return self.v1_api.read_namespaced_secret(

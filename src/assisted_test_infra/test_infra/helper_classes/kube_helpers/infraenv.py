@@ -1,4 +1,3 @@
-import logging
 import re
 import warnings
 from pprint import pformat
@@ -10,14 +9,13 @@ from kubernetes.client import ApiClient, CustomObjectsApi
 from kubernetes.client.rest import ApiException
 
 import consts
+from service_client import log
 
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .cluster_deployment import ClusterDeployment
 from .idict import IDict
 from .secret import Secret, deploy_default_secret
-
-logger = logging.getLogger(__name__)
 
 
 ISO_URL_PATTERN = re.compile(
@@ -80,7 +78,7 @@ class InfraEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created infraEnv %s: %s", self.ref, pformat(yaml_data))
+        log.info("created infraEnv %s: %s", self.ref, pformat(yaml_data))
 
     def create(
         self,
@@ -124,7 +122,7 @@ class InfraEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created infraEnv %s: %s", self.ref, pformat(body))
+        log.info("created infraEnv %s: %s", self.ref, pformat(body))
 
     def patch(
         self,
@@ -170,7 +168,7 @@ class InfraEnv(BaseCustomResource):
             body=body,
         )
 
-        logger.info("patching infraEnv %s: %s", self.ref, pformat(body))
+        log.info("patching infraEnv %s: %s", self.ref, pformat(body))
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
@@ -190,7 +188,7 @@ class InfraEnv(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("deleted infraEnv %s", self.ref)
+        log.info("deleted infraEnv %s", self.ref)
 
     def status(
         self,

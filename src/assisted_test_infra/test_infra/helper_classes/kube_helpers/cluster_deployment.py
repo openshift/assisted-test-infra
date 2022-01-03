@@ -1,4 +1,3 @@
-import logging
 from pprint import pformat
 from typing import List, Optional, Tuple, Union
 
@@ -6,13 +5,12 @@ import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
 import consts
+from service_client import log
 
 from .agent import Agent
 from .base_resource import BaseCustomResource
 from .common import ObjectReference
 from .secret import Secret
-
-logger = logging.getLogger(__name__)
 
 
 class ClusterDeployment(BaseCustomResource):
@@ -44,7 +42,7 @@ class ClusterDeployment(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created cluster deployment %s: %s", self.ref, pformat(yaml_data))
+        log.info("created cluster deployment %s: %s", self.ref, pformat(yaml_data))
 
     def create(
         self,
@@ -77,7 +75,7 @@ class ClusterDeployment(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created cluster deployment %s: %s", self.ref, pformat(body))
+        log.info("created cluster deployment %s: %s", self.ref, pformat(body))
 
     def patch(
         self,
@@ -105,7 +103,7 @@ class ClusterDeployment(BaseCustomResource):
             body=body,
         )
 
-        logger.info("patching cluster deployment %s: %s", self.ref, pformat(body))
+        log.info("patching cluster deployment %s: %s", self.ref, pformat(body))
 
     def annotate_install_config(self, install_config: str) -> None:
         body = {"metadata": {"annotations": {f"{consts.CRD_API_GROUP}/install-config-overrides": install_config}}}
@@ -119,7 +117,7 @@ class ClusterDeployment(BaseCustomResource):
             body=body,
         )
 
-        logger.info("patching cluster install config %s: %s", self.ref, pformat(body))
+        log.info("patching cluster install config %s: %s", self.ref, pformat(body))
 
     def get(self) -> dict:
         return self.crd_api.get_namespaced_custom_object(
@@ -139,7 +137,7 @@ class ClusterDeployment(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("deleted cluster deployment %s", self.ref)
+        log.info("deleted cluster deployment %s", self.ref)
 
     def status(
         self,
@@ -182,7 +180,7 @@ class ClusterDeployment(BaseCustomResource):
     ) -> None:
         def _has_required_condition() -> Optional[bool]:
             status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
-            logger.info(
+            log.info(
                 f"waiting for condition <{cond_type}> to be in status <{required_status}>. "
                 f"actual status is: {status} {reason} {message}"
             )
@@ -192,7 +190,7 @@ class ClusterDeployment(BaseCustomResource):
                 return True
             return False
 
-        logger.info(
+        log.info(
             "Waiting till cluster will be in condition %s with status: %s " "reason: %s",
             cond_type,
             required_status,

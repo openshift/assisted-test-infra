@@ -1,4 +1,3 @@
-import logging
 from base64 import b64decode
 from pprint import pformat
 from typing import Any, Dict, Optional, Tuple, Union
@@ -7,12 +6,11 @@ import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
 import consts
+from service_client import log
 
 from .base_resource import BaseCustomResource, ObjectReference
 from .cluster_image_set import ClusterImageSetReference
 from .secret import Secret
-
-logger = logging.getLogger(__name__)
 
 
 class AgentClusterInstall(BaseCustomResource):
@@ -75,7 +73,7 @@ class AgentClusterInstall(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("created agentclusterinstall %s: %s", self.ref, pformat(body))
+        log.info("created agentclusterinstall %s: %s", self.ref, pformat(body))
 
     def patch(self, **kwargs) -> None:
         body = {"spec": kwargs}
@@ -89,7 +87,7 @@ class AgentClusterInstall(BaseCustomResource):
             body=body,
         )
 
-        logger.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
+        log.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
 
     def set_machinenetwork(self, machine_cidr):
         self.patch(
@@ -196,7 +194,7 @@ class AgentClusterInstall(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("deleted agentclusterinstall %s", self.ref)
+        log.info("deleted agentclusterinstall %s", self.ref)
 
     def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
@@ -255,7 +253,7 @@ class AgentClusterInstall(BaseCustomResource):
         timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
 
-        logger.info(
+        log.info(
             "waiting for agentclusterinstall %s condition %s to be in status " "%s",
             self.ref,
             cond_type,
@@ -264,7 +262,7 @@ class AgentClusterInstall(BaseCustomResource):
 
         def _has_required_condition() -> Optional[bool]:
             status, reason, message = self.condition(cond_type=cond_type, timeout=0.5)
-            logger.info(
+            log.info(
                 f"waiting for condition <{cond_type}> to be in status <{required_status}>."
                 f" actual status is: {status} {reason} {message}"
             )

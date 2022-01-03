@@ -1,16 +1,16 @@
-import logging
 from typing import List
 
 import pytest
 from _pytest.nodes import Item
 
 from assisted_test_infra.test_infra import utils
+from service_client import log
 from tests.config import global_variables
 
 
 @pytest.fixture(scope="session")
 def api_client():
-    logging.info("--- SETUP --- api_client\n")
+    log.info("--- SETUP --- api_client\n")
     yield global_variables.get_api_client()
 
 

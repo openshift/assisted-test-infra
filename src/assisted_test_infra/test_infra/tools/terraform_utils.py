@@ -1,13 +1,13 @@
 import json
-import logging
 import os
 import pathlib
-from builtins import list
 from typing import Any, Dict, List
 
 import hcl2
 from python_terraform import IsFlagged, Terraform, TerraformCommandError, Tfstate
 from retry import retry
+
+from service_client import log
 
 
 class TerraformUtils:
@@ -15,7 +15,7 @@ class TerraformUtils:
     STATE_FILE = "terraform.tfstate"
 
     def __init__(self, working_dir: str, terraform_init: bool = True):
-        logging.info("TF FOLDER %s ", working_dir)
+        log.info("TF FOLDER %s ", working_dir)
         self.working_dir = working_dir
         self.var_file_path = os.path.join(working_dir, self.VAR_FILE)
         self.tf = Terraform(working_dir=working_dir, state=self.STATE_FILE, var_file=self.VAR_FILE)
@@ -45,7 +45,7 @@ class TerraformUtils:
         return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True)
         if return_value != 0:
             message = f"Terraform apply failed with return value {return_value}, output {output} , error {err}"
-            logging.error(message)
+            log.error(message)
             raise Exception(message)
 
     def set_and_apply(self, refresh: bool = True, **kwargs) -> None:

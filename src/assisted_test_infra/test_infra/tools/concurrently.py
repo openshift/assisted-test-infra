@@ -1,6 +1,7 @@
-import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Tuple, Union
+
+from service_client import log
 
 
 def _safe_run(job, job_id: int, done_handler: Callable[[int], None]):
@@ -9,7 +10,7 @@ def _safe_run(job, job_id: int, done_handler: Callable[[int], None]):
         call, call_args = job[0], job[1:]
         return call(*call_args)
     except BaseException:
-        logging.debug("When concurrently running '%(call)s'", dict(call=str(call)))
+        log.debug("When concurrently running '%(call)s'", dict(call=str(call)))
         raise
     finally:
         if done_handler:

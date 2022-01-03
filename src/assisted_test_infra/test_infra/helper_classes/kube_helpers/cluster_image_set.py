@@ -1,14 +1,12 @@
-import logging
 from pprint import pformat
 
 from kubernetes.client import ApiClient, CustomObjectsApi
 
 import consts
+from service_client import log
 
 from .base_resource import BaseResource
 from .idict import IDict
-
-logger = logging.getLogger(__name__)
 
 
 class ClusterImageSetReference(IDict):
@@ -56,7 +54,7 @@ class ClusterImageSet(BaseResource):
             body=yaml_data,
         )
 
-        logger.info("created cluster imageset %s: %s", self.ref, pformat(yaml_data))
+        log.info("created cluster imageset %s: %s", self.ref, pformat(yaml_data))
 
     def create(self, releaseImage: str):
         body = {
@@ -74,7 +72,7 @@ class ClusterImageSet(BaseResource):
             body=body,
         )
 
-        logger.info("created cluster imageset %s: %s", self.ref, pformat(body))
+        log.info("created cluster imageset %s: %s", self.ref, pformat(body))
 
     def get(self) -> dict:
         return self.crd_api.get_cluster_custom_object(
@@ -92,4 +90,4 @@ class ClusterImageSet(BaseResource):
             name=self.ref.name,
         )
 
-        logger.info("deleted cluster imageset %s", self.ref)
+        log.info("deleted cluster imageset %s", self.ref)

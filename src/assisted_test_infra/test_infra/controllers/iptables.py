@@ -1,8 +1,8 @@
-import logging
 from enum import Enum
 from typing import List, Optional
 
 from assisted_test_infra.test_infra import utils
+from service_client import log
 
 
 class IpTableCommandOption(Enum):
@@ -58,11 +58,11 @@ class IptableRule:
     def insert(self) -> None:
         if not self._does_rule_exist():
             insert_rule = self._build_command_string(IpTableCommandOption.INSERT)
-            logging.info(f"Setting iptable rule: {insert_rule}")
+            log.info(f"Setting iptable rule: {insert_rule}")
             utils.run_command(insert_rule, shell=True)
 
     def delete(self) -> None:
         if self._does_rule_exist():
             delete_rule = self._build_command_string(IpTableCommandOption.DELETE)
-            logging.info(f"Removing iptable rule: {delete_rule}")
+            log.info(f"Removing iptable rule: {delete_rule}")
             utils.run_command(delete_rule, shell=True)

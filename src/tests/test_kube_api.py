@@ -1,6 +1,5 @@
 import base64
 import json
-import logging
 import os
 import tempfile
 import uuid
@@ -27,12 +26,11 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Secret,
 )
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
+from service_client import log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
 
 PROXY_PORT = 3129
-
-logger = logging.getLogger(__name__)
 
 
 class TestKubeAPI(BaseTest):
@@ -324,16 +322,16 @@ def kube_api_test_prepare_late_binding_infraenv(
 
     download_iso_from_infra_env(infra_env, infraenv_config.iso_download_path)
 
-    logger.info("iso downloaded, starting nodes")
+    log.info("iso downloaded, starting nodes")
     nodes.start_all()
 
-    logger.info("waiting for host agent")
+    log.info("waiting for host agent")
     agents = infra_env.wait_for_agents(len(nodes))
     for agent in agents:
         agent.approve()
         set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
 
-    logger.info("Waiting for agent status verification")
+    log.info("Waiting for agent status verification")
     Agent.wait_for_agents_to_be_ready_for_install(agents)
 
     return infra_env
@@ -362,7 +360,7 @@ def capi_test(
     secret.create(pull_secret=cluster_config.pull_secret)
 
     if is_disconnected:
-        logger.info("getting igntion and install config override for disconected install")
+        log.info("getting igntion and install config override for disconected install")
         ca_bundle = get_ca_bundle_from_hub()
         ignition_config_override = get_ignition_config_override(ca_bundle)
     else:
@@ -385,10 +383,10 @@ def capi_test(
     infra_env.status()
     download_iso_from_infra_env(infra_env, cluster_config.iso_download_path)
 
-    logger.info("iso downloaded, starting nodes")
+    log.info("iso downloaded, starting nodes")
     nodes.start_all()
 
-    logger.info("waiting for host agent")
+    log.info("waiting for host agent")
     agents = infra_env.wait_for_agents(len(nodes))
     for agent in agents:
         agent.approve()
@@ -424,16 +422,16 @@ def capi_test(
 def set_node_count_and_wait_for_ready_nodes(
     cluster_deployment: ClusterDeployment, hypershift: HyperShift, kube_api_context, node_count: int
 ):
-    logger.info("Setting node count to %s", node_count)
+    log.info("Setting node count to %s", node_count)
     hypershift.set_nodepool_node_count(kube_api_context.api_client, node_count)
-    logger.info("waiting for capi provider to set clusterDeployment ref on the agent")
+    log.info("waiting for capi provider to set clusterDeployment ref on the agent")
     agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=global_variables.spoke_namespace)
-    logger.info("Waiting for agents status verification")
+    log.info("Waiting for agents status verification")
     Agent.wait_for_agents_to_install(agents)
     hypershift.download_kubeconfig(kube_api_context.api_client)
-    logger.info("Waiting for node to join the cluster")
+    log.info("Waiting for node to join the cluster")
     hypershift.wait_for_nodes(node_count)
-    logger.info("Waiting for node to become ready")
+    log.info("Waiting for node to become ready")
     hypershift.wait_for_nodes(node_count, ready=True)
 
 
@@ -490,7 +488,7 @@ def kube_api_test(
     agent_cluster_install.wait_to_be_ready(False)
 
     if is_disconnected:
-        logger.info("getting igntion and install config override for disconected install")
+        log.info("getting igntion and install config override for disconected install")
         ca_bundle = get_ca_bundle_from_hub()
         patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
         ignition_config_override = get_ignition_config_override(ca_bundle)
@@ -514,10 +512,10 @@ def kube_api_test(
     infra_env.status()
     download_iso_from_infra_env(infra_env, cluster_config.iso_download_path)
 
-    logger.info("iso downloaded, starting nodes")
+    log.info("iso downloaded, starting nodes")
     nodes.start_all()
 
-    logger.info("waiting for host agent")
+    log.info("waiting for host agent")
     agents = cluster_deployment.wait_for_agents(len(nodes))
     for agent in agents:
         agent.approve()
@@ -526,20 +524,20 @@ def kube_api_test(
     if len(nodes) == 1:
         set_single_node_ip(cluster_deployment, nodes, is_ipv4)
 
-    logger.info("Waiting for agent status verification")
+    log.info("Waiting for agent status verification")
     Agent.wait_for_agents_to_install(agents)
 
     agent_cluster_install.wait_to_be_ready(True)
 
-    logger.info("waiting for agent-cluster-install to be in installing state")
+    log.info("waiting for agent-cluster-install to be in installing state")
     agent_cluster_install.wait_to_be_installing()
 
     try:
-        logger.info("installation started, waiting for completion")
+        log.info("installation started, waiting for completion")
         agent_cluster_install.wait_to_be_installed()
-        logger.info("installation completed successfully")
+        log.info("installation completed successfully")
     except Exception:
-        logger.exception("Failure during kube-api installation flow:")
+        log.exception("Failure during kube-api installation flow:")
         collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install)
 
 
@@ -559,7 +557,7 @@ def deploy_image_set(cluster_name, kube_api_context):
 def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
     if not proxy_server:
         return
-    logger.info("setting cluster proxy details")
+    log.info("setting cluster proxy details")
     proxy_server_name = "squid-" + str(uuid.uuid4())[:8]
     port = utils.scan_for_free_port(PROXY_PORT)
     proxy_server(name=proxy_server_name, port=port)
@@ -577,15 +575,15 @@ def setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server=None):
 
 
 def download_iso_from_infra_env(infra_env, iso_download_path):
-    logger.info("getting iso download url")
+    log.info("getting iso download url")
     iso_download_url = infra_env.get_iso_download_url()
-    logger.info("downloading iso from url=%s", iso_download_url)
+    log.info("downloading iso from url=%s", iso_download_url)
     utils.download_iso(iso_download_url, iso_download_path)
     assert os.path.isfile(iso_download_path)
 
 
 def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
-    logger.info("waiting to have host single node ip")
+    log.info("waiting to have host single node ip")
     single_node_ip = get_ip_for_single_node(cluster_deployment, is_ipv4)
     nodes.controller.tf.change_variables(
         {
@@ -593,13 +591,13 @@ def set_single_node_ip(cluster_deployment, nodes, is_ipv4):
             "bootstrap_in_place": True,
         }
     )
-    logger.info("single node ip=%s", single_node_ip)
+    log.info("single node ip=%s", single_node_ip)
 
 
 def set_agent_hostname(node, agent, is_ipv4):
     if is_ipv4:
         return
-    logger.info("patching agent hostname=%s", node)
+    log.info("patching agent hostname=%s", node)
     agent.patch(hostname=node.name)
 
 

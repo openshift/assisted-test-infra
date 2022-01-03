@@ -322,7 +322,7 @@ def on_exception(*, message=None, callback=None, silent=False, errors=(Exception
                 return fn(*args, **kwargs)
             except errors as e:
                 if message:
-                    logging.exception(message)
+                    log.exception(message)
                 if callback:
                     callback(e)
                 if silent:
@@ -415,11 +415,11 @@ def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
             hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
         with open("/etc/hosts", "w") as f:
             f.writelines(hosts_lines)
-            logging.info("Updated /etc/hosts with record: %s %s", api_vip, api_vip_dnsname)
+            log.info("Updated /etc/hosts with record: %s %s", api_vip, api_vip_dnsname)
 
 
 def run_container(container_name, image, flags=None, command=""):
-    logging.info(f"Running Container {container_name}")
+    log.info(f"Running Container {container_name}")
     run_container_cmd = f"podman {consts.PODMAN_FLAGS} run --name {container_name}"
 
     flags = flags or []
@@ -432,7 +432,7 @@ def run_container(container_name, image, flags=None, command=""):
 
 
 def remove_running_container(container_name):
-    logging.info(f"Removing Container {container_name}")
+    log.info(f"Removing Container {container_name}")
     container_rm_cmd = (
         f"podman {consts.PODMAN_FLAGS} stop {container_name} && podman" f" {consts.PODMAN_FLAGS} rm {container_name}"
     )
@@ -457,11 +457,11 @@ def get_kubeconfig_path(cluster_name: str) -> str:
 
 def get_default_openshift_version(client=None) -> str:
     if client:
-        logging.info("Using client to get default openshift version")
+        log.info("Using client to get default openshift version")
         ocp_versions_dict = client.get_openshift_versions()
         versions = [k for k, v in ocp_versions_dict.items() if v.get("default", False)]
     else:
-        logging.info(f"Reading {consts.RELEASE_IMAGES_PATH} to get default openshift version")
+        log.info(f"Reading {consts.RELEASE_IMAGES_PATH} to get default openshift version")
         with open(consts.RELEASE_IMAGES_PATH, "r") as f:
             release_images = json.load(f)
             versions = [v.get("openshift_version") for v in release_images if v.get("default", False)]
@@ -558,7 +558,7 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
     """
 
     if not update_hostnames and not update_roles:
-        logging.info("Skipping update roles and hostnames")
+        log.info("Skipping update roles and hostnames")
         return
 
     roles = []

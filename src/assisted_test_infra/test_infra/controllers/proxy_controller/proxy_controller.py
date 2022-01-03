@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 import socket
@@ -7,6 +6,7 @@ from jinja2 import Environment, PackageLoader
 
 import consts
 from assisted_test_infra.test_infra import utils
+from service_client import log
 
 
 class ProxyController:
@@ -40,7 +40,7 @@ class ProxyController:
 
     def remove(self):
         if self.address:
-            logging.info(f"Removing Proxy Server {self.name}")
+            log.info(f"Removing Proxy Server {self.name}")
             utils.remove_running_container(container_name=self.dir)
             self._remove_config()
 
@@ -50,10 +50,10 @@ class ProxyController:
         proxy_user_path = f"{self.PROXY_USER}:{self.PROXY_USER_PASS}@" if self.authenticated else ""
         address = f"{proxy_user_path}{host_ip}"
         self.address = f"http://{f'[{address}]' if self._is_ipv6 else address}:{self.port}"
-        logging.info(f"Proxy server address {self.address}")
+        log.info(f"Proxy server address {self.address}")
 
     def _run_proxy_server(self):
-        logging.info(f"Running Proxy Server {self.name}")
+        log.info(f"Running Proxy Server {self.name}")
         run_flags = [
             "-d",
             "--restart=always",
@@ -64,7 +64,7 @@ class ProxyController:
         utils.run_container(container_name=self.dir, image=self.image, flags=run_flags)
 
     def _create_conf_from_template(self, denied_port):
-        logging.info(f"Creating Config for Proxy Server {self.name}")
+        log.info(f"Creating Config for Proxy Server {self.name}")
         os.mkdir(f"/tmp/{self.dir}")
         self.config_dir_path = f"/tmp/{self.dir}/{self.name}"
         os.mkdir(self.config_dir_path)
@@ -79,7 +79,7 @@ class ProxyController:
             f.writelines(config)
 
     def _remove_config(self):
-        logging.info(f"Removing Config for Proxy Server {self.dir}/{self.name}")
+        log.info(f"Removing Config for Proxy Server {self.dir}/{self.name}")
         if os.path.exists(f"/tmp/{self.dir}"):
             path = os.path.abspath(f"/tmp/{self.dir}")
             shutil.rmtree(path)

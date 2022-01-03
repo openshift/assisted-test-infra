@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from typing import Dict, List, Optional, Union
 
@@ -11,6 +10,7 @@ from netaddr.core import AddrFormatError
 import consts
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from service_client import log
 
 
 class LibvirtNetworkAssets:
@@ -64,7 +64,7 @@ class LibvirtNetworkAssets:
         self._allocated_bridges.clear()
         self._allocated_ips_objects.clear()
 
-        logging.info("Taken asset: %s", asset)
+        log.info("Taken asset: %s", asset)
         return Munch.fromDict(asset)
 
     @staticmethod
@@ -105,7 +105,7 @@ class LibvirtNetworkAssets:
                         self._add_allocated_ip(IPAddress(ipaddr))
 
     def _override_ip_networks_values_if_not_free(self, asset: Dict):
-        logging.info("IPs in use: %s", self._allocated_ips_objects)
+        log.info("IPs in use: %s", self._allocated_ips_objects)
 
         for ip_network_field in consts.IP_NETWORK_ASSET_FIELDS:
             ip_network = IPNetwork(asset[ip_network_field])
@@ -143,7 +143,7 @@ class LibvirtNetworkAssets:
         self._allocated_ips_objects.append(ip)
 
     def _override_network_bridges_values_if_not_free(self, asset: Dict):
-        logging.info("Bridges in use: %s", self._allocated_bridges)
+        log.info("Bridges in use: %s", self._allocated_bridges)
 
         if self._is_net_bridge_allocated(asset["libvirt_network_if"]):
             asset["libvirt_network_if"] = self._get_next_available_net_bridge()
@@ -180,8 +180,8 @@ class LibvirtNetworkAssets:
             return json.load(fp)
 
     def _remove_taken_assets_from_all_assets_in_use(self, assets_in_use: List[Dict]):
-        logging.info("Returning %d assets", len(self._taken_assets))
-        logging.debug("Assets to return: %s", self._taken_assets)
+        log.info("Returning %d assets", len(self._taken_assets))
+        log.debug("Assets to return: %s", self._taken_assets)
 
         indexes_to_pop = []
         for i in range(len(assets_in_use)):

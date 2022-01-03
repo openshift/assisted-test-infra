@@ -1,4 +1,3 @@
-import logging
 import os
 import tarfile
 import time
@@ -25,7 +24,7 @@ def verify_logs_uploaded(
 
     with TemporaryDirectory() as tempdir:
         with tarfile.open(cluster_tar_path) as tar:
-            logging.info(f"downloaded logs: {tar.getnames()}")
+            log.info(f"downloaded logs: {tar.getnames()}")
             assert len(tar.getnames()) >= expected_min_log_num, (
                 f"{tar.getnames()} " f"logs are less than minimum of {expected_min_log_num}"
             )
@@ -50,7 +49,7 @@ def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path):
         assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
         _verify_oc_logs_uploaded(cluster_tar_path)
     except BaseException:
-        logging.exception("oc logs were not uploaded")
+        log.exception("oc logs were not uploaded")
         raise
 
 
@@ -68,7 +67,7 @@ def verify_logs_not_uploaded(cluster_tar_path, category):
 
     with TemporaryDirectory() as tempdir:
         with tarfile.open(cluster_tar_path) as tar:
-            logging.info(f"downloaded logs: {tar.getnames()}")
+            log.info(f"downloaded logs: {tar.getnames()}")
             tar.extractall(tempdir)
             assert category not in os.listdir(tempdir), f"{category} logs were found in uploaded logs"
 
@@ -119,9 +118,9 @@ def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_
 
 def _check_entry_from_extracted_tar(component, tarpath, verify):
     with TemporaryDirectory() as tempdir:
-        logging.info(f"open tar file {tarpath}")
+        log.info(f"open tar file {tarpath}")
         with tarfile.open(tarpath) as tar:
-            logging.info(f"verifying downloaded logs: {tar.getnames()}")
+            log.info(f"verifying downloaded logs: {tar.getnames()}")
             tar.extractall(tempdir)
             extractedfiles = os.listdir(tempdir)
             assert any(component in logfile for logfile in extractedfiles), f"can not find {component} in logs"
@@ -168,9 +167,9 @@ def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, v
             assert len(master_dirs) == NUMBER_OF_MASTERS - 1, (
                 f"expecting {cp_full_path} to have " f"{NUMBER_OF_MASTERS - 1} values"
             )
-            logging.info(f"control-plane directory has sub-directory for each master: {master_dirs}")
+            log.info(f"control-plane directory has sub-directory for each master: {master_dirs}")
             for ip_dir in master_dirs:
-                logging.info(f"{ip_dir} content: {os.listdir(os.path.join(cp_full_path, ip_dir))}")
+                log.info(f"{ip_dir} content: {os.listdir(os.path.join(cp_full_path, ip_dir))}")
                 assert len(os.listdir(os.path.join(cp_full_path, ip_dir))) > 0, f"{cp_path}/{ip_dir} is empty"
         lb.close()
     gz.close()

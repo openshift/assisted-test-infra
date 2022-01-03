@@ -8,6 +8,8 @@ from typing import Optional
 import paramiko
 import scp
 
+from service_client import log
+
 logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 
 
@@ -18,7 +20,6 @@ class SshConnection:
         self._key_path = private_ssh_key_path
         self._port = port
         self._ssh_client = None
-        self._logger = logging.getLogger("ssh")
 
     def __enter__(self):
         self.connect()
@@ -91,13 +92,13 @@ class SshConnection:
             self.connect()
         if verbose:
             name = getattr(self._ssh_client, "name", "")
-            self._logger.debug(f"Running bash script: {command.strip()} {'on ' + name if name else name}")
+            log.debug(f"Running bash script: {command.strip()} {'on ' + name if name else name}")
         stdin, stdout, stderr = self._ssh_client.exec_command(command, timeout=timeout)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
         output = "".join(output)
         if verbose and output:
-            self._logger.debug(f"SSH Execution output: \n{output}")
+            log.debug(f"SSH Execution output: \n{output}")
         if status != 0:
             e = RuntimeError(
                 f"Failed executing, status '{status}', output was:\n{output} stderr \n{stderr.readlines()}"
