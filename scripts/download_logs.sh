@@ -21,7 +21,7 @@ function download_service_logs() {
     podman ps -a || true
 
     for service in "assisted-service" "assisted-image-service" "assisted-installer-ui" "postgres"; do
-      podman logs ${service} >${LOGS_DEST}/onprem_${service}.log || true
+      podman logs ${service} >${LOGS_DEST}/logs_${service}_${DEPLOY_TARGET}.log || true
     done
   else
     CRS=node,pod,svc,deployment,pv,pvc
@@ -31,7 +31,7 @@ function download_service_logs() {
     fi
     ${KUBECTL} cluster-info
     ${KUBECTL} get ${CRS} -n ${NAMESPACE} -o wide || true
-    ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/k8s_{}.log" || true
+    ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/logs_{}_${DEPLOY_TARGET}.log" || true
     ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp >${LOGS_DEST}/k8s_events.log || true
     ${KUBECTL} get events -n ${NAMESPACE} --sort-by=.metadata.creationTimestamp --output json >${LOGS_DEST}/k8s_events.json || true
     skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
@@ -56,7 +56,7 @@ function download_cluster_logs() {
 function download_capi_logs() {
   collect_kube_api_resources "${CAPI_PROVIDER_CRS[@]}"
   NAMESPACE=$(get_pod_namespace cluster-api-provider-agent)
-  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/k8s_{}.log" || true
+  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/logs_{}_${DEPLOY_TARGET}.log" || true
   skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
 }
 

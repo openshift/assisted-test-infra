@@ -113,8 +113,8 @@ class LogsConverter:
     @classmethod
     def export_service_logs_to_junit_suites(cls, source_dir: Path, report_dir: Path):
         suites = list()
-        for file in source_dir.glob("k8s_assisted-service*.log"):
-            suite_name = Path(file).stem.replace("k8s_", "")
+        for file in source_dir.glob("logs_assisted-service*.log"):
+            suite_name = Path(file).stem.replace("logs_", "")
             log.info(f"Creating test suite from {suite_name}.log")
             test_cases = cls.get_failure_cases(file, suite_name)
             timestamp = test_cases[0].timestamp if test_cases else None
