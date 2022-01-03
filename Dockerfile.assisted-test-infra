@@ -24,10 +24,10 @@ RUN curl -Lo terraform.zip https://releases.hashicorp.com/terraform/0.14.11/terr
 
 WORKDIR /home/assisted-test-infra
 
-COPY requirements-39.txt requirements-dev.txt ./
+COPY requirements.txt requirements-dev.txt ./
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
 RUN pip3 install --upgrade pip && \
-      pip3 install --no-cache-dir -I -r ./requirements-39.txt -r ./requirements-dev.txt && \
+      pip3 install --no-cache-dir -I -r ./requirements.txt -r ./requirements-dev.txt && \
       pip3 install --upgrade /build/pip/*
 
 RUN curl -s https://storage.googleapis.com/golang/go1.17.4.linux-amd64.tar.gz | tar -C /usr/local -xz

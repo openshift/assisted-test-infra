@@ -15,7 +15,6 @@ PATH := ${PATH}:/usr/local/bin
 REPORTS = $(ROOT_DIR)/reports
 UNITTEST_JUNIT_FILE=$(shell mktemp -u "$(REPORTS)/unittest_XXXXXXXXX.xml")
 
-TEST_INFRA_DOCKERFILE := $(or ${TEST_INFRA_DOCKERFILE}, "Dockerfile.test-infra")
 
 ASSISTED_SERVICE_HOST := $(or ${ASSISTED_SERVICE_HOST},$(shell hostname))
 
@@ -168,7 +167,7 @@ create_full_environment:
 create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
-	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' ${TEST_INFRA_DOCKERFILE} | \
+	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.assisted-test-infra | \
 	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
