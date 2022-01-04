@@ -38,7 +38,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import KubeAPICo
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from consts import OperatorResource
-from service_client import InventoryClient
+from service_client import InventoryClient, SuppressAndLog
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 
 
@@ -252,7 +252,7 @@ class BaseTest:
 
         yield cluster
 
-        if BaseTest._is_test_failed(request):
+        if self._is_test_failed(request):
             logging.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
             self.collect_test_logs(cluster, api_client, request, cluster.nodes)
 
@@ -260,9 +260,13 @@ class BaseTest:
                 if cluster.is_installing() or cluster.is_finalizing():
                     cluster.cancel_install()
 
-                with suppress(ApiException):
-                    logging.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
-                    cluster.delete()
+        if global_variables.test_teardown:
+            with SuppressAndLog(ApiException):
+                cluster.deregister_infraenv()
+
+            with suppress(ApiException):
+                logging.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
+                cluster.delete()
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -280,8 +284,11 @@ class BaseTest:
         )
 
         yield infra_env
-
         logging.info("--- TEARDOWN --- Infra env\n")
+
+        if global_variables.test_teardown:
+            with SuppressAndLog(ApiException):
+                infra_env.deregister()
 
     @pytest.fixture
     def prepared_cluster(self, cluster):
@@ -310,7 +317,7 @@ class BaseTest:
 
             nodes.prepare_nodes()
 
-            interfaces = BaseTest.nat_interfaces(tf_config)
+            interfaces = self.nat_interfaces(tf_config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
             nat.add_nat_rules()
 
@@ -359,7 +366,7 @@ class BaseTest:
 
             nodes.prepare_nodes()
 
-            interfaces = BaseTest.nat_interfaces(tf_config)
+            interfaces = self.nat_interfaces(tf_config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
             nat.add_nat_rules()
 
@@ -415,7 +422,7 @@ class BaseTest:
 
         yield get_cluster_func
         for cluster in clusters:
-            if BaseTest._is_test_failed(request):
+            if self._is_test_failed(request):
                 logging.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
                 self.collect_test_logs(cluster, api_client, request, cluster.nodes)
             if global_variables.test_teardown:
@@ -614,7 +621,7 @@ class BaseTest:
                 api_client,
                 cluster_details,
                 log_dir_name,
-                BaseTest._is_test_failed(request),
+                self._is_test_failed(request),
                 pull_secret=global_variables.pull_secret,
             )
         self._collect_virsh_logs(nodes, log_dir_name)
