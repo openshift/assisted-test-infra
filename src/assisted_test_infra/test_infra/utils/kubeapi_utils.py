@@ -1,5 +1,4 @@
 import functools
-import logging
 import os
 from ipaddress import IPv4Interface, IPv6Interface
 from typing import List, Tuple, Union
@@ -17,8 +16,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Secret,
 )
 from assisted_test_infra.test_infra.utils import TerraformControllerUtil
-
-logger = logging.getLogger(__name__)
+from service_client import log
 
 
 def get_ip_for_single_node(cluster_deployment, is_ipv4, timeout=300):
@@ -56,7 +54,7 @@ def set_agents_hostnames(
     if is_ipv4 and not static_network_mode:
         return
 
-    logger.info("Updating agents hostnames")
+    log.info("Updating agents hostnames")
     nodes_details = get_nodes_details(
         cluster_name=cluster_deployment.ref.name,
         namespace=cluster_deployment.ref.namespace,
@@ -95,7 +93,7 @@ def set_agent_hostname(agent, nodes_details):
         sleep_seconds=1,
         waiting_for=f"agent={agent.ref} to find a hostname",
     )
-    logger.info("patching agent hostname=%s", hostname)
+    log.info("patching agent hostname=%s", hostname)
     agent.patch(hostname=hostname)
 
 

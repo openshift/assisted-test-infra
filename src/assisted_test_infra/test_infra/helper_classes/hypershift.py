@@ -1,4 +1,3 @@
-import logging
 from base64 import b64decode
 
 import waiting
@@ -6,8 +5,7 @@ from kubernetes.client import ApiClient, CoreV1Api, CustomObjectsApi, V1NodeList
 
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import Secret, create_kube_api_client
-
-logger = logging.getLogger(__name__)
+from service_client import log
 
 HYPERSHIFT_DIR = "build/hypershift/"
 DEFAULT_WAIT_FOR_NODES_TIMEOUT = 10 * 60
@@ -29,18 +27,18 @@ class HyperShift:
         self.hypershift_cluster_client = None
 
     def create(self, pull_secret_file: str, ssh_key: str = ""):
-        logger.info(f"Creating HyperShift cluster {self.name}")
+        log.info(f"Creating HyperShift cluster {self.name}")
         cmd = f"./bin/hypershift create cluster agent --pull-secret {pull_secret_file} --name {self.name}"
         if ssh_key:
             cmd += f" --ssh-key {ssh_key}"
         utils.run_command_with_output(cmd, cwd=HYPERSHIFT_DIR)
 
     def delete(self):
-        logger.info(f"Deleting HyperShift cluster {self.name}")
+        log.info(f"Deleting HyperShift cluster {self.name}")
         utils.run_command_with_output(f"./bin/hypershift destroy cluster agent --name {self.name}", cwd=HYPERSHIFT_DIR)
 
     def download_kubeconfig(self, kube_api_client: ApiClient) -> str:
-        logger.info(f"Downloading kubeconfig for HyperShift cluster {self.name}")
+        log.info(f"Downloading kubeconfig for HyperShift cluster {self.name}")
         kubeconfig_data = (
             Secret(
                 kube_api_client=kube_api_client,
@@ -59,7 +57,7 @@ class HyperShift:
         return self.kubeconfig_path
 
     def set_nodepool_node_count(self, kube_api_client: ApiClient, node_count: int) -> None:
-        logger.info(f"Setting HyperShift cluster {self.name} node count to: {node_count}")
+        log.info(f"Setting HyperShift cluster {self.name} node count to: {node_count}")
         crd_api = CustomObjectsApi(kube_api_client)
         node_count = node_count
         body = {"spec": {"nodeCount": node_count}}

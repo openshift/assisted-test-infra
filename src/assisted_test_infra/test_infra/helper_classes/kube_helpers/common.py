@@ -6,12 +6,10 @@ from kubernetes.client import ApiClient
 from kubernetes.client.rest import ApiException
 
 from assisted_test_infra.test_infra.helper_classes.kube_helpers.idict import IDict
-from service_client import ClientFactory
+from service_client import ClientFactory, log
 
 # silence kubernetes debug messages.
 logging.getLogger("kubernetes").setLevel(logging.INFO)
-
-logger = logging.getLogger(__name__)
 
 
 class UnexpectedStateError(Exception):
@@ -33,16 +31,16 @@ class KubeAPIContext:
         self._clean_on_exit = clean_on_exit
 
     def __enter__(self):
-        logger.info("entering kube api context")
+        log.info("entering kube api context")
         self.resources.clear()
 
     def __exit__(self, *_):
-        logger.info("exiting kube api context")
+        log.info("exiting kube api context")
         if self._clean_on_exit:
             self._delete_all_resources()
 
     def _delete_all_resources(self, ignore_not_found: bool = True) -> None:
-        logger.info("deleting all resources")
+        log.info("deleting all resources")
 
         for resource in self.resources:
             try:

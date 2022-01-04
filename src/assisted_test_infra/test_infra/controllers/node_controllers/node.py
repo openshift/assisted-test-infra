@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -7,6 +6,7 @@ from scp import SCPException
 import consts
 from assisted_test_infra.test_infra.controllers.node_controllers import ssh
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
+from service_client import log
 
 
 class Node:
@@ -55,7 +55,7 @@ class Node:
         if not self.ips:
             raise RuntimeError(f"No available IPs for node {self.name}")
 
-        logging.info("Trying to access through IP addresses: %s", ", ".join(self.ips))
+        log.info("Trying to access through IP addresses: %s", ", ".join(self.ips))
         for ip in self.ips:
             exception = None
             try:
@@ -66,7 +66,7 @@ class Node:
                 return connection
 
             except (TimeoutError, SCPException) as e:
-                logging.warning("Could not SSH through IP %s: %s", ip, str(e))
+                log.warning("Could not SSH through IP %s: %s", ip, str(e))
                 exception = e
 
         if exception is not None:
@@ -102,11 +102,11 @@ class Node:
         self.start()
 
     def restart_service(self, service):
-        logging.info("Restarting service: %s on host %s", service, self.name)
+        log.info("Restarting service: %s on host %s", service, self.name)
         self.run_command(f"sudo systemctl restart {service}.service")
 
     def reset(self):
-        logging.info("Resetting host %s", self.name)
+        log.info("Resetting host %s", self.name)
         self.shutdown()
         self.format_disk()
         self.start()
@@ -118,33 +118,33 @@ class Node:
         self.kill_podman_container_by_name("assisted-installer")
 
     def kill_service(self, service):
-        logging.info("Killing service %s on host %s", service, self.name)
+        log.info("Killing service %s on host %s", service, self.name)
         self.run_command(f"sudo systemctl kill {service}.service || true")
 
     def kill_podman_container_by_name(self, container_name):
         output = self.run_command(f"sudo su root -c 'podman ps | grep {container_name}'")
-        logging.info(
+        log.info(
             f"Container details on {self.name}: provided container name: {container_name}, output: " f"\n {output}"
         )
-        logging.info(f"Killing container: {container_name}")
+        log.info(f"Killing container: {container_name}")
         output = self.run_command(f"sudo su root -c 'podman kill {container_name}'")
-        logging.info(f"Output of kill container command: {output}")
+        log.info(f"Output of kill container command: {output}")
 
     def is_service_active(self, service):
-        logging.info("Verifying if service %s is active on host %s", service, self.name)
+        log.info("Verifying if service %s is active on host %s", service, self.name)
         output = self.run_command(f"sudo systemctl is-active {service}.service || true")
         return output.strip() == "active"
 
     def set_boot_order(self, cd_first=False):
-        logging.info("Setting boot order with cd_first=%s on %s", cd_first, self.name)
+        log.info("Setting boot order with cd_first=%s on %s", cd_first, self.name)
         self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first)
 
     def set_per_device_boot_order(self, key: Callable[[Disk], int]):
-        logging.info("Setting boot order on %s", self.name)
+        log.info("Setting boot order on %s", self.name)
         self.node_controller.set_per_device_boot_order(node_name=self.name, key=key)
 
     def set_boot_order_flow(self, cd_first=False, start=True):
-        logging.info("Setting boot order , cd_first=%s, start=%s", cd_first, start)
+        log.info("Setting boot order , cd_first=%s, start=%s", cd_first, start)
         self.shutdown()
         self.set_boot_order(cd_first)
         if start:

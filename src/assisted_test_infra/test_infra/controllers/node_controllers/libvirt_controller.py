@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 import secrets
@@ -53,7 +52,7 @@ class LibvirtController(NodeController, ABC):
         return self.list_nodes_with_name_filter(None)
 
     def list_nodes_with_name_filter(self, name_filter) -> List[Node]:
-        logging.info("Listing current hosts with name filter %s", name_filter)
+        log.info("Listing current hosts with name filter %s", name_filter)
         nodes = list()
 
         domains = self.libvirt_connection.listAllDomains()
@@ -64,7 +63,7 @@ class LibvirtController(NodeController, ABC):
             if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
                 nodes.append(Node(domain_name, self, self.private_ssh_key_path))
 
-        logging.info("Found domains %s", [node.name for node in nodes])
+        log.info("Found domains %s", [node.name for node in nodes])
         return nodes
 
     def list_networks(self):
@@ -197,21 +196,21 @@ class LibvirtController(NodeController, ABC):
             raise
 
     def shutdown_node(self, node_name):
-        logging.info("Going to shutdown %s", node_name)
+        log.info("Going to shutdown %s", node_name)
         node = self.libvirt_connection.lookupByName(node_name)
 
         if node.isActive():
             node.destroy()
 
     def shutdown_all_nodes(self):
-        logging.info("Going to shutdown all the nodes")
+        log.info("Going to shutdown all the nodes")
         nodes = self.list_nodes()
 
         for node in nodes:
             self.shutdown_node(node.name())
 
     def start_node(self, node_name, check_ips=True):
-        logging.info("Going to power-on %s, check ips flag %s", node_name, check_ips)
+        log.info("Going to power-on %s, check ips flag %s", node_name, check_ips)
         node = self.libvirt_connection.lookupByName(node_name)
 
         if not node.isActive():
@@ -220,14 +219,14 @@ class LibvirtController(NodeController, ABC):
                 if check_ips:
                     self._wait_till_domain_has_ips(node)
             except waiting.exceptions.TimeoutExpired:
-                logging.warning("Node %s failed to recive IP, retrying", node_name)
+                log.warning("Node %s failed to recive IP, retrying", node_name)
                 self.shutdown_node(node_name)
                 node.create()
                 if check_ips:
                     self._wait_till_domain_has_ips(node)
 
     def start_all_nodes(self):
-        logging.info("Going to power-on all the nodes")
+        log.info("Going to power-on all the nodes")
         nodes = self.list_nodes()
 
         for node in nodes:
@@ -248,9 +247,9 @@ class LibvirtController(NodeController, ABC):
 
     @classmethod
     def format_disk(cls, disk_path):
-        logging.info("Formatting disk %s", disk_path)
+        log.info("Formatting disk %s", disk_path)
         if not os.path.exists(disk_path):
-            logging.info("Path to %s disk not exists. Skipping", disk_path)
+            log.info("Path to %s disk not exists. Skipping", disk_path)
             return
 
         command = f"qemu-img info {disk_path} | grep 'virtual size'"
@@ -363,7 +362,7 @@ class LibvirtController(NodeController, ABC):
         """
         Create a network from a given xml and return libvirt.virNetwork object
         """
-        logging.info(f"Creating new network: {network_xml}")
+        log.info(f"Creating new network: {network_xml}")
         network = self.libvirt_connection.networkCreateXML(network_xml)
         if network is None:
             raise Exception(f"Failed to create network: {network_xml}")
@@ -371,7 +370,7 @@ class LibvirtController(NodeController, ABC):
         if active != 1:
             self.destroy_network(network)
             raise Exception(f"Failed to activate network: {network_xml}")
-        logging.info(f"Successfully created and activated network. name: {network.name()}")
+        log.info(f"Successfully created and activated network. name: {network.name()}")
         return network
 
     def get_network_by_name(self, network_name):
@@ -384,7 +383,7 @@ class LibvirtController(NodeController, ABC):
         """
         Destroy network of a given libvirt.virNetwork object
         """
-        logging.info(f"Destroy network: {network.name()}")
+        log.info(f"Destroy network: {network.name()}")
         network.destroy()
 
     def add_interface(self, node_name, network_name, target_interface):
@@ -392,7 +391,7 @@ class LibvirtController(NodeController, ABC):
         Create an interface using given network name, return created interface's mac address.
         Note: Do not use the same network for different tests
         """
-        logging.info(f"Creating new interface attached to network: {network_name}, for node: {node_name}")
+        log.info(f"Creating new interface attached to network: {network_name}, for node: {node_name}")
         net_leases = self.list_leases(network_name)
         mac_addresses = []
         for lease in net_leases:
@@ -407,7 +406,7 @@ class LibvirtController(NodeController, ABC):
                 waiting_for="Wait for network lease",
             )
         except waiting.exceptions.TimeoutExpired:
-            logging.error("Network lease wasnt found for added interface")
+            log.error("Network lease wasnt found for added interface")
             raise
 
         mac_address = ""
@@ -416,24 +415,24 @@ class LibvirtController(NodeController, ABC):
             if not lease["mac"] in mac_addresses:
                 mac_address = lease["mac"]
                 break
-        logging.info(
+        log.info(
             f"Successfully attached interface, network: {network_name}, mac: {mac_address}, for node:" f" {node_name}"
         )
         return mac_address
 
     def undefine_interface(self, node_name, mac):
-        logging.info(f"Undefining an interface mac: {mac}, for node: {node_name}")
+        log.info(f"Undefining an interface mac: {mac}, for node: {node_name}")
         command = f"virsh detach-interface {node_name} --type network --mac {mac}"
         utils.run_command(command, True)
-        logging.info("Successfully removed interface.")
+        log.info("Successfully removed interface.")
 
     def restart_node(self, node_name):
-        logging.info("Restarting %s", node_name)
+        log.info("Restarting %s", node_name)
         self.shutdown_node(node_name=node_name)
         self.start_node(node_name=node_name)
 
     def format_all_node_disks(self):
-        logging.info("Formatting all the disks")
+        log.info("Formatting all the disks")
         nodes = self.list_nodes()
 
         for node in nodes:
@@ -443,7 +442,7 @@ class LibvirtController(NodeController, ABC):
         self.destroy_all_nodes()
 
     def destroy_all_nodes(self):
-        logging.info("Delete all the nodes")
+        log.info("Delete all the nodes")
         self.shutdown_all_nodes()
         self.format_all_node_disks()
 
@@ -473,7 +472,7 @@ class LibvirtController(NodeController, ABC):
 
         ips = []
         macs = []
-        logging.debug(f"Host {domain.name()} interfaces are {interfaces}")
+        log.debug(f"Host {domain.name()} interfaces are {interfaces}")
         if interfaces:
             for (_, val) in interfaces.items():
                 if val["addrs"]:
@@ -481,9 +480,9 @@ class LibvirtController(NodeController, ABC):
                         ips.append(addr["addr"])
                         macs.append(val["hwaddr"])
         if ips:
-            logging.info("Host %s ips are %s", domain.name(), ips)
+            log.info("Host %s ips are %s", domain.name(), ips)
         if macs:
-            logging.info("Host %s macs are %s", domain.name(), macs)
+            log.info("Host %s macs are %s", domain.name(), macs)
         return ips, macs
 
     def _get_domain_ips(self, domain):
@@ -491,7 +490,7 @@ class LibvirtController(NodeController, ABC):
         return ips
 
     def _wait_till_domain_has_ips(self, domain, timeout=360, interval=10):
-        logging.info("Waiting till host %s will have ips", domain.name())
+        log.info("Waiting till host %s will have ips", domain.name())
         waiting.wait(
             lambda: len(self._get_domain_ips(domain)) > 0,
             timeout_seconds=timeout,
@@ -516,7 +515,7 @@ class LibvirtController(NodeController, ABC):
                 disk.removeChild(boot)
 
     def set_per_device_boot_order(self, node_name, key: Callable[[Disk], int]):
-        logging.info(f"Changing boot order for node: {node_name}")
+        log.info(f"Changing boot order for node: {node_name}")
         node = self.libvirt_connection.lookupByName(node_name)
         current_xml = node.XMLDesc(0)
         xml = minidom.parseString(current_xml.encode("utf-8"))
@@ -533,14 +532,14 @@ class LibvirtController(NodeController, ABC):
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
             raise Exception(f"Failed to set boot order for node: {node_name}")
-        logging.info(f"Boot order set successfully: for node: {node_name}")
+        log.info(f"Boot order set successfully: for node: {node_name}")
         # After setting per-device boot order, we have to shutdown the guest(reboot isn't enough)
-        logging.info(f"Restarting node {node_name} to allow boot changes to take effect")
+        log.info(f"Restarting node {node_name} to allow boot changes to take effect")
         self.shutdown_node(node_name)
         self.start_node(node_name)
 
     def set_boot_order(self, node_name, cd_first=False):
-        logging.info(f"Going to set the following boot order: cd_first: {cd_first}, " f"for node: {node_name}")
+        log.info(f"Going to set the following boot order: cd_first: {cd_first}, " f"for node: {node_name}")
         node = self.libvirt_connection.lookupByName(node_name)
         current_xml = node.XMLDesc(0)
         xml = minidom.parseString(current_xml.encode("utf-8"))
@@ -557,7 +556,7 @@ class LibvirtController(NodeController, ABC):
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
             raise Exception(f"Failed to set boot order cdrom first: {cd_first}, for node: {node_name}")
-        logging.info(f"Boot order set successfully: cdrom first: {cd_first}, for node: {node_name}")
+        log.info(f"Boot order set successfully: cdrom first: {cd_first}, for node: {node_name}")
 
     def get_host_id(self, node_name):
         dom = self.libvirt_connection.lookupByName(node_name)
@@ -569,10 +568,10 @@ class LibvirtController(NodeController, ABC):
         return int(vcpu_element.firstChild.nodeValue)
 
     def set_cpu_cores(self, node_name, core_count):
-        logging.info(f"Going to set vcpus to {core_count} for node: {node_name}")
+        log.info(f"Going to set vcpus to {core_count} for node: {node_name}")
         dom = self.libvirt_connection.lookupByName(node_name)
         dom.setVcpusFlags(core_count)
-        logging.info(f"Successfully set vcpus to {core_count} for node: {node_name}")
+        log.info(f"Successfully set vcpus to {core_count} for node: {node_name}")
 
     def get_ram_kib(self, node_name):
         xml = self._get_xml(node_name)
@@ -580,7 +579,7 @@ class LibvirtController(NodeController, ABC):
         return int(memory_element.firstChild.nodeValue)
 
     def set_ram_kib(self, node_name, ram_kib):
-        logging.info(f"Going to set memory to {ram_kib} for node: {node_name}")
+        log.info(f"Going to set memory to {ram_kib} for node: {node_name}")
         xml = self._get_xml(node_name)
         memory_element = xml.getElementsByTagName("memory")[0]
         memory_element.firstChild.replaceWholeText(ram_kib)
@@ -589,7 +588,7 @@ class LibvirtController(NodeController, ABC):
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
             raise Exception(f"Failed to set memory for node: {node_name}")
-        logging.info(f"Successfully set memory to {ram_kib} for node: {node_name}")
+        log.info(f"Successfully set memory to {ram_kib} for node: {node_name}")
 
     def _get_xml(self, node_name):
         dom = self.libvirt_connection.lookupByName(node_name)

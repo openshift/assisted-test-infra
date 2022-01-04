@@ -1,5 +1,4 @@
 import json
-import logging
 import random
 from typing import Dict, Iterator, List
 
@@ -131,7 +130,7 @@ class Nodes:
 
     def set_correct_boot_order(self, nodes=None, start_nodes=False):
         nodes = nodes or self.nodes
-        logging.info("Going to set correct boot order to nodes: %s", nodes)
+        log.info("Going to set correct boot order to nodes: %s", nodes)
         self.run_for_given_nodes(nodes, "set_boot_order_flow", False, start_nodes)
 
     def run_for_all_nodes(self, func_name, *args):
@@ -139,7 +138,7 @@ class Nodes:
 
     @staticmethod
     def run_for_given_nodes(nodes, func_name, *args):
-        logging.info("Running <%s> on nodes: %s", func_name, [node.name for node in nodes])
+        log.info("Running <%s> on nodes: %s", func_name, [node.name for node in nodes])
         return run_concurrently([(getattr(node, func_name), *args) for node in nodes])
 
     def run_for_given_nodes_by_cluster_hosts(self, cluster_hosts, func_name, *args):
@@ -153,14 +152,14 @@ class Nodes:
 
     def set_wrong_boot_order(self, nodes=None, start_nodes=True):
         nodes = nodes or self.nodes
-        logging.info("Setting wrong boot order for %s", self.nodes_as_dict.keys())
+        log.info("Setting wrong boot order for %s", self.nodes_as_dict.keys())
         self.run_for_given_nodes(nodes, "set_boot_order_flow", True, start_nodes)
 
     def get_bootstrap_node(self, cluster) -> Node:
         for cluster_host_object in cluster.get_hosts():
             if cluster_host_object.get("bootstrap", False):
                 node = self.get_node_from_cluster_host(cluster_host_object)
-                logging.info("Bootstrap node is %s", node.name)
+                log.info("Bootstrap node is %s", node.name)
                 return node
 
     def create_nodes_cluster_hosts_mapping(self, cluster):

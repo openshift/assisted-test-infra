@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import shutil
 from contextlib import suppress
@@ -38,7 +37,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import KubeAPICo
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from consts import OperatorResource
-from service_client import InventoryClient, SuppressAndLog
+from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 
 
@@ -180,9 +179,9 @@ class BaseTest:
             yield nodes
         finally:
             if global_variables.test_teardown:
-                logging.info("--- TEARDOWN --- node controller\n")
+                log.info("--- TEARDOWN --- node controller\n")
                 nodes.destroy_all_nodes()
-                logging.info(f"--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n")
+                log.info(f"--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n")
                 utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
 
     @pytest.fixture
@@ -192,9 +191,9 @@ class BaseTest:
             yield infraenv_nodes
         finally:
             if global_variables.test_teardown:
-                logging.info("--- TEARDOWN --- node controller\n")
+                log.info("--- TEARDOWN --- node controller\n")
                 infraenv_nodes.destroy_all_nodes()
-                logging.info(f"--- TEARDOWN --- deleting iso file from: {infra_env_configuration.iso_download_path}\n")
+                log.info(f"--- TEARDOWN --- deleting iso file from: {infra_env_configuration.iso_download_path}\n")
                 utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
 
     @classmethod
@@ -239,7 +238,7 @@ class BaseTest:
         prepare_nodes_network: Nodes,
         cluster_configuration: ClusterConfig,
     ):
-        logging.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
+        log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
         cluster = Cluster(
             api_client=api_client,
             config=cluster_configuration,
@@ -253,7 +252,7 @@ class BaseTest:
         yield cluster
 
         if self._is_test_failed(request):
-            logging.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
+            log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
             self.collect_test_logs(cluster, api_client, request, cluster.nodes)
 
             if global_variables.test_teardown:
@@ -265,7 +264,7 @@ class BaseTest:
                 cluster.deregister_infraenv()
 
             with suppress(ApiException):
-                logging.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
+                log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
                 cluster.delete()
 
     @pytest.fixture
@@ -278,13 +277,13 @@ class BaseTest:
         prepare_infraenv_nodes_network: Nodes,
         infra_env_configuration: InfraEnvConfig,
     ):
-        logging.debug(f"--- SETUP --- Creating InfraEnv for test: {request.node.name}\n")
+        log.debug(f"--- SETUP --- Creating InfraEnv for test: {request.node.name}\n")
         infra_env = InfraEnv(
             api_client=api_client, config=infra_env_configuration, nodes=prepare_infraenv_nodes_network
         )
 
         yield infra_env
-        logging.info("--- TEARDOWN --- Infra env\n")
+        log.info("--- TEARDOWN --- Infra env\n")
 
         if global_variables.test_teardown:
             with SuppressAndLog(ApiException):
@@ -334,9 +333,9 @@ class BaseTest:
 
         try:
             if _nodes and global_variables.test_teardown:
-                logging.info("--- TEARDOWN --- node controller\n")
+                log.info("--- TEARDOWN --- node controller\n")
                 _nodes.destroy_all_nodes()
-                logging.info(f"--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n")
+                log.info(f"--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n")
                 utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
                 self.teardown_nat(_nat)
 
@@ -383,9 +382,9 @@ class BaseTest:
 
         try:
             if _nodes and global_variables.test_teardown:
-                logging.info("--- TEARDOWN --- node controller\n")
+                log.info("--- TEARDOWN --- node controller\n")
                 _nodes.destroy_all_nodes()
-                logging.info(f"--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n")
+                log.info(f"--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n")
                 utils.run_command(f"rm -f {_infraenv_config.iso_download_path}", shell=True)
                 self.teardown_nat(_nat)
 
@@ -409,7 +408,7 @@ class BaseTest:
 
         @JunitTestCase()
         def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
-            logging.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
+            log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
             _cluster = Cluster(
                 api_client=api_client, config=cluster_config, nodes=nodes, infra_env_config=infra_env_configuration
             )
@@ -423,13 +422,13 @@ class BaseTest:
         yield get_cluster_func
         for cluster in clusters:
             if self._is_test_failed(request):
-                logging.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
+                log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
                 self.collect_test_logs(cluster, api_client, request, cluster.nodes)
             if global_variables.test_teardown:
                 if cluster.is_installing() or cluster.is_finalizing():
                     cluster.cancel_install()
                 with suppress(ApiException):
-                    logging.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
+                    log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
                     cluster.delete()
 
     @pytest.fixture
@@ -498,7 +497,7 @@ class BaseTest:
                 given_node_ips.append(node.ips[0])
             cluster.nodes.shutdown_given(given_nodes)
 
-            logging.info(f"Given node ips: {given_node_ips}")
+            log.info(f"Given node ips: {given_node_ips}")
 
             for _rule in iptables_rules:
                 _rule.add_sources(given_node_ips)
@@ -506,7 +505,7 @@ class BaseTest:
                 _rule.insert()
 
         yield set_iptables_rules_for_nodes
-        logging.info("---TEARDOWN iptables ---")
+        log.info("---TEARDOWN iptables ---")
         for rule in rules:
             rule.delete()
 
@@ -524,9 +523,9 @@ class BaseTest:
             for modified_node in modified_nodes:
                 try:
                     modified_node.detach_all_test_disks()
-                    logging.info(f"Successfully detach test disks from node {modified_node.name}")
+                    log.info(f"Successfully detach test disks from node {modified_node.name}")
                 except (libvirt.libvirtError, FileNotFoundError):
-                    logging.warning(f"Failed to detach test disks from node {modified_node.name}")
+                    log.warning(f"Failed to detach test disks from node {modified_node.name}")
 
     @pytest.fixture(scope="function")
     def attach_disk(self):
@@ -552,7 +551,7 @@ class BaseTest:
 
         yield add
         for added_network in added_networks:
-            logging.info(f"Deleting custom networks:{added_networks}")
+            log.info(f"Deleting custom networks:{added_networks}")
             with suppress(Exception):
                 node_obj = added_network.get("node")
                 node_obj.undefine_interface(added_network.get("mac"))
@@ -560,7 +559,7 @@ class BaseTest:
 
     @pytest.fixture()
     def proxy_server(self):
-        logging.info("--- SETUP --- proxy controller")
+        log.info("--- SETUP --- proxy controller")
         proxy_servers = []
 
         def start_proxy_server(**kwargs):
@@ -571,7 +570,7 @@ class BaseTest:
 
         yield start_proxy_server
         if global_variables.test_teardown:
-            logging.info("--- TEARDOWN --- proxy controller")
+            log.info("--- TEARDOWN --- proxy controller")
             for server in proxy_servers:
                 server.remove()
 
@@ -634,7 +633,7 @@ class BaseTest:
 
     @classmethod
     def _collect_virsh_logs(cls, nodes: Nodes, log_dir_name):
-        logging.info("Collecting virsh logs\n")
+        log.info("Collecting virsh logs\n")
         os.makedirs(log_dir_name, exist_ok=True)
         virsh_log_path = os.path.join(log_dir_name, "libvirt_logs")
         os.makedirs(virsh_log_path, exist_ok=False)
@@ -653,7 +652,7 @@ class BaseTest:
         try:
             shutil.copy("/var/log/messages", messages_log_path)
         except FileNotFoundError:
-            logging.warning("Failed to copy /var/log/messages, file does not exist")
+            log.warning("Failed to copy /var/log/messages, file does not exist")
 
         qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
         os.makedirs(qemu_libvirt_path, exist_ok=False)
@@ -661,7 +660,7 @@ class BaseTest:
             try:
                 shutil.copy(f"/var/log/libvirt/qemu/{node.name}.log", f"{qemu_libvirt_path}/{node.name}-qemu.log")
             except FileNotFoundError:
-                logging.warning(f"Failed to copy {node.name} qemu log, file does not exist")
+                log.warning(f"Failed to copy {node.name} qemu log, file does not exist")
 
         console_log_path = os.path.join(virsh_log_path, "console_logs")
         os.makedirs(console_log_path, exist_ok=False)
@@ -671,7 +670,7 @@ class BaseTest:
                     f"/var/log/libvirt/qemu/{node.name}-console.log", f"{console_log_path}/{node.name}-console.log"
                 )
             except FileNotFoundError:
-                logging.warning(f"Failed to copy {node.name} console log, file does not exist")
+                log.warning(f"Failed to copy {node.name} console log, file does not exist")
 
         libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
         utils.run_command(
@@ -681,7 +680,7 @@ class BaseTest:
 
     @staticmethod
     def _collect_journalctl(nodes: Nodes, log_dir_name):
-        logging.info("Collecting journalctl\n")
+        log.info("Collecting journalctl\n")
         utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
         journal_ctl_path = Path(log_dir_name) / "nodes_journalctl"
         utils.recreate_folder(journal_ctl_path, with_chmod=False)
@@ -691,7 +690,7 @@ class BaseTest:
                 journal_path = journal_ctl_path / node.name
                 node.download_file(f"/tmp/{node.name}-journalctl", str(journal_path))
             except (RuntimeError, TimeoutError, SSHException):
-                logging.info(f"Could not collect journalctl for {node.name}")
+                log.info(f"Could not collect journalctl for {node.name}")
 
     @staticmethod
     def verify_no_logs_uploaded(cluster, cluster_tar_path):

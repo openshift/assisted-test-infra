@@ -1,6 +1,5 @@
 import ipaddress
 import json
-import logging
 import os
 import shutil
 import warnings
@@ -19,6 +18,7 @@ from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 from assisted_test_infra.test_infra.utils import TerraformControllerUtil
 from assisted_test_infra.test_infra.utils.base_name import BaseName, get_name_suffix
 from consts import resources
+from service_client import log
 
 
 class TerraformController(LibvirtController):
@@ -43,7 +43,7 @@ class TerraformController(LibvirtController):
 
     def _create_tf_folder(self, name: str, platform: str):
         tf_folder = TerraformControllerUtil.get_folder(cluster_name=name)
-        logging.info("Creating %s as terraform folder", tf_folder)
+        log.info("Creating %s as terraform folder", tf_folder)
         utils.recreate_folder(tf_folder)
         utils.copy_template_tree(tf_folder)
 
@@ -57,7 +57,7 @@ class TerraformController(LibvirtController):
 
     def _get_disk_encryption_appliance(self):
         if isinstance(self._entity_config, BaseInfraEnvConfig):
-            logging.debug("Infra-env is not associated with any disk-encryption configuration")
+            log.debug("Infra-env is not associated with any disk-encryption configuration")
             return {}
 
         assert (
@@ -132,10 +132,10 @@ class TerraformController(LibvirtController):
 
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
-        logging.info("Creating tfvars")
+        log.info("Creating tfvars")
 
         self._fill_tfvars(running)
-        logging.info("Start running terraform")
+        log.info("Start running terraform")
         self.tf.apply()
         if self.params.running:
             self.wait_till_nodes_are_ready(network_name=self.params.libvirt_network_name)
@@ -143,13 +143,13 @@ class TerraformController(LibvirtController):
     # Filling tfvars json files with terraform needed variables to spawn vms
     def _fill_tfvars(self, running=True):
         tfvars_json_file = os.path.join(self.tf_folder, consts.TFVARS_JSON_NAME)
-        logging.info("Filling tfvars")
+        log.info("Filling tfvars")
         with open(tfvars_json_file) as _file:
             tfvars = json.load(_file)
 
         machine_cidr = self.get_primary_machine_cidr()
 
-        logging.info("Machine cidr is: %s", machine_cidr)
+        log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10)
         worker_starting_ip = str(
             ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10 + int(tfvars["master_count"])
@@ -208,7 +208,7 @@ class TerraformController(LibvirtController):
             return super().start_all_nodes()
 
     def format_node_disk(self, node_name: str, disk_index: int = 0):
-        logging.info("Formatting disk for %s", node_name)
+        log.info("Formatting disk for %s", node_name)
         self.format_disk(f"{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
     def get_ingress_and_api_vips(self):
@@ -280,7 +280,7 @@ class TerraformController(LibvirtController):
         self.set_dns(nameserver_ip, nameserver_ip)
 
     def _try_to_delete_nodes(self):
-        logging.info("Start running terraform delete")
+        log.info("Start running terraform delete")
         self.tf.destroy()
 
     def destroy_all_nodes(self, delete_tf_folder=False):
@@ -288,7 +288,7 @@ class TerraformController(LibvirtController):
         everything relevant.
         """
 
-        logging.info("Deleting all nodes")
+        log.info("Deleting all nodes")
         if os.path.exists(self.tf_folder):
             self._try_to_delete_nodes()
 
@@ -296,18 +296,18 @@ class TerraformController(LibvirtController):
             self._entity_name.get(), self.params.libvirt_network_name, self.params.libvirt_secondary_network_name
         )
         if delete_tf_folder:
-            logging.info("Deleting %s", self.tf_folder)
+            log.info("Deleting %s", self.tf_folder)
             shutil.rmtree(self.tf_folder)
 
     @classmethod
     def _delete_virsh_resources(cls, *filters):
-        logging.info("Deleting virsh resources (filters: %s)", filters)
+        log.info("Deleting virsh resources (filters: %s)", filters)
         skip_list = virsh_cleanup.DEFAULT_SKIP_LIST
         skip_list.extend(["minikube", "minikube-net"])
         virsh_cleanup.clean_virsh_resources(skip_list=skip_list, resource_filter=filters)
 
     def prepare_nodes(self):
-        logging.info("Preparing nodes")
+        log.info("Preparing nodes")
         self.destroy_all_nodes()
         if not os.path.exists(self._entity_config.iso_download_path):
             utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
@@ -317,7 +317,7 @@ class TerraformController(LibvirtController):
         self._create_nodes()
 
     def get_cluster_network(self):
-        logging.info(f"Cluster network name: {self.network_name}")
+        log.info(f"Cluster network name: {self.network_name}")
         return self.network_name
 
     def set_single_node_ip(self, ip):

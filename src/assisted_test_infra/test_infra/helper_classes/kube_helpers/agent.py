@@ -5,9 +5,10 @@ import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
 import consts
+from service_client import log
 
 from .base_resource import BaseCustomResource
-from .common import ObjectReference, logger
+from .common import ObjectReference
 
 
 class Agent(BaseCustomResource):
@@ -88,7 +89,7 @@ class Agent(BaseCustomResource):
             body=body,
         )
 
-        logger.info("patching agent %s: %s", self.ref, pformat(body))
+        log.info("patching agent %s: %s", self.ref, pformat(body))
 
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
@@ -99,7 +100,7 @@ class Agent(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
-        logger.info("deleted agent %s", self.ref)
+        log.info("deleted agent %s", self.ref)
 
     def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
         def _attempt_to_get_status() -> dict:
@@ -119,11 +120,11 @@ class Agent(BaseCustomResource):
 
     def set_role(self, role: str) -> None:
         self.patch(role=role)
-        logger.info(f"set agent {self.ref} role to {role}")
+        log.info(f"set agent {self.ref} role to {role}")
 
     def approve(self) -> None:
         self.patch(approved=True)
-        logger.info("approved agent %s", self.ref)
+        log.info("approved agent %s", self.ref)
 
     def bind(self, cluster_deployment) -> None:
         """
@@ -135,7 +136,7 @@ class Agent(BaseCustomResource):
                 "namespace": cluster_deployment.ref.namespace,
             }
         )
-        logger.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
+        log.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
 
     @classmethod
     def wait_for_agents_to_be_bound(
@@ -197,7 +198,7 @@ class Agent(BaseCustomResource):
             for agent in agents
         }
 
-        logger.info(
+        log.info(
             f"Waiting for agents to have the condition '{statusType}' ="
             f" '{status}' and currently agent conditions are {agents_conditions}"
         )
@@ -212,7 +213,7 @@ class Agent(BaseCustomResource):
         status="True",
         interval=10,
     ) -> None:
-        logger.info(f"Now Wait till agents have status as {statusType}")
+        log.info(f"Now Wait till agents have status as {statusType}")
 
         waiting.wait(
             lambda: Agent.are_agents_in_status(

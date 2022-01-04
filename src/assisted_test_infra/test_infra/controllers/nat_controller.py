@@ -1,9 +1,9 @@
-import logging
 import re
 from typing import List, Tuple, Union
 
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers import IpTableCommandOption
+from service_client import log
 
 
 class NatController:
@@ -20,7 +20,7 @@ class NatController:
 
     def add_nat_rules(self) -> None:
         """Add rules for the input interfaces and output interfaces"""
-        logging.info("Adding nat rules for interfaces %s", self._input_interfaces)
+        log.info("Adding nat rules for interfaces %s", self._input_interfaces)
 
         for output_interface in self._get_default_interfaces():
             self._add_rule(self._build_nat_string(output_interface))
@@ -29,7 +29,7 @@ class NatController:
 
     def remove_nat_rules(self) -> None:
         """Delete nat rules"""
-        logging.info("Deleting nat rules for interfaces %s", self._input_interfaces)
+        log.info("Deleting nat rules for interfaces %s", self._input_interfaces)
 
         for input_interface in self._input_interfaces:
             self._remove_rule(self._build_mark_string(input_interface))
@@ -95,14 +95,14 @@ class NatController:
     def _insert_rule(cls, rule_suffix: str) -> None:
         """Insert a new rule"""
         insert_rule = cls._build_rule_string(IpTableCommandOption.INSERT, rule_suffix)
-        logging.info('Adding rule "%s"', insert_rule)
+        log.info('Adding rule "%s"', insert_rule)
         utils.run_command(insert_rule, shell=True)
 
     @classmethod
     def _delete_rule(cls, rule_suffix: str) -> None:
         """Insert a new rule"""
         delete_rule = cls._build_rule_string(IpTableCommandOption.DELETE, rule_suffix)
-        logging.info('Delete rule "%s"', delete_rule)
+        log.info('Delete rule "%s"', delete_rule)
         utils.run_command(delete_rule, shell=True)
 
     @classmethod
