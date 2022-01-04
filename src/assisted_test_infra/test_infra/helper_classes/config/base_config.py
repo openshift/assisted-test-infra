@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from service_client import log
 
@@ -81,8 +81,8 @@ class _BaseConfig(Triggerable, ABC):
 
         _type = annotations[attr]
 
-        if hasattr(_type, "_gorg") and _type._gorg == List:
-            return [new_val]
+        if hasattr(_type, "__origin__"):
+            return _type.__origin__([new_val])
 
         # str, int, float, bool, Path, and more
         return new_val if isinstance(new_val, _type) else _type(new_val)
