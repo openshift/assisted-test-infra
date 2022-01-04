@@ -103,6 +103,12 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
     return need_update
 
 
+def download_manifests(client: InventoryClient, cluster_id: str, output_folder: str) -> None:
+    manifests_path = os.path.join(output_folder, "cluster_files", "manifests")
+    recreate_folder(manifests_path)
+    client.download_manifests(cluster_id, manifests_path)
+
+
 @JunitTestCase()
 def download_logs(
     client: InventoryClient,
@@ -136,13 +142,14 @@ def download_logs(
             "master.ign",
             "worker.ign",
             "install-config.yaml",
-            "custom_manifests.yaml",
-            "custom_manifests.json",
         ):
             with SuppressAndLog(assisted_service_client.rest.ApiException):
                 client.download_and_save_file(
                     cluster["id"], cluster_file, os.path.join(output_folder, "cluster_files", cluster_file)
                 )
+
+        with SuppressAndLog(assisted_service_client.rest.ApiException):
+            download_manifests(client, cluster["id"], output_folder)
 
         for host_id, infra_env_id in map(lambda host: (host["id"], host["infra_env_id"]), cluster["hosts"]):
             with SuppressAndLog(assisted_service_client.rest.ApiException):
