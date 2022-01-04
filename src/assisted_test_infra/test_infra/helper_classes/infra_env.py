@@ -92,3 +92,9 @@ class InfraEnv(Entity):
 
     def select_host_installation_disk(self, host_id: str, disk_paths: List[dict]) -> None:
         self.api_client.select_installation_disk(infra_env_id=self.id, host_id=host_id, disk_paths=disk_paths)
+
+    def deregister(self, deregister_hosts=True):
+        if deregister_hosts:
+            for host in self.api_client.client.v2_list_hosts(self.id):
+                self.api_client.client.v2_deregister_host(infra_env_id=self.id, host_id=host["id"])
+        self.api_client.client.deregister_infra_env(self.id)

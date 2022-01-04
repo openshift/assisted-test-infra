@@ -118,6 +118,10 @@ class Cluster(Entity):
     def delete(self):
         self.api_client.delete_cluster(self.id)
 
+    def deregister_infraenv(self):
+        if self._infra_env:
+            self._infra_env.deregister()
+
     def get_details(self):
         return self.api_client.cluster_get(self.id)
 
