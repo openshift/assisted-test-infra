@@ -9,7 +9,7 @@ pipeline {
     triggers { cron('H/30 * * * *') }
 
     environment {
-        SKIPPER_INTERACTIVE = "False"
+        SKIPPER_PARAMS = " "
 
         LOGS_DEST = "/var/ai-logs/triage_logs"
 
