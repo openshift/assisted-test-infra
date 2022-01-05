@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 set -o nounset
+set -o pipefail
+set -o errexit
 
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
@@ -9,15 +11,17 @@ function get_namespace_index() {
     namespace=$1
     oc_flag=${2:-}
 
-    index=$(skipper run python3 scripts/indexer.py --action set --namespace $namespace $oc_flag)
-    if [[ -z $index ]]; then
+    index=$(skipper run python3 scripts/indexer.py --action set --namespace "$namespace" "$oc_flag")
+
+    if [[ -z "${index}" ]]; then
         all_namespaces=$(skipper run python3 scripts/indexer.py --action list)
+
         echo "Maximum number of namespaces allowed are currently running: $all_namespaces"
         echo "Please remove an old namespace in order to create a new one"
         exit 1
     fi
 
-    echo $index
+    echo "$index"
 }
 
 function print_log() {
