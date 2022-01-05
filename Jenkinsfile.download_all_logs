@@ -8,7 +8,7 @@ pipeline {
     triggers { cron('* * * * *') }
 
     environment {
-        SKIPPER_INTERACTIVE = "False"
+        SKIPPER_PARAMS = " "
 
         LOGS_DEST = "/var/ai-logs"
         ADDITIONAL_PARAMS = "--download-all --update-by-events"

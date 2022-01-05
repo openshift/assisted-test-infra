@@ -38,8 +38,8 @@ fi
 mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
-    export RELEASE_IMAGES=$(SKIPPER_INTERACTIVE=False skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
-    export OS_IMAGES=$(SKIPPER_INTERACTIVE=False skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    export RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
+    export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         if [ -x "$(command -v docker)" ]; then
@@ -141,7 +141,7 @@ else
     fi
 
     skipper run src/update_assisted_service_cm.py
-    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
+    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
 
     add_firewalld_port $SERVICE_PORT
 

@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        SKIPPER_INTERACTIVE = "False"
+        SKIPPER_PARAMS = " "
         NAMESPACE = "assisted-installer"
         E2E_TESTS_MODE="true"
 

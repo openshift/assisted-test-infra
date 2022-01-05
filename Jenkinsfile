@@ -18,7 +18,7 @@ pipeline {
     }
 
     environment {
-        SKIPPER_INTERACTIVE = "False"
+        SKIPPER_PARAMS = " "
         BASE_DNS_DOMAINS = credentials('route53_dns_domain')
         ROUTE53_SECRET = credentials('route53_secret')
         RUN_ID = UUID.randomUUID().toString().take(8)
