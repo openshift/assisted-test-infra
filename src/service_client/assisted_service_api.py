@@ -34,6 +34,7 @@ class InventoryClient(object):
         self.versions = api.VersionsApi(api_client=self.api)
         self.domains = api.ManagedDomainsApi(api_client=self.api)
         self.operators = api.OperatorsApi(api_client=self.api)
+        self.manifest = api.ManifestsApi(api_client=self.api)
 
         fmt = CaseFormatKeys(case_name="cluster_id", severity_key="severity", case_timestamp="event_time")
         self._events_junit_exporter = JsonJunitExporter(fmt)
@@ -323,6 +324,16 @@ class InventoryClient(object):
         )
         with open(file_path, "wb") as _file:
             _file.write(response.data)
+
+    def download_manifests(self, cluster_id: str, dir_path: str) -> None:
+        log.info(f"Downloading manifests for cluster {cluster_id} into {dir_path}")
+        response = self.manifest.v2_list_cluster_manifests(cluster_id=cluster_id, _preload_content=False)
+        for record in json.loads(response.data):
+            response = self.manifest.v2_download_cluster_manifest(
+                cluster_id=cluster_id, file_name=record["file_name"], folder=record["folder"], _preload_content=False
+            )
+            with open(os.path.join(dir_path, record["file_name"]), "wb") as _file:
+                _file.write(response.data)
 
     def download_kubeconfig_no_ingress(self, cluster_id: str, kubeconfig_path: str) -> None:
         log.info("Downloading kubeconfig-noingress to %s", kubeconfig_path)
