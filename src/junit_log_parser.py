@@ -55,16 +55,18 @@ class LogsConverter:
         return False
 
     @classmethod
-    def get_log_entry_case(cls, entry: LogEntry, fail_cases: Dict[str, List[TestCase]], suite_name: str) -> \
-            List[TestCase]:
+    def get_log_entry_case(cls, entry: LogEntry,
+                           fail_cases: Dict[str, List[TestCase]],
+                           suite_name: str,
+                           failure_message: str
+                           ) -> List[TestCase]:
         fail_case: List[TestCase] = list()
-        message = f"{entry.msg}\n{entry.error if entry.error else ''}"
 
-        if cls._is_duplicate_entry(entry, message, fail_cases):
+        if cls._is_duplicate_entry(entry, failure_message, fail_cases):
             return []
 
         test_case = TestCase(name=entry.func, classname=suite_name, category=suite_name, timestamp=entry.time)
-        test_case.failures.append(CaseFailure(message=message, output=message, type=entry.level))
+        test_case.failures.append(CaseFailure(message=failure_message, output=failure_message, type=entry.level))
         fail_case.append(test_case)
 
         if entry.level != "fatal":
@@ -102,12 +104,19 @@ class LogsConverter:
                 if entry is None or (entry.level not in EXPORTED_LOG_LEVELS):
                     continue
 
-                if entry.func not in fail_cases:
-                    fail_cases[entry.func] = list()
+                failure_message = f"{entry.msg}\n{entry.error if entry.error else ''}"
 
-                fail_cases[entry.func] += cls.get_log_entry_case(entry, fail_cases, suite_name)
+                if entry.func not in fail_cases:
+                    fail_cases[entry.func] = cls.get_log_entry_case(entry, fail_cases, suite_name, failure_message)
+                else:
+                    for case in fail_cases[entry.func]:
+                        if case.is_failure():
+                            failure = case.failures[0]
+                            failure.message += f"\n{failure_message}"
+                            failure.output += f"\n{failure_message}"
 
         log.info(f"Found {len(fail_cases)} failures on {suite_name} suite")
+
         return [c for cases in fail_cases.values() for c in cases]
 
     @classmethod
