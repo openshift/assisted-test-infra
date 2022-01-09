@@ -42,13 +42,7 @@ if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
     export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
-        if [ -x "$(command -v docker)" ]; then
-            make -C assisted-service/ generate-configuration
-        else
-            ln -s $(which podman) /usr/bin/docker
-            make -C assisted-service/ generate-configuration
-            rm -f /usr/bin/docker
-        fi
+        (cd assisted-service; skipper make generate-configuration)
     fi
 fi
 
