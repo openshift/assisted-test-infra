@@ -7,7 +7,7 @@ PROVIDER_BRANCH="${PROVIDER_BRANCH:-master}"
 PROVIDER_IMAGE="${PROVIDER_IMAGE:-quay.io/edge-infrastructure/cluster-api-provider-agent:latest}"
 HYPERSHIFT_REPO="${HYPERSHIFT_REPO:-https://github.com/openshift/hypershift}"
 HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-main}"
-HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-registry.ci.openshift.org/hypershift/hypershift:latest}"
+HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/hypershift/hypershift:latest}"
 BASE_DIR=build
 
 function clone_repo() {
