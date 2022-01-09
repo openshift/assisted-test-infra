@@ -25,6 +25,15 @@ function checkout_branch() {
   )
 }
 
+function waitForPodsReadyStatus(){
+  while [[ $(kubectl get pods -n $1 -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}'| tr ' ' '\n'  | sort -u) != "True" ]]; do
+    echo "Waiting for pods in namespace $1 to be ready"
+    kubectl get pods -n $1 -o 'jsonpath={..status.containerStatuses}' | jq
+    sleep 5;
+  done
+  echo "Pods in namespace $1 are ready"
+}
+
 deploy_provider() {
   clone_repo "$PROVIDER_REPO" provider
   checkout_branch provider "$PROVIDER_BRANCH"
@@ -37,6 +46,7 @@ deploy_hypershift() {
   checkout_branch hypershift "$HYPERSHIFT_BRANCH"
   make -C $BASE_DIR/hypershift build
   $BASE_DIR/hypershift/bin/hypershift install --hypershift-image "$HYPERSHIFT_IMAGE"
+  waitForPodsReadyStatus hypershift
 }
 
 mkdir -p $BASE_DIR
