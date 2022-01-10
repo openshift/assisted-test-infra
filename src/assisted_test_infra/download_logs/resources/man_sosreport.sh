@@ -119,6 +119,8 @@ cp -a /etc/*syslog.conf ./etc/ 2>> error_log
 journalctl -u kubelet.service > ./var/log/kubelet.log 2>> error_log
 journalctl -u bootkube.service > ./var/log/bootkube.log 2>> error_log
 journalctl -u crio.service > ./var/log/crio.log 2>> error_log
+journalctl TAG=agent > ./var/log/agent_next_step_runner.log 2>> error_log
+journalctl -u agent > ./var/log/agent.log 2>> error_log
 
 echo -e "Gathering Openshift data..."
 export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/localhost.kubeconfig
