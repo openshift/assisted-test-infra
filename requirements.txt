@@ -1,4 +1,4 @@
-boto3==1.20.31
+boto3==1.20.32
 debugpy==1.5.1
 dnspython==2.1.0
 filelock==3.4.0
@@ -29,6 +29,6 @@ scp==0.14.2
 semver==2.13.0
 tabulate==0.8.9
 tqdm==4.62.3
-urllib3==1.26.7
+urllib3==1.26.8
 pyvmomi>=7.0.2
 waiting>=1.4.1
