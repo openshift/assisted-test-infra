@@ -98,7 +98,7 @@ class BaseTest:
     @pytest.fixture
     def new_infra_env_configuration(self) -> InfraEnvConfig:
         """
-        Creates new cluster configuration object.
+        Creates new infra-env configuration object.
         Override this fixture in your test class to provide a custom cluster configuration. (See TestInstall)
         :rtype: new cluster configuration object
         """
@@ -129,16 +129,16 @@ class BaseTest:
         self, request: pytest.FixtureRequest, new_infra_env_configuration: InfraEnvConfig
     ) -> InfraEnvConfig:
         """
-        Allows the test to modify the cluster configuration by registering a custom fixture.
-        To register the custom fixture you have to mark the test with "override_cluster_configuration" marker.
+        Allows the test to modify the infra-env configuration by registering a custom fixture.
+        To register the custom fixture you have to mark the test with "override_infra_env_configuration" marker.
 
         For example:
 
         @pytest.fixture
-        def FIXTURE_NAME(self, new_cluster_configuration):
-            yield new_cluster_configuration
+        def FIXTURE_NAME(self, new_infra_env_configuration):
+            yield new_infra_env_configuration
 
-        @pytest.mark.override_cluster_configuration(FIXTURE_NAME.__name__)
+        @pytest.mark.override_infra_env_configuration(FIXTURE_NAME.__name__)
         def test_something(cluster):
             pass
         """
