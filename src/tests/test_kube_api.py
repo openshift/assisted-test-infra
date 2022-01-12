@@ -399,7 +399,9 @@ def capi_test(
             f.write(cluster_config.ssh_public_key)
             f.flush()
             ssh_public_key_file = f.name
-            hypershift.create(pull_secret_file=ps, ssh_key=ssh_public_key_file)
+            hypershift.create(
+                pull_secret_file=ps, agent_namespace=global_variables.spoke_namespace, ssh_key=ssh_public_key_file
+            )
 
     cluster_deployment = ClusterDeployment(
         kube_api_client=kube_api_context.api_client, name=cluster_name, namespace=f"clusters-{cluster_name}"
