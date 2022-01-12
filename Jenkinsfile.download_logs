@@ -43,7 +43,6 @@ pipeline {
 
                 dir ('assisted-installer-deployment') {
                     sh "skipper run ./tools/create_triage_tickets.py --jira-access-token ${JIRA_ACCESS_TOKEN} -v"
-                    sh "skipper run ./tools/create_testgrid_tickets.py --jira-access-token ${JIRA_ACCESS_TOKEN} -v"
                 }
             }
         }
