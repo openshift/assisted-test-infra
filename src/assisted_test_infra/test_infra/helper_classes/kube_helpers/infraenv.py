@@ -17,7 +17,6 @@ from .cluster_deployment import ClusterDeployment
 from .idict import IDict
 from .secret import Secret, deploy_default_secret
 
-
 ISO_URL_PATTERN = re.compile(
     r"(?P<api_url>.+)/api/assisted-install/v1/clusters/" r"(?P<cluster_id>[0-9a-z-]+)/downloads/image"
 )
