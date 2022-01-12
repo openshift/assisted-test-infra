@@ -50,7 +50,12 @@ deploy_hypershift() {
 }
 
 mkdir -p $BASE_DIR
-deploy_provider
+if [[ "${DEPLOY_CAPI_PROVIDER}" == "true"; then
+  echo "Deploying Cluster API Provider Agent"
+  deploy_provider
+fi
+
+echo "Deploying HyperShift"
 deploy_hypershift
 echo "Alow route to minikube network - required for hosts to pull ignition"
 iptables -D LIBVIRT_FWI -o virbr1 -j REJECT --reject-with icmp-port-unreachable || true
