@@ -30,7 +30,7 @@ class HyperShift:
         log.info(f"Creating HyperShift cluster {self.name}")
         cmd = (
             f"./bin/hypershift create cluster agent --pull-secret {pull_secret_file} --name {self.name}"
-            f"--agent-namespace {agent_namespace}"
+            f" --agent-namespace {agent_namespace}"
         )
         if ssh_key:
             cmd += f" --ssh-key {ssh_key}"
