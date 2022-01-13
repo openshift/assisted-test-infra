@@ -400,7 +400,10 @@ def capi_test(
             f.flush()
             ssh_public_key_file = f.name
             hypershift.create(
-                pull_secret_file=ps, agent_namespace=global_variables.spoke_namespace, ssh_key=ssh_public_key_file
+                pull_secret_file=ps,
+                agent_namespace=global_variables.spoke_namespace,
+                provider_image=os.environ.get("PROVIDER_IMAGE", ""),
+                ssh_key=ssh_public_key_file,
             )
 
     cluster_deployment = ClusterDeployment(
