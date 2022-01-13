@@ -131,7 +131,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `NO_PROXY_VALUES`             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
 | `NUM_MASTERS`                 | number of VMs to spawn as masters, default: 3 |
 | `NUM_WORKERS`                 | number of VMs to spawn as workers, default: 0 |
-| `OPENSHIFT_VERSION`           | OpenShift version to install, default: "4.7" |
+| `OPENSHIFT_VERSION`           | OpenShift version to install, default taken from the deployed assisted-service (`/v2/openshift-versions`) |
 | `HYPERTHREADING`              | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all |
 | `DISK_ENCRYPTION_MODE`        | Set disk encryption mode. Right now assisted-test-infra only supports "tpmv2", which is also the default. |
 | `DISK_ENCRYPTION_ROLES`       | Set node roles to apply disk encryption. Values are: all, none, masters, workers. default: none |
