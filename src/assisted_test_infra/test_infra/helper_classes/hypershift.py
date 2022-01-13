@@ -26,12 +26,15 @@ class HyperShift:
         self.kubeconfig_path = ""
         self.hypershift_cluster_client = None
 
-    def create(self, pull_secret_file: str, agent_namespace: str, ssh_key: str = ""):
+    def create(self, pull_secret_file: str, agent_namespace: str, provider_image: str = "", ssh_key: str = ""):
         log.info(f"Creating HyperShift cluster {self.name}")
         cmd = (
             f"./bin/hypershift create cluster agent --pull-secret {pull_secret_file} --name {self.name}"
             f" --agent-namespace {agent_namespace}"
         )
+        if provider_image:
+            log.info(f"Using provider image {provider_image}")
+            cmd += f" --annotations hypershift.openshift.io/capi-provider-agent-image={provider_image}"
         if ssh_key:
             cmd += f" --ssh-key {ssh_key}"
         utils.run_command_with_output(cmd, cwd=HYPERSHIFT_DIR)
