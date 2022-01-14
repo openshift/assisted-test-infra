@@ -55,13 +55,15 @@ function download_cluster_logs() {
 
 function download_capi_logs() {
   collect_kube_api_resources "${CAPI_PROVIDER_CRS[@]}"
-  NAMESPACE=$(get_pod_namespace cluster-api-provider-agent)
-  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/logs_{}_${DEPLOY_TARGET}.log" || true
+  # The pod name is capi-provider in case it's deployed by hypershift
+  NAMESPACE=$(get_pod_namespace "capi-provider|cluster-api-provider-agent")
+  mkdir ${LOGS_DEST}/${NAMESPACE}
+  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/${NAMESPACE}/logs_{}_${DEPLOY_TARGET}.log" || true
   skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
 }
 
 function get_pod_namespace() {
-  ${KUBECTL} get pods --no-headers -A -o jsonpath='{range .items[*]}{@.metadata.name}{" "}{@.metadata.namespace}{"\n"}' | grep $1 | awk -F " " '{print $2}'
+  ${KUBECTL} get pods --no-headers -A -o jsonpath='{range .items[*]}{@.metadata.name}{" "}{@.metadata.namespace}{"\n"}' | egrep $1 | awk -F " " '{print $2}'
 }
 
 # This function will get the content of all given CRs from all namespaces
