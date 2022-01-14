@@ -13,6 +13,7 @@ LOGS_DEST=${LOGS_DEST:-build}
 JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-"reports/"}
 KUBE_CRS=(clusterdeployment infraenv agentclusterinstall agent)
 CAPI_PROVIDER_CRS=(agentmachine agentcluster cluster machine machinedeployment machineset)
+ENABLE_KUBE_API=${ENABLE_KUBE_API:-"false"}
 
 function download_service_logs() {
   mkdir -p ${LOGS_DEST} || true
@@ -39,17 +40,21 @@ function download_service_logs() {
 }
 
 function download_cluster_logs() {
-  if [ "${REMOTE_SERVICE_URL:-}" != '""' ]; then
-    SERVICE_URL=${REMOTE_SERVICE_URL}
-  else
-    if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
-      SERVICE_URL=http://localhost:8090
-    else
-      SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
-    fi
-  fi
 
-  skipper run -e JUNIT_REPORT_DIR python3 -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
+  if [ ${ENABLE_KUBE_API} == "true" ]; then
+      KUBE_API=true skipper run -e JUNIT_REPORT_DIR python3 -m src.assisted_test_infra.download_logs "no_url" ${LOGS_DEST} ${ADDITIONAL_PARAMS}
+  else
+    if [ "${REMOTE_SERVICE_URL:-}" != '""' ]; then
+      SERVICE_URL=${REMOTE_SERVICE_URL}
+    else
+      if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
+        SERVICE_URL=http://localhost:8090
+      else
+        SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
+      fi
+    fi
+    skipper run -e JUNIT_REPORT_DIR python3 -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
+  fi
 }
 
 

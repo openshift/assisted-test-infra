@@ -1,6 +1,6 @@
 from base64 import b64decode
 from pprint import pformat
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
@@ -316,3 +316,14 @@ class AgentClusterInstall(BaseCustomResource):
 
         with open(kubeconfig_path, "wt") as kubeconfig_file:
             kubeconfig_file.write(b64decode(kubeconfig_data).decode())
+
+    @classmethod
+    def list(cls, crd_api: CustomObjectsApi, namespace) -> List["AgentClusterInstall"]:
+        resources = crd_api.list_namespaced_custom_object(
+            group=consts.CRD_AGENT_INSTALL_GROUP,
+            version=consts.CRD_AGENT_INSTALL_VERSION,
+            plural=cls._plural,
+            namespace=namespace,
+        )
+
+        return resources
