@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Optional, Union
 
 from assisted_service_client import models
@@ -13,8 +14,12 @@ class Entity(ABC):
         self._config = config
         self.api_client = api_client
         self.nodes: Nodes = nodes
-        self._infra_env = None
-        self.id = self._create()
+        self._create() if not self.id else self.update_existing()
+
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        pass
 
     @property
     def _entity_class_name(self):
@@ -22,6 +27,14 @@ class Entity(ABC):
 
     @abstractmethod
     def _create(self) -> str:
+        pass
+
+    @abstractmethod
+    def update_existing(self) -> str:
+        pass
+
+    @abstractmethod
+    def download_image(self, iso_download_path: str = None) -> Path:
         pass
 
     def update_config(self, **kwargs):

@@ -46,8 +46,9 @@ class Cluster(Entity):
         infra_env_config: BaseInfraEnvConfig,
         nodes: Optional[Nodes] = None,
     ):
-        super().__init__(api_client, config, nodes)
         self._infra_env_config = infra_env_config
+
+        super().__init__(api_client, config, nodes)
         self._infra_env = None
 
         # Update infraEnv configurations
@@ -57,6 +58,10 @@ class Cluster(Entity):
 
         self._high_availability_mode = config.high_availability_mode
         self.name = config.cluster_name.get()
+
+    @property
+    def id(self):
+        return self._config.cluster_id
 
     @property
     def kubeconfig_path(self):
@@ -70,32 +75,38 @@ class Cluster(Entity):
     def enable_image_download(self):
         return self._config.download_image
 
-    def _update_day2_config(self, api_client: InventoryClient, cluster_id: str):
-        day2_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
+    def _update_existing_cluster_config(self, api_client: InventoryClient, cluster_id: str):
+        existing_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
 
         self.update_config(
             **dict(
-                openshift_version=day2_cluster.openshift_version,
-                cluster_name=ClusterName(day2_cluster.name),
-                additional_ntp_source=day2_cluster.additional_ntp_source,
-                user_managed_networking=day2_cluster.user_managed_networking,
-                high_availability_mode=day2_cluster.high_availability_mode,
-                olm_operators=day2_cluster.monitored_operators,
-                base_dns_domain=day2_cluster.base_dns_domain,
-                vip_dhcp_allocation=day2_cluster.vip_dhcp_allocation,
+                openshift_version=existing_cluster.openshift_version,
+                cluster_name=ClusterName(existing_cluster.name),
+                additional_ntp_source=existing_cluster.additional_ntp_source,
+                user_managed_networking=existing_cluster.user_managed_networking,
+                high_availability_mode=existing_cluster.high_availability_mode,
+                olm_operators=existing_cluster.monitored_operators,
+                base_dns_domain=existing_cluster.base_dns_domain,
+                vip_dhcp_allocation=existing_cluster.vip_dhcp_allocation,
             )
         )
+
+    def update_existing(self) -> str:
+        log.info(f"Fetching existing cluster with id {self._config.cluster_id}")
+        self._update_existing_cluster_config(self.api_client, self._config.cluster_id)
+        infra_envs = self.api_client.infra_envs_list()
+        for infra_env in infra_envs:
+            if infra_env.get("cluster_id") == self._config.cluster_id:
+                self._infra_env_config.infra_env_id = infra_env.get("id")
+                self._infra_env = InfraEnv(self.api_client, self._infra_env_config, self.nodes)
+                break
+        return self._config.cluster_id
 
     def _create(self) -> str:
         disk_encryption = models.DiskEncryption(
             enable_on=self._config.disk_encryption_roles,
             mode=self._config.disk_encryption_mode,
         )
-
-        if self._config.cluster_id:
-            log.info(f"Fetching day2 cluster with id {self._config.cluster_id}")
-            self._update_day2_config(self.api_client, self._config.cluster_id)
-            return self._config.cluster_id
 
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
@@ -152,6 +163,9 @@ class Cluster(Entity):
     def generate_infra_env(
         self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None, proxy=None
     ) -> InfraEnv:
+        if self._infra_env:
+            return self._infra_env
+
         self._infra_env_config.ssh_public_key = ssh_key or self._config.ssh_public_key
         self._infra_env_config.iso_image_type = iso_image_type or self._config.iso_image_type
         self._infra_env_config.static_network_config = static_network_config
@@ -856,16 +870,6 @@ class Cluster(Entity):
 
     def host_complete_install(self):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
-
-    def setup_nodes(self, nodes, infra_env_config: BaseInfraEnvConfig):
-        self._infra_env = InfraEnv.generate(
-            self.api_client, infra_env_config, iso_image_type=self._config.iso_image_type
-        )
-        self._infra_env.download_image(iso_download_path=self._config.iso_download_path)
-
-        nodes.start_all()
-        self.wait_until_hosts_are_discovered()
-        return nodes.create_nodes_cluster_hosts_mapping(cluster=self)
 
     def wait_for_cluster_validation(
         self, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2

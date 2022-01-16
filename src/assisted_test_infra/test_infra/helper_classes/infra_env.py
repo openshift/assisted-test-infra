@@ -20,6 +20,13 @@ class InfraEnv(Entity):
     def __init__(self, api_client: InventoryClient, config: BaseInfraEnvConfig, nodes: Optional[Nodes] = None):
         super().__init__(api_client, config, nodes)
 
+    @property
+    def id(self):
+        return self._config.infra_env_id
+
+    def update_existing(self) -> str:
+        return self.id
+
     def _create(self):
         if self._config.ignition_config_override:
             ignition_config_override = json.dumps(self._config.ignition_config_override)
