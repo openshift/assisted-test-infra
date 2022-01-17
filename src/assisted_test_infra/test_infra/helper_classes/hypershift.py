@@ -43,6 +43,13 @@ class HyperShift:
         log.info(f"Deleting HyperShift cluster {self.name}")
         utils.run_command_with_output(f"./bin/hypershift destroy cluster agent --name {self.name}", cwd=HYPERSHIFT_DIR)
 
+    def dump(self, output_folder, kubeconfig_path=None):
+        log.info(f"Dump HyperShift cluster {self.name} to {output_folder}")
+        utils.run_command_with_output(
+            f"KUBECONFIG={kubeconfig_path} {HYPERSHIFT_DIR}/bin/hypershift dump cluster --name {self.name} "
+            f"--artifact-dir {output_folder}"
+        )
+
     def download_kubeconfig(self, kube_api_client: ApiClient) -> str:
         log.info(f"Downloading kubeconfig for HyperShift cluster {self.name}")
         kubeconfig_data = (
@@ -56,6 +63,7 @@ class HyperShift:
         )
         hypershift_kubeconfig_path = utils.get_kubeconfig_path(self.name) + "-hypershift"
 
+        log.info(f"Kubeconfig path {hypershift_kubeconfig_path}")
         with open(hypershift_kubeconfig_path, "wt") as kubeconfig_file:
             kubeconfig_file.write(b64decode(kubeconfig_data).decode())
             kubeconfig_file.flush()

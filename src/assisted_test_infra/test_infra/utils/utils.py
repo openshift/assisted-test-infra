@@ -360,6 +360,10 @@ def create_ip_address_nested_list(node_count, starting_ip_addr):
     return [[str(ipaddress.ip_address(starting_ip_addr) + i)] for i in range(node_count)]
 
 
+def is_cidr_is_ipv4(cidr):
+    return type(cidr) == ipaddress.IPv4Interface
+
+
 def create_empty_nested_list(node_count):
     return [[] for _ in range(node_count)]
 

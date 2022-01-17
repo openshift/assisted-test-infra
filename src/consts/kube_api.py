@@ -2,6 +2,10 @@ from .durations import HOUR, MINUTE
 
 CRD_API_GROUP = "agent-install.openshift.io"
 CRD_API_VERSION = "v1beta1"
+
+CRD_AGENT_INSTALL_GROUP = "extensions.hive.openshift.io"
+CRD_AGENT_INSTALL_VERSION = "v1beta1"
+
 HIVE_API_GROUP = "hive.openshift.io"
 HIVE_API_VERSION = "v1"
 

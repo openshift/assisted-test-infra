@@ -205,6 +205,26 @@ class ClusterDeployment(BaseCustomResource):
             expected_exceptions=waiting.exceptions.TimeoutExpired,
         )
 
+    @classmethod
+    def list(cls, crd_api: CustomObjectsApi, namespace) -> List["ClusterDeployment"]:
+        resources = crd_api.list_namespaced_custom_object(
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
+            plural=cls._plural,
+            namespace=namespace,
+        )
+
+        return resources
+
+    @classmethod
+    def list_all_namespaces(cls, crd_api: CustomObjectsApi) -> List["ClusterDeployment"]:
+        resources = crd_api.list_cluster_custom_object(
+            group=consts.HIVE_API_GROUP,
+            version=consts.HIVE_API_VERSION,
+            plural=cls._plural,
+        )
+        return resources
+
     def list_agents(self, agents_namespace=None) -> List[Agent]:
         return Agent.list(self.crd_api, self, agents_namespace)
 

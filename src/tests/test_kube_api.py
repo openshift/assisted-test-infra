@@ -347,7 +347,6 @@ def capi_test(
     is_disconnected=False,
 ):
     cluster_name = cluster_config.cluster_name.get()
-    cluster_config
     # TODO resolve it from the service if the node controller doesn't have this information
     #  (please see cluster.get_primary_machine_cidr())
     machine_cidr = nodes.controller.get_primary_machine_cidr()

@@ -12,6 +12,7 @@ from datetime import datetime
 import assisted_service_client
 import requests
 import urllib3
+from assisted_service_client import ApiClient
 from dateutil.parser import isoparse
 from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
@@ -20,15 +21,19 @@ from scp import SCPException
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
+from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
+from assisted_test_infra.test_infra.helper_classes.kube_helpers import AgentClusterInstall, ClusterDeployment
 from assisted_test_infra.test_infra.tools.concurrently import run_concurrently
 from assisted_test_infra.test_infra.utils import (
     are_host_progress_in_stage,
     config_etc_hosts,
     fetch_url,
+    is_cidr_is_ipv4,
     recreate_folder,
     run_command,
     verify_logs_uploaded,
 )
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from consts import ClusterStatus, HostsProgressStages, env_defaults
 from service_client import InventoryClient, SuppressAndLog, add_log_file_handler, log
 from tests.config import ClusterConfig, TerraformConfig
@@ -212,6 +217,67 @@ def download_logs(
         log.removeHandler(log_handler)
 
 
+@JunitTestCase()
+def download_logs_kube_api(
+    api_client: ApiClient, cluster_name: str, namespace: str, dest: str, must_gather: bool, management_kubeconfig: str
+):
+
+    cluster_deployment = ClusterDeployment(
+        kube_api_client=api_client,
+        name=cluster_name,
+        namespace=namespace,
+    )
+
+    agent_cluster_install = AgentClusterInstall(
+        kube_api_client=api_client,
+        name=cluster_deployment.get()["spec"]["clusterInstallRef"]["name"],
+        namespace=namespace,
+    )
+
+    output_folder = os.path.join(dest, f"{cluster_name}")
+    recreate_folder(output_folder)
+
+    try:
+        with SuppressAndLog(requests.exceptions.RequestException, ConnectionError):
+            collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install, output_folder)
+
+        if must_gather:
+            recreate_folder(os.path.join(output_folder, "must-gather"))
+            with SuppressAndLog(Exception):
+                # in case of hypershift
+                if namespace.startswith("clusters"):
+                    log.info("Dumping hypershift files")
+                    hypershift = HyperShift(name=cluster_name)
+                    hypershift.dump(os.path.join(output_folder, "dump"), management_kubeconfig)
+                else:
+                    _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_install, output_folder)
+
+    finally:
+        run_command(f"chmod -R ugo+rx '{output_folder}'")
+
+
+def _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_install, output_folder):
+    kubeconfig_path = os.path.join(output_folder, "kubeconfig")
+    agent_spec = agent_cluster_install.get_spec()
+    agent_cluster_install.download_kubeconfig(kubeconfig_path=kubeconfig_path)
+    log.info("Agent cluster install spec %s", agent_spec)
+
+    # in case of single node we should set node ip and not vip
+    if agent_spec.get("provisionRequirements", {}).get("controlPlaneAgents", 3) == 1:
+        kube_api_ip = get_ip_for_single_node(
+            cluster_deployment, is_cidr_is_ipv4(agent_spec["networking"]["machineNetwork"][0]["cidr"])
+        )
+    else:
+        kube_api_ip = agent_cluster_install.get_spec()["apiVIP"]
+
+    config_etc_hosts(
+        cluster_name,
+        cluster_deployment.get()["spec"]["baseDomain"],
+        kube_api_ip,
+    )
+    download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
+
+
 def get_cluster_events_path(cluster, output_folder):
     return os.path.join(output_folder, f"cluster_{cluster['id']}_events.json")
 
@@ -256,7 +322,7 @@ def get_ui_url_from_api_url(api_url: str):
 
 @JunitTestCase()
 def download_must_gather(kubeconfig: str, dest_dir: str):
-    log.info(f"Downloading must-gather to {dest_dir}")
+    log.info(f"Downloading must-gather to {dest_dir}, kubeconfig {kubeconfig}")
     command = (
         f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather"
         f" --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
@@ -290,19 +356,21 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
         log.exception("Failed accessing node %s for sosreport data gathering", node)
 
 
-def collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install):
+def collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install, output_folder=None):
     cluster_name = cluster_deployment.ref.name
-    output_folder = f"build/{cluster_name}"
-    recreate_folder(output_folder)
+    if not output_folder:
+        output_folder = f"build/{cluster_name}"
+        recreate_folder(output_folder)
     aci = agent_cluster_install.get()
     debug_info = aci["status"]["debugInfo"]
 
     try:
-        log.info("Collecting debugInfo (events/logs) from cluster")
+        log.info("Collecting debugInfo events from cluster to %s, debug info %s", output_folder, debug_info)
         fetch_url_and_write_to_file("eventsURL", "events.json", debug_info, output_folder)
+        log.info("Collecting debugInfo logs from cluster")
         fetch_url_and_write_to_file("logsURL", "logs.tar", debug_info, output_folder)
     except Exception as err:
-        log.warning(f"Failed to collect debug info for cluster {cluster_name} ({err})")
+        log.exception(f"Failed to collect debug info for cluster {cluster_name} ({err})")
 
 
 def fetch_url_and_write_to_file(url_key, file_name, debug_info, output_folder):
