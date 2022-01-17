@@ -66,6 +66,17 @@ class OperatorResource:
                 worker_disk_count=1,
                 worker_count=4,
             ),
+            OperatorType.ODF: cls._get_resource_dict(
+                master_memory=24000,
+                worker_memory=24000,
+                master_vcpu=12,
+                worker_vcpu=12,
+                master_disk=10737418240,
+                worker_disk=26843545600,
+                master_disk_count=1,
+                worker_disk_count=1,
+                worker_count=4,
+            ),
             OperatorType.LSO: cls._get_resource_dict(),
         }
 
