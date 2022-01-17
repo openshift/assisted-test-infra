@@ -28,10 +28,12 @@ from assisted_test_infra.test_infra.utils import (
     are_host_progress_in_stage,
     config_etc_hosts,
     fetch_url,
+    is_cidr_is_ipv4,
     recreate_folder,
     run_command,
     verify_logs_uploaded,
 )
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from consts import ClusterStatus, HostsProgressStages, env_defaults
 from service_client import InventoryClient, SuppressAndLog, add_log_file_handler, log
 from tests.config import ClusterConfig, TerraformConfig
@@ -256,12 +258,22 @@ def download_logs_kube_api(
 
 def _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_install, output_folder):
     kubeconfig_path = os.path.join(output_folder, "kubeconfig")
+    agent_spec = agent_cluster_install.get_spec()
     agent_cluster_install.download_kubeconfig(kubeconfig_path=kubeconfig_path)
-    log.info("Agent cluster install spec %s", agent_cluster_install.get()["spec"])
+    log.info("Agent cluster install spec %s", agent_spec)
+
+    # in case of single node we should set node ip and not vip
+    if agent_spec.get("provisionRequirements", {}).get("controlPlaneAgents", 3) == 1:
+        kube_api_ip = get_ip_for_single_node(
+            cluster_deployment, is_cidr_is_ipv4(agent_spec["networking"]["machineNetwork"][0]["cidr"])
+        )
+    else:
+        kube_api_ip = agent_cluster_install.get_spec()["apiVIP"]
+
     config_etc_hosts(
         cluster_name,
         cluster_deployment.get()["spec"]["baseDomain"],
-        agent_cluster_install.get()["spec"]["apiVIP"],
+        kube_api_ip,
     )
     download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
 

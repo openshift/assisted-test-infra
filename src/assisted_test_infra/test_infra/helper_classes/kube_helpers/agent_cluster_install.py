@@ -185,6 +185,9 @@ class AgentClusterInstall(BaseCustomResource):
             namespace=self.ref.namespace,
         )
 
+    def get_spec(self) -> dict:
+        return self.get().get("spec") or {}
+
     def delete(self) -> None:
         self.crd_api.delete_namespaced_custom_object(
             group=self._api_group,
