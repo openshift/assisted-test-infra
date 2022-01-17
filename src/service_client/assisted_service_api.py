@@ -150,7 +150,7 @@ class InventoryClient(object):
     def clusters_list(self) -> List[Dict[str, Any]]:
         return self.client.v2_list_clusters()
 
-    def infra_envs_list(self) -> List[models.InfraEnv]:
+    def infra_envs_list(self) -> List[Dict[str, Any]]:
         return self.client.list_infra_envs()
 
     def get_all_clusters(self) -> List[Dict[str, Any]]:
