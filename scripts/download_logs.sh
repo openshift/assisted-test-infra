@@ -12,7 +12,7 @@ KUBECTL=${KUBECTL:-kubectl}
 LOGS_DEST=${LOGS_DEST:-build}
 JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-"reports/"}
 KUBE_CRS=(clusterdeployment infraenv agentclusterinstall agent)
-CAPI_PROVIDER_CRS=(agentmachine agentcluster)
+CAPI_PROVIDER_CRS=(agentmachine agentcluster cluster machine machinedeployment machineset)
 
 function download_service_logs() {
   mkdir -p ${LOGS_DEST} || true
