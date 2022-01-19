@@ -22,6 +22,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     NMStateConfig,
 )
 from assisted_test_infra.test_infra.tools import static_network
+from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from service_client import ClientFactory, log
 from tests.base_test import BaseTest
@@ -34,9 +35,15 @@ class BaseKubeAPI(BaseTest):
         yield ClientFactory.create_kube_api_client()
 
     @pytest.fixture()
+    def spoke_namespace(self):
+        yield SpokeClusterNamespace().get()
+
+    @pytest.fixture()
     @JunitFixtureTestCase()
-    def kube_api_context(self, kube_api_client):
-        kube_api_context = KubeAPIContext(kube_api_client, clean_on_exit=global_variables.test_teardown)
+    def kube_api_context(self, kube_api_client, spoke_namespace):
+        kube_api_context = KubeAPIContext(
+            kube_api_client, clean_on_exit=spoke_namespace, spoke_namespace=spoke_namespace
+        )
 
         with kube_api_context:
             v1 = CoreV1Api(kube_api_client)
@@ -47,9 +54,9 @@ class BaseKubeAPI(BaseTest):
                         "apiVersion": "v1",
                         "kind": "Namespace",
                         "metadata": {
-                            "name": global_variables.spoke_namespace,
+                            "name": spoke_namespace,
                             "labels": {
-                                "name": global_variables.spoke_namespace,
+                                "name": spoke_namespace,
                             },
                         },
                     }
@@ -61,7 +68,7 @@ class BaseKubeAPI(BaseTest):
             yield kube_api_context
 
             if global_variables.test_teardown:
-                v1.delete_namespace(global_variables.spoke_namespace)
+                v1.delete_namespace(spoke_namespace)
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -175,7 +182,7 @@ class BaseKubeAPI(BaseTest):
 
     @classmethod
     @JunitTestCase()
-    def apply_static_network_config(cls, nodes, cluster_name, kube_client, namespace):
+    def apply_static_network_config(cls, kube_api_context: KubeAPIContext, nodes: Nodes, cluster_name: str):
         if not global_variables.is_static_ip:
             return None
 
@@ -187,9 +194,9 @@ class BaseKubeAPI(BaseTest):
         ]
 
         nmstate_config = NMStateConfig(
-            kube_api_client=kube_client,
+            kube_api_client=kube_api_context.api_client,
             name=f"{cluster_name}-nmstate-config",
-            namespace=namespace,
+            namespace=kube_api_context.spoke_namespace,
         )
         nmstate_config.apply(
             config=yaml.safe_load(static_network_config[0]["network_yaml"]),

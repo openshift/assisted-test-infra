@@ -10,7 +10,6 @@ import pytest
 import waiting
 from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
-from kubernetes.client import ApiClient
 from waiting import TimeoutExpired
 
 from assisted_test_infra.download_logs import collect_debug_info_from_cluster
@@ -21,6 +20,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     AgentClusterInstall,
     ClusterDeployment,
     InfraEnv,
+    KubeAPIContext,
     Proxy,
     Secret,
 )
@@ -60,10 +60,9 @@ class TestKubeAPI(BaseKubeAPI):
     def test_kubeapi(self, kube_test_configs_single_node, kube_api_context, proxy_server, get_nodes, is_ipv4, is_ipv6):
         cluster_config, tf_config = kube_test_configs_single_node
         self.kube_api_test(
-            kube_api_context.api_client,
+            kube_api_context,
             get_nodes(tf_config, cluster_config),
             cluster_config,
-            global_variables.spoke_namespace,
             proxy_server if cluster_config.is_ipv6 else None,
         )
 
@@ -71,20 +70,21 @@ class TestKubeAPI(BaseKubeAPI):
     @pytest.mark.kube_api
     def test_capi_provider(self, kube_test_configs_highly_available, kube_api_context, get_nodes):
         cluster_config, tf_config = kube_test_configs_highly_available
-        self.capi_test(kube_api_context.api_client, get_nodes(tf_config, cluster_config), cluster_config)
+        self.capi_test(kube_api_context, get_nodes(tf_config, cluster_config), cluster_config)
 
     @JunitTestCase()
     def kube_api_test(
         self,
-        api_client: ApiClient,
+        kube_api_context: KubeAPIContext,
         nodes: Nodes,
         cluster_config: ClusterConfig,
-        spoke_namespace: str,
         proxy_server: Optional[Callable] = None,
         *,
         is_disconnected: bool = False,
     ):
         cluster_name = cluster_config.cluster_name.get()
+        api_client = kube_api_context.api_client
+        spoke_namespace = kube_api_context.spoke_namespace
 
         # TODO resolve it from the service if the node controller doesn't have this information
         #  (please see cluster.get_primary_machine_cidr())
@@ -117,17 +117,17 @@ class TestKubeAPI(BaseKubeAPI):
         agent_cluster_install.wait_to_be_ready(ready=False)
 
         if cluster_config.is_static_ip:
-            self.apply_static_network_config(nodes, cluster_name, api_client, spoke_namespace)
+            self.apply_static_network_config(kube_api_context, nodes, cluster_name)
 
         if is_disconnected:
             log.info("getting igntion and install config override for disconected install")
-            ca_bundle = self.get_ca_bundle_from_hub()
+            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
             self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
             ignition_config_override = self.get_ignition_config_override(ca_bundle)
         else:
             ignition_config_override = None
 
-        infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", global_variables.spoke_namespace)
+        infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
         infra_env.create(
             cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
         )
@@ -156,7 +156,7 @@ class TestKubeAPI(BaseKubeAPI):
     @JunitTestCase()
     def capi_test(
         self,
-        api_client: ApiClient,
+        kube_api_context: KubeAPIContext,
         nodes: Nodes,
         cluster_config: ClusterConfig,
         proxy_server: Optional[Callable] = None,
@@ -164,14 +164,15 @@ class TestKubeAPI(BaseKubeAPI):
         is_disconnected: bool = False,
     ):
         cluster_name = cluster_config.cluster_name.get()
-        spoke_namespace = global_variables.spoke_namespace
+        api_client = kube_api_context.api_client
+        spoke_namespace = kube_api_context.spoke_namespace
 
         secret = Secret(api_client, f"{cluster_name}-secret", spoke_namespace)
         secret.create(pull_secret=cluster_config.pull_secret)
 
         if is_disconnected:
             log.info("getting igntion and install config override for disconected install")
-            ca_bundle = self.get_ca_bundle_from_hub()
+            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
             ignition_config_override = self.get_ignition_config_override(ca_bundle)
         else:
             ignition_config_override = None
@@ -196,7 +197,7 @@ class TestKubeAPI(BaseKubeAPI):
                 ssh_public_key_file = f.name
                 hypershift.create(
                     pull_secret_file=ps,
-                    agent_namespace=global_variables.spoke_namespace,
+                    agent_namespace=spoke_namespace,
                     provider_image=os.environ.get("PROVIDER_IMAGE", ""),
                     ssh_key=ssh_public_key_file,
                 )
@@ -213,20 +214,24 @@ class TestKubeAPI(BaseKubeAPI):
             waiting_for="clusterDeployment to get created",
             expected_exceptions=Exception,
         )
-        self.set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, api_client, node_count=1)
-        self.set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, api_client, node_count=2)
+        self.set_node_count_and_wait_for_ready_nodes(kube_api_context, cluster_deployment, hypershift, node_count=1)
+        self.set_node_count_and_wait_for_ready_nodes(kube_api_context, cluster_deployment, hypershift, node_count=2)
 
     @classmethod
     def set_node_count_and_wait_for_ready_nodes(
-        cls, cluster_deployment: ClusterDeployment, hypershift: HyperShift, api_client: ApiClient, node_count: int
+        cls,
+        kube_api_context: KubeAPIContext,
+        cluster_deployment: ClusterDeployment,
+        hypershift: HyperShift,
+        node_count: int,
     ):
         log.info("Setting node count to %s", node_count)
-        hypershift.set_nodepool_node_count(api_client, node_count)
+        hypershift.set_nodepool_node_count(kube_api_context.api_client, node_count)
         log.info("waiting for capi provider to set clusterDeployment ref on the agent")
-        agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=global_variables.spoke_namespace)
+        agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=kube_api_context.spoke_namespace)
         log.info("Waiting for agents status verification")
         Agent.wait_for_agents_to_install(agents)
-        hypershift.download_kubeconfig(api_client)
+        hypershift.download_kubeconfig(kube_api_context.api_client)
         log.info("Waiting for node to join the cluster")
         hypershift.wait_for_nodes(node_count)
         log.info("Waiting for node to become ready")
@@ -246,9 +251,9 @@ class TestKubeAPI(BaseKubeAPI):
         return proxy
 
     @classmethod
-    def get_ca_bundle_from_hub(cls) -> str:
+    def get_ca_bundle_from_hub(cls, spoke_namespace: str) -> str:
         os.environ["KUBECONFIG"] = global_variables.installer_kubeconfig_path
-        with oc.project(global_variables.spoke_namespace):
+        with oc.project(spoke_namespace):
             ca_config_map_objects = oc.selector("configmap/registry-ca").objects()
             assert len(ca_config_map_objects) > 0
             ca_config_map_object = ca_config_map_objects[0]
@@ -298,8 +303,7 @@ class TestLateBinding(BaseKubeAPI):
     ):
         infraenv_config, tf_config = kube_test_configs_late_binding_single_node
         nodes = get_nodes_infraenv(tf_config, infraenv_config)
-        api_client = kube_api_context.api_client
-        infra_env = self.kube_api_test_prepare_late_binding_infraenv(api_client, nodes, infraenv_config)
+        infra_env = self.kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes, infraenv_config)
 
         yield infra_env, nodes
 
@@ -310,8 +314,7 @@ class TestLateBinding(BaseKubeAPI):
     ):
         infraenv_config, tf_config = kube_test_configs_late_binding_highly_available
         nodes = get_nodes_infraenv(tf_config, infraenv_config)
-        api_client = kube_api_context.api_client
-        infra_env = self.kube_api_test_prepare_late_binding_infraenv(api_client, nodes, infraenv_config)
+        infra_env = self.kube_api_test_prepare_late_binding_infraenv(kube_api_context, nodes, infraenv_config)
 
         yield infra_env, nodes
 
@@ -324,14 +327,14 @@ class TestLateBinding(BaseKubeAPI):
             hold_installation = request.getfixturevalue("hold_installation")
 
         yield self.prepare_late_binding_cluster(
-            kube_api_context.api_client, cluster_config, num_controlplane_agents=1, hold_installation=hold_installation
+            kube_api_context, cluster_config, num_controlplane_agents=1, hold_installation=hold_installation
         )
 
     @pytest.fixture
     @JunitFixtureTestCase()
     def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
         cluster_config, _ = kube_test_configs_highly_available
-        yield self.prepare_late_binding_cluster(kube_api_context.api_client, cluster_config, num_controlplane_agents=3)
+        yield self.prepare_late_binding_cluster(kube_api_context, cluster_config, num_controlplane_agents=3)
 
     @classmethod
     @JunitTestCase()
@@ -394,14 +397,15 @@ class TestLateBinding(BaseKubeAPI):
     @JunitTestCase()
     def prepare_late_binding_cluster(
         self,
-        api_client: ApiClient,
+        kube_api_context: KubeAPIContext,
         cluster_config: ClusterConfig,
         num_controlplane_agents: int,
         *,
         hold_installation: bool = False,
     ) -> (ClusterDeployment, AgentClusterInstall, ClusterConfig):
         cluster_name = cluster_config.cluster_name.get()
-        spoke_namespace = global_variables.spoke_namespace
+        api_client = kube_api_context.api_client
+        spoke_namespace = kube_api_context.spoke_namespace
 
         agent_cluster_install = AgentClusterInstall(
             api_client, f"{cluster_name}-agent-cluster-install", spoke_namespace
@@ -430,10 +434,13 @@ class TestLateBinding(BaseKubeAPI):
         return cluster_deployment, agent_cluster_install, cluster_config
 
     def kube_api_test_prepare_late_binding_infraenv(
-        self, api_client: ApiClient, nodes: Nodes, infraenv_config: InfraEnvConfig, *, is_ipv4: bool = True
+        self, kube_api_context: KubeAPIContext, nodes: Nodes, infraenv_config: InfraEnvConfig, *, is_ipv4: bool = True
     ):
+        api_client = kube_api_context.api_client
+        spoke_namespace = kube_api_context.spoke_namespace
+
         infraenv_name = infraenv_config.entity_name.get()
-        spoke_namespace = global_variables.spoke_namespace
+        spoke_namespace = spoke_namespace
         secret = Secret(api_client, f"{infraenv_name}-secret", spoke_namespace)
         secret.create(pull_secret=infraenv_config.pull_secret)
 
