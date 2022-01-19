@@ -2,13 +2,16 @@ import base64
 import json
 import os
 import tempfile
+from contextlib import suppress
 from typing import Callable, List, Optional
 
 import openshift as oc
 import pytest
 import waiting
+from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 from kubernetes.client import ApiClient
+from waiting import TimeoutExpired
 
 from assisted_test_infra.download_logs import collect_debug_info_from_cluster
 from assisted_test_infra.test_infra import Nodes, utils
@@ -24,31 +27,53 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
+from tests.global_variables import get_default_triggers
 
 PROXY_PORT = 3129
 
 
 class TestKubeAPI(BaseKubeAPI):
-    @JunitTestSuite()
-    @pytest.mark.kube_api
-    def test_kube_api_ipv4(self, kube_test_configs_single_node, kube_api_context, get_nodes):
-        namespace = global_variables.spoke_namespace
-        cluster_config, tf_config = kube_test_configs_single_node
-        self.kube_api_test(kube_api_context.api_client, get_nodes(tf_config, cluster_config), cluster_config, namespace)
+    KUBEAPI_IP_OPTIONS = [(False, True), (True, False)]
 
-    @JunitTestSuite()
+    @pytest.fixture
+    @JunitFixtureTestCase()
+    def kube_test_configs_single_node(self, request: FixtureRequest, configs):
+        cluster_config, terraform_config = configs
+        self._configure_single_node(terraform_config)
+
+        for fixture_name in ["is_ipv4", "is_ipv6"]:
+            with suppress(FixtureLookupError):
+                if hasattr(cluster_config, fixture_name):
+                    cluster_config.set_value(fixture_name, request.getfixturevalue(fixture_name))
+            with suppress(FixtureLookupError):
+                if hasattr(terraform_config, fixture_name):
+                    terraform_config.set_value(fixture_name, request.getfixturevalue(fixture_name))
+
+        cluster_config.trigger(get_default_triggers())
+        terraform_config.trigger(get_default_triggers())
+
+        yield cluster_config, terraform_config
+
     @pytest.mark.kube_api
-    def test_kube_api_ipv6(self, kube_test_configs_single_node, kube_api_context, proxy_server, get_nodes):
+    @JunitTestSuite()
+    @pytest.mark.parametrize("is_ipv4, is_ipv6", KUBEAPI_IP_OPTIONS)
+    def test_kubeapi(self, kube_test_configs_single_node, kube_api_context, proxy_server, get_nodes, is_ipv4, is_ipv6):
         cluster_config, tf_config = kube_test_configs_single_node
         self.kube_api_test(
             kube_api_context.api_client,
             get_nodes(tf_config, cluster_config),
             cluster_config,
             global_variables.spoke_namespace,
-            proxy_server,
-            is_ipv4=False,
+            proxy_server if cluster_config.is_ipv6 else None,
         )
 
+    @JunitTestSuite()
+    @pytest.mark.kube_api
+    def test_capi_provider(self, kube_test_configs_highly_available, kube_api_context, get_nodes):
+        cluster_config, tf_config = kube_test_configs_highly_available
+        self.capi_test(kube_api_context.api_client, get_nodes(tf_config, cluster_config), cluster_config)
+
+    @JunitTestCase()
     def kube_api_test(
         self,
         api_client: ApiClient,
@@ -57,7 +82,6 @@ class TestKubeAPI(BaseKubeAPI):
         spoke_namespace: str,
         proxy_server: Optional[Callable] = None,
         *,
-        is_ipv4: bool = True,
         is_disconnected: bool = False,
     ):
         cluster_name = cluster_config.cluster_name.get()
@@ -76,6 +100,7 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_deployment = ClusterDeployment(api_client, cluster_name, spoke_namespace)
         cluster_deployment.create(agent_cluster_install_ref=agent_cluster_install.ref, secret=secret)
 
+        proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
         agent_cluster_install.create(
             cluster_deployment_ref=cluster_deployment.ref,
             image_set_ref=self.deploy_image_set(cluster_name, api_client),
@@ -87,8 +112,12 @@ class TestKubeAPI(BaseKubeAPI):
             control_plane_agents=nodes.masters_count,
             worker_agents=nodes.workers_count,
             machine_cidr=machine_cidr,
+            proxy=proxy.as_dict() if proxy else {},
         )
         agent_cluster_install.wait_to_be_ready(ready=False)
+
+        if cluster_config.is_static_ip:
+            self.apply_static_network_config(nodes, cluster_name, api_client, spoke_namespace)
 
         if is_disconnected:
             log.info("getting igntion and install config override for disconected install")
@@ -98,15 +127,14 @@ class TestKubeAPI(BaseKubeAPI):
         else:
             ignition_config_override = None
 
-        proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
         infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", global_variables.spoke_namespace)
         infra_env.create(
             cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
         )
-        agents = self.start_nodes(nodes, infra_env, cluster_config, is_ipv4)
+        agents = self.start_nodes(nodes, infra_env, cluster_config)
 
         if len(nodes) == 1:
-            self.set_single_node_ip(cluster_deployment, nodes, is_ipv4)
+            self.set_single_node_ip(cluster_deployment, nodes)
 
         log.info("Waiting for agent status verification")
         Agent.wait_for_agents_to_install(agents)
@@ -120,16 +148,12 @@ class TestKubeAPI(BaseKubeAPI):
             log.info("installation started, waiting for completion")
             agent_cluster_install.wait_to_be_installed()
             log.info("installation completed successfully")
-        except Exception:
+        except TimeoutExpired:
             log.exception("Failure during kube-api installation flow:")
             collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install)
+            raise
 
-    @JunitTestSuite()
-    @pytest.mark.kube_api
-    def test_capi_provider(self, kube_test_configs_highly_available, kube_api_context, get_nodes):
-        cluster_config, tf_config = kube_test_configs_highly_available
-        self.capi_test(kube_api_context.api_client, get_nodes(tf_config, cluster_config), cluster_config)
-
+    @JunitTestCase()
     def capi_test(
         self,
         api_client: ApiClient,
@@ -137,7 +161,6 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_config: ClusterConfig,
         proxy_server: Optional[Callable] = None,
         *,
-        is_ipv4: bool = True,
         is_disconnected: bool = False,
     ):
         cluster_name = cluster_config.cluster_name.get()
@@ -163,7 +186,7 @@ class TestKubeAPI(BaseKubeAPI):
             proxy=proxy,
             ssh_pub_key=cluster_config.ssh_public_key,
         )
-        self.start_nodes(nodes, infra_env, cluster_config, is_ipv4)
+        self.start_nodes(nodes, infra_env, cluster_config)
         hypershift = HyperShift(name=cluster_name)
 
         with utils.pull_secret_file() as ps:
@@ -217,7 +240,7 @@ class TestKubeAPI(BaseKubeAPI):
         proxy_server: Optional[Callable] = None,
     ):
         if not proxy_server:
-            return
+            return None
         log.info("setting cluster proxy details")
         proxy = cls.get_proxy(nodes, cluster_config, proxy_server, Proxy)
         return proxy
@@ -294,28 +317,21 @@ class TestLateBinding(BaseKubeAPI):
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def unbound_single_node_cluster(self, kube_test_configs_single_node, kube_api_context):
+    def unbound_single_node_cluster(self, request: FixtureRequest, kube_test_configs_single_node, kube_api_context):
         cluster_config, _ = kube_test_configs_single_node
-        yield self.kube_api_test_prepare_late_binding_cluster(
-            kube_api_context.api_client, cluster_config, num_controlplane_agents=1
+        hold_installation = False
+        with suppress(FixtureLookupError):
+            hold_installation = request.getfixturevalue("hold_installation")
+
+        yield self.prepare_late_binding_cluster(
+            kube_api_context.api_client, cluster_config, num_controlplane_agents=1, hold_installation=hold_installation
         )
 
     @pytest.fixture
     @JunitFixtureTestCase()
     def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
         cluster_config, _ = kube_test_configs_highly_available
-        yield self.kube_api_test_prepare_late_binding_cluster(
-            kube_api_context.api_client, cluster_config, num_controlplane_agents=3
-        )
-
-    @pytest.fixture
-    @JunitFixtureTestCase()
-    def unbound_single_node_cluster_hold_installation(self, kube_test_configs_single_node, kube_api_context):
-        cluster_config, _ = kube_test_configs_single_node
-        api_client = kube_api_context.api_client
-        yield self.kube_api_test_prepare_late_binding_cluster(
-            api_client, cluster_config, num_controlplane_agents=1, hold_installation=True
-        )
+        yield self.prepare_late_binding_cluster(kube_api_context.api_client, cluster_config, num_controlplane_agents=3)
 
     @classmethod
     @JunitTestCase()
@@ -325,14 +341,13 @@ class TestLateBinding(BaseKubeAPI):
         agent_cluster_install: AgentClusterInstall,
         agents: List["Agent"],
         nodes: Nodes,
-        is_ipv4: bool,
         hold_installation: bool = False,
     ) -> None:
         cls._bind_all(cluster_deployment, agents)
         cls._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
 
         if len(nodes) == 1:
-            cls.set_single_node_ip(cluster_deployment, nodes, is_ipv4)
+            cls.set_single_node_ip(cluster_deployment, nodes)
 
         agent_cluster_install.wait_to_be_ready(ready=True)
         Agent.wait_for_agents_to_be_bound(agents)
@@ -341,34 +356,27 @@ class TestLateBinding(BaseKubeAPI):
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_late_binding_ipv4_single_node(self, unbound_single_node_cluster, unbound_single_node_infraenv):
+    @pytest.mark.parametrize("hold_installation", [False, True])
+    def test_late_binding_kube_api_ipv4_single_node(
+        self, unbound_single_node_cluster, unbound_single_node_infraenv, hold_installation
+    ):
         infra_env, nodes = unbound_single_node_infraenv
         cluster_deployment, agent_cluster_install, cluster_config = unbound_single_node_cluster
 
         agents = infra_env.wait_for_agents(len(nodes))
         assert len(agents) == 1, f"Expected only one agent, found {len(agents)}"
 
-        self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4=True)
-
-    @JunitTestSuite()
-    @pytest.mark.kube_api
-    def test_kube_api_late_unbinding_ipv4_single_node(
-        self, unbound_single_node_cluster_hold_installation, unbound_single_node_infraenv
-    ):
-        infra_env, nodes = unbound_single_node_infraenv
-        cluster_deployment, agent_cluster_install, cluster_config = unbound_single_node_cluster_hold_installation
-
-        agents = infra_env.wait_for_agents(len(nodes))
         self._late_binding_install(
-            cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4=True, hold_installation=True
+            cluster_deployment, agent_cluster_install, agents, nodes, hold_installation=hold_installation
         )
 
-        cluster_deployment.delete()
-        Agent.wait_for_agents_to_unbound(agents)
+        if hold_installation:
+            cluster_deployment.delete()
+            Agent.wait_for_agents_to_unbound(agents)
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_kube_api_late_binding_ipv4_highly_available(
+    def test_late_binding_kube_api_ipv4_highly_available(
         self, unbound_highly_available_cluster, unbound_highly_available_infraenv
     ):
         infra_env, nodes = unbound_highly_available_infraenv
@@ -381,10 +389,10 @@ class TestLateBinding(BaseKubeAPI):
         agent_cluster_install.set_api_vip(api_vip)
         agent_cluster_install.set_ingress_vip(ingress_vip)
 
-        self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes, is_ipv4=True)
+        self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes)
 
     @JunitTestCase()
-    def kube_api_test_prepare_late_binding_cluster(
+    def prepare_late_binding_cluster(
         self,
         api_client: ApiClient,
         cluster_config: ClusterConfig,
@@ -440,7 +448,7 @@ class TestLateBinding(BaseKubeAPI):
             ssh_pub_key=infraenv_config.ssh_public_key,
         )
 
-        agents = self.start_nodes(nodes, infra_env, infraenv_config, is_ipv4)
+        agents = self.start_nodes(nodes, infra_env, infraenv_config)
 
         log.info("Waiting for agent status verification")
         Agent.wait_for_agents_to_be_ready_for_install(agents)

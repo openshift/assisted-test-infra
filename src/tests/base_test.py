@@ -325,7 +325,7 @@ class BaseTest:
         yield get_nodes_func
 
         _nodes: Nodes = nodes_data.get("nodes")
-        _cluster_config, _tf_config = nodes_data.get("configs")
+        _cluster_config, _tf_config = nodes_data.get("configs", (None, None))
         _nat: NatController = nodes_data.get("nat")
         _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
 
