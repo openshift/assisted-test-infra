@@ -11,6 +11,7 @@ import yaml
 import dns.resolver
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
+from junit_report import JunitTestSuite
 from netaddr import IPNetwork
 
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status, \
@@ -726,6 +727,7 @@ def run_nodes_flow(
         os.unlink(image_path)
 
 
+@JunitTestSuite()
 def execute_kube_api_flow():
     log.info("Executing kube-api flow")
     cluster_name = f'{args.cluster_name or consts.CLUSTER_PREFIX}-{args.namespace}'
