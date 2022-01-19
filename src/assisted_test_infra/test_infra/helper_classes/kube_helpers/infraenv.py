@@ -189,10 +189,7 @@ class InfraEnv(BaseCustomResource):
 
         log.info("deleted infraEnv %s", self.ref)
 
-    def status(
-        self,
-        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
-    ) -> dict:
+    def status(self, timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT) -> dict:
         """
         Status is a section in the CRD that is created after registration to
         assisted service and it defines the observed state of InfraEnv.

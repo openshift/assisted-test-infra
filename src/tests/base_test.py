@@ -12,8 +12,6 @@ from _pytest.fixtures import FixtureRequest
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from junit_report import JunitFixtureTestCase, JunitTestCase
-from kubernetes.client import CoreV1Api
-from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 from paramiko import SSHException
 
@@ -33,7 +31,6 @@ from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig, VSphereControllerConfig
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
-from assisted_test_infra.test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from consts import OperatorResource
@@ -725,39 +722,6 @@ class BaseTest:
             sleep_seconds=30,
             waiting_for="controller to be running",
         )
-
-    @pytest.fixture(scope="session")
-    def kube_api_client(self):
-        yield create_kube_api_client()
-
-    @pytest.fixture()
-    def kube_api_context(self, kube_api_client):
-        kube_api_context = KubeAPIContext(kube_api_client, clean_on_exit=global_variables.test_teardown)
-
-        with kube_api_context:
-            v1 = CoreV1Api(kube_api_client)
-
-            try:
-                v1.create_namespace(
-                    body={
-                        "apiVersion": "v1",
-                        "kind": "Namespace",
-                        "metadata": {
-                            "name": global_variables.spoke_namespace,
-                            "labels": {
-                                "name": global_variables.spoke_namespace,
-                            },
-                        },
-                    }
-                )
-            except K8sApiException as e:
-                if e.status != 409:
-                    raise
-
-            yield kube_api_context
-
-            if global_variables.test_teardown:
-                v1.delete_namespace(global_variables.spoke_namespace)
 
     @classmethod
     def update_olm_configuration(cls, tf_config: BaseNodeConfig, operators=None) -> None:
