@@ -2,7 +2,6 @@ import base64
 import json
 import os
 import tempfile
-import uuid
 from typing import Callable, List, Optional
 
 import openshift as oc
@@ -10,7 +9,6 @@ import pytest
 import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 from kubernetes.client import ApiClient
-from netaddr import IPNetwork
 
 from assisted_test_infra.download_logs import collect_debug_info_from_cluster
 from assisted_test_infra.test_infra import Nodes, utils
@@ -100,8 +98,7 @@ class TestKubeAPI(BaseKubeAPI):
         else:
             ignition_config_override = None
 
-        proxy = self.setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server)
-
+        proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
         infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", global_variables.spoke_namespace)
         infra_env.create(
             cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
@@ -146,10 +143,6 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_name = cluster_config.cluster_name.get()
         spoke_namespace = global_variables.spoke_namespace
 
-        # TODO resolve it from the service if the node controller doesn't have this information
-        #  (please see cluster.get_primary_machine_cidr())
-        machine_cidr = nodes.controller.get_primary_machine_cidr()
-
         secret = Secret(api_client, f"{cluster_name}-secret", spoke_namespace)
         secret.create(pull_secret=cluster_config.pull_secret)
 
@@ -160,7 +153,7 @@ class TestKubeAPI(BaseKubeAPI):
         else:
             ignition_config_override = None
 
-        proxy = self.setup_proxy(cluster_config, machine_cidr, cluster_name, proxy_server)
+        proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
 
         infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
         infra_env.create(
@@ -219,28 +212,15 @@ class TestKubeAPI(BaseKubeAPI):
     @classmethod
     def setup_proxy(
         cls,
+        nodes: Nodes,
         cluster_config: ClusterConfig,
-        machine_cidr: str,
-        cluster_name: str,
         proxy_server: Optional[Callable] = None,
     ):
         if not proxy_server:
             return
         log.info("setting cluster proxy details")
-        proxy_server_name = "squid-" + str(uuid.uuid4())[:8]
-        port = utils.scan_for_free_port(PROXY_PORT)
-        proxy_server(name=proxy_server_name, port=port)
-        host_ip = str(IPNetwork(machine_cidr).ip + 1)
-        proxy_url = f"http://[{host_ip}]:{port}"
-        no_proxy = ",".join(
-            [
-                machine_cidr,
-                cluster_config.service_networks[0].cidr,
-                cluster_config.cluster_networks[0].cidr,
-                f".{cluster_name}.redhat.com",
-            ]
-        )
-        return Proxy(http_proxy=proxy_url, https_proxy=proxy_url, no_proxy=no_proxy)
+        proxy = cls.get_proxy(nodes, cluster_config, proxy_server, Proxy)
+        return proxy
 
     @classmethod
     def get_ca_bundle_from_hub(cls) -> str:

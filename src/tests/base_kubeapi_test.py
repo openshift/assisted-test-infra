@@ -19,7 +19,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     KubeAPIContext,
 )
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
-from service_client import log, ClientFactory
+from service_client import ClientFactory, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, global_variables
 
