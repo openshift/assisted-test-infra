@@ -3,7 +3,7 @@ import os
 import shutil
 from contextlib import suppress
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple, Type, Union
 
 import libvirt
 import pytest
@@ -12,8 +12,6 @@ from _pytest.fixtures import FixtureRequest
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
 from junit_report import JunitFixtureTestCase, JunitTestCase
-from kubernetes.client import CoreV1Api
-from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 from paramiko import SSHException
 
@@ -29,11 +27,11 @@ from assisted_test_infra.test_infra.controllers import (
     TerraformController,
     VSphereController,
 )
+from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig, VSphereControllerConfig
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
-from assisted_test_infra.test_infra.helper_classes.kube_helpers import KubeAPIContext, create_kube_api_client
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
 from consts import OperatorResource
@@ -247,7 +245,7 @@ class BaseTest:
         )
 
         if self._does_need_proxy_server(prepare_nodes_network):
-            self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
+            self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
         yield cluster
 
@@ -414,7 +412,7 @@ class BaseTest:
             )
 
             if self._does_need_proxy_server(nodes):
-                self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
+                self.__set_up_proxy_server(_cluster, cluster_config, proxy_server)
 
             clusters.append(_cluster)
             return _cluster
@@ -454,12 +452,27 @@ class BaseTest:
         return nodes and nodes.is_ipv6 and not nodes.is_ipv4
 
     @staticmethod
-    def _set_up_proxy_server(cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
+    def get_proxy_server(nodes: Nodes, cluster_config: ClusterConfig, proxy_server: Callable) -> ProxyController:
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
         port = utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
 
-        machine_cidr = cluster.get_primary_machine_cidr()
+        machine_cidr = nodes.controller.get_primary_machine_cidr()
         host_ip = str(IPNetwork(machine_cidr).ip + 1)
+        return proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip, is_ipv6=nodes.is_ipv6)
+
+    @classmethod
+    def get_proxy(
+        cls,
+        nodes: Nodes,
+        cluster_config: ClusterConfig,
+        proxy_server: Callable,
+        proxy_generator: Union[Type[models.Proxy], Type[kube_helpers.Proxy]],
+    ) -> Union[models.Proxy, kube_helpers.Proxy]:
+        """Get proxy configurations for kubeapi and for restapi. proxy_generator need to be with the
+        following signature: Proxy(http_proxy=<value1>, https_proxy=<value2>, no_proxy=<value3>)"""
+
+        proxy_server = cls.get_proxy_server(nodes, cluster_config, proxy_server)
+        machine_cidr = nodes.controller.get_primary_machine_cidr()
 
         no_proxy = []
         no_proxy += [str(cluster_network.cidr) for cluster_network in cluster_config.cluster_networks]
@@ -468,15 +481,19 @@ class BaseTest:
         no_proxy += [f".{str(cluster_config.cluster_name)}.redhat.com"]
         no_proxy = ",".join(no_proxy)
 
-        proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip, is_ipv6=cluster.nodes.is_ipv6)
-        cluster_proxy_values = models.Proxy(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
-        cluster.set_proxy_values(proxy_values=cluster_proxy_values)
+        return proxy_generator(http_proxy=proxy_server.address, https_proxy=proxy_server.address, no_proxy=no_proxy)
+
+    @classmethod
+    def __set_up_proxy_server(cls, cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
+        proxy = cls.get_proxy(cluster.nodes, cluster_config, proxy_server, models.Proxy)
+
+        cluster.set_proxy_values(proxy_values=proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy") or install_config.get("Proxy")
         assert proxy_details, str(install_config)
         assert (
-            proxy_details.get("httpsProxy") == proxy.address
-        ), f"{proxy_details.get('httpsProxy')} should equal {proxy.address}"
+            proxy_details.get("httpsProxy") == proxy.https_proxy
+        ), f"{proxy_details.get('httpsProxy')} should equal {proxy.https_proxy}"
 
     @pytest.fixture()
     def iptables(self) -> Callable[[Cluster, List[IptableRule], Optional[List[Node]]], None]:
@@ -725,39 +742,6 @@ class BaseTest:
             sleep_seconds=30,
             waiting_for="controller to be running",
         )
-
-    @pytest.fixture(scope="session")
-    def kube_api_client(self):
-        yield create_kube_api_client()
-
-    @pytest.fixture()
-    def kube_api_context(self, kube_api_client):
-        kube_api_context = KubeAPIContext(kube_api_client, clean_on_exit=global_variables.test_teardown)
-
-        with kube_api_context:
-            v1 = CoreV1Api(kube_api_client)
-
-            try:
-                v1.create_namespace(
-                    body={
-                        "apiVersion": "v1",
-                        "kind": "Namespace",
-                        "metadata": {
-                            "name": global_variables.spoke_namespace,
-                            "labels": {
-                                "name": global_variables.spoke_namespace,
-                            },
-                        },
-                    }
-                )
-            except K8sApiException as e:
-                if e.status != 409:
-                    raise
-
-            yield kube_api_context
-
-            if global_variables.test_teardown:
-                v1.delete_namespace(global_variables.spoke_namespace)
 
     @classmethod
     def update_olm_configuration(cls, tf_config: BaseNodeConfig, operators=None) -> None:
