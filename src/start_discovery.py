@@ -32,7 +32,6 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     AgentClusterInstall,
 )
 
-import bootstrap_in_place as ibip
 import day2
 import install_cluster
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
@@ -924,8 +923,6 @@ def main():
         day2.execute_day2_cloud_flow(cluster_id, args, has_ipv6)
     if args.day2_ocp_cluster:
         day2.execute_day2_ocp_flow(cluster_id, args, has_ipv6)
-    if args.bootstrap_in_place:
-        ibip.execute_ibip_flow(args)
 
 
 if __name__ == "__main__":
@@ -1223,11 +1220,6 @@ if __name__ == "__main__":
         help='VMs platform mode (\'baremetal\' or \'none\')',
         type=str,
         default='baremetal'
-    )
-    parser.add_argument(
-        "--bootstrap-in-place",
-        help="single node cluster with bootstrap in place flow",
-        action="store_true",
     )
     parser.add_argument(
         "--proxy",

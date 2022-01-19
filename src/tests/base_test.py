@@ -63,6 +63,12 @@ class BaseTest:
         # Configuring net asset which currently supported by libvirt terraform only
         net_asset = LibvirtNetworkAssets()
         new_controller_configuration.net_asset = net_asset.get()
+
+        if new_controller_configuration.bootstrap_in_place:
+            new_controller_configuration.single_node_ip = new_controller_configuration.net_asset.machine_cidr.replace(
+                "0/24", "10"
+            )
+
         yield new_controller_configuration
         net_asset.release_all()
 
