@@ -35,7 +35,7 @@ function wait_for_pod() {
     namespace="${2:-}"
     selector="${3:-}"
 
-    wait_for_condition "pod" "Ready" "30m" "${namespace}" "${selector}"
+    wait_for_condition_describe_every_minute "pod" "Ready" 30 "${namespace}" "${selector}"
 }
 
 function hash() {
@@ -58,13 +58,40 @@ function wait_for_condition() {
     namespace="${4:-}"
     selector="${5:-}"
 
-    echo "Waiting for (${object}) on namespace (${namespace}) with labels (${selector}) to be created..."
-    for i in {1..40}; do
-        oc get ${object} --selector="${selector}" --namespace=${namespace} |& grep -ivE "(no resources found|not found)" && break || sleep 10
-    done
+    wait_for_creation $object "${namespace}" "${selector}"
 
     echo "Waiting for (${object}) on namespace (${namespace}) with labels (${selector}) to become (${condition})..."
     oc wait -n "${namespace}" --for=condition=${condition} --selector "${selector}" ${object} --timeout=${timeout}
+}
+
+function wait_for_condition_describe_every_minute() {
+  object="$1"
+  condition="$2"
+  timeout_in_minutes="$3"
+  namespace="${4:-}"
+  selector="${5:-}"
+
+  wait_for_creation $object "${namespace}" "${selector}"
+
+  attempt_num=1
+
+  until [ $attempt_num -gt ${timeout_in_minutes} ] || (echo "Attemp (${attempt_num}): Waiting for (${object}) on namespace (${namespace}) with labels (${selector}) to become (${condition})..." && oc wait -n "${namespace}" --for=condition=${condition} --selector "${selector}" ${object} --timeout=1m); do
+    oc describe ${object} -n "${namespace}" --selector "${selector}"
+    ((attempt_num++))
+  done
+
+  [ $attempt_num -gt ${timeout_in_minutes} ] && return 1 || return 0
+}
+
+function wait_for_creation() {
+  object="$1"
+  namespace="${2:-}"
+  selector="${3:-}"
+
+  echo "Waiting for (${object}) on namespace (${namespace}) with labels (${selector}) to be created..."
+  for i in {1..40}; do
+      oc get ${object} --selector="${selector}" --namespace=${namespace} |& grep -ivE "(no resources found|not found)" && break || sleep 10
+  done
 }
 
 function wait_for_object_amount() {
