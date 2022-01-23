@@ -1,7 +1,6 @@
 from contextlib import suppress
 
 import pytest
-from _pytest.fixtures import FixtureLookupError, FixtureRequest
 from junit_report import JunitTestSuite
 
 import consts
@@ -25,19 +24,19 @@ class TestInstall(BaseTest):
         else:
             config = TerraformConfig()
 
-        with suppress(FixtureLookupError):
+        with suppress(pytest.FixtureLookupError):
             operators = request.getfixturevalue("olm_operators")
             self.update_olm_configuration(config, operators)
 
         return config
 
     @pytest.fixture
-    def new_cluster_configuration(self, request: FixtureRequest):
+    def new_cluster_configuration(self, request: pytest.FixtureRequest):
         # Overriding the default BaseTest.new_cluster_configuration fixture to set custom configs.
         config = ClusterConfig()
 
         for fixture_name in ["openshift_version", "network_type", "is_static_ip", "olm_operators"]:
-            with suppress(FixtureLookupError):
+            with suppress(pytest.FixtureLookupError):
                 if hasattr(config, fixture_name):
                     config.set_value(fixture_name, request.getfixturevalue(fixture_name))
                 else:

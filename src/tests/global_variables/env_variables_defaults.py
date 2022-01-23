@@ -6,7 +6,6 @@ from typing import Any, ClassVar, List
 
 import consts
 from assisted_test_infra.test_infra.utils import get_env, operators_utils
-from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
 from consts import env_defaults, resources
 
 
@@ -42,7 +41,6 @@ class _EnvVariablesDefaults(ABC):
     master_vcpu: str = get_env("MASTER_CPU", resources.DEFAULT_MASTER_CPU)
     test_teardown: bool = bool(strtobool(get_env("TEST_TEARDOWN", str(env_defaults.DEFAULT_TEST_TEARDOWN))))
     namespace: str = get_env("NAMESPACE", consts.DEFAULT_NAMESPACE)
-    spoke_namespace: str = get_env("SPOKE_NAMESPACE", SpokeClusterNamespace().get())
     olm_operators: List[str] = field(default_factory=list)
     platform: str = get_env("PLATFORM", env_defaults.DEFAULT_PLATFORM)
     user_managed_networking: bool = env_defaults.DEFAULT_USER_MANAGED_NETWORKING
@@ -68,6 +66,7 @@ class _EnvVariablesDefaults(ABC):
     disk_encryption_mode: str = get_env("DISK_ENCRYPTION_MODE", env_defaults.DEFAULT_DISK_ENCRYPTION_MODE)
     disk_encryption_roles: str = get_env("DISK_ENCRYPTION_ROLES", env_defaults.DEFAULT_DISK_ENCRYPTION_ROLES)
     is_kube_api: bool = bool(strtobool(get_env("KUBE_API", str(env_defaults.DEFAULT_IS_KUBE_API))))
+    hold_installation = bool(strtobool(get_env("HOLD_INSTALLATION", str(env_defaults.DEFAULT_HOLD_INSTALLATION))))
 
     vsphere_cluster: str = get_env("VSPHERE_CLUSTER")
     vsphere_username: str = get_env("VSPHERE_USERNAME")

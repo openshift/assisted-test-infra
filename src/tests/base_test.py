@@ -53,6 +53,10 @@ class BaseTest:
         return TerraformConfig()
 
     @pytest.fixture
+    def infraenv_configuration(self) -> InfraEnvConfig:
+        yield InfraEnvConfig()
+
+    @pytest.fixture
     def prepared_controller_configuration(self, new_controller_configuration: BaseNodeConfig) -> BaseNodeConfig:
         if not isinstance(new_controller_configuration, TerraformConfig):
             yield new_controller_configuration
@@ -436,22 +440,10 @@ class BaseTest:
                     cluster.delete()
 
     @pytest.fixture
-    def infraenv_config(self) -> InfraEnvConfig:
-        yield InfraEnvConfig()
-
-    @pytest.fixture
-    def cluster_config(self) -> ClusterConfig:
-        yield ClusterConfig()
-
-    @pytest.fixture
-    def terraform_config(self) -> TerraformConfig:
-        yield TerraformConfig()
-
-    @pytest.fixture
-    def configs(self, cluster_config, terraform_config) -> Tuple[ClusterConfig, TerraformConfig]:
+    def configs(self, cluster_configuration, controller_configuration) -> Tuple[ClusterConfig, TerraformConfig]:
         """Get configurations objects - while using configs fixture cluster and tf configs are the same
         For creating new Config object just call it explicitly e.g. ClusterConfig(masters_count=1)"""
-        yield cluster_config, terraform_config
+        yield cluster_configuration, controller_configuration
 
     @staticmethod
     def _does_need_proxy_server(nodes: Nodes):

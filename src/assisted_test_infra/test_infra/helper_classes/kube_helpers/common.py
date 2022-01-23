@@ -25,10 +25,20 @@ class KubeAPIContext:
 
     resources = set()
 
-    def __init__(self, kube_api_client: Optional[ApiClient] = None, clean_on_exit: Optional[bool] = True):
+    def __init__(
+        self,
+        kube_api_client: Optional[ApiClient] = None,
+        clean_on_exit: Optional[bool] = True,
+        spoke_namespace: Optional[str] = None,
+    ):
 
         self.api_client = kube_api_client
+        self._spoke_namespace = spoke_namespace
         self._clean_on_exit = clean_on_exit
+
+    @property
+    def spoke_namespace(self):
+        return self._spoke_namespace
 
     def __enter__(self):
         log.info("entering kube api context")

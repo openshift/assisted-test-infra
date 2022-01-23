@@ -15,6 +15,7 @@ import time
 import warnings
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
+from distutils.util import strtobool
 from functools import wraps
 from pathlib import Path
 from string import ascii_lowercase
@@ -635,3 +636,22 @@ def run_marked_fixture(old_value, marker_name, request):
         # execute fixture
         return request.getfixturevalue(fixture_name)
     return old_value
+
+
+def get_kubeapi_protocol_options() -> List[Tuple[bool, bool]]:
+    is_ipv4 = get_env("IPv4")
+    is_ipv6 = get_env("IPv6")
+
+    is_ipv4 = bool(strtobool(is_ipv4)) if is_ipv4 else None
+    is_ipv6 = bool(strtobool(is_ipv6)) if is_ipv6 else None
+
+    if is_ipv6 and is_ipv4:  # dual-stack
+        return [(True, True)]
+
+    if is_ipv4:  # IPv4 only
+        return [(True, False)]
+
+    if is_ipv6:  # IPv6 only
+        return [(False, True)]
+
+    return [(False, True), (True, False)]
