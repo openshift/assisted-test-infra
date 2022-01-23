@@ -7,7 +7,7 @@ PROVIDER_BRANCH="${PROVIDER_BRANCH:-master}"
 PROVIDER_IMAGE="${PROVIDER_IMAGE:-quay.io/edge-infrastructure/cluster-api-provider-agent:latest}"
 HYPERSHIFT_REPO="${HYPERSHIFT_REPO:-https://github.com/openshift/hypershift}"
 HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-main}"
-HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/hypershift/hypershift:latest}"
+HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/hypershift/hypershift-operator:latest}"
 DEPLOY_CAPI_PROVIDER="${DEPLOY_CAPI_PROVIDER:-false}"
 BASE_DIR=build
 
@@ -43,6 +43,10 @@ deploy_provider() {
 
 deploy_hypershift() {
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.51.1/bundle.yaml || true
+  # TODO: Remove this once HyperShift can run on plain k8s
+  # this is a workaround for the required route CRD added
+  # in this HyperShift PR https://github.com/openshift/hypershift/pull/887
+  kubectl apply -f https://raw.githubusercontent.com/openshift/router/master/deploy/route_crd.yaml || true
   clone_repo $HYPERSHIFT_REPO hypershift
   checkout_branch hypershift "$HYPERSHIFT_BRANCH"
   make -C $BASE_DIR/hypershift build
