@@ -12,6 +12,7 @@ from assisted_test_infra.test_infra import (
     InfraEnvName,
     utils,
 )
+from assisted_test_infra.test_infra.utils import EnvVar
 from consts import env_defaults
 from tests.global_variables import DefaultVariables
 
@@ -21,6 +22,13 @@ global_variables = DefaultVariables()
 @dataclass
 class ClusterConfig(BaseClusterConfig):
     """A Cluster configuration with defaults that obtained from EnvConfig"""
+
+    def is_user_set(self, item: str):
+        try:
+            attr = global_variables.get_env(item)
+            return attr.is_user_set
+        except AttributeError:
+            return False
 
     @staticmethod
     def get_default(key, default=None) -> Any:
@@ -46,6 +54,13 @@ class ClusterConfig(BaseClusterConfig):
 @dataclass
 class InfraEnvConfig(BaseInfraEnvConfig):
     """A Cluster configuration with defaults that obtained from EnvConfig"""
+
+    def is_user_set(self, item: str):
+        attr = global_variables.get_env(item)
+        if hasattr(self, item) and isinstance(attr, EnvVar):
+            return attr.is_user_set
+
+        raise AttributeError(f"Can't find attribute {item}")
 
     @staticmethod
     def get_default(key, default=None) -> Any:
@@ -88,6 +103,13 @@ class Day2ClusterConfig(ClusterConfig):
 @dataclass
 class TerraformConfig(BaseTerraformConfig):
     """A Nodes configuration with defaults that obtained from EnvConfig"""
+
+    def is_user_set(self, item: str):
+        attr = global_variables.get_env(item)
+        if hasattr(self, item) and isinstance(attr, EnvVar):
+            return attr.is_user_set
+
+        raise AttributeError(f"Can't find attribute {item}")
 
     @staticmethod
     def get_default(key, default=None) -> Any:

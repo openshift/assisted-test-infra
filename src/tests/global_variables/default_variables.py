@@ -18,6 +18,9 @@ class DefaultVariables(_EnvVariablesDefaults, Triggerable):
         self._set("openshift_version", utils.get_openshift_version(allow_default=True, client=client))
         self.trigger(get_default_triggers())
 
+    def is_user_set(self, item: str) -> bool:
+        return self.get_env(item).is_user_set
+
     def _set(self, key: str, value: Any):
         _EnvVariablesDefaults._set(self, key, value)
 
@@ -32,8 +35,6 @@ class DefaultVariables(_EnvVariablesDefaults, Triggerable):
         offline_token = offline_token or self.offline_token
 
         if not url:
-            url = utils.get_local_assisted_service_url(
-                self.namespace, "assisted-service", utils.get_env("DEPLOY_TARGET")
-            )
+            url = utils.get_local_assisted_service_url(self.namespace, "assisted-service", self.deploy_target)
 
         return ClientFactory.create_client(url, offline_token, **kwargs)

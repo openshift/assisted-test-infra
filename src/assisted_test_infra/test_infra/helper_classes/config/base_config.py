@@ -18,9 +18,16 @@ class Triggerable(ABC):
     def _is_set(self, var, expected_value):
         return getattr(self, var, None) == expected_value
 
+    @abstractmethod
+    def is_user_set(self, item: str) -> bool:
+        pass
+
     def _handle_trigger(self, conditions: Tuple[Tuple[str, Any]], values: Dict[str, Any]) -> None:
         for k, v in values.items():
-            self._set(k, v)
+            if not self.is_user_set(k):
+                self._set(k, v)
+            else:
+                log.warning(f"Skipping setting {k} to value {v} due that it already been set by the user")
         log.info(f"{conditions} is triggered. Updating global variables: {values}")
 
     @abstractmethod

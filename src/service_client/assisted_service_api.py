@@ -526,6 +526,10 @@ class InventoryClient(object):
     def get_openshift_versions(self) -> models.OpenshiftVersions:
         return self.versions.v2_list_supported_openshift_versions()
 
+    def get_openshift_default_version(self) -> str:
+        openshift_versions = self.get_openshift_versions()
+        return [k for k, v in openshift_versions.items() if "default" in v and v["default"]].pop()
+
     def get_supported_operators(self) -> List[str]:
         return self.operators.v2_list_supported_operators()
 

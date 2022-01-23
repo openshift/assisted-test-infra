@@ -12,7 +12,7 @@ PATH := ${PATH}:/usr/local/bin
 
 
 REPORTS = $(ROOT_DIR)/reports
-UNITTEST_JUNIT_FILE=$(shell mktemp -u "$(REPORTS)/unittest_XXXXXXXXX.xml")
+PYTEST_JUNIT_FILE=$(shell mktemp -u "$(REPORTS)/unittest_XXXXXXXXX.xml")
 SKIPPER_PARAMS ?= -i
 
 
@@ -46,41 +46,10 @@ UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),assisted-installer-ui)
 # Monitoring services
 PROMETHEUS_SERVICE_NAME := $(or $(PROMETHEUS_SERVICE_NAME),prometheus-k8s)
 
-# nodes params
-ISO := $(or $(ISO), "") # ISO should point to a file that has the '.iso' extension. Otherwise deploy will fail!
-NUM_MASTERS :=  $(or $(NUM_MASTERS),3)
-WORKER_MEMORY ?= 8892
-MASTER_MEMORY ?= 16984
-NUM_WORKERS := $(or $(NUM_WORKERS),0)
-NUM_DAY2_WORKERS := $(or $(NUM_DAY2_WORKERS),1)
-STORAGE_POOL_PATH := $(or $(STORAGE_POOL_PATH), $(PWD)/storage_pool)
-CLUSTER_ID := $(or $(CLUSTER_ID), "")
-CLUSTER_NAME := $(or $(CLUSTER_NAME),test-infra-cluster)
-REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
-WORKER_DISK ?= 21474836480
-MASTER_DISK ?= 128849018880
-DISABLED_HOST_VALIDATIONS := $(or $(DISABLED_HOST_VALIDATIONS),"")
-
-#hyperthreading
-HYPERTHREADING := $(or $(HYPERTHREADING), all)
-
 # network params
 NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
 BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
-NETWORK_CIDR := $(or $(NETWORK_CIDR), "")
-NETWORK_MTU := $(or $(NETWORK_MTU), 1500)
-HTTP_PROXY_URL := $(or $(HTTP_PROXY_URL), "")
-HTTPS_PROXY_URL := $(or $(HTTPS_PROXY_URL), "")
-NO_PROXY_VALUES := $(or $(NO_PROXY_VALUES), "")
-VIP_DHCP_ALLOCATION := $(or $(VIP_DHCP_ALLOCATION),yes)
-IPv4 := $(or $(IPv4),yes)
-IPv6 := $(or $(IPv6), "")
-ISO_IMAGE_TYPE := $(or $(ISO_IMAGE_TYPE), full-iso)
-
-#day2 params
-API_VIP_IP := $(or $(API_VIP_IP),"")
-API_VIP_DNSNAME := $(or $(API_VIP_DNSNAME),"")
 
 # secrets
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ~/.ssh/id_rsa.pub))
@@ -95,7 +64,7 @@ DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
 IMAGE_NAME=test-infra
-IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
+
 
 # oc deploy
 ifneq ($(or $(OC_MODE),),)
@@ -120,8 +89,6 @@ ifdef DEBUG
 		DEBUG_FLAGS=-m debugpy --listen 0.0.0.0:5678 --wait-for-client
 	endif
 endif
-
-PROXY := $(or $(PROXY),no)
 
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api.integration.openshift.com/)
@@ -321,27 +288,25 @@ bring_assisted_installer:
 # Cluster #
 ###########
 
-_install_cluster:
-	src/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME)
-
-install_cluster:
-	skipper make $(SKIPPER_PARAMS) _install_cluster
+# _install_cluster:
+# 	src/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME)
+#
+# install_cluster:
+# 	skipper make $(SKIPPER_PARAMS) _install_cluster
 
 
 #########
 # Nodes #
 #########
 
-_deploy_nodes:
-	JUNIT_REPORT_DIR=$(REPORTS) src/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nM $(NETWORK_MTU) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --ns-index $(NAMESPACE_INDEX) --deploy-target $(DEPLOY_TARGET) $(DAY1_PARAMS) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS) $(DAY2_PARAMS) -ndw $(NUM_DAY2_WORKERS) --ipv4 $(IPv4) --ipv6 $(IPv6) --platform $(PLATFORM) --proxy $(PROXY) --iso-image-type $(ISO_IMAGE_TYPE) --hyperthreading $(HYPERTHREADING) --kube-api $(KUBE_API)
+# _deploy_nodes:
+# 	JUNIT_REPORT_DIR=$(REPORTS) src/start_discovery.py -i $(ISO) -n $(NUM_MASTERS) -p $(STORAGE_POOL_PATH) -k '$(SSH_PUB_KEY)' -md $(MASTER_DISK) -wd $(WORKER_DISK) -mm $(MASTER_MEMORY) -wm $(WORKER_MEMORY) -nw $(NUM_WORKERS) -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -vN $(NETWORK_CIDR) -nM $(NETWORK_MTU) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) --service-name $(SERVICE_NAME) --vip-dhcp-allocation $(VIP_DHCP_ALLOCATION) --ns-index $(NAMESPACE_INDEX) --deploy-target $(DEPLOY_TARGET) $(DAY1_PARAMS) $(OC_PARAMS) $(KEEP_ISO_FLAG) $(ADDITIONAL_PARAMS) $(DAY2_PARAMS) -ndw $(NUM_DAY2_WORKERS) --ipv4 $(IPv4) --ipv6 $(IPv6) --platform $(PLATFORM) --proxy $(PROXY) --iso-image-type $(ISO_IMAGE_TYPE) --hyperthreading $(HYPERTHREADING) --kube-api $(KUBE_API)
 
 deploy_nodes_with_install: start_load_balancer
 	@if [ "$(ENABLE_KUBE_API)" = "no"  ]; then \
 		TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_install_with_deploy_nodes $(MAKE) test; \
 	else \
-		bash scripts/utils.sh local_setup_before_deployment $(PLATFORM) $(NAMESPACE) $(OC_FLAG) && \
-		skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) ADDITIONAL_PARAMS="'-in ${ADDITIONAL_PARAMS}'" $(SKIPPER_PARAMS) DAY1_PARAMS=--day1-cluster && \
-		$(MAKE) set_dns; \
+		TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_kubeapi_install_with_deploy_nodes $(MAKE) test; \
 	fi
 
 deploy_nodes: start_load_balancer
@@ -488,7 +453,7 @@ test:
 	skipper make $(SKIPPER_PARAMS) _test
 
 _test: $(REPORTS) _test_setup
-	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
+	JUNIT_REPORT_DIR=$(REPORTS) python3 ${DEBUG_FLAGS} -m pytest $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(PYTEST_JUNIT_FILE)
 
 test_parallel:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
@@ -502,7 +467,7 @@ _test_setup:
 	rm -f /tmp/tf_network_pool.json
 
 _test_parallel: $(REPORTS) _test_setup
-	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
+	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(PYTEST_JUNIT_FILE)
 
 ########
 # Capi #
