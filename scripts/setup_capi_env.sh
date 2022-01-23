@@ -7,7 +7,7 @@ PROVIDER_BRANCH="${PROVIDER_BRANCH:-master}"
 PROVIDER_IMAGE="${PROVIDER_IMAGE:-quay.io/edge-infrastructure/cluster-api-provider-agent:latest}"
 HYPERSHIFT_REPO="${HYPERSHIFT_REPO:-https://github.com/openshift/hypershift}"
 HYPERSHIFT_BRANCH="${HYPERSHIFT_BRANCH:-main}"
-HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/hypershift/hypershift:latest}"
+HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/hypershift/hypershift-operator:latest}"
 DEPLOY_CAPI_PROVIDER="${DEPLOY_CAPI_PROVIDER:-false}"
 BASE_DIR=build
 
