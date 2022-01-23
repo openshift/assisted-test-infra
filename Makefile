@@ -370,12 +370,8 @@ install_day1_and_day2_cloud:
 
 destroy_nodes: destroy_terraform
 
-
-deploy_ibip: _test_setup
-ifdef SKIPPER_USERNAME
-	$(error Running this target using skipper is not supported, try `make deploy_ibip` instead)
-endif
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--bootstrap-in-place'" NUM_WORKERS=0 NUM_MASTERS=1 NAMESPACE_INDEX=0
+deploy_ibip:
+	skipper make $(SKIPPER_PARAMS) _test TEST=./src/tests/test_bootstrap_in_place.py
 
 redeploy_nodes: destroy_nodes deploy_nodes
 
