@@ -43,6 +43,10 @@ deploy_provider() {
 
 deploy_hypershift() {
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.51.1/bundle.yaml || true
+  # TODO: Remove this once HyperShift can run on plain k8s
+  # this is a workaround for the required route CRD added
+  # in this HyperShift PR https://github.com/openshift/hypershift/pull/887
+  kubectl apply -f https://raw.githubusercontent.com/openshift/router/master/deploy/route_crd.yaml || true
   clone_repo $HYPERSHIFT_REPO hypershift
   checkout_branch hypershift "$HYPERSHIFT_BRANCH"
   make -C $BASE_DIR/hypershift build
