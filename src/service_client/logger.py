@@ -32,28 +32,70 @@ class SensitiveFormatter(logging.Formatter):
         return self._filter(original)
 
 
+class ColorizingStreamHandler(logging.StreamHandler):
+    BLUE = "\033[0;34m"
+    LIGHT_RED = "\033[1;31m"
+    LIGHT_YELLOW = "\033[1;33m"
+    LIGHT_BLUE = "\033[1;34m"
+    LIGHT_PURPLE = "\033[1;35m"
+    LIGHT_CYAN = "\033[1;36m"
+    WHITE = "\033[1;37m"
+    RESET = "\033[0m"
+
+    def __init__(self, *args, **kwargs):
+        self._colors = {
+            logging.DEBUG: self.BLUE,
+            logging.INFO: self.RESET,
+            logging.WARNING: self.LIGHT_YELLOW,
+            logging.ERROR: self.LIGHT_RED,
+            logging.CRITICAL: self.LIGHT_PURPLE,
+        }
+        super().__init__(*args, **kwargs)
+
+    @property
+    def is_tty(self):
+        isatty = getattr(self.stream, "isatty", None)
+        return isatty and isatty()
+
+    def emit(self, record):
+        try:
+            message = self.format(record)
+            stream = self.stream
+            if not self.is_tty:
+                stream.write(message)
+            else:
+                message = self._colors[record.levelno] + message + self.RESET
+                stream.write(message)
+            stream.write(getattr(self, "terminator", "\n"))
+            self.flush()
+        except Exception:
+            self.handleError(record)
+
+
 logging.getLogger("requests").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 log = logging.getLogger("")
 log.setLevel(logging.DEBUG)
-fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setFormatter(
-    SensitiveFormatter("%(asctime)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)")
-)
-log.addHandler(ch)
 
 
 def add_log_file_handler(filename: str) -> logging.FileHandler:
+    fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
     fh = logging.FileHandler(filename)
     fh.setFormatter(fmt)
     log.addHandler(fh)
     return fh
 
 
+def add_stream_handler():
+    fmt = SensitiveFormatter("%(asctime)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)")
+    ch = ColorizingStreamHandler(sys.stdout)
+    ch.setFormatter(fmt)
+    log.addHandler(ch)
+
+
 add_log_file_handler("test_infra.log")
+add_stream_handler()
 
 
 class SuppressAndLog(suppress):
