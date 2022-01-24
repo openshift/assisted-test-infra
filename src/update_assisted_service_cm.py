@@ -25,6 +25,7 @@ ENVS = [
     ("INSTALLER_IMAGE", ""),
     ("CONTROLLER_IMAGE", ""),
     ("SERVICE_BASE_URL", ""),
+    ("IMAGE_SERVICE_BASE_URL", ""),
     ("AGENT_DOCKER_IMAGE", ""),
     ("BASE_DNS_DOMAINS", ""),
     ("IMAGE_BUILDER", ""),
