@@ -4,10 +4,10 @@ dnspython==2.1.0
 filelock==3.4.0
 frozendict==2.2.0
 ipdb==0.13.9
-ipython==8.0.0
+ipython==8.0.1
 jedi==0.18.1
 Jinja2===3.0.2
-junit-report==0.2.3
+junit-report==0.2.4
 kubernetes==21.7.0
 libvirt-python==8.0.0
 munch==2.5.0
