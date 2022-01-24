@@ -1,4 +1,4 @@
-boto3==1.20.37
+boto3==1.20.42
 debugpy==1.5.1
 dnspython==2.1.0
 filelock==3.4.0
