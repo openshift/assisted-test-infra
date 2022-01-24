@@ -20,3 +20,13 @@ class InfraEnvName(BaseName):
             prefix=prefix,
             suffix=suffix,
         )
+
+
+class SpokeClusterNamespace(BaseName):
+    def __init__(self, prefix: str = None, suffix: str = None):
+        super().__init__(
+            env_var="SPOKE_NAMESPACE",
+            default_prefix=consts.DEFAULT_SPOKE_NAMESPACE,
+            prefix=prefix,
+            suffix=suffix,
+        )

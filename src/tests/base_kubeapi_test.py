@@ -2,6 +2,8 @@ import os
 from typing import List
 
 import pytest
+import yaml
+from junit_report import JunitFixtureTestCase, JunitTestCase
 from kubernetes.client import ApiClient, CoreV1Api
 from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
@@ -17,11 +19,14 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     ClusterImageSetReference,
     InfraEnv,
     KubeAPIContext,
+    NMStateConfig,
 )
+from assisted_test_infra.test_infra.tools import static_network
+from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from service_client import ClientFactory, log
 from tests.base_test import BaseTest
-from tests.config import ClusterConfig, global_variables
+from tests.config import global_variables
 
 
 class BaseKubeAPI(BaseTest):
@@ -30,8 +35,15 @@ class BaseKubeAPI(BaseTest):
         yield ClientFactory.create_kube_api_client()
 
     @pytest.fixture()
-    def kube_api_context(self, kube_api_client):
-        kube_api_context = KubeAPIContext(kube_api_client, clean_on_exit=global_variables.test_teardown)
+    def spoke_namespace(self):
+        yield SpokeClusterNamespace().get()
+
+    @pytest.fixture()
+    @JunitFixtureTestCase()
+    def kube_api_context(self, kube_api_client, spoke_namespace):
+        kube_api_context = KubeAPIContext(
+            kube_api_client, clean_on_exit=spoke_namespace, spoke_namespace=spoke_namespace
+        )
 
         with kube_api_context:
             v1 = CoreV1Api(kube_api_client)
@@ -42,9 +54,9 @@ class BaseKubeAPI(BaseTest):
                         "apiVersion": "v1",
                         "kind": "Namespace",
                         "metadata": {
-                            "name": global_variables.spoke_namespace,
+                            "name": spoke_namespace,
                             "labels": {
-                                "name": global_variables.spoke_namespace,
+                                "name": spoke_namespace,
                             },
                         },
                     }
@@ -56,24 +68,25 @@ class BaseKubeAPI(BaseTest):
             yield kube_api_context
 
             if global_variables.test_teardown:
-                v1.delete_namespace(global_variables.spoke_namespace)
+                v1.delete_namespace(spoke_namespace)
 
     @pytest.fixture
-    def kube_test_configs_single_node(self, configs):
-        cluster_config, terraform_config = configs
-        self._configure_single_node(terraform_config)
-        yield cluster_config, terraform_config
+    @JunitFixtureTestCase()
+    def kube_test_configs_single_node(self, cluster_configuration, controller_configuration):
+        self._configure_single_node(controller_configuration)
+        yield cluster_configuration, controller_configuration
 
     @pytest.fixture
-    def kube_test_configs_highly_available(self, configs):
-        cluster_config, terraform_config = configs
-        self._configure_highly_available(terraform_config)
-        yield cluster_config, terraform_config
+    @JunitFixtureTestCase()
+    def kube_test_configs_highly_available(self, cluster_configuration, controller_configuration):
+        self._configure_highly_available(controller_configuration)
+        yield cluster_configuration, controller_configuration
 
     @staticmethod
     def _configure_single_node(terraform_config: BaseNodeConfig):
         terraform_config.masters_count = 1
         terraform_config.workers_count = 0
+        terraform_config.nodes_count = 1
         terraform_config.master_vcpu = 8
         terraform_config.master_memory = 35840
 
@@ -81,6 +94,7 @@ class BaseKubeAPI(BaseTest):
     def _configure_highly_available(terraform_config: BaseNodeConfig):
         terraform_config.masters_count = 3
         terraform_config.workers_count = 0
+        terraform_config.nodes_count = 3
         terraform_config.master_vcpu = 4
         terraform_config.master_memory = 17920
 
@@ -90,7 +104,7 @@ class BaseKubeAPI(BaseTest):
             agent.bind(cluster_deployment)
 
     @classmethod
-    def _get_vips(cls, cluster_config: ClusterConfig, nodes: Nodes):
+    def _get_vips(cls, nodes: Nodes):
         main_cidr = nodes.controller.get_primary_machine_cidr()
 
         # Arbitrarily choose 3, 4 (e.g. 192.168.128.3 and 192.168.128.4) for the VIPs
@@ -123,18 +137,21 @@ class BaseKubeAPI(BaseTest):
         assert os.path.isfile(iso_download_path)
 
     @classmethod
-    def start_nodes(cls, nodes: Nodes, infra_env: InfraEnv, entity_config: BaseEntityConfig, is_ipv4) -> List[Agent]:
+    def start_nodes(cls, nodes: Nodes, infra_env: InfraEnv, entity_config: BaseEntityConfig) -> List[Agent]:
         infra_env.status()  # wait until install-env will have status (i.e until resource will be processed).
         cls.download_iso_from_infra_env(infra_env, entity_config.iso_download_path)
 
         log.info("iso downloaded, starting nodes")
-        nodes.start_all()
+        nodes.controller.log_configuration()
+        log.info(f"Entity configuration {entity_config}")
+
+        nodes.start_all(check_ips=not (entity_config.is_static_ip and entity_config.is_ipv6))
 
         log.info("waiting for host agent")
         agents = infra_env.wait_for_agents(len(nodes))
         for agent in agents:
             agent.approve()
-            cls.set_agent_hostname(nodes[0], agent, is_ipv4)  # Currently only supports single node
+            cls.set_agent_hostname(nodes[0], agent, entity_config.is_ipv4)  # Currently only supports single node
 
         return agents
 
@@ -146,9 +163,9 @@ class BaseKubeAPI(BaseTest):
         agent.patch(hostname=node.name)
 
     @classmethod
-    def set_single_node_ip(cls, cluster_deployment: ClusterDeployment, nodes: Nodes, is_ipv4: bool):
+    def set_single_node_ip(cls, cluster_deployment: ClusterDeployment, nodes: Nodes):
         log.info("waiting to have host single node ip")
-        single_node_ip = get_ip_for_single_node(cluster_deployment, is_ipv4)
+        single_node_ip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
         nodes.controller.tf.change_variables(
             {
                 "single_node_ip": single_node_ip,
@@ -165,3 +182,26 @@ class BaseKubeAPI(BaseTest):
         image_set.create(openshift_release_image)
 
         return ClusterImageSetReference(image_set_name)
+
+    @classmethod
+    @JunitTestCase()
+    def apply_static_network_config(cls, kube_api_context: KubeAPIContext, nodes: Nodes, cluster_name: str):
+        static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
+
+        mac_to_interface = static_network_config[0]["mac_interface_map"]
+        interfaces = [
+            {"name": item["logical_nic_name"], "macAddress": item["mac_address"]} for item in mac_to_interface
+        ]
+
+        nmstate_config = NMStateConfig(
+            kube_api_client=kube_api_context.api_client,
+            name=f"{cluster_name}-nmstate-config",
+            namespace=kube_api_context.spoke_namespace,
+        )
+        nmstate_config.apply(
+            config=yaml.safe_load(static_network_config[0]["network_yaml"]),
+            interfaces=interfaces,
+            label=cluster_name,
+        )
+
+        return static_network_config
