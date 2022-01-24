@@ -48,24 +48,24 @@ fi
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "${INSTALLER_IMAGE:-}" ]; then
-        echo "INSTALLER_IMAGE=${INSTALLER_IMAGE}" >> assisted-service/onprem-environment
+        echo "  INSTALLER_IMAGE: ${INSTALLER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
     if [ -n "${CONTROLLER_IMAGE:-}" ]; then
-        echo "CONTROLLER_IMAGE=${CONTROLLER_IMAGE}" >> assisted-service/onprem-environment
+        echo "  CONTROLLER_IMAGE: ${CONTROLLER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
     if [ -n "${AGENT_DOCKER_IMAGE:-}" ]; then
-        echo "AGENT_DOCKER_IMAGE=${AGENT_DOCKER_IMAGE}" >> assisted-service/onprem-environment
+        echo "  AGENT_DOCKER_IMAGE: ${AGENT_DOCKER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
     if [ -n "${PUBLIC_CONTAINER_REGISTRIES:-}" ]; then
-        sed -i "s|PUBLIC_CONTAINER_REGISTRIES=.*|PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/onprem-environment
+        sed -i "s|PUBLIC_CONTAINER_REGISTRIES:.*|PUBLIC_CONTAINER_REGISTRIES: ${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/deploy/podman/configmap.yml
     fi
     if [ -n "${ASSISTED_SERVICE_HOST:-}" ]; then
-	sed -i "s|SERVICE_BASE_URL=http://127.0.0.1|SERVICE_BASE_URL=http://${ASSISTED_SERVICE_HOST}|" assisted-service/onprem-environment
+	sed -i "s|SERVICE_BASE_URL: http://127.0.0.1|SERVICE_BASE_URL: http://${ASSISTED_SERVICE_HOST}|" assisted-service/deploy/podman/configmap.yml
     fi
 
-    validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/onprem-environment | cut -d '=' -f2)
+    validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/deploy/podman/configmap.yml | awk '{ print $2 }' | tr -d \')
     HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb, .[].sno.disk_size_gb) |= 20' | tr -d "\n\t ")
-    sed -i "s|HW_VALIDATOR_REQUIREMENTS=.*|HW_VALIDATOR_REQUIREMENTS=${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}|" assisted-service/onprem-environment
+    sed -i "s|HW_VALIDATOR_REQUIREMENTS:.*|HW_VALIDATOR_REQUIREMENTS: '${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}'|" assisted-service/deploy/podman/configmap.yml
 
     make -C assisted-service/ deploy-onprem
 elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
