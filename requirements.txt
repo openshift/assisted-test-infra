@@ -1,6 +1,6 @@
 boto3==1.20.42
 debugpy==1.5.1
-dnspython==2.1.0
+dnspython==2.2.0
 filelock==3.4.0
 frozendict==2.2.0
 ipdb==0.13.9
