@@ -181,6 +181,7 @@ class Cluster(Entity):
 
     def download_infra_env_image(self, iso_download_path=None) -> Path:
         iso_download_path = iso_download_path or self._config.iso_download_path
+        log.debug(f"Downloading ISO to {iso_download_path}")
         return self._infra_env.download_image(iso_download_path=iso_download_path)
 
     @JunitTestCase()
