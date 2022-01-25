@@ -9,7 +9,10 @@ export SERVICE_URL=$(get_main_ip)
 export AUTH_TYPE=${AUTH_TYPE:-none}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
+export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
+export IMAGE_SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${IMAGE_SERVICE_PORT}"}
 export SERVICE_INTERNAL_PORT=8090
+export IMAGE_SERVICE_INTERNAL_PORT=8080
 export SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${SERVICE_PORT}"}
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
@@ -17,6 +20,7 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
 export ENABLE_KUBE_API=${ENABLE_KUBE_API:-false}
 export ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=${ENABLE_KUBE_API}"
 export DEBUG_SERVICE_NAME=assisted-service-debug
+export IMAGE_SERVICE_NAME=assisted-image-service
 export DEBUG_SERVICE_PORT=${DEBUG_SERVICE_PORT:-40000}
 export DEBUG_SERVICE=${DEBUG_SERVICE:-}
 export REGISTRY_SERVICE_NAME=registry
@@ -152,6 +156,10 @@ else
         print_log "Starting port forwarding for deployment/${SERVICE_NAME} on debug port $DEBUG_SERVICE_PORT"
         spawn_port_forwarding_command $SERVICE_NAME $DEBUG_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $DEBUG_SERVICE_PORT $DEBUG_SERVICE_NAME
     fi
+
+    add_firewalld_port ${IMAGE_SERVICE_PORT}
+    print_log "Starting port forwarding for deployment/${IMAGE_SERVICE_NAME} on debug port $IMAGE_SERVICE_PORT"
+    spawn_port_forwarding_command $IMAGE_SERVICE_NAME $IMAGE_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $IMAGE_SERVICE_INTERNAL_PORT $IMAGE_SERVICE_NAME
 
     print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL} "
     print_log "Done"
