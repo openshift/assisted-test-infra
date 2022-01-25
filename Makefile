@@ -145,7 +145,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service deploy_assisted_operator create_environment delete_all_virsh_resources _download_iso _deploy_assisted_service _deploy_nodes  _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service deploy_assisted_operator create_environment delete_all_virsh_resources _deploy_assisted_service _deploy_nodes  _destroy_terraform
 
 ###########
 # General #
@@ -440,14 +440,8 @@ manage_deployment:
 # ISO #
 #######
 
-_download_iso:
-	src/start_discovery.py -k '$(SSH_PUB_KEY)'  -ps '$(PULL_SECRET)' -bd $(BASE_DOMAIN) -cN $(CLUSTER_NAME) -pX $(HTTP_PROXY_URL) -sX $(HTTPS_PROXY_URL) -nX $(NO_PROXY_VALUES) -iU $(REMOTE_SERVICE_URL) -id $(CLUSTER_ID) -mD $(BASE_DNS_DOMAINS) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) --ns-index $(NAMESPACE_INDEX) $(OC_PARAMS) -iO --day1-cluster
-
 download_iso:
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
-
-download_iso_for_remote_use: deploy_assisted_service
-	skipper make $(SKIPPER_PARAMS) _download_iso NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) $(OC_FLAG))
+	$(MAKE) test TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_download_iso
 
 ########
 # Test #
