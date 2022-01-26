@@ -146,7 +146,7 @@ class TestBootstrapInPlace(BaseTest):
             masters_count=1,
             workers_count=0,
             nodes_count=1,
-            master_memory=45 * 1024,  # in megabytes
+            master_memory=16 * 1024,  # in megabytes
             master_vcpu=16,
             bootstrap_in_place=True,
         )
