@@ -494,7 +494,7 @@ def get_openshift_version(allow_default=True, client=None) -> str:
         with pull_secret_file() as pull_secret:
             stdout, _, _ = run_command(
                 f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"
-                f" jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
+                f" jq -r '.metadata.version'",
                 shell=True,
             )
         return stdout
