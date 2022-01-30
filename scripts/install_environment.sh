@@ -17,7 +17,13 @@ function install_libvirt() {
 
     # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
     case "${PRETTY_NAME}" in
-    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
+    "CentOS Linux 8"*)
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        sudo dnf install -y \
+            centos-release-advanced-virtualization
+        ;;
+    "Red Hat Enterprise Linux 8"*)
         sudo dnf install -y \
             https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
         ;;
