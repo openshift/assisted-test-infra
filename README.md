@@ -43,7 +43,6 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Single Node - Bootstrap in place with Assisted Service and IPv6](#single-node---bootstrap-in-place-with-assisted-service-and-ipv6)
   - [On-prem](#on-prem)
   - [Run operator](#run-operator)
-  - [Cluster-API-provider-agent](#Cluster-API-provider-agent)
 
 ## Prerequisites
 
@@ -131,10 +130,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `NO_PROXY_VALUES`             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
 | `NUM_MASTERS`                 | number of VMs to spawn as masters, default: 3 |
 | `NUM_WORKERS`                 | number of VMs to spawn as workers, default: 0 |
-| `OPENSHIFT_VERSION`           | OpenShift version to install, default taken from the deployed assisted-service (`/v2/openshift-versions`) |
+| `OPENSHIFT_VERSION`           | OpenShift version to install, default: "4.7" |
 | `HYPERTHREADING`              | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all |
-| `DISK_ENCRYPTION_MODE`        | Set disk encryption mode. Right now assisted-test-infra only supports "tpmv2", which is also the default. |
-| `DISK_ENCRYPTION_ROLES`       | Set node roles to apply disk encryption. Values are: all, none, masters, workers. default: none |
 | `PULL_SECRET`                 | pull secret to use for cluster installation command, no option to install cluster without it. |
 | `PULL_SECRET_FILE`            | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it. |
 | `REMOTE_SERVICE_URL`          | URL to remote assisted-service - run infra on existing deployment |
@@ -450,31 +447,7 @@ Run installation with the operator
 ```bash
 export INSTALLER_KUBECONFIG=./build/kubeconfig
 export TEST_FUNC=test_kube_api_ipv4
-export TEST=./src/tests/test_kube_api.py
+export TEST=./discovery-infra/tests/test_kube_api.py
 export TEST_TEARDOWN=false
 make test
-```
-
-## Cluster-API-provider-agent
-To test capi-provider e2e flow, few additonal environment variables need to be set:
-these environment variables result a bigger minikube instance required for this flow
-```bash
-# The following exports are required since the capi test flow requires more resources than the default minikube deployment provides
-export MINIKUBE_HOME=/home
-export MINIKUBE_DISK_SIZE=100g
-export MINIKUBE_RAM_MB=12288
-```
-Setup minikube with assisted-installer (kube-api enabled)
-```bash
-export PULL_SECRET=<your pull secret>
-ENABLE_KUBE_API=true make run
-```
-
-Deploy capi-provider-agent and hypershift
-```bash
-make deploy_capi_env
-```
-Run the test:
-```bash
-ENABLE_KUBE_API=true make test TEST=./src/tests/test_kube_api.py TEST_FUNC=test_capi_provider KUBECONFIG=$HOME/.kube/config
 ```

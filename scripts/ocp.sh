@@ -10,7 +10,7 @@ function deploy_service() {
     controller_image=$6
     nodeport=""
 
-    SERVICE_BASE_URL=$service_base_url src/update_assisted_service_cm.py
+    SERVICE_BASE_URL=$service_base_url discovery-infra/update_assisted_service_cm.py
     cp $kubeconfig assisted-service/build/kubeconfig
     make config_etc_hosts_for_ocp_cluster
     make -C assisted-service/ deploy-service-on-ocp-cluster OCP_KUBECONFIG=$kubeconfig SERVICE=$service CONTROLLER_OCP=$controller_image

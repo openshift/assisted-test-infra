@@ -9,9 +9,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    assignees:
-      - "eliorerz"
-      - "osherdp"
     labels:
       - "approved"
       - "lgtm"

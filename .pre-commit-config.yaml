@@ -3,20 +3,58 @@ repos:
   - repo: meta
     hooks:
       - id: check-useless-excludes
-  - repo: https://github.com/pycqa/isort
-    rev: 5.8.0
+  - repo: https://github.com/prettier/prettier
+    rev: 2.0.5
     hooks:
-      - id: isort
-        name: isort (python)
-        args: [--profile=black, --line-length=120]
+      - id: prettier
+        files: \.(css|js|md|markdown|json)
   - repo: https://github.com/python/black
-    rev: 21.9b0
+    rev: 19.10b0
     hooks:
       - id: black
-        args: [--line-length=120]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-vcs-permalinks
+      - id: check-xml
+      - id: check-yaml
+        args: [--unsafe]
+      - id: end-of-file-fixer
+      - id: fix-encoding-pragma
+      - id: forbid-new-submodules
+      - id: no-commit-to-branch
+        args: [--branch, master]
+      - id: requirements-txt-fixer
+      - id: sort-simple-yaml
+      - id: trailing-whitespace
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 4.0.1
+    rev: 3.8.3
     hooks:
       - id: flake8
-        additional_dependencies: [ flake8-bugbear, flake8-eradicate, pep8-naming, flake8-use-fstring, flake8-colors ]
-        args: [--statistics]
+  - repo: local
+    hooks:
+      - id: shfmt
+        name: shfmt
+        minimum_pre_commit_version: 2.4.0
+        language: golang
+        additional_dependencies: [mvdan.cc/sh/v3/cmd/shfmt@v3.1.1]
+        entry: shfmt
+        args: [-w, -i, "4"]
+        types: [shell]
+  - repo: https://github.com/asottile/blacken-docs
+    rev:  v1.7.0
+    hooks:
+      - id: blacken-docs
+  - repo: https://github.com/hcodes/yaspeller.git
+    rev: v7.0.0
+    hooks:
+    - id: yaspeller
+      files: ".md"
+      types: [markdown]
