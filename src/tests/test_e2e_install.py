@@ -56,9 +56,8 @@ class TestInstall(BaseTest):
         infra_env.prepare_for_installation()
 
     @JunitTestSuite()
-    @pytest.mark.parametrize("is_static_ip", [False, True])
     @pytest.mark.parametrize("network_type", [consts.NetworkType.OpenShiftSDN, consts.NetworkType.OVNKubernetes])
-    def test_networking(self, cluster, network_type, is_static_ip):
+    def test_networking(self, cluster, network_type):
         cluster.prepare_for_installation()
         cluster.start_install_and_wait_for_installed()
 
