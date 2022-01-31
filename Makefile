@@ -25,7 +25,7 @@ INSTALLER_BASE_REF := $(or $(INSTALLER_BASE_REF), "master")
 INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted-installer")
 
 # ui service
-UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),ocp-metal-ui)
+UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),assisted-installer-ui)
 
 # Monitoring services
 PROMETHEUS_SERVICE_NAME := $(or $(PROMETHEUS_SERVICE_NAME),prometheus-k8s)
