@@ -13,8 +13,36 @@ function version_is_greater() {
 }
 
 function install_libvirt() {
+    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+
+    # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
+    case "${PRETTY_NAME}" in
+    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        ;;
+    "Red Hat Enterprise Linux 7"* | "CentOS Linux 7"*)
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        ;;
+    esac
+
+    # The package selinux-policy should be installed first because otherwise, RPMs install will fail due to a lack of SELinux config.
+    # Some RPMs have SELinux plugins that will search for /etc/selinux/targeted/contexts/files/file_contexts
+    # See https://access.redhat.com/solutions/6062341
+    echo "Install selinux-policy RPM"
+    sudo dnf install -y selinux-policy
+
     echo "Installing libvirt..."
-    sudo dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm libgcrypt
+    sudo dnf install -y \
+        libvirt \
+        libvirt-devel \
+        libvirt-daemon-kvm \
+        qemu-kvm \
+        libgcrypt \
+        swtpm \
+        swtpm-tools
+
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
@@ -30,10 +58,7 @@ function install_libvirt() {
     if ! version_is_greater "$current_version" "$minimum_version"; then
         add_libvirt_listen_flag
     else
-        if ! rpm -qa | grep libgcrypt-1.8.5-4; then
-            mkdir -p build
-            curl -Lo build/libgcrypt-1.8.5-4.el8.x86_64.rpm https://rpmfind.net/linux/centos/8/BaseOS/x86_64/os/Packages/libgcrypt-1.8.5-4.el8.x86_64.rpm && sudo dnf -y install build/libgcrypt-1.8.5-4.el8.x86_64.rpm
-        fi
+        sudo dnf upgrade -y libgcrypt
         start_and_enable_libvirtd_tcp_socket
     fi
 
@@ -167,16 +192,9 @@ function config_chronyd() {
 function config_nginx() {
   echo "Config nginx"
 
-  # Create a container image to be used as the load balancer.  Initially, it starts nginx that opens a stream includes all conf files
+  # Configure a container to be used as the load balancer.
+  # Initially, it starts nginx that opens a stream includes all conf files
   # in directory /etc/nginx/conf.d. The nginx is refreshed every 60 seconds
-  cat <<EOF | podman build --tag load_balancer:latest -
-FROM quay.io/centos/centos:8.3.2011
-RUN dnf install -y nginx
-RUN sed -i -e '/^http {/,\$d'  /etc/nginx/nginx.conf
-RUN sed -i -e '\$a http {\n    include /etc/nginx/conf.d/http*.conf;\n}' -e '/^http {/,\$d' /etc/nginx/nginx.conf
-RUN sed -i -e '\$a stream {\n    include /etc/nginx/conf.d/stream*.conf;\n}' -e '/^stream {/,\$d' /etc/nginx/nginx.conf
-CMD ["bash", "-c", "while /bin/true ; do (ps -ef | grep -v grep | grep -q nginx && nginx -s reload) || nginx ; sleep 60 ; done"]
-EOF
   podman rm -f load_balancer || /bin/true
   sudo mkdir -p $HOME/.test-infra/etc/nginx/conf.d/{stream,http}.d
   sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
@@ -217,8 +235,8 @@ function additional_configs() {
     fi
     touch ~/.gitconfig
     sudo chmod ugo+rx "$(dirname "$(pwd)")"
-    echo "disabling selinux by setenforce 0"
-    sudo setenforce 0 || true
+    echo "make selinux to only print warnings"
+    sudo setenforce permissive || true
 
     if [ ! -f ~/.ssh/id_rsa ]; then
         ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''

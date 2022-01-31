@@ -9,7 +9,10 @@ export SERVICE_URL=$(get_main_ip)
 export AUTH_TYPE=${AUTH_TYPE:-none}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
 export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
+export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
+export IMAGE_SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${IMAGE_SERVICE_PORT}"}
 export SERVICE_INTERNAL_PORT=8090
+export IMAGE_SERVICE_INTERNAL_PORT=8080
 export SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${SERVICE_PORT}"}
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
@@ -17,6 +20,7 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
 export ENABLE_KUBE_API=${ENABLE_KUBE_API:-false}
 export ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=${ENABLE_KUBE_API}"
 export DEBUG_SERVICE_NAME=assisted-service-debug
+export IMAGE_SERVICE_NAME=assisted-image-service
 export DEBUG_SERVICE_PORT=${DEBUG_SERVICE_PORT:-40000}
 export DEBUG_SERVICE=${DEBUG_SERVICE:-}
 export REGISTRY_SERVICE_NAME=registry
@@ -39,36 +43,33 @@ mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
     export RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
+    export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
-        if [ -x "$(command -v docker)" ]; then
-            make -C assisted-service/ generate-configuration
-        else
-            ln -s $(which podman) /usr/bin/docker
-            make -C assisted-service/ generate-configuration
-            rm -f /usr/bin/docker
-        fi
+        (cd assisted-service; skipper make generate-configuration)
     fi
 fi
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "${INSTALLER_IMAGE:-}" ]; then
-        echo "INSTALLER_IMAGE=${INSTALLER_IMAGE}" >> assisted-service/onprem-environment
+        echo "  INSTALLER_IMAGE: ${INSTALLER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
     if [ -n "${CONTROLLER_IMAGE:-}" ]; then
-        echo "CONTROLLER_IMAGE=${CONTROLLER_IMAGE}" >> assisted-service/onprem-environment
+        echo "  CONTROLLER_IMAGE: ${CONTROLLER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
     if [ -n "${AGENT_DOCKER_IMAGE:-}" ]; then
-        echo "AGENT_DOCKER_IMAGE=${AGENT_DOCKER_IMAGE}" >> assisted-service/onprem-environment
+        echo "  AGENT_DOCKER_IMAGE: ${AGENT_DOCKER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
-    if [ -n "$PUBLIC_CONTAINER_REGISTRIES" ]; then
-        sed -i "s|PUBLIC_CONTAINER_REGISTRIES=.*|PUBLIC_CONTAINER_REGISTRIES=${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/onprem-environment
+    if [ -n "${PUBLIC_CONTAINER_REGISTRIES:-}" ]; then
+        sed -i "s|PUBLIC_CONTAINER_REGISTRIES:.*|PUBLIC_CONTAINER_REGISTRIES: ${PUBLIC_CONTAINER_REGISTRIES}|" assisted-service/deploy/podman/configmap.yml
     fi
-    sed -i "s/SERVICE_BASE_URL=http:\/\/127.0.0.1/SERVICE_BASE_URL=http:\/\/${ASSISTED_SERVICE_HOST}/" assisted-service/onprem-environment
+    if [ -n "${ASSISTED_SERVICE_HOST:-}" ]; then
+	sed -i "s|SERVICE_BASE_URL: http://127.0.0.1|SERVICE_BASE_URL: http://${ASSISTED_SERVICE_HOST}|" assisted-service/deploy/podman/configmap.yml
+    fi
 
-    validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/onprem-environment | cut -d '=' -f2)
+    validator_requirements=$(grep HW_VALIDATOR_REQUIREMENTS assisted-service/deploy/podman/configmap.yml | awk '{ print $2 }' | tr -d \')
     HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb, .[].sno.disk_size_gb) |= 20' | tr -d "\n\t ")
-    sed -i "s|HW_VALIDATOR_REQUIREMENTS=.*|HW_VALIDATOR_REQUIREMENTS=${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}|" assisted-service/onprem-environment
+    sed -i "s|HW_VALIDATOR_REQUIREMENTS:.*|HW_VALIDATOR_REQUIREMENTS: '${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}'|" assisted-service/deploy/podman/configmap.yml
 
     make -C assisted-service/ deploy-onprem
 elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
@@ -137,7 +138,7 @@ else
         export SERVICE="${LOCAL_ASSISTED_ORG}/assisted-service:latest"
     fi
 
-    skipper run discovery-infra/update_assisted_service_cm.py
+    skipper run src/update_assisted_service_cm.py
     (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
 
     add_firewalld_port $SERVICE_PORT
@@ -155,6 +156,10 @@ else
         print_log "Starting port forwarding for deployment/${SERVICE_NAME} on debug port $DEBUG_SERVICE_PORT"
         spawn_port_forwarding_command $SERVICE_NAME $DEBUG_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $DEBUG_SERVICE_PORT $DEBUG_SERVICE_NAME
     fi
+
+    add_firewalld_port ${IMAGE_SERVICE_PORT}
+    print_log "Starting port forwarding for deployment/${IMAGE_SERVICE_NAME} on debug port $IMAGE_SERVICE_PORT"
+    spawn_port_forwarding_command $IMAGE_SERVICE_NAME $IMAGE_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $IMAGE_SERVICE_INTERNAL_PORT $IMAGE_SERVICE_NAME
 
     print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL} "
     print_log "Done"

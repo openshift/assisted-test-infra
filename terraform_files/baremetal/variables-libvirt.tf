@@ -188,6 +188,18 @@ variable "running" {
   default     = true
 }
 
+variable "master_vtpm2" {
+  type        = bool
+  description = "Whether or not to emulate TPM v2 device on master nodes."
+  default     = false
+}
+
+variable "worker_vtpm2" {
+  type        = bool
+  description = "Whether or not to emulate TPM v2 device on worker nodes."
+  default     = false
+}
+
 variable "cluster_inventory_id" {
   type      = string
 }

@@ -68,6 +68,11 @@ variable "libvirt_secondary_master_ips" {
   description = "the list of desired master second interface ips. Must match master_count"
 }
 
+variable "libvirt_master_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for master interface"
+}
+
 variable "libvirt_worker_ips" {
   type        = list(list(string))
   description = "the list of desired worker ips. Must match master_count"
@@ -76,6 +81,11 @@ variable "libvirt_worker_ips" {
 variable "libvirt_secondary_worker_ips" {
   type        = list(list(string))
   description = "the list of desired worker second interface ips. Must match master_count"
+}
+
+variable "libvirt_worker_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for worker interface"
 }
 
 variable "api_vip" {
@@ -170,4 +180,14 @@ variable "dns_forwarding_file_name" {
   default = ""
 }
 
+variable "master_vtpm2" {
+  type        = bool
+  description = "Whether or not to emulate TPM v2 device on master nodes."
+  default     = false
+}
 
+variable "worker_vtpm2" {
+  type        = bool
+  description = "Whether or not to emulate TPM v2 device on worker nodes."
+  default     = false
+}

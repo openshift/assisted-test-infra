@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euxo pipefail
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
 function install_minikube() {
@@ -7,25 +8,31 @@ function install_minikube() {
         return
     fi
 
-    minikube_version=v1.20.0
-    minikube_path=$(command -v minikube)
-    if ! [ -x "$minikube_path" ]; then 
+    minikube_version=v1.23.2
+    if ! [ -x "$(command -v minikube)" ]; then
         echo "Installing minikube..."
-        arkade get minikube --version=$minikube_version
+        download_minikube $minikube_version
         ${SUDO} mv -f ${HOME}/.arkade/bin/minikube /usr/local/bin/
     elif [ "$(minikube version | grep version | awk -F'version: *' '{print $2}')" != "$minikube_version" ]; then
         echo "Upgrading minikube..."
-        arkade get minikube --version=$minikube_version
-        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube $minikube_path
+        download_minikube $minikube_version
+        ${SUDO} mv -f ${HOME}/.arkade/bin/minikube $(command -v minikube)
     else
         echo "minikube is already installed and up-to-date"
     fi
 }
 
+function download_minikube() {
+    for i in {1..4}; do
+        arkade get minikube --version=$1 && break
+        echo "minikube installation failed. Retrying again in 5 seconds..."
+        sleep 5
+    done
+}
 function install_kubectl() {
     if ! [ -x "$(command -v kubectl)" ]; then
         echo "Installing kubectl..."
-        arkade get kubectl --version=v1.20.0
+        arkade get kubectl --version=v1.22.0
         ${SUDO} mv ${HOME}/.arkade/bin/kubectl /usr/local/bin/
     else
         echo "kubectl is already installed"
@@ -36,8 +43,8 @@ function install_oc() {
     if ! [ -x "$(command -v oc)" ]; then
         echo "Installing oc..."
         for i in {1..4}; do
-            curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.8.0-rc.0/openshift-client-linux-4.8.0-rc.0.tar.gz | tar -xz -C /usr/local/bin && break
-            echo "command failed. Retrying again in 5 seconds..."
+            curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.8/openshift-client-linux.tar.gz | tar -xz -C /usr/local/bin && break
+            echo "oc installation failed. Retrying again in 5 seconds..."
             sleep 5
         done
     else
@@ -48,7 +55,12 @@ function install_oc() {
 function install_arkade() {
     if ! [ -x "$(command -v arkade)" ]; then
         echo "Installing arkade..."
-        curl -sLS https://dl.get-arkade.dev | ${SUDO} sh
+        for i in {1..4}; do
+            curl --retry 3 -sLS https://dl.get-arkade.dev | ${SUDO} sh && break
+            echo "arkade installation failed. Retrying again in 5 seconds..."
+            sleep 5
+        done
+        echo "successfully installed arkade!"
     else
         echo "arkade is already installed"
     fi

@@ -12,7 +12,7 @@ export NODE_IP=$(get_main_ip)
 export UI_PORT=${UI_PORT:-6008}
 export DEPLOY_TAG=${DEPLOY_TAG:-latest}
 export CYPRESS_BASE_URL=${CYPRESS_BASE_URL:-http://${NODE_IP}:${UI_PORT}} # URL of running Metal3 Installer UI
-export TESTS_IMAGE=${TESTS_IMAGE:-"quay.io/ocpmetal/ocp-metal-ui-tests:${DEPLOY_TAG}"}
+export TESTS_IMAGE=${TESTS_IMAGE:-"quay.io/edge-infrastructure/assisted-installer-ui:${DEPLOY_TAG}"}
 export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
 export BASE_DIR=${BASE_DIR:-"$(pwd)"/$(date +%D_%T | sed 's/\//_/g' | sed 's/:/-/g')} # where screenshots will be stored
 

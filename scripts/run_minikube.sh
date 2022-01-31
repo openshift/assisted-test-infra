@@ -7,6 +7,9 @@ set -o pipefail
 set -o errexit
 set -o xtrace
 
+MINIKUBE_DISK_SIZE="${MINIKUBE_DISK_SIZE:-50g}"
+MINIKUBE_RAM_MB="${MINIKUBE_RAM_MB:-8192}"
+
 function configure_minikube() {
     echo "Configuring minikube..."
     minikube config set WantUpdateNotification false
@@ -23,10 +26,13 @@ function init_minikube() {
     for i in {1..5}
     do
         minikube delete
-        minikube start --driver=kvm2 --memory=8192 --cpus=4 --force --wait-timeout=15m0s --disk-size=50g --addons=registry || true
+        minikube start --driver=kvm2 --memory="${MINIKUBE_RAM_MB}" --cpus=4 --force --wait-timeout=15m0s --disk-size="${MINIKUBE_DISK_SIZE}" --addons=registry || true
 
         if minikube status ; then
             break
+        else
+          minikube logs || true
+          systemctl restart libvirtd.service || true
         fi
     done
 
