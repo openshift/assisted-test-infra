@@ -36,6 +36,7 @@ RUN curl -s https://storage.googleapis.com/golang/go1.17.4.linux-amd64.tar.gz | 
 ENV GOPATH=/go
 ENV GOCACHE=/go/.cache
 ENV PATH=$PATH:/usr/local/go/bin:/go/bin
+RUN go get -u github.com/vmware/govmomi/govc
 
 COPY . .
 
