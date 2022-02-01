@@ -12,6 +12,7 @@ from deprecated_utils import wait_till_nodes_are_ready, are_libvirt_nodes_in_clu
 from assisted_test_infra.test_infra import utils
 import consts
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
+from assisted_test_infra.test_infra.utils import TerraformControllerUtil
 
 from service_client import log
 
@@ -43,12 +44,12 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
     if day2_type_flag == "ocp":
         terraform_cluster_dir_prefix = f"{consts.CLUSTER_PREFIX}-{consts.DEFAULT_NAMESPACE}"
     else:
-        cluster_id = str(uuid.uuid4())
+        openshift_cluster_id = str(uuid.uuid4())
         cluster = client.create_day2_cluster(
-            cluster_name + "-day2", cluster_id, **_day2_cluster_create_params(openshift_version, api_vip_dnsname)
+            cluster_name + "-day2", openshift_cluster_id, **_day2_cluster_create_params(openshift_version, api_vip_dnsname)
         )
-        set_cluster_pull_secret(client, cluster_id, args.pull_secret)
-        set_cluster_proxy(client, cluster_id, args)
+        set_cluster_pull_secret(client, cluster.id, args.pull_secret)
+        set_cluster_proxy(client, cluster.id, args)
 
     config_etc_hosts(api_vip_ip, api_vip_dnsname)
     image_path = os.path.join(
@@ -56,19 +57,26 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
         f'{cluster_name}-installer-image.iso'
     )
 
-    tf_folder = os.path.join(utils.get_tf_folder(terraform_cluster_dir_prefix), consts.Platforms.BARE_METAL)
+    tf_folder = os.path.join(TerraformControllerUtil.get_folder(terraform_cluster_dir_prefix), consts.Platforms.BARE_METAL)
     set_day2_tf_configuration(tf_folder, args.num_day2_workers, api_vip_ip, api_vip_dnsname)
 
     static_network_config = None
     if args.with_static_network_config:
         static_network_config = static_network.generate_day2_static_network_data_from_tf(tf_folder, args.num_day2_workers)
 
-    client.generate_and_download_image(
+    # Generate image
+    infra_env = client.create_infra_env(
         cluster_id=cluster.id,
-        image_path=image_path,
-        ssh_key=args.ssh_key,
-        static_network_config=static_network_config
+        name=cluster_name + "_infra-env",
+        ssh_public_key=args.ssh_key,
+        static_network_config=static_network_config,
+        pull_secret=args.pull_secret,
+        openshift_version=openshift_version
     )
+    # Download image
+    iso_download_url = infra_env.download_url
+    log.info(f"Downloading image {iso_download_url} to {image_path}")
+    utils.download_file(iso_download_url, image_path, False)
 
     day2_nodes_flow(
         client,
@@ -81,6 +89,7 @@ def execute_day2_flow(cluster_id, args, day2_type_flag, has_ipv6):
         day2_type_flag,
         args.with_static_network_config,
         cluster_name,
+        infra_env.id
     )
 
 
@@ -93,7 +102,8 @@ def day2_nodes_flow(client,
                     install_cluster_flag,
                     day2_type_flag,
                     with_static_network_config,
-                    base_cluster_name):
+                    base_cluster_name,
+                    infra_env_id):
     tf_network_name, total_num_nodes = get_network_num_nodes_from_tf(tf_folder)
 
     # Running twice as a workaround for an issue with terraform not spawning a new node on first apply.    
@@ -146,7 +156,7 @@ def day2_nodes_flow(client,
         kubeconfig = utils.get_kubeconfig_path(base_cluster_name)
         ocp_orig_ready_nodes = get_ocp_cluster_ready_nodes_num(kubeconfig)
         hosts = client.get_cluster_hosts(cluster.id)
-        [client.install_day2_host(cluster.id, host['id']) for host in hosts if host["status"] == 'known']
+        [client.install_day2_host(infra_env_id, host['id']) for host in hosts if host["status"] == 'known']
 
         log.info(
             "Start waiting until all nodes of cluster %s have been installed( reached added-to-existing-clustertate)",
