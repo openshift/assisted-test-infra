@@ -162,7 +162,7 @@ create_full_environment:
 create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
-	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.test-infra | \
+	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.assisted-test-infra | \
 	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
 
 clean:
@@ -199,16 +199,16 @@ delete_podman_localhost:
 # so it will be used by the python code to fill up load balancing definitions
 start_load_balancer:
 	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
-		id=`podman ps --quiet --filter "name=load_balancer"`; \
-		( test -z "$$id" && echo "Staring load balancer ..." && \
-		podman run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
+		id=$(shell $(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"); \
+		( test -z "$$id" && echo "Starting load balancer ..." && \
+		$(CONTAINER_COMMAND) run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
 			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
-			load_balancer:latest ) || ! test -z "$$id"; \
+			quay.io/odepaz/dynamic-load-balancer:latest ) || ! test -z "$$id"; \
 	fi
 
 stop_load_balancer:
-	@id=`podman ps --quiet --filter "name=load_balancer"`; \
-	test ! -z "$$id"  && podman rm -f load_balancer; \
+	@id=$(shell $(CONTAINER_COMMAND) ps --all --quiet --filter "name=load_balancer"); \
+	test ! -z "$$id"  && $(CONTAINER_COMMAND) rm -f load_balancer; \
 	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/stream.d/*.conf >& /dev/null || /bin/true
 
 
