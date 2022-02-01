@@ -8,6 +8,7 @@ from typing import Callable, List, Optional, Tuple, Union, Type
 
 import libvirt
 from assisted_service_client import models
+from kubernetes.client.exceptions import ApiException as K8sApiException
 import pytest
 import test_infra.utils as infra_utils
 import waiting
@@ -458,7 +459,7 @@ class BaseTest:
     def __set_up_proxy_server(cls, cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
         proxy = cls.get_proxy(cluster.nodes, cluster_config, proxy_server, models.Proxy)
 
-        cluster.set_proxy_values(proxy.http_proxy, proxy.https_proxy, proxy.no_proxy)
+        cluster.set_proxy_values(proxy_values=proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy") or install_config.get("Proxy")
         assert proxy_details, str(install_config)

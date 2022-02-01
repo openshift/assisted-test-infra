@@ -461,8 +461,10 @@ class LibvirtController(NodeController, ABC):
 
         interfaces = {}
         for addresses_source in interfaces_sources:
-            with suppress(libvirt.libvirtError):
+            try:
                 interfaces.update(**domain.interfaceAddresses(addresses_source))
+            except libvirt.libvirtError:
+                log.exception("Got an error while updating domain's network addresses")
 
         ips = []
         macs = []

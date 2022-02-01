@@ -353,12 +353,14 @@ class Cluster:
     def patch_discovery_ignition(self, ignition):
         self.api_client.patch_cluster_discovery_ignition(self.id, ignition)
 
-    def set_proxy_values(self, http_proxy, https_proxy="", no_proxy=""):
-        log.info(
-            f"Setting http_proxy:{http_proxy}, https_proxy:{https_proxy} and no_proxy:{no_proxy} "
-            f"for cluster: {self.id}"
+    def set_proxy_values(self, proxy_values: models.Proxy) -> None:
+        log.info(f"Setting proxy values {proxy_values} for cluster: {self.id}")
+        self.api_client.set_cluster_proxy(
+            self.id,
+            http_proxy=proxy_values.http_proxy,
+            https_proxy=proxy_values.https_proxy,
+            no_proxy=proxy_values.no_proxy,
         )
-        self.api_client.set_cluster_proxy(self.id, http_proxy, https_proxy, no_proxy)
 
     @JunitTestCase()
     def start_install(self):
@@ -1106,8 +1108,7 @@ class Cluster:
                 if mac.lower() in host.macs():
                     return node.name
 
-        # IPv6 static ips
-        if self._config.is_static_ip and self._config.is_ipv6:
+        if self._config.is_static_ip:
             mappings = static_network.get_name_to_mac_addresses_mapping(self.nodes.controller.tf_folder)
             for mac in host.macs():
                 for name, macs in mappings.items():
