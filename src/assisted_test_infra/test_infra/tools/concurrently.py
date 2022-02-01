@@ -21,7 +21,7 @@ def run_concurrently(
     jobs: Union[List, Dict, Tuple],
     done_handler: Callable[[int], None] = None,
     max_workers: int = 5,
-    timeout: float = 2 ** 31,
+    timeout: float = 2**31,
 ) -> Dict[int, Any]:
     result = {}
     if isinstance(jobs, (list, tuple)):

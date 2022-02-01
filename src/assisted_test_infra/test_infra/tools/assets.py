@@ -136,7 +136,7 @@ class LibvirtNetworkAssets:
         # The third hextet starts at the 72th bit of the IPAddress, means that
         # there are 2^72 possibilities within the other 5 hextets. This number
         # is needed to be added to the IPAddress to effect the GRP section.
-        five_hextets_ips_range = 2 ** 72
+        five_hextets_ips_range = 2**72
         ip_network += five_hextets_ips_range
 
     def _add_allocated_ip(self, ip: Union[IPNetwork, IPRange, IPAddress]):
