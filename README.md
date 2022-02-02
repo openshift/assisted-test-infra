@@ -386,7 +386,7 @@ make run_full_flow IPv6=yes IPv4=no PROXY=yes VIP_DHCP_ALLOCATION=no
 
 ## On-prem
 
-To test on-prem in the e2e flow, two additonal environment variables need to be set:
+To test on-prem in the e2e flow, two additional environment variables need to be set:
 
 ```
 export DEPLOY_TARGET=onprem
@@ -456,7 +456,7 @@ make test
 ```
 
 ## Cluster-API-provider-agent
-To test capi-provider e2e flow, few additonal environment variables need to be set:
+To test capi-provider e2e flow, few additional environment variables need to be set:
 these environment variables result a bigger minikube instance required for this flow
 ```bash
 # The following exports are required since the capi test flow requires more resources than the default minikube deployment provides

@@ -72,17 +72,6 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     sed -i "s|HW_VALIDATOR_REQUIREMENTS:.*|HW_VALIDATOR_REQUIREMENTS: '${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}'|" assisted-service/deploy/podman/configmap.yml
 
     make -C assisted-service/ deploy-onprem
-elif [ "${DEPLOY_TARGET}" == "ocp" ]; then
-    print_log "Starting port forwarding for deployment/$SERVICE_NAME on port $OCP_SERVICE_PORT"
-    add_firewalld_port $OCP_SERVICE_PORT
-
-    SERVICE_BASE_URL=http://$SERVICE_URL:$OCP_SERVICE_PORT
-    IP_NODEPORT=$(skipper run "scripts/ocp.sh deploy_service $OCP_KUBECONFIG $SERVICE $SERVICE_NAME $SERVICE_BASE_URL $NAMESPACE $CONTROLLER_OCP" 2>&1 | tee /dev/tty | tail -1)
-    read -r CLUSTER_VIP SERVICE_NODEPORT <<< "$IP_NODEPORT"
-    print_log "CLUSTER_VIP is ${CLUSTER_VIP}, SERVICE_NODEPORT is ${SERVICE_NODEPORT}"
-
-    wait_for_url_and_run "$SERVICE_BASE_URL" "spawn_port_forwarding_command $SERVICE_NAME $OCP_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $OCP_KUBECONFIG ocp $CLUSTER_VIP $SERVICE_NODEPORT"
-    print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL}"
 elif [ "${DEPLOY_TARGET}" == "operator" ]; then
     # This nginx would listen to http on OCP_SERVICE_PORT and it would proxy_pass it to the actual route.
     export SERVICE_BASE_URL=http://${SERVICE_URL}:${OCP_SERVICE_PORT}
