@@ -4,10 +4,10 @@ import os
 import shutil
 from contextlib import suppress
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple, Union, Type
 
 import libvirt
-from kubernetes.client.exceptions import ApiException as K8sApiException
+from assisted_service_client import models
 import pytest
 import test_infra.utils as infra_utils
 import waiting
@@ -29,6 +29,7 @@ from test_infra.controllers.node_controllers import (Node, NodeController,
                                                      VSphereController)
 from test_infra.controllers.proxy_controller.proxy_controller import \
     ProxyController
+from test_infra.helper_classes import kube_helpers
 from test_infra.helper_classes.cluster import Cluster
 from test_infra.helper_classes.config import BaseTerraformConfig
 from test_infra.helper_classes.config.controller_config import BaseNodeConfig
@@ -234,7 +235,7 @@ class BaseTest:
         cluster = Cluster(api_client=api_client, config=cluster_configuration, nodes=prepare_nodes_network)
 
         if self._does_need_proxy_server(prepare_nodes_network):
-            self._set_up_proxy_server(cluster, cluster_configuration, proxy_server)
+            self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
         yield cluster
 
@@ -382,7 +383,7 @@ class BaseTest:
             logging.debug(f'--- SETUP --- Creating cluster for test: {request.node.name}\n')
             _cluster = Cluster(api_client=api_client, config=cluster_config, nodes=nodes)
             if self._does_need_proxy_server(nodes):
-                self._set_up_proxy_server(_cluster, cluster_config, proxy_server)
+                self.__set_up_proxy_server(_cluster, cluster_config, proxy_server)
 
             clusters.append(_cluster)
             return _cluster
@@ -422,12 +423,27 @@ class BaseTest:
         return nodes and nodes.is_ipv6 and not nodes.is_ipv4
 
     @staticmethod
-    def _set_up_proxy_server(cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
+    def get_proxy_server(nodes: Nodes, cluster_config: ClusterConfig, proxy_server: Callable) -> ProxyController:
         proxy_name = "squid-" + cluster_config.cluster_name.suffix
-        port = infra_utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
+        port = utils.scan_for_free_port(consts.DEFAULT_PROXY_SERVER_PORT)
 
-        machine_cidr = cluster.get_primary_machine_cidr()
+        machine_cidr = nodes.controller.get_primary_machine_cidr()
         host_ip = str(IPNetwork(machine_cidr).ip + 1)
+        return proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip, is_ipv6=nodes.is_ipv6)
+
+    @classmethod
+    def get_proxy(
+        cls,
+        nodes: Nodes,
+        cluster_config: ClusterConfig,
+        proxy_server: Callable,
+        proxy_generator: Union[Type[models.Proxy], Type[kube_helpers.Proxy]],
+    ) -> Union[models.Proxy, kube_helpers.Proxy]:
+        """Get proxy configurations for kubeapi and for restapi. proxy_generator need to be with the
+        following signature: Proxy(http_proxy=<value1>, https_proxy=<value2>, no_proxy=<value3>)"""
+
+        proxy_server = cls.get_proxy_server(nodes, cluster_config, proxy_server)
+        machine_cidr = nodes.controller.get_primary_machine_cidr()
 
         no_proxy = []
         no_proxy += [str(cluster_network.cidr) for cluster_network in cluster_config.cluster_networks]
@@ -436,13 +452,19 @@ class BaseTest:
         no_proxy += [f".{str(cluster_config.cluster_name)}.redhat.com"]
         no_proxy = ",".join(no_proxy)
 
-        proxy = proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip,
-                             is_ipv6=cluster.nodes.is_ipv6)
-        cluster.set_proxy_values(http_proxy=proxy.address, https_proxy=proxy.address, no_proxy=no_proxy)
+        return proxy_generator(http_proxy=proxy_server.address, https_proxy=proxy_server.address, no_proxy=no_proxy)
+
+    @classmethod
+    def __set_up_proxy_server(cls, cluster: Cluster, cluster_config: ClusterConfig, proxy_server):
+        proxy = cls.get_proxy(cluster.nodes, cluster_config, proxy_server, models.Proxy)
+
+        cluster.set_proxy_values(proxy.http_proxy, proxy.https_proxy, proxy.no_proxy)
         install_config = cluster.get_install_config()
         proxy_details = install_config.get("proxy") or install_config.get("Proxy")
         assert proxy_details, str(install_config)
-        assert proxy_details.get("httpsProxy") == proxy.address, f"{proxy_details.get('httpsProxy')} should equal {proxy.address}"
+        assert (
+            proxy_details.get("httpsProxy") == proxy.https_proxy
+        ), f"{proxy_details.get('httpsProxy')} should equal {proxy.https_proxy}"
 
     @pytest.fixture()
     def iptables(self) -> Callable[[Cluster, List[IptableRule], Optional[List[Node]]], None]:

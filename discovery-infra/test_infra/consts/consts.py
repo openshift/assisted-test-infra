@@ -164,6 +164,7 @@ class AgentStatus:
     VALIDATED = "Validated"
     INSTALLED = "Installed"
     REQUIREMENTS_MET = "RequirementsMet"
+    BOUND = "Bound"
 
 
 all_host_stages = [HostsProgressStages.START_INSTALLATION, HostsProgressStages.INSTALLING,

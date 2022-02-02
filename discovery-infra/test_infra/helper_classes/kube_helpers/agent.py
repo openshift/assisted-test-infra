@@ -1,5 +1,4 @@
-from pprint import pformat
-from typing import List, Union, Dict, Optional
+from typing import Optional
 
 import waiting
 
@@ -138,6 +137,16 @@ class Agent(BaseCustomResource):
             }
         )
         logger.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
+
+    @classmethod
+    def wait_for_agents_to_be_bound(
+        cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT
+    ) -> None:
+        cls.wait_till_all_agents_are_in_status(
+            agents=agents,
+            statusType=consts.AgentStatus.BOUND,
+            timeout=timeout,
+        )
 
     @classmethod
     def wait_for_agents_to_be_ready_for_install(cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT) -> None:
