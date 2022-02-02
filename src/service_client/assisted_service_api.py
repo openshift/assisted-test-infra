@@ -118,9 +118,9 @@ class InventoryClient(object):
         return result
 
     def create_day2_cluster(self, name: str, cluster_uuid: str, **cluster_params) -> models.cluster.Cluster:
-        cluster = models.AddHostsClusterCreateParams(name=name, id=cluster_uuid, **cluster_params)
+        cluster = models.ImportClusterParams(name=name, openshift_cluster_id=cluster_uuid, **cluster_params)
         log.info("Creating day 2 cluster with params %s", cluster.__dict__)
-        result = self.client.register_add_hosts_cluster(new_add_hosts_cluster_params=cluster)
+        result = self.client.v2_import_cluster(new_import_cluster_params=cluster)
         return result
 
     def get_cluster_hosts(self, cluster_id: str) -> List[Dict[str, Any]]:
