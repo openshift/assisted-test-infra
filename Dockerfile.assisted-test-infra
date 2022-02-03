@@ -40,5 +40,8 @@ RUN go get -u github.com/vmware/govmomi/govc
 
 COPY . .
 
+RUN chgrp -R 0 /home/assisted-test-infra && \
+    chmod -R g=u /home/assisted-test-infra
+
 # setting pre-commit env
 ENV PRE_COMMIT_HOME build
