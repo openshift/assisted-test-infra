@@ -35,11 +35,6 @@ SERVICE := $(or $(SERVICE), quay.io/ocpmetal/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/ocpmetal/assisted-service-index:latest)
 
-# assisted-installer
-INSTALLER_BRANCH := $(or $(INSTALLER_BRANCH), "master")
-INSTALLER_BASE_REF := $(or $(INSTALLER_BASE_REF), "master")
-INSTALLER_REPO := $(or $(INSTALLER_REPO), "https://github.com/openshift/assisted-installer")
-
 # ui service
 UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),assisted-installer-ui)
 
@@ -126,7 +121,6 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api.integration.openshift.com/)
 
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
-CONTROLLER_OCP := $(or ${CONTROLLER_OCP},quay.io/ocpmetal/assisted-installer-controller-ocp:latest)
 
 PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
@@ -284,37 +278,6 @@ kill_all_port_forwardings:
 run_full_flow_with_ipv6:
 	PULL_SECRET='$(PULL_SECRET)' IPv6=yes IPv4=no VIP_DHCP_ALLOCATION=no PROXY=yes $(MAKE) run_full_flow
 
-
-#########
-# Day 2 #
-#########
-
-deploy_on_ocp_cluster: bring_assisted_installer
-	# service
-	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		scripts/deploy_assisted_service.sh
-
-	# UI
-	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		scripts/deploy_ui.sh
-
-	# controller
-	DEPLOY_TARGET=ocp NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE)) \
-		scripts/deploy_controller.sh
-
-config_etc_hosts_for_ocp_cluster:
-	src/ocp.py --config-etc-hosts -cn $(CLUSTER_NAME) -ns $(NAMESPACE) --service-name $(SERVICE_NAME) $(ADDITIONAL_PARAMS)
-
-bring_assisted_installer:
-	@if ! cd assisted-installer >/dev/null 2>&1; then \
-		git clone $(INSTALLER_REPO); \
-	fi
-
-	@cd assisted-installer && \
-	git fetch --force origin $(INSTALLER_BASE_REF):FETCH_BASE $(INSTALLER_BRANCH) && \
-	git reset --hard FETCH_HEAD && \
-	git rebase FETCH_BASE
-
 ###########
 # Cluster #
 ###########
@@ -353,9 +316,6 @@ deploy_day2_nodes:
 
 deploy_day2_cloud_nodes_with_install:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster ${ADDITIONAL_PARAMS}'" DEPLOY_TARGET=minikube
-
-deploy_day2_ocp_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-ocp-cluster'" DEPLOY_TARGET=ocp
 
 deploy_static_network_config_day2_nodes:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster --with-static-network-config'"
