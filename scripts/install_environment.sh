@@ -39,9 +39,34 @@ function install_libvirt() {
         libvirt-devel \
         libvirt-daemon-kvm \
         qemu-kvm \
-        libgcrypt \
-        swtpm \
-        swtpm-tools
+        libgcrypt
+
+    # Just testing, do not merge.
+    echo "getting custom swtpm"
+#    sudo curl https://github.com/nmagnezi/swtpm/raw/PR-645/bin/swtpm > /usr/bin/swtpm
+#    sudo curl https://github.com/nmagnezi/swtpm/raw/PR-645/bin/swtpm_bios > /usr/bin/swtpm_bios
+#    sudo curl https://github.com/nmagnezi/swtpm/raw/PR-645/bin/swtpm_cert > /usr/bin/swtpm_cert
+#    sudo curl https://github.com/nmagnezi/swtpm/raw/PR-645/bin/swtpm_ioctl > /usr/bin/swtpm_ioctl
+#    sudo curl https://github.com/nmagnezi/swtpm/raw/PR-645/bin/swtpm_localca > /usr/bin/swtpm_localca
+#    sudo curl https://github.com/nmagnezi/swtpm/raw/PR-645/bin/swtpm_setup > /usr/bin/swtpm_setup
+
+#    sudo chmod +x /usr/bin/swtpm
+#    sudo chmod +x /usr/bin/swtpm_bios
+#    sudo chmod +x /usr/bin/swtpm_cert
+#    sudo chmod +x /usr/bin/swtpm_ioctl
+#    sudo chmod +x /usr/bin/swtpm_localca
+#    sudo chmod +x /usr/bin/swtpm_setup
+    sudo dnf install -y git autoconf automake libtool openssl-devel libtasn1-devel libtpms libtpms-devel json-glib json-glib-devel expect python3 libseccomp-devel tpm2-pkcs11 tpm2-pkcs11-tools tpm2-tools tpm2-abrmd gnutls-utils trousers gnutls gnutls-devel
+
+    git clone https://github.com/stefanberger/swtpm.git
+    pushd swtpm
+    git checkout stefanberger/fix_issue_644
+    NOCONFIGURE=1 ./autogen.sh -with-gnutls
+    ./configure
+    make install
+    popd
+
+
 
     sudo systemctl enable libvirtd
 
