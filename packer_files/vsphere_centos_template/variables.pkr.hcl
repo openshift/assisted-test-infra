@@ -70,13 +70,13 @@ variable "vcpus" {
 
 variable "iso_url" {
   type = string
-  default = "http://rep-centos-il.upress.io/8.4.2105/isos/x86_64/CentOS-8.4.2105-x86_64-boot.iso"
+  default = "https://vault.centos.org/8.5.2111/isos/x86_64/CentOS-8.5.2111-x86_64-boot.iso"
   description = "The Centos8 ISO download URL"
 }
 
 variable "iso_checksum" {
   type = string
-  default = "c79921e24d472144d8f36a0d5f409b12bd016d9d7d022fd703563973ca9c375c"
+  default = "9602c69c52d93f51295c0199af395ca0edbe35e36506e32b8e749ce6c8f5b60a"
   description = "The Centos8 ISO checksum"
 }
 

@@ -43,7 +43,7 @@ source "vsphere-iso" "test-infra-template" {
   ]
 
   network_adapters {
-    network = "VM Network"
+    network = var.vsphere_network
     network_card = "vmxnet3"
   }
 
