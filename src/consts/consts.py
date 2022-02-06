@@ -206,6 +206,7 @@ class Events:
     GENERATED_IMAGE = "Generated image (SSH public key is set)"
     GENERATED_IMAGE_FULL = 'Generated image (Image type is "full-iso", SSH public key is set)'
     GENERATED_IMAGE_MINIMAL = 'Generated image (Image type is "minimal-iso", SSH public key is set)'
+    REGISTER_IMAGE_MINIMAL = 'Updated image information (Image type is "minimal-iso", SSH public key is set)'
     DOWNLOAD_IMAGE = "Started image download"
     STARTED_DOWNLOAD_IMAGE = 'Started image download (image type is "full-iso")'
     HOST_REGISTERED_TO_CLUSTER = ": registered to cluster"
