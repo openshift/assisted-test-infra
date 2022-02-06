@@ -497,5 +497,6 @@ _test_setup:
 _test_parallel: $(REPORTS) _test_setup
 	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},discovery-infra/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(REPORTS)/unittest.xml
 
+# leave the target name the same to keep consistent behavior with master branch
 test_kube_api_parallel:
-	TEST=./discovery-infra/tests/test_kube_api.py make test_parallel
+	TEST=./discovery-infra/tests/test_kube_api.py make test
