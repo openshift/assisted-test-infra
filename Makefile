@@ -450,7 +450,7 @@ _test_setup:
 	rm -f /tmp/tf_network_pool.json
 
 _test_parallel: $(REPORTS) _test_setup
-	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '4') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
+	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest -n $(or ${TEST_WORKERS_NUM}, '3') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(UNITTEST_JUNIT_FILE)
 
 ########
 # Capi #
