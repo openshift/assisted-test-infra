@@ -480,13 +480,17 @@ def get_openshift_version(allow_default=True, client=None) -> str:
     Return the openshift version that needs to be handled
     according to the following process:
 
-    1. In case env var OPENSHIFT_INSTALL_RELEASE_IMAGE is defined to override the release image -
+    1. In case env var OPENSHIFT_VERSION is defined - return it.
+    2. In case env var OPENSHIFT_INSTALL_RELEASE_IMAGE is defined to override the release image -
     extract its OCP version.
-    2. In case env var OPENSHIFT_VERSION is defined - return it.
     3. In case allow_default is enabled, return the default supported version by assisted-service.
-    3.1 If a client is provided, request the versions fron the service (supports remote service).
-    3.2 Otherwise, Get from the JSON file in assisted-service repository.
+        3.1 If a client is provided, request the versions from the service (supports remote service).
+        3.2 Otherwise, Get from the JSON file in assisted-service repository.
     """
+
+    version = get_env("OPENSHIFT_VERSION")
+    if version:
+        return version
 
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
@@ -498,10 +502,6 @@ def get_openshift_version(allow_default=True, client=None) -> str:
                 shell=True,
             )
         return stdout
-
-    version = get_env("OPENSHIFT_VERSION")
-    if version:
-        return version
 
     if allow_default:
         return get_default_openshift_version(client)
