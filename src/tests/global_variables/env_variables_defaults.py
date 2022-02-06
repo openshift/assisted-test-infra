@@ -20,7 +20,7 @@ class _EnvVariablesDefaults(ABC):
     masters_count: int = int(get_env("MASTERS_COUNT", get_env("NUM_MASTERS", env_defaults.DEFAULT_NUMBER_OF_MASTERS)))
     workers_count: int = int(get_env("WORKERS_COUNT", get_env("NUM_WORKERS", env_defaults.DEFAULT_WORKERS_COUNT)))
     nodes_count: int = masters_count + workers_count
-    num_day2_workers: int = int(get_env("NUM_DAY2_WORKERS", env_defaults.DEFAULT_DAY2_WORKERS_COUNT))
+    day2_workers_count: int = int(get_env("NUM_DAY2_WORKERS", env_defaults.DEFAULT_DAY2_WORKERS_COUNT))
     vip_dhcp_allocation: bool = bool(
         strtobool(get_env("VIP_DHCP_ALLOCATION", str(env_defaults.DEFAULT_VIP_DHCP_ALLOCATION)))
     )
