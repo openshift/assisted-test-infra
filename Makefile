@@ -82,21 +82,18 @@ ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 OFFLINE_TOKEN := $(or $(OFFLINE_TOKEN), "")
 
 # deploy
-IMAGE_TAG := latest
-
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
 IMAGE_NAME=test-infra
-IMAGE_REG_NAME=quay.io/itsoiref/$(IMAGE_NAME)
 
 # oc deploy
 ifneq ($(or $(OC_MODE),),)
-        OC_FLAG := --oc-mode
-        OC_TOKEN := $(or $(OC_TOKEN),"")
-        OC_SERVER := $(or $(OC_SERVER),https://api.ocp.prod.psi.redhat.com:6443)
-        OC_SCHEME := $(or $(OC_SCHEME),http)
-        OC_PARAMS = $(OC_FLAG) -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
+	OC_FLAG := --oc-mode
+	OC_TOKEN := $(or $(OC_TOKEN),"")
+	OC_SERVER := $(or $(OC_SERVER),https://api.ocp.prod.psi.redhat.com:6443)
+	OC_SCHEME := $(or $(OC_SCHEME),http)
+	OC_PARAMS = $(OC_FLAG) -oct $(OC_TOKEN) -ocs $(OC_SERVER) --oc-scheme $(OC_SCHEME)
 endif
 
 ifdef KEEP_ISO
@@ -139,28 +136,29 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube run destroy deploy_assisted_service deploy_assisted_operator create_environment delete_all_virsh_resources _deploy_assisted_service _deploy_nodes  _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _deploy_nodes _destroy_terraform
 
 ###########
 # General #
 ###########
 
-all: create_full_environment run_full_flow_with_install
+all: setup run_full_flow_with_install
 
-
-destroy: destroy_nodes kill_port_forwardings destroy_onprem stop_load_balancer
+destroy: destroy_nodes delete_minikube kill_port_forwardings destroy_onprem stop_load_balancer
 
 ###############
 # Environment #
 ###############
-create_full_environment:
+setup:
 	./create_full_environment.sh
+
+create_full_environment: setup  # TODO: remove. only here for compatibility reasons
 
 create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
 	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.assisted-test-infra | \
-	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME):$(IMAGE_TAG) -f- .
+	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME) -f- .
 
 clean:
 	-rm -rf build assisted-service test_infra.log
@@ -213,24 +211,11 @@ stop_load_balancer:
 # Terraform #
 #############
 
-copy_terraform_files:
-	mkdir -p build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)
-	FILE=build/terraform/$(CLUSTER_NAME)__$(NAMESPACE)/terraform.tfvars.json
-	cp -r terraform_files/* build/terraform/$(CLUSTER_NAME)__$(NAMESPACE);\
-
-run_terraform: copy_terraform_files
-	skipper make $(SKIPPER_PARAMS) _run_terraform
-
-_run_terraform:
-		cd build/terraform/$(CLUSTER_NAME)__$(NAMESPACE) && \
-		terraform init -plugin-dir=/root/.terraform.d/plugins/ && \
-		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
-
 _apply_terraform:
 		cd build/terraform/$(CLUSTER_NAME)/$(PLATFORM) && \
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
-destroy_terraform:
+destroy_nodes:
 	skipper make $(SKIPPER_PARAMS) _destroy_terraform
 
 _destroy_terraform:
@@ -244,14 +229,6 @@ validate_namespace:
 	scripts/utils.sh validate_namespace $(NAMESPACE)
 
 run: validate_namespace deploy_assisted_service deploy_ui
-
-run_full_flow: run deploy_nodes
-
-redeploy_all: destroy run_full_flow
-
-run_full_flow_with_install: run deploy_nodes_with_install
-
-redeploy_all_with_install: destroy run_full_flow_with_install
 
 set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
@@ -271,12 +248,6 @@ kill_port_forwardings:
 kill_all_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(UI_SERVICE_NAME)'
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(PROMETHEUS_SERVICE_NAME)'
-
-########
-# IPv6 #
-########
-run_full_flow_with_ipv6:
-	PULL_SECRET='$(PULL_SECRET)' IPv6=yes IPv4=no VIP_DHCP_ALLOCATION=no PROXY=yes $(MAKE) run_full_flow
 
 ###########
 # Cluster #
@@ -325,8 +296,6 @@ deploy_static_network_config_day2_nodes_with_install:
 
 install_day1_and_day2_cloud:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
-
-destroy_nodes: destroy_terraform
 
 deploy_ibip:
 	skipper make $(SKIPPER_PARAMS) _test TEST=./src/tests/test_bootstrap_in_place.py
@@ -385,16 +354,6 @@ download_cluster_logs:
 
 download_capi_logs:
 	JUNIT_REPORT_DIR=$(REPORTS) ./scripts/download_logs.sh download_capi_logs
-
-##########
-# manage #
-##########
-
-_manage_deployment:
-	src/manage/manage.py --inventory-url=$(REMOTE_SERVICE_URL) --type deregister_clusters --offline-token=$(OFFLINE_TOKEN)
-
-manage_deployment:
-	skipper make $(SKIPPER_PARAMS) _manage_deployment
 
 #######
 # ISO #

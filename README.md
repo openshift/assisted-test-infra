@@ -159,7 +159,7 @@ git clone https://github.com/openshift/assisted-test-infra.git
 When using this infra for the first time on a host, run:
 
 ```bash
-make create_full_environment
+make setup
 ```
 
 This will install required packages, configure libvirt, pull relevant Docker images, and start Minikube.
@@ -193,10 +193,10 @@ The following is a list of stages that will be run:
 To run the full flow, including installation:
 
 ```bash
-make run_full_flow_with_install
+make run deploy_nodes_with_install
 ```
 
-Or to run it together with create_full_environment (requires `sudo` password):
+Or to run it together with `setup` (requires `sudo` password):
 
 ```bash
 make all
@@ -207,35 +207,27 @@ make all
 To run the flow without the installation stage:
 
 ```bash
-make run_full_flow
+make run deploy_nodes
 ```
 
 ### Run full flow with ipv6
 
-To run the flow with default IPv6 settings without install. It is identical to running
-
-**make run_full_flow IPv4=no IPv6=yes PROXY=yes VIP_DHCP_ALLOCATION=no**
+To run the flow with default IPv6 settings:
 
 ```bash
-make run_full_flow_with_ipv6
-```
-
-### Run only deploy nodes (without pre deploy of all assisted service)
-
-```bash
-make deploy_nodes or make deploy_nodes_with_install
+make deploy_nodes_with_install IPv4=no IPv6=yes
 ```
 
 ### Redeploy nodes
 
 ```bash
-make redeploy_nodes or make redeploy_nodes_with_install
+make redeploy_nodes
 ```
 
-### Redeploy with assisted services
+Or:
 
 ```bash
-make redeploy_all or make redeploy_all_with_install
+make redeploy_nodes_with_install
 ```
 
 ### Cleaning
@@ -304,33 +296,25 @@ make kill_all_port_forwardings
 ## Test `assisted-service` image
 
 ```bash
-make redeploy_all SERVICE=<image to test>
-or
-export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install SERVICE=<image to test>
+make destroy run SERVICE=<image to test>
 ```
 
 ### Test agent image
 
 ```bash
-make redeploy_all AGENT_DOCKER_IMAGE=<image to test>
-or
-make redeploy_all_with_install AGENT_DOCKER_IMAGE=<image to test>
+make destroy run AGENT_DOCKER_IMAGE=<image to test>
 ```
 
 ### Test installer image or controller image
 
 ```bash
-make redeploy_all INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
-or
-export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
+make destroy run INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test>
 ```
 
 ## Test installer, controller, `assisted-service` and agent images in the same flow
 
 ```bash
-make redeploy_all INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
-or
-export PULL_SECRET='<pull secret JSON>'; make redeploy_all_with_install INSTALLER_IMAGE=<image to test> CONTROLLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
+make destroy run INSTALLER_IMAGE=<image to test> AGENT_DOCKER_IMAGE=<image to test> SERVICE=<image to test>
 ```
 
 ### Test infra image
@@ -370,7 +354,7 @@ To test single node bootstrap in place flow with assisted service
 export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
-make redeploy_all_with_install or if service is up  make redeploy_nodes_with_install
+make deploy_nodes_with_install
 ```
 
 ## Single Node - Bootstrap in place with Assisted Service and IPv6
@@ -381,7 +365,7 @@ To test single node bootstrap in place flow with assisted service and ipv6
 export PULL_SECRET='<pull secret JSON>'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
-make run_full_flow IPv6=yes IPv4=no PROXY=yes VIP_DHCP_ALLOCATION=no
+make deploy_nodes_with_install IPv6=yes IPv4=no
 ```
 
 ## On-prem
@@ -432,7 +416,7 @@ The first step would be removed once we could either:
 
 ```bash
 # Deploy AI
-make run_full_flow_with_install
+make run deploy_nodes_with_install
 
 # Deploy AI Operator on top of the new cluster
 export KUBECONFIG=./build/kubeconfig
