@@ -42,6 +42,7 @@ class InfraEnv(Entity):
             static_network_config=self._config.static_network_config,
             ignition_config_override=ignition_config_override,
             proxy=self._config.proxy,
+            image_type=self._config.iso_image_type,
         )
         self._config.infra_env_id = infra_env.id
         return infra_env.id
