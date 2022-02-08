@@ -1016,16 +1016,6 @@ class Cluster(Entity):
         matcher = re.match(r"^tt(\d+)$", libvirt_network_if)
         return int(matcher.groups()[0]) if matcher is not None else 0
 
-    def wait_for_event(self, event_to_find, reference_time, params_list=None, host_id="", infra_env_id="", timeout=10):
-        warnings.warn(
-            "Cluster.wait_for_event is now deprecated, use EventsHandler.wait_for_event instead",
-            PendingDeprecationWarning,
-        )
-        handler = EventsHandler(self.api_client)
-        return handler.wait_for_event(
-            event_to_find, reference_time, params_list, host_id, infra_env_id, self.id, timeout
-        )
-
     @staticmethod
     def get_inventory_host_nics_data(host: dict, ipv4_first=True):
         def get_network_interface_ip(interface):
