@@ -199,50 +199,53 @@ all_host_stages = [
 ]
 
 
-class Events:
-    REGISTERED_CLUSTER = "Registered cluster"
+class ClusterEvents:
     SUCCESSFULLY_REGISTERED_CLUSTER = "Successfully registered cluster"
-    PENDING_FOR_INPUT = "to pending-for-input"
-    GENERATED_IMAGE = "Generated image (SSH public key is set)"
-    GENERATED_IMAGE_FULL = 'Generated image (Image type is "full-iso", SSH public key is set)'
-    GENERATED_IMAGE_MINIMAL = 'Generated image (Image type is "minimal-iso", SSH public key is set)'
-    REGISTER_IMAGE_MINIMAL = 'Updated image information (Image type is "minimal-iso", SSH public key is set)'
-    DOWNLOAD_IMAGE = "Started image download"
-    STARTED_DOWNLOAD_IMAGE = 'Started image download (image type is "full-iso")'
-    HOST_REGISTERED_TO_CLUSTER = ": registered to cluster"
+    PENDING_FOR_INPUT = "Updated status of the cluster to pending-for-input"
     INSUFFICIENT = "insufficient"
-    KNOWN = 'to "known"'
-    READY = "to ready"
+    READY = "Updated status of the cluster to ready"
     CLUSTER_VALIDATION = "Cluster validation 'all-hosts-are-ready-to-install' is now fixed"
-    PREPARING_FOR_INSTALLATION = 'updated status from "known" to "preparing-for-installation"'
-    PREPARING_SUCCESSFUL = 'updated status from "preparing-for-installation" to "preparing-successful"'
     SET_BOOTSTRAP = "set as bootstrap"
-    INSTALLING = 'updated status from "preparing-successful" to "installing"'
-    CLUSTER_PREPARED = "Cluster was prepared successfully for installation"
+    PREPARE_FOR_INSTALL = "Cluster starting to prepare for installation"
     CLUSTER_INSTALLING = "to installing"
-    INSTALLING_IN_PROGRESS = 'updated status from "installing" to "installing-in-progress"'
+    INSTALLING_PENDING_USER_ACTION = "Updated status of the cluster to installing-pending-user-action"
     INSTALLATION_STAGE = "reached installation stage Starting installation"
-    INSTALLING_PENDING_USER_ACTION = "installing-pending-user-action"
-    WRITING_IMAGE_TO_DISK = "reached installation stage Writing image to disk"
-    REBOOTING = "reached installation stage Rebooting"
     CONTROL_PLANE = "reached installation stage Waiting for control plane"
     IGNITION = "reached installation stage Waiting for ignition"
+    CANCELLED_CLUSTER_INSTALLATION = "Canceled cluster installation"
+    CLUSTER_VERSION_DONE = "Operator cvo status: available message: Done"
+    RESET_CLUSTER_INSTALLATION = "Reset cluster installation"
+    FINALIZING = "Updated status of the cluster to finalizing"
+    SUCCESSFULLY_INSTALLED = "Successfully completed installing cluster"
+    ERROR = "error"
+    PROXY_SETTINGS_CHANGED = "Proxy settings changed"
+    DAY2_INSTALLED = "added-to-existing-cluster"
+
+
+class InfraEnvEvents:
+    UPDATE_IMAGE_FULL = 'Updated image information (Image type is "full-iso", SSH public key is set)'
+    UPDATE_IMAGE_MINIMAL = 'Updated image information (Image type is "minimal-iso", SSH public key is set)'
+    REGISTER_INFRA_ENV = "Registered infra env"
+
+
+class HostEvents:
+    HOST_REGISTERED = ": Successfully registered"
+    KNOWN = "to known (Host is ready to be installed)"
+    INSTALLING_PENDING_USER_ACTION = "to installing-pending-user-action"
+    CANCELLED = "Installation cancelled for host"
+    CANCELLED_STATUS = "to cancelled"
+    RESET = "Installation reset for host"
+    RESETTING_PENDING_USER_ACTION = "updated status from cancelled to resetting-pending-user-action"
+    PREPARING_FOR_INSTALL = "updated status from known to preparing-for-installation"
+    PREPARING_SUCCESSFUL = "updated status from preparing-for-installation to preparing-successful"
+    INSTALLING = "updated status from preparing-successful to installing"
+    INSTALLING_IN_PROGRESS = "updated status from installing to installing-in-progress"
+    WRITING_IMAGE_TO_DISK = "reached installation stage Writing image to disk"
+    REBOOTING = "reached installation stage Rebooting"
     CONFIGURING = "reached installation stage Configuring"
     JOINED = "reached installation stage Joined"
     DONE = "reached installation stage Done"
-    CANCELLED_CLUSTER_INSTALLATION = "Cancelled cluster installation"
-    CANCELLED_FOR_HOST = "Installation cancelled for host"
-    CLUSTER_VERSION_DONE = "Operator cvo status: available message: Done"
-    CANCELLED_STATUS = 'to "cancelled"'
-    RESET_CLUSTER_INSTALLATION = "Reset cluster installation"
-    RESET_FOR_HOST = "Installation reset for host"
-    RESETTING_PENDING_USER_ACTION = 'updated status from "cancelled" to "resetting-pending-user-action"'
-    INSTALLED = 'updated status from "installing-in-progress" to "installed"'
-    FINALIZING = "to finalizing"
-    SUCCESSFULLY_INSTALLED = "Successfully finished installing cluster"
-    ERROR = "error"
-    DAY2_INSTALLED = "added-to-existing-cluster"
-    PROXY_SETTINGS_CHANGED = "Proxy settings changed"
+    INSTALLED = "updated status from installing-in-progress to installed"
 
 
 class HostStatusInfo:
