@@ -118,6 +118,7 @@ class TestBootstrapInPlace(BaseTest):
         config["sshKey"] = ssh_pub_key
         config["metadata"]["name"] = cluster_name
         config["networking"]["machineNetwork"][0]["cidr"] = net_asset["machine_cidr"]
+        config["networking"]["networkType"] = "OVNKubernetes"
 
         with open(INSTALL_CONFIG, "w") as _file:
             yaml.dump(config, _file)
