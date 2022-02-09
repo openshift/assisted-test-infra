@@ -22,10 +22,10 @@ class OperatorResource:
     WORKER_DISK_KEY: str = "worker_disk"
     MASTER_DISK_COUNT_KEY: str = "master_disk_count"
     WORKER_DISK_COUNT_KEY: str = "worker_disk_count"
-    WORKER_COUNT_KEY: str = "num_workers"
+    WORKER_COUNT_KEY: str = "workers_count"
 
     @classmethod
-    def _get_resource_dict(
+    def get_resource_dict(
         cls,
         master_memory: int = 0,
         worker_memory: int = 0,
@@ -52,10 +52,8 @@ class OperatorResource:
     @classmethod
     def values(cls) -> dict:
         return {
-            OperatorType.CNV: cls._get_resource_dict(
-                master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2
-            ),
-            OperatorType.OCS: cls._get_resource_dict(
+            OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
+            OperatorType.OCS: cls.get_resource_dict(
                 master_memory=24000,
                 worker_memory=24000,
                 master_vcpu=12,
@@ -66,7 +64,7 @@ class OperatorResource:
                 worker_disk_count=1,
                 worker_count=4,
             ),
-            OperatorType.ODF: cls._get_resource_dict(
+            OperatorType.ODF: cls.get_resource_dict(
                 master_memory=24000,
                 worker_memory=24000,
                 master_vcpu=12,
@@ -77,7 +75,7 @@ class OperatorResource:
                 worker_disk_count=1,
                 worker_count=4,
             ),
-            OperatorType.LSO: cls._get_resource_dict(),
+            OperatorType.LSO: cls.get_resource_dict(),
         }
 
 

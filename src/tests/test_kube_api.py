@@ -2,14 +2,12 @@ import base64
 import json
 import os
 import tempfile
-from contextlib import suppress
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional
 
 import openshift as oc
 import pytest
 import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
-from pytest import FixtureLookupError, FixtureRequest
 from waiting import TimeoutExpired
 
 from assisted_test_infra.download_logs import collect_debug_info_from_cluster
@@ -28,57 +26,46 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
-from tests.global_variables import get_default_triggers
-
-PROXY_PORT = 3129
 
 
 class TestKubeAPI(BaseKubeAPI):
     KUBEAPI_IP_OPTIONS = [(False, True), (True, False)]
 
     @pytest.fixture
-    @JunitFixtureTestCase()
-    def kube_test_configs_single_node(self, request: FixtureRequest, cluster_configuration, controller_configuration):
-        self._configure_single_node(controller_configuration)
+    def sno_controller_configuration(self, prepared_controller_configuration: BaseNodeConfig) -> BaseNodeConfig:
+        self._configure_single_node(prepared_controller_configuration)
+        yield prepared_controller_configuration
 
-        for fixture_name in ["is_ipv4", "is_ipv6"]:
-            with suppress(FixtureLookupError):
-                if hasattr(cluster_configuration, fixture_name):
-                    cluster_configuration.set_value(fixture_name, request.getfixturevalue(fixture_name))
-            with suppress(FixtureLookupError):
-                if hasattr(controller_configuration, fixture_name):
-                    controller_configuration.set_value(fixture_name, request.getfixturevalue(fixture_name))
-
-        cluster_configuration.trigger(get_default_triggers())
-        controller_configuration.trigger(get_default_triggers())
-
-        yield cluster_configuration, controller_configuration
+    @pytest.fixture
+    def highly_available_controller_configuration(self, prepared_controller_configuration: BaseNodeConfig):
+        self._configure_highly_available(prepared_controller_configuration)
+        yield prepared_controller_configuration
 
     @pytest.mark.kube_api
     @JunitTestSuite()
     @pytest.mark.parametrize("is_ipv4, is_ipv6", utils.get_kubeapi_protocol_options())
+    @pytest.mark.override_controller_configuration(sno_controller_configuration.__name__)
     def test_kubeapi(
         self,
-        kube_test_configs_single_node: Tuple[ClusterConfig, BaseNodeConfig],
+        cluster_configuration: ClusterConfig,
         kube_api_context: KubeAPIContext,
         proxy_server: Callable,
         prepare_nodes_network: Nodes,
         is_ipv4: bool,
         is_ipv6: bool,
     ):
-        cluster_config, tf_config = kube_test_configs_single_node
         self.kube_api_test(
             kube_api_context,
             prepare_nodes_network,
-            cluster_config,
-            proxy_server if cluster_config.is_ipv6 else None,
+            cluster_configuration,
+            proxy_server if cluster_configuration.is_ipv6 else None,
         )
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_capi_provider(self, kube_test_configs_highly_available, kube_api_context, prepare_nodes_network):
-        cluster_config, tf_config = kube_test_configs_highly_available
-        self.capi_test(kube_api_context, prepare_nodes_network, cluster_config)
+    @pytest.mark.override_controller_configuration(highly_available_controller_configuration.__name__)
+    def test_capi_provider(self, cluster_configuration, kube_api_context, prepare_nodes_network):
+        self.capi_test(kube_api_context, prepare_nodes_network, cluster_configuration)
 
     @JunitTestCase()
     def kube_api_test(
@@ -288,9 +275,13 @@ class TestKubeAPI(BaseKubeAPI):
 
 class TestLateBinding(BaseKubeAPI):
     @pytest.fixture
+    def highly_available_controller_configuration(self, prepared_controller_configuration: BaseNodeConfig):
+        self._configure_highly_available(prepared_controller_configuration)
+        yield prepared_controller_configuration
+
+    @pytest.fixture
     def kube_test_configs_late_binding_single_node(self, infraenv_configuration, controller_configuration):
         self._configure_single_node(controller_configuration)
-        controller_configuration.trigger(get_default_triggers())
         yield infraenv_configuration, controller_configuration
 
     @pytest.fixture
@@ -328,20 +319,19 @@ class TestLateBinding(BaseKubeAPI):
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def unbound_single_node_cluster(self, kube_test_configs_single_node, kube_api_context):
-        cluster_config, _ = kube_test_configs_single_node
+    def unbound_single_node_cluster(self, cluster_configuration, kube_api_context, trigger_configurations):
         yield self.prepare_late_binding_cluster(
             kube_api_context,
-            cluster_config,
+            cluster_configuration,
             num_controlplane_agents=1,
             hold_installation=global_variables.hold_installation,
         )
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
-        cluster_config, _ = kube_test_configs_highly_available
-        yield self.prepare_late_binding_cluster(kube_api_context, cluster_config, num_controlplane_agents=3)
+    @pytest.mark.override_controller_configuration(highly_available_controller_configuration.__name__)
+    def unbound_highly_available_cluster(self, cluster_configuration, kube_api_context):
+        yield self.prepare_late_binding_cluster(kube_api_context, cluster_configuration, num_controlplane_agents=3)
 
     @classmethod
     @JunitTestCase()

@@ -1,3 +1,4 @@
+from .base_config import BaseConfig
 from .base_entity_config import BaseEntityConfig
 from .base_infra_env_config import BaseInfraEnvConfig
 from .cluster_config import BaseClusterConfig
@@ -14,5 +15,5 @@ __all__ = [
     "BaseInfraEnvConfig",
     "BaseEntityConfig",
     "BaseNodeConfig",
-    "",
+    "BaseConfig",
 ]
