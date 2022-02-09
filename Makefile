@@ -11,6 +11,12 @@ REPORTS = $(ROOT_DIR)/reports
 
 SKIPPER_PARAMS ?= -i
 
+# Openshift CI params
+OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
+JOB_TYPE := $(or ${JOB_TYPE}, "")
+REPO_NAME := $(or ${REPO_NAME}, "")
+PULL_NUMBER := $(or ${PULL_NUMBER}, "")
+
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
 SERVICE_BASE_REF := $(or $(SERVICE_BASE_REF), "master")
@@ -408,10 +414,17 @@ bring_assisted_service:
 		git clone $(SERVICE_REPO); \
 	fi
 
+ifeq ($(shell [[ $(OPENSHIFT_CI) == "true" && $(REPO_NAME) == "assisted-service" && $(JOB_TYPE) == "presubmit" ]] && echo true),true)
+	@echo "Running in assisted-service pull request"
+	@cd assisted-service && \
+	git fetch origin pull/$(PULL_NUMBER)/head:assisted-service-pr-$(PULL_NUMBER) && \
+	git checkout assisted-service-pr-$(PULL_NUMBER)
+else
 	@cd assisted-service && \
 	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH) && \
 	git reset --hard FETCH_HEAD && \
 	git rebase FETCH_BASE
+endif
 
 deploy_monitoring: bring_assisted_service
 	make -C assisted-service/ deploy-monitoring
