@@ -1,6 +1,7 @@
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.helper_classes.config import (
     BaseClusterConfig,
+    BaseDay2ClusterConfig,
     BaseEntityConfig,
     BaseInfraEnvConfig,
     BaseTerraformConfig,
@@ -14,6 +15,7 @@ __all__ = [
     "BaseInfraEnvConfig",
     "BaseTerraformConfig",
     "BaseClusterConfig",
+    "BaseDay2ClusterConfig",
     "utils",
     "BaseEntityConfig",
     "Nodes",

@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, ClassVar
-
-from assisted_service_client import models
+from typing import Any
 
 from assisted_test_infra.test_infra import (
     BaseClusterConfig,
+    BaseDay2ClusterConfig,
     BaseInfraEnvConfig,
     BaseTerraformConfig,
     ClusterName,
@@ -66,23 +65,12 @@ class InfraEnvConfig(BaseInfraEnvConfig):
 
 
 @dataclass
-class Day2ClusterConfig(ClusterConfig):
-    _details: ClassVar[models.cluster.Cluster] = None
-    day1_cluster_name: ClusterName = None
+class Day2ClusterConfig(BaseDay2ClusterConfig):
+    """A day2 Cluster configuration with defaults that obtained from EnvConfig"""
 
-    def get_copy(self):
-        return Day2ClusterConfig(**self.get_all())
-
-    def __post_init__(self):
-        super(BaseClusterConfig, self).__post_init__()
-        api_client = global_variables.get_api_client()
-        self._details = api_client.cluster_get(self.cluster_id)
-        if self.day1_cluster_name is None:
-            raise ValueError("Invalid day1_cluster_name, got None")
-
-        self.cluster_name = ClusterName(prefix=self._details.name)
-        if self.iso_download_path is None:
-            self.iso_download_path = self._get_iso_download_path(self.day1_cluster_name.get())
+    @staticmethod
+    def get_default(key, default=None) -> Any:
+        return getattr(global_variables, key)
 
 
 @dataclass

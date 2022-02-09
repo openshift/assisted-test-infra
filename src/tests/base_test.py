@@ -30,6 +30,7 @@ from assisted_test_infra.test_infra.controllers import (
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig, VSphereControllerConfig
+from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Cluster
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
@@ -37,6 +38,7 @@ from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_opera
 from consts import OperatorResource
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
+from tests.config.global_configs import Day2ClusterConfig
 
 
 class BaseTest:
@@ -55,6 +57,10 @@ class BaseTest:
     @pytest.fixture
     def infraenv_configuration(self) -> InfraEnvConfig:
         yield InfraEnvConfig()
+
+    @pytest.fixture
+    def day2_cluster_configuration(self) -> Day2ClusterConfig:
+        yield Day2ClusterConfig()
 
     @pytest.fixture
     def prepared_controller_configuration(self, new_controller_configuration: BaseNodeConfig) -> BaseNodeConfig:
@@ -274,6 +280,22 @@ class BaseTest:
             with suppress(ApiException):
                 log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
                 cluster.delete()
+
+    @pytest.fixture
+    @JunitFixtureTestCase()
+    def day2_cluster(
+        self,
+        api_client: InventoryClient,
+        request: FixtureRequest,
+        day2_cluster_configuration: Day2ClusterConfig,
+    ):
+        log.debug(f"--- SETUP --- Creating Day2 cluster for test: {request.node.name}\n")
+        cluster = Day2Cluster(
+            api_client=api_client,
+            config=day2_cluster_configuration,
+        )
+
+        yield cluster
 
     @pytest.fixture
     @JunitFixtureTestCase()
