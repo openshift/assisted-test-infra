@@ -155,7 +155,7 @@ class Cluster(Entity):
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
-    def get_preflight(self):
+    def get_preflight_requirements(self):
         self.api_client.get_preflight_requirements(self.id)
 
     # TODO remove in favor of generate_infra_env
