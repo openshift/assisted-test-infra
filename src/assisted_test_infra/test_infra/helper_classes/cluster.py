@@ -155,6 +155,9 @@ class Cluster(Entity):
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
+    def get_preflight(self):
+        self.api_client.get_preflight_requirements(self.id)
+
     # TODO remove in favor of generate_infra_env
     def generate_image(self):
         warnings.warn("generate_image is deprecated. Use generate_infra_env instead.", DeprecationWarning)
