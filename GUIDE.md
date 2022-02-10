@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Install CentOS8/RHEL8 on the assisted installer host<sup id="a1">[1](#f1)</sup>
+1. Only usage of CentOS8 / RHEL8 / Fedora on the assisted installer host<sup id="a1">[1](#f1)</sup> is supported
    - This host will run minikube and the UI for deploying OpenShift on Bare Metal
 1. Setup DHCP/DNS records for the following OpenShift nodes and VIPs. List includes
    - Master nodes
@@ -11,7 +11,7 @@
    - Ingress VIP
      > NOTE: dnsmasq can be used to setup [DHCP](https://openshift-kni.github.io/baremetal-deploy/4.4/Deployment.html#creating-dhcp-reservations-using-dnsmasq-option2_ipi-install-prerequisites) and [DNS](https://openshift-kni.github.io/baremetal-deploy/4.4/Deployment.html#creating-dns-records-using-dnsmasq-option2_ipi-install-prerequisites). Out of scope for this document but I've included links on how to do it.
 1. Ensure these values are properly set via `nslookup` and dig commands from your assisted installer host
-1. Download your Pull Secret from https://cloud.redhat.com/openshift/install/metal/user-provisioned
+1. Download your Pull Secret from https://console.redhat.com/openshift/install/pull-secret
 
 ## Deployment
 
@@ -23,30 +23,24 @@ As `$USER` user with `sudo` privileges,
 
         [$USER@assisted_installer ~]# ssh-keygen -t rsa -f ~/.ssh/id_rsa -P ''
 
-1.  Install git and make on your assisted installer host if not already present. Note that repositories should be already configured and available on your system.
+1.  Make sure that git and make are installed in your host. Note that repositories should be already configured and available on your system.
 
         [$USER@assisted_installer ~]# dnf install -y make git
 
-1.  Create a directory under `~/` labeled `assisted-installer` and `git clone` the `test-infra` git repository
+1.  Clone the `assisted-test-infra` git repository:
 
-        [$USER@assisted_installer ~]# mkdir ~/assisted-installer
-        [$USER@assisted installer assisted-installer]# cd ~/assisted-installer/
         [$USER@assisted_installer assisted-installer]# git clone https://github.com/openshift/assisted-test-infra
         [$USER@assisted_installer assisted-installer]# cd assisted-test-infra
 
-1.  Setup the assisted installer's environment by running the `install_environment.sh` script
+1.  Setup the assisted installer's environment by running the `setup` target:
 
-        [$USER@assisted_installer assisted-test-infra]# ./scripts/install_environment.sh
+        [$USER@assisted_installer assisted-test-infra]# make setup
 
-1.  Once complete, run the `create_full_environment` using `make`
+1.  **(Optional)** Currently the Installer defaults to deploying OpenShift 4.9. If you wish to change this value, set `OPENSHIFT_VERSION` to a different value, e.g. 4.8, 4.10
 
-        [$USER@assisted_installer assisted-test-infra]# make create_full_environment
+        [$USER@assisted_installer assisted-test-infra]# export OPENSHIFT_VERSION=4.10
 
-1.  **(Optional)** Currently the Installer defaults to deploying OpenShift 4.7. If you wish to change this value, set `OPENSHIFT_VERSION` to a different value, e.g. 4.6, 4.8
-
-        [$USER@assisted_installer assisted-test-infra]# export OPENSHIFT_VERSION=4.7
-
-1.  Once complete, run the "run" using make that creates the `assisted-service` and deploys the UI
+1.  Once complete, use the `run` makefile target that deploys all assisted-installer parts (both UI and API):
 
         [$USER@assisted_installer assisted-test-infra]# make run
         .
@@ -63,7 +57,7 @@ As `$USER` user with `sudo` privileges,
 
 1. A popup window labeled `New Bare Metal OpenShift Cluster` opens and requests a Cluster Name and OpenShift Version. Enter an appropriate Cluster Name.
 
-   > NOTE: The OpenShift Version selected is the value assigned to `OPENSHIFT_VERSION` (defaults to 4.7)
+   > NOTE: The OpenShift Version selected is the value assigned to `OPENSHIFT_VERSION`. If not set, then it uses the default provided by the assisted-service.
 
 1. On the next screen, enter the **Base DNS Domain**, **Pull Secret**, and **SSH Public Key**. Once complete, click on the button **Validate & Save Changes**.
 
@@ -86,7 +80,7 @@ As `$USER` user with `sudo` privileges,
     > NOTE: This example installs ISO on the assisted installer host that will serve out the ISO via HTTP for the OpenShift cluster nodes.
 
         [$USER@assisted_installer ~]# mkdir ~/assisted-installer/images
-        [$USER@assisted_installer ~]# wget http://$(hostname):6008/api/assisted-install/v1/clusters/<cluster-id>/downloads/image -O ~/assisted-installer/images/live.iso
+        [$USER@assisted_installer ~]# wget http://$(hostname):6008/api/assisted-install/v2/clusters/<cluster-id>/downloads/image -O ~/assisted-installer/images/live.iso
 
     > NOTE: When the ISO starts the initial download the cluster ID will show up on your browser address bar. Use that value and replace `<cluster-id>` with it.
 
@@ -248,7 +242,7 @@ The test infra fails with any of the following errors:
 
 **Solution**
 
-Do not run test-infra from `/root`. Instead, move it to `/home/test/` and then run `make create_full_environment`.
+Do not run test-infra from `/root`. Instead, move it to `/home/test/` and then run `make setup`.
 
 ---
 
@@ -268,7 +262,7 @@ You get `Error: Error creating libvirt domain: virError(Code=38, Domain=18, Mess
 
 **Solution**
 
-Run `make create_full_environment`.
+Run `make setup`.
 
 <hr>
 <b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)

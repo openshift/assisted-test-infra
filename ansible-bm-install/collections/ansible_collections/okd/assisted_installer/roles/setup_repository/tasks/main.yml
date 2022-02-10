@@ -12,4 +12,3 @@
   git:
     repo: "{{ repository }}"
     dest: "{{ discovery_make_iso_dir }}"
-    #dest: "{{ ansible_env.HOME }}/assisted_installer/assisted-test-infra"
