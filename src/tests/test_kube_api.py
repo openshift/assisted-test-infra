@@ -196,7 +196,7 @@ class TestKubeAPI(BaseKubeAPI):
             ssh_pub_key=cluster_config.ssh_public_key,
         )
         self.start_nodes(nodes, infra_env, cluster_config)
-        hypershift = HyperShift(name=cluster_name)
+        hypershift = HyperShift(name=cluster_name, kube_api_client=api_client)
 
         with utils.pull_secret_file() as ps:
             with tempfile.NamedTemporaryFile(mode="w") as f:
@@ -222,24 +222,20 @@ class TestKubeAPI(BaseKubeAPI):
             waiting_for="clusterDeployment to get created",
             expected_exceptions=Exception,
         )
-        self.set_node_count_and_wait_for_ready_nodes(kube_api_context, cluster_deployment, hypershift, node_count=1)
-        self.set_node_count_and_wait_for_ready_nodes(kube_api_context, cluster_deployment, hypershift, node_count=2)
+        hypershift.wait_for_control_plane_ready()
+        self.set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, spoke_namespace, node_count=1)
+        self.set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, spoke_namespace, node_count=2)
 
     @classmethod
     def set_node_count_and_wait_for_ready_nodes(
-        cls,
-        kube_api_context: KubeAPIContext,
-        cluster_deployment: ClusterDeployment,
-        hypershift: HyperShift,
-        node_count: int,
+        cls, cluster_deployment: ClusterDeployment, hypershift: HyperShift, spoke_namespace: str, node_count: int
     ):
         log.info("Setting node count to %s", node_count)
-        hypershift.set_nodepool_node_count(kube_api_context.api_client, node_count)
+        hypershift.set_nodepool_node_count(node_count)
         log.info("waiting for capi provider to set clusterDeployment ref on the agent")
-        agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=kube_api_context.spoke_namespace)
+        agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=spoke_namespace)
         log.info("Waiting for agents status verification")
         Agent.wait_for_agents_to_install(agents)
-        hypershift.download_kubeconfig(kube_api_context.api_client)
         log.info("Waiting for node to join the cluster")
         hypershift.wait_for_nodes(node_count)
         log.info("Waiting for node to become ready")
