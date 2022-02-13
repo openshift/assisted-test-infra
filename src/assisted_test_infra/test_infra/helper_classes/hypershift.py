@@ -114,7 +114,11 @@ class HyperShift:
         if self.hypershift_cluster_client is None:
             hypershift_cluter_kubeapi_client = create_kube_api_client(self.kubeconfig_path)
             self.hypershift_cluster_client = CoreV1Api(hypershift_cluter_kubeapi_client)
-        nodes = self.hypershift_cluster_client.list_node()
+        try:
+            nodes = self.hypershift_cluster_client.list_node()
+        except Exception:
+            log.exception("Failed listing nodes")
+            return V1NodeList()
         if ready:
             return filterNodeByReadyStatus(nodes)
         return nodes
@@ -129,7 +133,6 @@ class HyperShift:
             timeout_seconds=DEFAULT_WAIT_FOR_NODES_TIMEOUT,
             waiting_for="nodes to join the hypershift cluster",
         )
-        # TODO: validate the nodes ready condition
 
 
 def filterNodeByReadyStatus(nodes: V1NodeList) -> V1NodeList:
