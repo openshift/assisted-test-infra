@@ -141,9 +141,6 @@ class TestKubeAPI(BaseKubeAPI):
         )
         agents = self.start_nodes(nodes, infra_env, cluster_config)
 
-        if len(nodes) == 1:
-            self.set_single_node_ip(cluster_deployment, nodes)
-
         log.info("Waiting for agent status verification")
         Agent.wait_for_agents_to_install(agents)
 
