@@ -433,8 +433,9 @@ class BaseTest:
                 log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
                 self.collect_test_logs(cluster, api_client, request, cluster.nodes)
             if global_variables.test_teardown:
-                if cluster.is_installing() or cluster.is_finalizing():
+                if cluster.id and (cluster.is_installing() or cluster.is_finalizing()):
                     cluster.cancel_install()
+
                 with suppress(ApiException):
                     log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
                     cluster.delete()
