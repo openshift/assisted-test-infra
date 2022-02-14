@@ -454,7 +454,7 @@ export PULL_SECRET=<your pull secret>
 ENABLE_KUBE_API=true make run
 ```
 
-Deploy capi-provider-agent and hypershift
+Deploy capi-provider-agent and hypershift:
 ```bash
 make deploy_capi_env
 ```
