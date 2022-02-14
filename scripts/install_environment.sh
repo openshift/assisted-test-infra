@@ -17,7 +17,7 @@ function install_libvirt() {
 
     # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
     case "${PRETTY_NAME}" in
-    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
+    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"* | "Rocky Linux 8"*)
         sudo dnf install -y \
             https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
         ;;
@@ -33,11 +33,18 @@ function install_libvirt() {
     echo "Install selinux-policy RPM"
     sudo dnf install -y selinux-policy
 
+    # TODO: support libvirt >= 6.0.0-37-1
+    SPECIFIC_LIBVIRT_VERSION=""
+    if [[ "${PRETTY_NAME}" == "Rocky Linux 8"* ]]; then
+        echo "Installing a downgraded version of libvirt, as we currently don't support the newer one..."
+        SPECIFIC_LIBVIRT_VERSION="-6.0.0-37.module+el8.5.0+670+c4aa478c"
+    fi
+
     echo "Installing libvirt..."
     sudo dnf install -y \
-        libvirt \
-        libvirt-devel \
-        libvirt-daemon-kvm \
+        libvirt${SPECIFIC_LIBVIRT_VERSION} \
+        libvirt-devel${SPECIFIC_LIBVIRT_VERSION} \
+        libvirt-daemon-kvm${SPECIFIC_LIBVIRT_VERSION} \
         qemu-kvm \
         libgcrypt \
         swtpm \
