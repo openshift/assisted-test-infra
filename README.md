@@ -448,13 +448,13 @@ export MINIKUBE_HOME=/home
 export MINIKUBE_DISK_SIZE=100g
 export MINIKUBE_RAM_MB=12288
 ```
-Setup minikube with assisted-installer (kube-api enabled)
+Setup minikube with assisted-installer (kube-api enabled):
 ```bash
 export PULL_SECRET=<your pull secret>
 ENABLE_KUBE_API=true make run
 ```
 
-Deploy capi-provider-agent and hypershift
+Deploy capi-provider-agent and hypershift:
 ```bash
 make deploy_capi_env
 ```
