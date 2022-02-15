@@ -4,9 +4,14 @@ source "vsphere-iso" "test-infra-template" {
   password =  var.vsphere_password
   datacenter =  var.vsphere_datacenter
   insecure_connection =  true
-  ssh_username = "root"
-  ssh_password = var.root_password
   convert_to_template =  true
+
+  # SSH
+  ssh_username = "root"
+  ssh_private_key_file = var.ssh_private_key_file
+  ssh_bastion_host = var.ssh_bastion_host
+  ssh_bastion_username = var.ssh_bastion_username
+  ssh_bastion_private_key_file = var.ssh_bastion_private_key_file
 
   # Hardware Configuration
   CPUs = var.vcpus
@@ -30,7 +35,7 @@ source "vsphere-iso" "test-infra-template" {
   notes =  "Built via Packer"
 
   cd_content = {
-    "centos8-ks.cfg" = templatefile("centos-config/centos8-ks.cfg", { password = var.root_password })
+    "centos8-ks.cfg" = templatefile("centos-config/centos8-ks.cfg", { key = var.ssh_public_key, password = var.root_password })
   }
 
   cd_label = "ksdata"
@@ -39,7 +44,7 @@ source "vsphere-iso" "test-infra-template" {
 
   boot_command = [
     "<tab><wait>",
-    " ks=linux ks=cdrom:/centos8-ks.cfg<enter>"
+    " inst.ks=linux inst.ks=cdrom:/centos8-ks.cfg<enter>"
   ]
 
   network_adapters {

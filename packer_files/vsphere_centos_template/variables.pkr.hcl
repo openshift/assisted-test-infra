@@ -85,3 +85,33 @@ variable "root_password" {
   default = "test"
   description = "The os root password"
 }
+
+variable "ssh_public_key" {
+  type = string
+  default = ""
+  description = "The public ssh key, added as a ssh authorized key"
+}
+
+variable "ssh_private_key_file" {
+  type = string
+  default = ""
+  description = "The private ssh key path, used to authenticate against the new template"
+}
+
+variable "ssh_bastion_host" {
+  type = string
+  default = ""
+  description = "SSH bastion host. used for testing since we have no direct access to the vsphere environment"
+}
+
+variable "ssh_bastion_username" {
+  type = string
+  default = ""
+  description = "SSH bastion username. used for testing since we have no direct access to the vsphere environment"
+}
+
+variable "ssh_bastion_private_key_file" {
+  type = string
+  default = ""
+  description = "SSH bastion private key. used for testing since we have no direct access to the vsphere environment"
+}
