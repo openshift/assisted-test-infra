@@ -142,7 +142,7 @@ endif
 # General #
 ###########
 
-all: setup run_full_flow_with_install
+all: setup run deploy_nodes_with_install
 
 destroy: destroy_nodes delete_minikube kill_port_forwardings destroy_onprem stop_load_balancer
 
