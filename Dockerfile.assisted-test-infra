@@ -1,4 +1,4 @@
-FROM quay.io/ocpmetal/assisted-service:latest AS service
+FROM quay.io/edge-infrastructure/assisted-service:latest AS service
 
 FROM quay.io/centos/centos:stream8
 
