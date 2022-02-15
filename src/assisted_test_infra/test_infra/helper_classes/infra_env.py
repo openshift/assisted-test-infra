@@ -102,7 +102,11 @@ class InfraEnv(Entity):
         self.api_client.select_installation_disk(infra_env_id=self.id, host_id=host_id, disk_paths=disk_paths)
 
     def deregister(self, deregister_hosts=True):
+        log.info(f"Deregister infra env with id: {self.id}")
         if deregister_hosts:
             for host in self.api_client.client.v2_list_hosts(self.id):
+                log.info(f"Deregister infra_env host with id: {host['id']}")
                 self.api_client.client.v2_deregister_host(infra_env_id=self.id, host_id=host["id"])
+
         self.api_client.client.deregister_infra_env(self.id)
+        self._config.infra_env_id = None
