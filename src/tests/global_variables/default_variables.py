@@ -19,9 +19,13 @@ class DefaultVariables(_EnvVariables, Triggerable):
         return cls.__instance
 
     def __getattribute__(self, item):
+        """Keep __getattribute__ normal behavior for all class attributes but the EnvVar objects.
+        If the return value supposed to be of type EnvVar it returns EnvVar.value instead, This makes the EnvVar
+        mechanism transparent to whoever uses DefaultVariables instance"""
+
         attr = super().__getattribute__(item)
         if isinstance(attr, EnvVar):
-            return attr.get()
+            return attr.value
         return attr
 
     def __post_init__(self):

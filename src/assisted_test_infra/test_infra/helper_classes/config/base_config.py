@@ -1,8 +1,8 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from triggers.env_trigger import Triggerable
+from triggers.env_trigger import Triggerable, DataPool
 
 
 @dataclass
@@ -12,8 +12,8 @@ class BaseConfig(Triggerable, ABC):
 
     def __post_init__(self):
         """
-        Set all variables to its default value
-        Assuming key on target dict (where get_default get it's values from)
+        Set all variables to their default values
+        Assuming key on target dict (where get_default get its values from)
         """
         for k, v in self.get_all().items():
             try:
@@ -21,6 +21,10 @@ class BaseConfig(Triggerable, ABC):
                     setattr(self, k, self.get_default(k))
             except AttributeError:
                 setattr(self, k, None)
+
+    @abstractmethod
+    def _get_data_pool(self) -> DataPool:
+        pass
 
     @classmethod
     def get_annotations(cls):

@@ -44,6 +44,8 @@ class Triggerable(ABC):
 
 
 class Trigger:
+    """Mechanism for applying pre-known configurations if a given trigger condition was met"""
+
     def __init__(self, condition: Union[Tuple[str, Any], Tuple[Tuple[str, Any], Tuple[str, Any]]], **kwargs):
         self._conditions = condition
         self._variables_to_set = kwargs

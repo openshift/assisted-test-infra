@@ -3,7 +3,7 @@ import os
 import shutil
 from contextlib import suppress
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import libvirt
 import pytest
@@ -44,6 +44,9 @@ from triggers.env_trigger import Trigger
 class BaseTest:
     @classmethod
     def _get_parameterized_keys(cls, request: pytest.FixtureRequest):
+        """This method return the parameterized keys decorated the current test function.
+        If the key is a tuple (e.g. 'ipv4, ipv6') is will return them both as individuals"""
+
         parameterized_keys = []
         optional_keys = [m.args[0] for m in request.keywords.node.own_markers if m and m.name == "parametrize"]
 
@@ -56,6 +59,8 @@ class BaseTest:
 
     @classmethod
     def update_parameterized(cls, request: pytest.FixtureRequest, config: BaseConfig):
+        """Update the given configuration object with parameterized values if the key is present"""
+
         config_type = config.__class__.__name__
         parameterized_keys = cls._get_parameterized_keys(request)
 
@@ -195,10 +200,23 @@ class BaseTest:
         yield utils.run_marked_fixture(new_infra_env_configuration, "override_infra_env_configuration", request)
 
     @pytest.fixture
-    def trigger_configurations(self, cluster_configuration, controller_configuration, infra_env_configuration):
-        Trigger.trigger_configurations(
-            [cluster_configuration, controller_configuration, infra_env_configuration], get_default_triggers()
-        )
+    def triggers_enabled(self) -> bool:
+        """Can be override for disabling the triggers"""
+        return True
+
+    @pytest.fixture
+    def triggers(self) -> Dict[str, Trigger]:
+        return get_default_triggers()
+
+    @pytest.fixture
+    def trigger_configurations(
+        self, triggers_enabled, cluster_configuration, controller_configuration, infra_env_configuration, triggers
+    ):
+
+        if triggers_enabled:
+            Trigger.trigger_configurations(
+                [cluster_configuration, controller_configuration, infra_env_configuration], triggers
+            )
         yield cluster_configuration, controller_configuration, infra_env_configuration
 
     @pytest.fixture

@@ -9,6 +9,7 @@ import pytest
 import retry
 import waiting
 import yaml
+from frozendict import frozendict
 from junit_report import JunitTestCase, JunitTestSuite
 
 import consts
@@ -23,6 +24,7 @@ from deprecated_utils import extract_installer
 from service_client import SuppressAndLog
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, TerraformConfig
+from triggers import get_default_triggers
 
 BUILD_DIR = "build"
 INSTALL_CONFIG_FILE_NAME = "install-config.yaml"
@@ -140,6 +142,12 @@ class TestBootstrapInPlace(BaseTest):
     @pytest.fixture
     def new_cluster_configuration(self, request) -> ClusterConfig:
         return ClusterConfig(cluster_name=ClusterName(prefix="test-infra-cluster", suffix=""))
+
+    @pytest.fixture
+    def triggers(self):
+        """Remove the SNO trigger on bootstrap_in_place test due to that it overrides the new_controller_configuration
+        fixture values"""
+        return frozendict({k: v for k, v in get_default_triggers().items() if k != "sno"})
 
     @pytest.fixture
     def new_controller_configuration(self, request) -> BaseNodeConfig:

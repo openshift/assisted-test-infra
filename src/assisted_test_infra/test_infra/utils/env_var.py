@@ -1,3 +1,4 @@
+import functools
 from typing import Any, Callable, List, Optional
 
 from assisted_test_infra.test_infra.utils.utils import get_env
@@ -10,7 +11,7 @@ class EnvVar:
         __var_keys      Environment variables keys as passed to test_infra, if multiple keys are set, taking the first
         __loader        Function to execute on the env var when getting it from system
         __default       Default value for variable if not set
-        __is_user_set   Set to true if on of the environment variables in __var_keys was set by the user
+        __is_user_set   Set to true if one of the environment variables in __var_keys was set by the user
         __value         The actual calculated value of the variable (user -> default)
         __cached        Set to True when first time setting __value, prevent reloading the value each time it's
                         being accessed
@@ -23,15 +24,10 @@ class EnvVar:
         self.__loader = loader
         self.__default = default
         self.__is_user_set = False
-        self.__value = None
-        self.__cached = None
-        self.get()
+        self.__value = self.value
 
-    def __getattribute__(self, name: str) -> Any:
-        try:
-            return super().__getattribute__(name)
-        except AttributeError:
-            return self.__value.__getattribute__(name)
+    def __getattr__(self, item: str):
+        return self.__value.__getattribute__(item)
 
     def __add__(self, other: "EnvVar"):
         return EnvVar(default=self.get() + other.get())
@@ -43,13 +39,8 @@ class EnvVar:
     def is_user_set(self):
         return self.__is_user_set
 
-    def get(self, reload: bool = False):
-        # Try to load from cache
-        if self.__cached and not reload:
-            return self.__value
-
-        self.__cached = True
-
+    @functools.cached_property
+    def value(self):
         value = self.__default
         for key in self.__var_keys:
             env = get_env(key)
@@ -57,5 +48,4 @@ class EnvVar:
                 self.__is_user_set = True
                 value = self.__loader(env) if self.__loader else env
                 break
-        self.__value = value
         return value
