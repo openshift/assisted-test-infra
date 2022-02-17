@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from assisted_service_client import models
 
 from ...utils.base_name import BaseName
-from .base_config import _BaseConfig
+from .base_config import BaseConfig
 
 
 @dataclass
-class BaseEntityConfig(_BaseConfig, ABC):
+class BaseEntityConfig(BaseConfig, ABC):
     pull_secret: str = None
     ssh_public_key: str = None
     openshift_version: str = None

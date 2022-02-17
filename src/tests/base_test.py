@@ -3,7 +3,7 @@ import os
 import shutil
 from contextlib import suppress
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import libvirt
 import pytest
@@ -29,30 +29,65 @@ from assisted_test_infra.test_infra.controllers import (
 )
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
-from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig, VSphereControllerConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodeConfig, VSphereControllerConfig
 from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Cluster
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
-from assisted_test_infra.test_infra.utils.operators_utils import parse_olm_operators_from_env, resource_param
-from consts import OperatorResource
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 from tests.config.global_configs import Day2ClusterConfig
+from triggers import get_default_triggers
+from triggers.env_trigger import Trigger
 
 
 class BaseTest:
+    @classmethod
+    def _get_parameterized_keys(cls, request: pytest.FixtureRequest):
+        """This method return the parameterized keys decorated the current test function.
+        If the key is a tuple (e.g. 'ipv4, ipv6') is will return them both as individuals"""
+
+        parameterized_keys = []
+        optional_keys = [m.args[0] for m in request.keywords.node.own_markers if m and m.name == "parametrize"]
+
+        for key in optional_keys:
+            keys = key.split(",")
+            for k in keys:
+                parameterized_keys.append(k.strip())
+
+        return parameterized_keys
+
+    @classmethod
+    def update_parameterized(cls, request: pytest.FixtureRequest, config: BaseConfig):
+        """Update the given configuration object with parameterized values if the key is present"""
+
+        config_type = config.__class__.__name__
+        parameterized_keys = cls._get_parameterized_keys(request)
+
+        for fixture_name in parameterized_keys:
+            with suppress(pytest.FixtureLookupError, AttributeError):
+                if hasattr(config, fixture_name):
+                    value = request.getfixturevalue(fixture_name)
+                    config.set_value(fixture_name, value)
+
+                    log.debug(f"{config_type}.{fixture_name} value updated from parameterized value to {value}")
+                else:
+                    raise AttributeError(f"No attribute name {fixture_name} in {config_type} object type")
+
     @pytest.fixture
-    def new_controller_configuration(self) -> BaseNodeConfig:
+    def new_controller_configuration(self, request: FixtureRequest) -> BaseNodeConfig:
         """
         Creates the controller configuration object according to the platform.
         Override this fixture in your test class to provide a custom configuration object
         :rtype: new node controller configuration
         """
         if global_variables.platform == consts.Platforms.VSPHERE:
-            return VSphereControllerConfig()
+            config = VSphereControllerConfig()
+        else:
+            config = TerraformConfig()
 
-        return TerraformConfig()
+        self.update_parameterized(request, config)
+        yield config
 
     @pytest.fixture
     def infraenv_configuration(self) -> InfraEnvConfig:
@@ -101,22 +136,28 @@ class BaseTest:
         yield utils.run_marked_fixture(prepared_controller_configuration, "override_controller_configuration", request)
 
     @pytest.fixture
-    def new_cluster_configuration(self) -> ClusterConfig:
+    def new_cluster_configuration(self, request: FixtureRequest) -> ClusterConfig:
         """
         Creates new cluster configuration object.
         Override this fixture in your test class to provide a custom cluster configuration. (See TestInstall)
         :rtype: new cluster configuration object
         """
-        return ClusterConfig()
+        config = ClusterConfig()
+        self.update_parameterized(request, config)
+
+        return config
 
     @pytest.fixture
-    def new_infra_env_configuration(self) -> InfraEnvConfig:
+    def new_infra_env_configuration(self, request: FixtureRequest) -> InfraEnvConfig:
         """
         Creates new infra-env configuration object.
         Override this fixture in your test class to provide a custom cluster configuration. (See TestInstall)
         :rtype: new cluster configuration object
         """
-        return InfraEnvConfig()
+        config = InfraEnvConfig()
+        self.update_parameterized(request, config)
+
+        return config
 
     @pytest.fixture
     def cluster_configuration(
@@ -159,8 +200,28 @@ class BaseTest:
         yield utils.run_marked_fixture(new_infra_env_configuration, "override_infra_env_configuration", request)
 
     @pytest.fixture
+    def triggers_enabled(self) -> bool:
+        """Can be override for disabling the triggers"""
+        return True
+
+    @pytest.fixture
+    def triggers(self) -> Dict[str, Trigger]:
+        return get_default_triggers()
+
+    @pytest.fixture
+    def trigger_configurations(
+        self, triggers_enabled, cluster_configuration, controller_configuration, infra_env_configuration, triggers
+    ):
+
+        if triggers_enabled:
+            Trigger.trigger_configurations(
+                [cluster_configuration, controller_configuration, infra_env_configuration], triggers
+            )
+        yield cluster_configuration, controller_configuration, infra_env_configuration
+
+    @pytest.fixture
     def controller(
-        self, cluster_configuration: ClusterConfig, controller_configuration: BaseNodeConfig
+        self, cluster_configuration: ClusterConfig, controller_configuration: BaseNodeConfig, trigger_configurations
     ) -> NodeController:
 
         if cluster_configuration.platform == consts.Platforms.VSPHERE:
@@ -170,7 +231,7 @@ class BaseTest:
 
     @pytest.fixture
     def infraenv_controller(
-        self, infra_env_configuration: InfraEnvConfig, controller_configuration: BaseNodeConfig
+        self, infra_env_configuration: InfraEnvConfig, controller_configuration: BaseNodeConfig, trigger_configurations
     ) -> NodeController:
         if infra_env_configuration.platform == consts.Platforms.VSPHERE:
             # TODO implement for Vsphere
@@ -763,23 +824,3 @@ class BaseTest:
             sleep_seconds=30,
             waiting_for="controller to be running",
         )
-
-    @classmethod
-    def update_olm_configuration(cls, tf_config: BaseNodeConfig, operators=None) -> None:
-        if operators is None:
-            operators = parse_olm_operators_from_env()
-
-        tf_config.worker_memory = resource_param(tf_config.worker_memory, OperatorResource.WORKER_MEMORY_KEY, operators)
-        tf_config.master_memory = resource_param(tf_config.master_memory, OperatorResource.MASTER_MEMORY_KEY, operators)
-        tf_config.worker_vcpu = resource_param(tf_config.worker_vcpu, OperatorResource.WORKER_VCPU_KEY, operators)
-        tf_config.master_vcpu = resource_param(tf_config.master_vcpu, OperatorResource.MASTER_VCPU_KEY, operators)
-        tf_config.workers_count = resource_param(tf_config.workers_count, OperatorResource.WORKER_COUNT_KEY, operators)
-        tf_config.worker_disk = resource_param(tf_config.worker_disk, OperatorResource.WORKER_DISK_KEY, operators)
-        tf_config.master_disk = resource_param(tf_config.master_disk, OperatorResource.MASTER_DISK_KEY, operators)
-        tf_config.master_disk_count = resource_param(
-            tf_config.master_disk_count, OperatorResource.MASTER_DISK_COUNT_KEY, operators
-        )
-        tf_config.worker_disk_count = resource_param(
-            tf_config.worker_disk_count, OperatorResource.WORKER_DISK_COUNT_KEY, operators
-        )
-        tf_config.nodes_count = tf_config.masters_count + tf_config.workers_count

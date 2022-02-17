@@ -72,12 +72,6 @@ class BaseKubeAPI(BaseTest):
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def kube_test_configs_single_node(self, cluster_configuration, controller_configuration):
-        self._configure_single_node(controller_configuration)
-        yield cluster_configuration, controller_configuration
-
-    @pytest.fixture
-    @JunitFixtureTestCase()
     def kube_test_configs_highly_available(self, cluster_configuration, controller_configuration):
         self._configure_highly_available(controller_configuration)
         yield cluster_configuration, controller_configuration
@@ -86,7 +80,6 @@ class BaseKubeAPI(BaseTest):
     def _configure_single_node(terraform_config: BaseNodeConfig):
         terraform_config.masters_count = 1
         terraform_config.workers_count = 0
-        terraform_config.nodes_count = 1
         terraform_config.master_vcpu = 8
         terraform_config.master_memory = 35840
 
@@ -94,7 +87,6 @@ class BaseKubeAPI(BaseTest):
     def _configure_highly_available(terraform_config: BaseNodeConfig):
         terraform_config.masters_count = 3
         terraform_config.workers_count = 0
-        terraform_config.nodes_count = 3
         terraform_config.master_vcpu = 4
         terraform_config.master_memory = 17920
 
