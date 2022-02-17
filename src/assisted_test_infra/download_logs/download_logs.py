@@ -156,9 +156,14 @@ def download_logs(
         with SuppressAndLog(assisted_service_client.rest.ApiException):
             download_manifests(client, cluster["id"], output_folder)
 
+        infra_env_list = set()
         for host_id, infra_env_id in map(lambda host: (host["id"], host["infra_env_id"]), cluster["hosts"]):
             with SuppressAndLog(assisted_service_client.rest.ApiException):
                 client.download_host_ignition(infra_env_id, host_id, os.path.join(output_folder, "cluster_files"))
+            if infra_env_id not in infra_env_list:
+                infra_env_list.add(infra_env_id)
+                with SuppressAndLog(assisted_service_client.rest.ApiException):
+                    client.download_infraenv_events(infra_env_id, get_infraenv_events_path(infra_env_id, output_folder))
 
         with SuppressAndLog(assisted_service_client.rest.ApiException):
             client.download_cluster_events(cluster["id"], get_cluster_events_path(cluster, output_folder))
@@ -280,6 +285,10 @@ def _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_instal
 
 def get_cluster_events_path(cluster, output_folder):
     return os.path.join(output_folder, f"cluster_{cluster['id']}_events.json")
+
+
+def get_infraenv_events_path(infra_env_id, output_folder):
+    return os.path.join(output_folder, f"infraenv_{infra_env_id}_events.json")
 
 
 @JunitTestCase()

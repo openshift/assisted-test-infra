@@ -420,6 +420,15 @@ class InventoryClient(object):
             _file.write(json.dumps(events, indent=4).encode())
             self._events_junit_exporter.collect(events, suite_name=f"cluster_events_{cluster_id}")
 
+    def download_infraenv_events(self, infra_env_id: str, output_file: str, categories: str = None) -> None:
+        if categories is None:
+            categories = ["user"]
+        log.info("Downloading infraenv events to %s", output_file)
+
+        with open(output_file, "wb") as _file:
+            events = self.get_events(infra_env_id=infra_env_id, categories=categories)
+            _file.write(json.dumps(events, indent=4).encode())
+
     def download_host_logs(self, cluster_id: str, host_id: str, output_file) -> None:
         log.info("Downloading host logs to %s", output_file)
         response = self.client.v2_download_cluster_logs(cluster_id=cluster_id, host_id=host_id, _preload_content=False)
