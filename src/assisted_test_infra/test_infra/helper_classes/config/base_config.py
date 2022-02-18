@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from triggers.env_trigger import Triggerable, DataPool
+from triggers.env_trigger import DataPool, Triggerable
 
 
 @dataclass

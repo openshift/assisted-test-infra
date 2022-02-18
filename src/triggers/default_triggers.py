@@ -34,6 +34,10 @@ _default_triggers = frozendict(
         "ipv6_required_configurations": Trigger(
             condition=("is_ipv6", True), vip_dhcp_allocation=False, network_type=consts.NetworkType.OVNKubernetes
         ),
+        "OVNKubernetes": Trigger(
+            condition=("network_type", consts.NetworkType.OVNKubernetes),
+            vip_dhcp_allocation=False,
+        ),
         "dualstack": Trigger(
             condition=(("is_ipv4", True), ("is_ipv6", True)),
             cluster_networks=consts.DEFAULT_CLUSTER_NETWORKS_IPV4V6,
