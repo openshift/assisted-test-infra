@@ -23,6 +23,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
@@ -132,6 +133,8 @@ class TestKubeAPI(BaseKubeAPI):
         Agent.wait_for_agents_to_install(agents)
 
         agent_cluster_install.wait_to_be_ready(ready=True)
+        single_node_ip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
+        nodes.controller.set_dns(api_vip=single_node_ip, ingress_vip=single_node_ip)
 
         log.info("waiting for agent-cluster-install to be in installing state")
         agent_cluster_install.wait_to_be_installing()
@@ -139,6 +142,7 @@ class TestKubeAPI(BaseKubeAPI):
         try:
             log.info("installation started, waiting for completion")
             agent_cluster_install.wait_to_be_installed()
+            agent_cluster_install.download_kubeconfig(cluster_config.kubeconfig_path)
             log.info("installation completed successfully")
         except TimeoutExpired:
             log.exception("Failure during kube-api installation flow. Collecting debug info...")

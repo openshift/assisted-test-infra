@@ -42,7 +42,7 @@ class BaseKubeAPI(BaseTest):
     @JunitFixtureTestCase()
     def kube_api_context(self, kube_api_client, spoke_namespace):
         kube_api_context = KubeAPIContext(
-            kube_api_client, clean_on_exit=spoke_namespace, spoke_namespace=spoke_namespace
+            kube_api_client, clean_on_exit=global_variables.test_teardown, spoke_namespace=spoke_namespace
         )
 
         with kube_api_context:
