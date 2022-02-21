@@ -130,12 +130,13 @@ function install_runtime_container() {
 
 function install_packages() {
     echo "Installing dnf packages"
-    sudo dnf install -y make python3 python3-pip git jq bash-completion xinetd
+    sudo dnf install -y make python3.9 python3-pip python39-devel git jq bash-completion xinetd
     sudo systemctl enable --now xinetd
+    update-alternatives  --set python /usr/bin/python3.9
+    update-alternatives  --set python3 /usr/bin/python3.9
 
     echo "Installing python packages"
     sudo pip3 install aicli
-
 }
 
 function install_skipper() {
