@@ -13,8 +13,23 @@ function version_is_greater() {
 }
 
 function install_libvirt() {
+    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+
+    # TODO: support libvirt >= 6.0.0-37-1
+    SPECIFIC_LIBVIRT_VERSION=""
+    if [[ "${PRETTY_NAME}" == "Rocky Linux 8"* ]]; then
+        echo "Installing a downgraded version of libvirt, as we currently don't support the newer one..."
+        SPECIFIC_LIBVIRT_VERSION="-6.0.0-37.module+el8.5.0+670+c4aa478c"
+    fi
+
     echo "Installing libvirt..."
-    sudo dnf install -y libvirt libvirt-devel libvirt-daemon-kvm qemu-kvm libgcrypt
+    sudo dnf install -y \
+        libvirt${SPECIFIC_LIBVIRT_VERSION} \
+        libvirt-devel${SPECIFIC_LIBVIRT_VERSION} \
+        libvirt-daemon-kvm${SPECIFIC_LIBVIRT_VERSION} \
+        qemu-kvm \
+        libgcrypt
+
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
