@@ -8,8 +8,8 @@ function error() {
 
 # Check OS
 OS=$(awk -F= '/^ID=/ { print $2 }' /etc/os-release | tr -d '"')
-if [[ ! ${OS} =~ ^(centos)$ ]] && [[ ! ${OS} =~ ^(rhel)$ ]] && [[ ! ${OS} =~ ^(fedora)$ ]]; then
-    error "\"${OS}\" is an unsupported OS. We support only CentOS, RHEL or FEDORA."
+if [[ ! ${OS} =~ ^(centos)$ ]] && [[ ! ${OS} =~ ^(rhel)$ ]] && [[ ! ${OS} =~ ^(fedora)$ ]] && [[ ! ${OS} =~ ^(rocky)$ ]]; then
+    error "\"${OS}\" is an unsupported OS. We support only CentOS, RHEL, FEDORA or Rocky."
     exit 1
 fi
 
