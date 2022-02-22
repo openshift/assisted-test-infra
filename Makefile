@@ -95,11 +95,9 @@ IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 SERVICE_REPLICAS_COUNT := 3
 LSO_DISKS := $(shell echo sd{b..d})
 AUTH_TYPE := $(or ${AUTH_TYPE},none)
-ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},no)
-KUBE_API := $(or ${KUBE_API},no)
+ENABLE_KUBE_API := $(or ${ENABLE_KUBE_API},false)
 ifeq ($(ENABLE_KUBE_API),true)
 	SERVICE_REPLICAS_COUNT=1
-	KUBE_API=yes
 	AUTH_TYPE=local
 endif
 

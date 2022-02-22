@@ -42,7 +42,7 @@ function download_service_logs() {
 function download_cluster_logs() {
 
   if [ ${ENABLE_KUBE_API} == "true" ]; then
-      KUBE_API=true skipper run -e JUNIT_REPORT_DIR python3 -m src.assisted_test_infra.download_logs "no_url" ${LOGS_DEST} ${ADDITIONAL_PARAMS}
+      skipper run -e JUNIT_REPORT_DIR python3 -m src.assisted_test_infra.download_logs "no_url" ${LOGS_DEST} ${ADDITIONAL_PARAMS}
   else
     if [ "${REMOTE_SERVICE_URL:-}" != '""' ]; then
       SERVICE_URL=${REMOTE_SERVICE_URL}
