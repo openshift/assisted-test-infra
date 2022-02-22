@@ -35,7 +35,7 @@ from assisted_test_infra.test_infra.utils import (
 )
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from consts import ClusterStatus, HostsProgressStages, env_defaults
-from service_client import InventoryClient, SuppressAndLog, add_log_file_handler, log
+from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
@@ -134,7 +134,6 @@ def download_logs(
 
     recreate_folder(output_folder)
     recreate_folder(os.path.join(output_folder, "cluster_files"))
-    log_handler = add_log_file_handler(os.path.join(output_folder, "../test_infra.log"))
 
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, "metadata.json"))
@@ -219,7 +218,6 @@ def download_logs(
 
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")
-        log.removeHandler(log_handler)
 
 
 @JunitTestCase()

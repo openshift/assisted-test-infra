@@ -14,6 +14,8 @@ JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-"reports/"}
 KUBE_CRS=(clusterdeployment infraenv agentclusterinstall agent)
 CAPI_PROVIDER_CRS=(agentmachine agentcluster cluster machine machinedeployment machineset)
 ENABLE_KUBE_API=${ENABLE_KUBE_API:-"false"}
+DEBUG_FLAGS=${DEBUG_FLAGS:-""}
+export LOGGER_NAME="download_logs"
 
 function download_service_logs() {
   mkdir -p ${LOGS_DEST} || true
@@ -53,7 +55,7 @@ function download_cluster_logs() {
         SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
       fi
     fi
-    skipper run -e JUNIT_REPORT_DIR python3 -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}
+    skipper run -e JUNIT_REPORT_DIR "python3 ${DEBUG_FLAGS} -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}"
   fi
 }
 
