@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 import shlex
@@ -20,7 +19,7 @@ from assisted_test_infra.test_infra.tools.assets import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName
 from assisted_test_infra.test_infra.utils.oc_utils import get_operators_status
 from deprecated_utils import extract_installer
-from service_client import SuppressAndLog
+from service_client import SuppressAndLog, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, TerraformConfig
 
@@ -41,7 +40,7 @@ INSTALLER_GATHER_DEBUG_STDERR = os.path.join(INSTALLER_GATHER_DIR, "gather.stder
 class TestBootstrapInPlace(BaseTest):
     @JunitTestCase()
     def installer_generate(self, openshift_release_image: str):
-        logging.info("Installer generate ignitions")
+        log.info("Installer generate ignitions")
         bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
         utils.run_command_with_output(
             f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}", env=bip_env
@@ -62,12 +61,12 @@ class TestBootstrapInPlace(BaseTest):
         matches = re.compile(r'.*logs captured here "(.*)".*').findall(stderr)
 
         if len(matches) == 0:
-            logging.warning(f"It seems like installer-gather didn't generate any bundles, stderr: {stderr}")
+            log.warning(f"It seems like installer-gather didn't generate any bundles, stderr: {stderr}")
             return
 
         bundle_file_path, *_ = matches
 
-        logging.info(f"Found installer-gather bundle at path {bundle_file_path}")
+        log.info(f"Found installer-gather bundle at path {bundle_file_path}")
 
         utils.run_command_with_output(f"tar -xzf {bundle_file_path} -C {out_dir}")
         os.remove(bundle_file_path) if os.path.exists(bundle_file_path) else None
@@ -77,10 +76,10 @@ class TestBootstrapInPlace(BaseTest):
     @retry.retry(exceptions=Exception, tries=3, delay=30)
     def download_live_image(self, download_path: str):
         if os.path.exists(download_path):
-            logging.info("Image %s already exists, skipping download", download_path)
+            log.info("Image %s already exists, skipping download", download_path)
             return
 
-        logging.info("Downloading iso to %s", download_path)
+        log.info("Downloading iso to %s", download_path)
         # TODO: enable fetching the appropriate rhcos image
         utils.run_command(
             f"curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.8/4.8.2/rhcos-live.x86_64.iso"
@@ -89,7 +88,7 @@ class TestBootstrapInPlace(BaseTest):
 
     @JunitTestCase()
     def embed(self, image_name: str, ignition_file: str, embed_image_name: str) -> str:
-        logging.info("Embed ignition %s to iso %s", ignition_file, image_name)
+        log.info("Embed ignition %s to iso %s", ignition_file, image_name)
         embedded_image = os.path.join(BUILD_DIR, embed_image_name)
         os.remove(embedded_image) if os.path.exists(embedded_image) else None
 
@@ -125,7 +124,7 @@ class TestBootstrapInPlace(BaseTest):
 
     @JunitTestCase()
     def setup_files_and_folders(self, net_asset: LibvirtNetworkAssets, cluster_name: str):
-        logging.info("Creating needed files and folders")
+        log.info("Creating needed files and folders")
         utils.recreate_folder(consts.BASE_IMAGE_FOLDER, force_recreate=False)
         utils.recreate_folder(IBIP_DIR, with_chmod=False, force_recreate=True)
         shutil.copy(os.path.join(RESOURCES_DIR, INSTALL_CONFIG_FILE_NAME), IBIP_DIR)
@@ -156,7 +155,7 @@ class TestBootstrapInPlace(BaseTest):
         try:
             statuses = get_operators_status(KUBE_CONFIG)
             if not statuses:
-                logging.debug("No operator has been found currently...")
+                log.debug("No operator has been found currently...")
                 return False
 
             invalid_operators = [operator for operator, up in statuses.items() if not up]
@@ -164,7 +163,7 @@ class TestBootstrapInPlace(BaseTest):
             all_operators_are_valid = len(invalid_operators) == 0
 
             if not all_operators_are_valid:
-                logging.debug("Following operators are still down: %s", ", ".join(invalid_operators))
+                log.debug("Following operators are still down: %s", ", ".join(invalid_operators))
 
             return all_operators_are_valid
         except Exception as e:
@@ -175,19 +174,19 @@ class TestBootstrapInPlace(BaseTest):
     def log_collection(self, vm_ip: str):
         etype, _value, _tb = sys.exc_info()
 
-        logging.info(f"Collecting logs after a {('failed', 'successful')[etype is None]} installation")
+        log.info(f"Collecting logs after a {('failed', 'successful')[etype is None]} installation")
 
         with SuppressAndLog(Exception):
-            logging.info("Gathering sosreport data from host...")
-            gather_sosreport_data(output_dir=IBIP_DIR)
+            log.info("Gathering sosreport data from host...")
+            gather_sosreport_data(log, output_dir=IBIP_DIR)
 
         with SuppressAndLog(Exception):
-            logging.info("Gathering information via installer-gather...")
+            log.info("Gathering information via installer-gather...")
             utils.recreate_folder(INSTALLER_GATHER_DIR, force_recreate=True)
             self.installer_gather(ip=vm_ip, ssh_key=consts.DEFAULT_SSH_PRIVATE_KEY_PATH, out_dir=INSTALLER_GATHER_DIR)
 
         with SuppressAndLog(Exception):
-            logging.info("Gathering information via must-gather...")
+            log.info("Gathering information via must-gather...")
             utils.recreate_folder(MUST_GATHER_DIR)
             download_must_gather(KUBE_CONFIG, MUST_GATHER_DIR)
 
@@ -196,16 +195,16 @@ class TestBootstrapInPlace(BaseTest):
         vm_ip = controller.master_ips[0][0]
 
         try:
-            logging.info("Configuring /etc/hosts...")
+            log.info("Configuring /etc/hosts...")
             utils.config_etc_hosts(
                 cluster_name=controller.cluster_name, base_dns_domain=controller.cluster_domain, api_vip=vm_ip
             )
 
-            logging.info("Waiting for installation to complete...")
+            log.info("Waiting for installation to complete...")
             waiting.wait(
                 self.all_operators_up, sleep_seconds=20, timeout_seconds=60 * 60, waiting_for="all operators to get up"
             )
-            logging.info("Installation completed successfully!")
+            log.info("Installation completed successfully!")
 
         finally:
             self.log_collection(vm_ip)
@@ -226,9 +225,9 @@ class TestBootstrapInPlace(BaseTest):
         self.download_live_image(f"{BUILD_DIR}/installer-image.iso")
         image_path = self.embed("installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME)
 
-        logging.info("Starting node...")
+        log.info("Starting node...")
         controller.image_path = image_path
         controller.start_all_nodes()
-        logging.info("Node started!")
+        log.info("Node started!")
 
         self.waiting_for_installation_completion(controller)
