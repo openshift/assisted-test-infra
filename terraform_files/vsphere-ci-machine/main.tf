@@ -35,14 +35,14 @@ data "vsphere_network" "network" {
 
 # Creating a folder, all the vms would be created into this folder.
 resource "vsphere_folder" "folder" {
-  path          = "assisted-installer/ci-machines/${var.job_name}-${var.build_id}"
+  path          = "assisted-test-infra-ci/${var.job_name}-${var.build_id}"
   type          = "vm"
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
 # The VSphere template to clone
 data "vsphere_virtual_machine" template {
-  name          = var.template_name
+  name          = "/${data.vsphere_datacenter.datacenter.name}/vm/assisted-test-infra-ci/${var.template_name}"
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
@@ -60,6 +60,7 @@ resource "vsphere_virtual_machine" "vm" {
   wait_for_guest_net_routable = true
   wait_for_guest_net_timeout  = 5
   firmware = data.vsphere_virtual_machine.template.firmware
+  scsi_type = data.vsphere_virtual_machine.template.scsi_type
 
   network_interface {
     network_id = data.vsphere_network.network.id
