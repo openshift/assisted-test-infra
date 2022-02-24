@@ -98,6 +98,11 @@ class InfraEnv(Entity):
         infra_env_update_params = models.InfraEnvUpdateParams(proxy=self._config.proxy)
         self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
 
+    def update_static_network_config(self, static_network_config: List[dict]) -> None:
+        self.update_config(static_network_config=static_network_config)
+        infra_env_update_params = models.InfraEnvUpdateParams(static_network_config=static_network_config)
+        self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
+
     def select_host_installation_disk(self, host_id: str, disk_paths: List[dict]) -> None:
         self.api_client.select_installation_disk(infra_env_id=self.id, host_id=host_id, disk_paths=disk_paths)
 
