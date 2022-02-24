@@ -17,7 +17,6 @@ def api_client():
 
 def get_available_openshift_versions() -> List[str]:
     openshift_versions = global_variables.get_api_client().get_openshift_versions()
-    default_version = [k for k, v in openshift_versions.items() if "default" in v and v["default"]].pop()
     available_versions = list(openshift_versions.keys())
     override_version = utils.get_openshift_version(allow_default=False)
 
@@ -31,7 +30,7 @@ def get_available_openshift_versions() -> List[str]:
             f"{available_versions + [consts.OpenshiftVersion.MULTI_VERSION.value]}"
         )
 
-    return [default_version]
+    return [k for k, v in openshift_versions.items() if "default" in v and v["default"]]
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
