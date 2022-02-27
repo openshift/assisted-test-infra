@@ -56,10 +56,11 @@ function install_arkade() {
     if ! [ -x "$(command -v arkade)" ]; then
         echo "Installing arkade..."
         for i in {1..4}; do
-            curl --retry 3 -sLS https://dl.get-arkade.dev | ${SUDO} sh && break
+            curl --retry 3 -sLS https://get.arkade.dev | ${SUDO} sh && break
             echo "arkade installation failed. Retrying again in 5 seconds..."
             sleep 5
         done
+        arkade version # Fail installation if not exist
         echo "successfully installed arkade!"
     else
         echo "arkade is already installed"
