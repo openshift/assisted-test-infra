@@ -46,11 +46,6 @@ variable template_name {
 // Creating a vsphere machine to deploy test-infra on it.
 ///////////
 
-variable "job_name" {
-  type        = string
-  description = "The CI job name"
-}
-
 variable "build_id" {
   type        = string
   description = "The CI build id"

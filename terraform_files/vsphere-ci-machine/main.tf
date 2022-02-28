@@ -35,7 +35,7 @@ data "vsphere_network" "network" {
 
 # Creating a folder, all the vms would be created into this folder.
 resource "vsphere_folder" "folder" {
-  path          = "assisted-test-infra-ci/${var.job_name}-${var.build_id}"
+  path          = "assisted-test-infra-ci/build-${var.build_id}"
   type          = "vm"
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
@@ -48,7 +48,7 @@ data "vsphere_virtual_machine" template {
 
 # Creating the master VMs.
 resource "vsphere_virtual_machine" "vm" {
-  name                        = "assisted-ci-${var.job_name}-${var.build_id}"
+  name                        = "assisted-ci-build-${var.build_id}"
   resource_pool_id            = data.vsphere_compute_cluster.cluster.resource_pool_id
   datastore_id                = data.vsphere_datastore.datastore.id
   num_cpus                    = var.vcpu
@@ -78,7 +78,7 @@ resource "vsphere_virtual_machine" "vm" {
 
     customize {
       linux_options {
-        host_name = "AI-CI-${var.job_name}-${var.build_id}"
+        host_name = "AI-CI-build-${var.build_id}"
         domain = var.domain
       }
 
