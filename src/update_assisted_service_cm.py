@@ -30,6 +30,7 @@ ENVS = [
     ("BASE_DNS_DOMAINS", ""),
     ("IMAGE_BUILDER", ""),
     ("OCM_BASE_URL", ""),
+    ("AGENT_TIMEOUT_START", ""),
     ("PUBLIC_CONTAINER_REGISTRIES", ""),
     ("CHECK_CLUSTER_VERSION", ""),
     ("HW_VALIDATOR_REQUIREMENTS", ""),
