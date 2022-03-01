@@ -203,7 +203,7 @@ run: validate_namespace deploy_assisted_service deploy_ui
 set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
-deploy_ui: start_minikube
+deploy_ui: start_minikube bring_assisted_service
 	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_ui.sh
 
 deploy_prometheus_ui:
@@ -289,9 +289,8 @@ deploy_assisted_service: start_minikube bring_assisted_service
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
-	@if ! cd assisted-service >/dev/null 2>&1; then \
-		git clone $(SERVICE_REPO); \
-	fi
+	rm -rf assisted-service
+    git clone $(SERVICE_REPO); \
 
 ifeq ($(shell [[ $(OPENSHIFT_CI) == "true" && $(REPO_NAME) == "assisted-service" && $(JOB_TYPE) == "presubmit" ]] && echo true),true)
 	@echo "Running in assisted-service pull request"
