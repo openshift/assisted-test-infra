@@ -21,16 +21,17 @@ from string import ascii_lowercase
 from typing import List, Tuple, Union
 
 import filelock
-import oc_utils
 import requests
-import test_infra.consts as consts
 import waiting
-from logger import log
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
 from requests.models import HTTPError
 from retry import retry
+
+import oc_utils
+import test_infra.consts as consts
+from logger import log
 
 
 def scan_for_free_port(starting_port: int, step: int = 200):
@@ -451,16 +452,19 @@ def get_openshift_version(allow_default=True, client=None) -> str:
     Return the openshift version that needs to be handled
     according to the following process:
 
-    1. In case env var OPENSHIFT_INSTALL_RELEASE_IMAGE is defined to override the release image -
+    1. In case env var OPENSHIFT_VERSION is defined - return it.
+    2. In case env var OPENSHIFT_INSTALL_RELEASE_IMAGE is defined to override the release image -
     extract its OCP version.
-    2. In case env var OPENSHIFT_VERSION is defined - return it.
     3. In case allow_default is enabled, return the default supported version by assisted-service.
-    3.1 If a client is provided, request the versions fron the service (supports remote service).
-    3.2 Otherwise, Get from the JSON file in assisted-service repository.
+        3.1 If a client is provided, request the versions from the service (supports remote service).
+        3.2 Otherwise, Get from the JSON file in assisted-service repository.
     """
 
-    release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
+    version = get_env("OPENSHIFT_VERSION")
+    if version:
+        return version
 
+    release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
     if release_image:
         with pull_secret_file() as pull_secret:
             stdout, _, _ = run_command(
@@ -469,10 +473,6 @@ def get_openshift_version(allow_default=True, client=None) -> str:
                 shell=True,
             )
         return stdout
-
-    version = get_env("OPENSHIFT_VERSION")
-    if version:
-        return version
 
     if allow_default:
         return get_default_openshift_version(client)
