@@ -5,6 +5,7 @@
 SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
+CI ?= true
 
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 REPORTS = $(ROOT_DIR)/reports
@@ -512,4 +513,4 @@ _test_parallel: $(REPORTS) _test_setup
 
 # leave the target name the same to keep consistent behavior with master branch
 test_kube_api_parallel:
-	TEST=./discovery-infra/tests/test_kube_api.py make test
+	TEST=./discovery-infra/tests/test_kube_api.py make test_parallel

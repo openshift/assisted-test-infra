@@ -25,7 +25,6 @@ _triggers = frozendict(
             "high_availability_mode": consts.HighAvailabilityMode.NONE,
             "user_managed_networking": True,
             "vip_dhcp_allocation": False,
-            "openshift_version": consts.OpenshiftVersion.VERSION_4_8.value,
             "master_memory": resources.DEFAULT_MASTER_SNO_MEMORY,
             "master_vcpu": resources.DEFAULT_MASTER_SNO_CPU,
         },
@@ -33,7 +32,6 @@ _triggers = frozendict(
             "cluster_networks": consts.DEFAULT_CLUSTER_NETWORKS_IPV6,
             "service_networks": consts.DEFAULT_SERVICE_NETWORKS_IPV6,
             "vip_dhcp_allocation": False,
-            "openshift_version": consts.OpenshiftVersion.VERSION_4_8.value,
             "network_type": consts.NetworkType.OVNKubernetes
         },
         (("is_ipv4", True), ("is_ipv6", True),): {
