@@ -112,6 +112,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `DISABLED_HOST_VALIDATIONS`   | comma-separated list of validation IDs to be excluded from the host validation process. |
 | `SSO_URL`                     | URL used to fetch JWT tokens for assisted-service authentication |
 | `CHECK_CLUSTER_VERSION`       | If "True", the controller will wait for CVO to finish |
+| `AGENT_TIMEOUT_START`         | Update assisted-service config map AGENT_TIMEOUT_START parameter. Default is 3m.
 | `OS_IMAGES`                   | A list of available OS images (one for each minor OCP version and CPU architecture) |
 | `RELEASE_IMAGES`              | A list of available release images (one for each minor OCP version and CPU architecture) |
 
