@@ -14,12 +14,15 @@ from junit_report import JunitTestCase, JunitTestSuite
 import consts
 from assisted_test_infra.download_logs import download_must_gather, gather_sosreport_data
 from assisted_test_infra.test_infra import utils
+from assisted_test_infra.test_infra.utils.release_image_utils import (
+    extract_installer,
+    extract_rhcos_url_from_ocp_installer,
+)
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from assisted_test_infra.test_infra.tools.assets import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName
 from assisted_test_infra.test_infra.utils.oc_utils import get_operators_status
-from deprecated_utils import extract_installer
 from service_client import SuppressAndLog, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, TerraformConfig
@@ -76,17 +79,18 @@ class TestBootstrapInPlace(BaseTest):
     # ssl handshake failures at server side are not transient thus we cannot rely on curl retry mechanism by itself
     @JunitTestCase()
     @retry.retry(exceptions=Exception, tries=3, delay=30)
-    def download_live_image(self, download_path: str):
+    def download_live_image(self, download_path: str, rhcos_url: str):
         if os.path.exists(download_path):
             log.info("Image %s already exists, skipping download", download_path)
             return
 
         log.info("Downloading iso to %s", download_path)
-        # TODO: enable fetching the appropriate rhcos image
-        utils.run_command(
-            f"curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.8/4.8.2/rhcos-live.x86_64.iso"
-            f" --retry 10 --retry-connrefused -o {download_path} --continue-at -"
-        )
+        utils.run_command(f"curl {rhcos_url} --retry 10 --retry-connrefused -o {download_path} --continue-at -")
+
+    @staticmethod
+    @retry.retry(exceptions=Exception, tries=5, delay=30)
+    def retrying_run_container(*args, **kwargs):
+        return utils.run_container(*args, **kwargs)
 
     @JunitTestCase()
     def embed(self, image_name: str, ignition_file: str, embed_image_name: str) -> str:
@@ -95,7 +99,8 @@ class TestBootstrapInPlace(BaseTest):
         os.remove(embedded_image) if os.path.exists(embedded_image) else None
 
         flags = shlex.split("--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v .:/data -w /data")
-        utils.run_container(
+        # retry to avoid occassional quay hiccups
+        self.retrying_run_container(
             "coreos-installer",
             "quay.io/coreos/coreos-installer:release",
             flags,
@@ -229,7 +234,9 @@ class TestBootstrapInPlace(BaseTest):
         extract_installer(openshift_release_image, BUILD_DIR)
         self.installer_generate(openshift_release_image)
 
-        self.download_live_image(f"{BUILD_DIR}/installer-image.iso")
+        self.download_live_image(
+            f"{BUILD_DIR}/installer-image.iso", extract_rhcos_url_from_ocp_installer(INSTALLER_BINARY)
+        )
         image_path = self.embed("installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME)
 
         log.info("Starting node...")
