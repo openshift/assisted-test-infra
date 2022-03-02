@@ -1,6 +1,3 @@
-import logging
-import os
-
 import libvirt
 import waiting
 import xml.dom.minidom as md
@@ -106,12 +103,3 @@ def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
         return False
     num_macs = len([mac for mac in hosts_macs if mac != ""])
     return num_macs >= num_nodes
-
-
-def extract_installer(release_image, dest):
-    logging.info("Extracting installer from %s to %s", release_image, dest)
-    with utils.pull_secret_file() as pull_secret:
-        utils.run_command(
-            f"oc adm release extract --registry-config '{pull_secret}'"
-            f" --command=openshift-install --to={dest} {release_image}"
-        )
