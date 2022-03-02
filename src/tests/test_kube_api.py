@@ -198,6 +198,8 @@ class TestKubeAPI(BaseKubeAPI):
                     ssh_key=ssh_public_key_file,
                 )
 
+        hypershift.wait_for_control_plane_ready()
+
         cluster_deployment = ClusterDeployment(api_client, cluster_name, f"clusters-{cluster_name}")
 
         def _cluster_deployment_installed() -> bool:
