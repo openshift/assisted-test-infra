@@ -90,7 +90,7 @@ class _EnvVariables(DataPool, ABC):
         ["DISK_ENCRYPTION_ROLES"], default=env_defaults.DEFAULT_DISK_ENCRYPTION_ROLES
     )
     is_kube_api: EnvVar = EnvVar(
-        ["KUBE_API"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_IS_KUBE_API
+        ["ENABLE_KUBE_API"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_IS_KUBE_API
     )
     hold_installation: EnvVar = EnvVar(
         ["HOLD_INSTALLATION"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_HOLD_INSTALLATION
