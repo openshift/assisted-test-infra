@@ -190,7 +190,7 @@ class TestBootstrapInPlace(BaseTest):
 
         with SuppressAndLog(Exception):
             log.info("Gathering sosreport data from host...")
-            gather_sosreport_data(log, output_dir=IBIP_DIR)
+            gather_sosreport_data(output_dir=IBIP_DIR)
 
         with SuppressAndLog(Exception):
             log.info("Gathering information via installer-gather...")
