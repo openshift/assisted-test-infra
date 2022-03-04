@@ -121,7 +121,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 |     |     |
 | --- | --- |
 | `BASE_DOMAIN`                 | base domain, needed for DNS name, default: redhat.com |
-| `CLUSTER_ID`                  | cluster id , used for install_cluster command, default: the last spawned cluster |
+| `CLUSTER_ID`                  | cluster id, used for already existing cluster, e.g. after the deploy_nodes command |
 | `CLUSTER_NAME`                | cluster name, used as prefix for virsh resources, default: test-infra-cluster |
 | `HTTPS_PROXY_URL`             | A proxy URL to use for creating HTTPS connections outside the cluster |
 | `HTTP_PROXY_URL`              | A proxy URL to use for creating HTTP connections outside the cluster |
@@ -253,14 +253,6 @@ Sometimes you may need to delete all libvirt resources
 
 ```bash
 make delete_all_virsh_resources
-```
-
-### Install cluster
-
-Install cluster after nodes were deployed. Can take ClusterId as OS environment
-
-```bash
-make install_cluster
 ```
 
 ### Create cluster and download ISO
