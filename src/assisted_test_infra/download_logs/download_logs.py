@@ -4,6 +4,7 @@ import filecmp
 import json
 import os
 import shutil
+import tarfile
 import tempfile
 import time
 from contextlib import suppress
@@ -208,13 +209,12 @@ def download_logs(
             client.download_kubeconfig_no_ingress(cluster["id"], kubeconfig_path)
 
             if must_gather:
-                recreate_folder(os.path.join(output_folder, "must-gather"))
                 config_etc_hosts(
                     cluster["name"],
                     cluster["base_dns_domain"],
                     helper_cluster.get_api_vip_from_cluster(client, cluster, pull_secret),
                 )
-                download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
+                download_must_gather(kubeconfig_path, output_folder)
 
     finally:
         run_command(f"chmod -R ugo+rx '{output_folder}'")
@@ -260,7 +260,7 @@ def download_logs_kube_api(
 
 
 def _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_install, output_folder):
-    kubeconfig_path = os.path.join(output_folder, "kubeconfig")
+    kubeconfig_path = os.path.join(output_folder, "kubeconfig", f"{cluster_name}_kubeconfig.yaml")
     agent_spec = agent_cluster_install.get_spec()
     agent_cluster_install.download_kubeconfig(kubeconfig_path=kubeconfig_path)
     log.info("Agent cluster install spec %s", agent_spec)
@@ -278,7 +278,7 @@ def _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_instal
         cluster_deployment.get()["spec"]["baseDomain"],
         kube_api_ip,
     )
-    download_must_gather(kubeconfig_path, os.path.join(output_folder, "must-gather"))
+    download_must_gather(kubeconfig_path, output_folder)
 
 
 def get_cluster_events_path(cluster, output_folder):
@@ -329,15 +329,26 @@ def get_ui_url_from_api_url(api_url: str):
 
 @JunitTestCase()
 def download_must_gather(kubeconfig: str, dest_dir: str):
-    log.info(f"Downloading must-gather to {dest_dir}, kubeconfig {kubeconfig}")
+    must_gather_dir = f"{dest_dir}/must-gather-dir"
+    os.mkdir(must_gather_dir)
+
+    log.info(f"Downloading must-gather to {must_gather_dir}, kubeconfig {kubeconfig}")
     command = (
         f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} adm must-gather"
-        f" --dest-dir {dest_dir} > {dest_dir}/must-gather.log"
+        f" --dest-dir {must_gather_dir} > {must_gather_dir}/must-gather.log"
     )
     try:
         run_command(command, shell=True, raise_errors=True)
+
     except RuntimeError as ex:
         log.warning(f"Failed to run must gather: {ex}")
+
+    log.debug("Archiving %s...", must_gather_dir)
+    with tarfile.open(f"{dest_dir}/must-gather.tar", "w:gz") as tar:
+        tar.add(must_gather_dir, arcname=os.path.sep)
+
+    log.debug("Removing must-gather directory %s after we archived it", must_gather_dir)
+    shutil.rmtree(must_gather_dir)
 
 
 @JunitTestCase()
