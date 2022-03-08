@@ -11,3 +11,4 @@ minikube
 *~
 .env
 capi
+kubectl
