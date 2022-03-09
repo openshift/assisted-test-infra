@@ -36,7 +36,6 @@ INSTALL_CONFIG = os.path.join(IBIP_DIR, INSTALL_CONFIG_FILE_NAME)
 INSTALLER_BINARY = os.path.join(BUILD_DIR, "openshift-install")
 EMBED_IMAGE_NAME = "installer-SNO-image.iso"
 KUBE_CONFIG = os.path.join(IBIP_DIR, "auth", "kubeconfig")
-MUST_GATHER_DIR = os.path.join(IBIP_DIR, "must-gather")
 INSTALLER_GATHER_DIR = os.path.join(IBIP_DIR, "installer-gather")
 INSTALLER_GATHER_DEBUG_STDOUT = os.path.join(INSTALLER_GATHER_DIR, "gather.stdout.log")
 INSTALLER_GATHER_DEBUG_STDERR = os.path.join(INSTALLER_GATHER_DIR, "gather.stderr.log")
@@ -199,8 +198,7 @@ class TestBootstrapInPlace(BaseTest):
 
         with SuppressAndLog(Exception):
             log.info("Gathering information via must-gather...")
-            utils.recreate_folder(MUST_GATHER_DIR)
-            download_must_gather(KUBE_CONFIG, MUST_GATHER_DIR)
+            download_must_gather(KUBE_CONFIG, IBIP_DIR)
 
     @JunitTestCase()
     def waiting_for_installation_completion(self, controller: NodeController):
