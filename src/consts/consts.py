@@ -128,6 +128,15 @@ REQUIRED_ASSET_FIELDS = (
     *IP_NETWORK_ASSET_FIELDS,
 )
 
+# DISK SIZES
+DISK_SIZE_120GB = 120 * 2**30
+
+
+class RemoteEnvironment:
+    PRODUCTION = "https://api.openshift.com"
+    STAGING = "https://api.stage.openshift.com"
+    INTEGRATION = "https://api.integration.openshift.com"
+
 
 class ImageType:
     FULL_ISO = "full-iso"

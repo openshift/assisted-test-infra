@@ -8,6 +8,15 @@ from triggers.olm_operators_trigger import OlmOperatorsTrigger
 
 _default_triggers = frozendict(
     {
+        "production": Trigger(
+            condition=("remote_service_url", consts.RemoteEnvironment.PRODUCTION), worker_disk=consts.DISK_SIZE_120GB
+        ),
+        "staging": Trigger(
+            condition=("remote_service_url", consts.RemoteEnvironment.STAGING), worker_disk=consts.DISK_SIZE_120GB
+        ),
+        "integration": Trigger(
+            condition=("remote_service_url", consts.RemoteEnvironment.INTEGRATION), worker_disk=consts.DISK_SIZE_120GB
+        ),
         "none_platform": Trigger(
             ("platform", consts.Platforms.NONE), user_managed_networking=True, vip_dhcp_allocation=False
         ),
