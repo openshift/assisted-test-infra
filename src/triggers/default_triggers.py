@@ -20,6 +20,7 @@ _default_triggers = frozendict(
             vip_dhcp_allocation=False,
             master_memory=resources.DEFAULT_MASTER_SNO_MEMORY,
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,
+            network_type=consts.NetworkType.OVNKubernetes,
         ),
         "ipv4": Trigger(
             condition=(("is_ipv4", True), ("is_ipv6", False)),
