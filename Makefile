@@ -236,7 +236,7 @@ deploy_nodes_with_install: start_load_balancer
 	@if [ "$(ENABLE_KUBE_API)" = "false"  ]; then \
 		TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_install_with_deploy_nodes $(MAKE) test; \
 	else \
-		TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_kubeapi_install_with_deploy_nodes $(MAKE) test; \
+	    tput setaf 1; echo "Not implemented"; exit 1; \
 	fi
 
 deploy_nodes: start_load_balancer
