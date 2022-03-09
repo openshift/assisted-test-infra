@@ -14,15 +14,15 @@ from junit_report import JunitTestCase, JunitTestSuite
 import consts
 from assisted_test_infra.download_logs import download_must_gather, gather_sosreport_data
 from assisted_test_infra.test_infra import utils
-from assisted_test_infra.test_infra.utils.release_image_utils import (
-    extract_installer,
-    extract_rhcos_url_from_ocp_installer,
-)
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
 from assisted_test_infra.test_infra.tools.assets import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName
 from assisted_test_infra.test_infra.utils.oc_utils import get_operators_status
+from assisted_test_infra.test_infra.utils.release_image_utils import (
+    extract_installer,
+    extract_rhcos_url_from_ocp_installer,
+)
 from service_client import SuppressAndLog, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, TerraformConfig

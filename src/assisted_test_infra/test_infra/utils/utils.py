@@ -118,32 +118,6 @@ def set_tfvars(tf_folder, tfvars_json):
         json.dump(tfvars_json, _file)
 
 
-def are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_error_status=True):
-    hosts_in_status = [
-        host for host in hosts if (host["status"] in statuses and host["status_info"].startswith(status_info))
-    ]
-    if len(hosts_in_status) >= nodes_count:
-        return True
-    elif fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
-        hosts_in_error = [
-            (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
-            for i, host in enumerate(hosts, start=1)
-            if host["status"] == consts.NodesStatus.ERROR
-        ]
-        log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
-        raise Exception("All the nodes must be in valid status, but got some in error")
-
-    log.info(
-        "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
-        statuses,
-        [
-            (i, host["id"], host.get("requested_hostname"), host.get("role"), host["status"], host["status_info"])
-            for i, host in enumerate(hosts, start=1)
-        ],
-    )
-    return False
-
-
 def are_host_progress_in_stage(hosts, stages, nodes_count=1):
     log.info("Checking hosts installation stage")
     hosts_in_stage = [host for host in hosts if (host["progress"]["current_stage"]) in stages]

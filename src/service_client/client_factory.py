@@ -1,3 +1,4 @@
+import functools
 from typing import Optional
 
 from assisted_service_client import ApiClient
@@ -12,6 +13,7 @@ from service_client.logger import log
 
 class ClientFactory:
     @staticmethod
+    @functools.cache
     def create_client(
         url: str,
         offline_token: str,
