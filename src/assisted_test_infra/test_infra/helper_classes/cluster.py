@@ -479,6 +479,15 @@ class Cluster(Entity):
     def start_install(self):
         self.api_client.install_cluster(cluster_id=self.id)
 
+        # if prepare for installation will fail
+        # we will fail here and not wait for cluster to be installed
+        utils.wait_till_cluster_is_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSTALLING],
+            timeout=consts.ERROR_TIMEOUT,
+        )
+
     def wait_for_logs_complete(self, timeout, interval=60, check_host_logs_only=False):
         logs_utils.wait_for_logs_complete(
             client=self.api_client,
