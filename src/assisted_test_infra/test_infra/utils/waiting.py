@@ -4,6 +4,7 @@ import waiting
 
 import consts
 from assisted_test_infra.test_infra import utils
+from assisted_test_infra.test_infra.exceptions import InstallationFailedError
 from service_client import log
 
 
@@ -24,7 +25,7 @@ def _are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_e
             if host["status"] == consts.NodesStatus.ERROR
         ]
         log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
-        raise Exception("All the nodes must be in valid status, but got some in error")
+        raise InstallationFailedError()
 
     log.info(
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",

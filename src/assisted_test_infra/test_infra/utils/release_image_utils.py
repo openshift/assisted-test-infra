@@ -1,5 +1,6 @@
-import logging
 import json
+import logging
+
 import semver
 
 from assisted_test_infra.test_infra import utils

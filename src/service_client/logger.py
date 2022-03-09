@@ -88,20 +88,20 @@ def add_stream_handler(logger: logging.Logger):
     logger.addHandler(ch)
 
 
-def get_logger(name: str = ""):
-    logging.getLogger("requests").setLevel(logging.ERROR)
-    logging.getLogger("urllib3").setLevel(logging.ERROR)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-
-    add_log_file_handler(logger, "test_infra.log")
-    add_stream_handler(logger)
-    return logger
-
-
 logger_name = os.environ.get("LOGGER_NAME", "")
-log = get_logger(logger_name)
+urllib3_logger = logging.getLogger("urllib3")
+urllib3_logger.handlers = [logging.NullHandler()]
+
+logging.getLogger("requests").setLevel(logging.ERROR)
+urllib3_logger.setLevel(logging.ERROR)
+
+log = logging.getLogger(logger_name)
+log.setLevel(logging.DEBUG)
+
+add_log_file_handler(log, "test_infra.log")
+add_log_file_handler(urllib3_logger, "test_infra.log")
+add_stream_handler(log)
+add_stream_handler(urllib3_logger)
 
 
 class SuppressAndLog(suppress):
