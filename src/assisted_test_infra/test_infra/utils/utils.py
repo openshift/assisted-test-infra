@@ -521,50 +521,6 @@ def pull_secret_file():
         yield f.name
 
 
-def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, update_roles=True):
-    """
-    Update names and/or roles of the hosts in a cluster from a dictionary of libvirt nodes.
-
-    An entry from the dictionary is matched to a host by the host's MAC address (of any NIC).
-    Entries that do not match any host in the cluster are ignored.
-
-    Arguments:
-        client -- An assisted service client
-        cluster_id -- ID of the cluster to update
-        libvirt_nodes -- A dictionary that may contain data about cluster hosts
-        update_hostnames -- Whether hostnames must be set (default False)
-        update_roles -- Whether host roles must be set (default True)
-    """
-
-    if not update_hostnames and not update_roles:
-        log.info("Skipping update roles and hostnames")
-        return
-
-    roles = []
-    hostnames = []
-    inventory_hosts = client.get_cluster_hosts(cluster_id)
-
-    for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
-        for host in inventory_hosts:
-            inventory = json.loads(host["inventory"])
-
-            if libvirt_mac.lower() in map(
-                lambda interface: interface["mac_address"].lower(),
-                inventory["interfaces"],
-            ):
-                roles.append({"id": host["id"], "role": libvirt_metadata["role"]})
-                hostnames.append({"id": host["id"], "hostname": libvirt_metadata["name"]})
-
-    if not update_hostnames:
-        hostnames = None
-
-    if not update_roles:
-        roles = None
-
-    # TODO: use client.update_host for each one in inventory_hosts.
-    # See: https://issues.redhat.com/browse/MGMT-9568
-
-
 def get_assisted_controller_status(kubeconfig):
     log.info("Getting controller status")
     command = (
