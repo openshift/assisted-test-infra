@@ -47,6 +47,7 @@ _default_triggers = frozendict(
         "ocs_operator": OlmOperatorsTrigger(condition="ocs"),
         "lso_operator": OlmOperatorsTrigger(condition="lso"),
         "cnv_operator": OlmOperatorsTrigger(condition="cnv"),
+        "odf_operator": OlmOperatorsTrigger(condition="odf"),
     }
 )
 
