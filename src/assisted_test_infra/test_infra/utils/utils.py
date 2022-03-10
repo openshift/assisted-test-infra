@@ -561,7 +561,8 @@ def update_hosts(client, cluster_id, libvirt_nodes, update_hostnames=False, upda
     if not update_roles:
         roles = None
 
-    client.update_hosts(cluster_id=cluster_id, hosts_with_roles=roles, hosts_names=hostnames)
+    # TODO: use client.update_host for each one in inventory_hosts.
+    # See: https://issues.redhat.com/browse/MGMT-9568
 
 
 def get_assisted_controller_status(kubeconfig):

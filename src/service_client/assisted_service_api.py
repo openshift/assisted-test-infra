@@ -248,15 +248,6 @@ class InventoryClient(object):
         response_obj = response[0]
         self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
-    # TODO remove and use infraenv
-    def update_hosts(
-        self, cluster_id: str, hosts_with_roles, hosts_names: Optional[models.ClusterupdateparamsHostsNames] = None
-    ) -> models.cluster.Cluster:
-        warnings.warn("update_hosts is deprecated. Use update_host instead.", DeprecationWarning)
-        log.info("Setting roles for hosts %s in cluster %s", hosts_with_roles, cluster_id)
-        hosts = models.ClusterUpdateParams(hosts_roles=hosts_with_roles, hosts_names=hosts_names)
-        return self.update_cluster(cluster_id=cluster_id, update_params=hosts)
-
     def update_host(self, infra_env_id: str, host_id: str, host_role: str = None, host_name: str = None):
         host_update_params = models.HostUpdateParams(host_role=host_role, host_name=host_name)
         self.client.v2_update_host(infra_env_id=infra_env_id, host_id=host_id, host_update_params=host_update_params)
