@@ -13,6 +13,7 @@ LOGS_DEST=${LOGS_DEST:-build}
 JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-"reports/"}
 KUBE_CRS=(clusterdeployment infraenv agentclusterinstall agent)
 CAPI_PROVIDER_CRS=(agentmachine agentcluster cluster machine machinedeployment machineset)
+HYPERSHIFT_CRS=(hostedcluster hostedcontrolplane)
 ENABLE_KUBE_API=${ENABLE_KUBE_API:-"false"}
 DEBUG_FLAGS=${DEBUG_FLAGS:-""}
 export LOGGER_NAME="download_logs"
@@ -62,6 +63,9 @@ function download_cluster_logs() {
 
 function download_capi_logs() {
   collect_kube_api_resources "${CAPI_PROVIDER_CRS[@]}"
+  # get hypershfit CRs and logs
+  collect_kube_api_resources "${HYPERSHIFT_CRS[@]}"
+  ${KUBECTL} logs deployment/operator -n hypershift
   # The pod name is capi-provider in case it's deployed by hypershift
   NAMESPACE=$(get_pod_namespace "capi-provider|cluster-api-provider-agent")
   mkdir ${LOGS_DEST}/${NAMESPACE}
