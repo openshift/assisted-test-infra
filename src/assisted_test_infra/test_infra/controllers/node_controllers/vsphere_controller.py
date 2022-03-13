@@ -11,14 +11,14 @@ from assisted_test_infra.test_infra import BaseClusterConfig
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
-from assisted_test_infra.test_infra.helper_classes.config.vsphere_config import VSphereControllerConfig
+from assisted_test_infra.test_infra.helper_classes.config.vsphere_config import BaseVSphereConfig
 from assisted_test_infra.test_infra.tools import terraform_utils
 from assisted_test_infra.test_infra.utils import TerraformControllerUtil
 from service_client import log
 
 
 class VSphereController(NodeController):
-    def __init__(self, config: VSphereControllerConfig, cluster_config: BaseClusterConfig):
+    def __init__(self, config: BaseVSphereConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
         folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=cluster_config.platform)

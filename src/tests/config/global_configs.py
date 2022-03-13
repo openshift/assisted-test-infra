@@ -6,6 +6,7 @@ from assisted_test_infra.test_infra import (
     BaseDay2ClusterConfig,
     BaseInfraEnvConfig,
     BaseTerraformConfig,
+    BaseVSphereConfig,
     ClusterName,
     InfraEnvName,
     utils,
@@ -65,6 +66,14 @@ class Day2ClusterConfig(BaseDay2ClusterConfig):
 
 @dataclass
 class TerraformConfig(BaseTerraformConfig):
+    """A Nodes configuration with defaults that obtained from EnvConfig"""
+
+    def _get_data_pool(self):
+        return global_variables
+
+
+@dataclass
+class VSphereConfig(BaseVSphereConfig):
     """A Nodes configuration with defaults that obtained from EnvConfig"""
 
     def _get_data_pool(self):
