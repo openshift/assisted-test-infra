@@ -243,9 +243,33 @@ class Day2Cluster(ABC):
                 "to work around libvirt for Terrafrom not setting hostnames of IPv6 hosts",
                 self.config.cluster_id,
             )
-            utils.update_hosts(
-                self.api_client, self.config.cluster_id, libvirt_nodes, update_roles=False, update_hostnames=True
-            )
+            self.update_hosts(self.api_client, self.config.cluster_id, libvirt_nodes)
+
+    def update_hosts(self, client: InventoryClient, cluster_id: str, libvirt_nodes: dict):
+        """
+        Update names of the hosts in a cluster from a dictionary of libvirt nodes.
+
+        An entry from the dictionary is matched to a host by the host's MAC address (of any NIC).
+        Entries that do not match any host in the cluster are ignored.
+
+        Args:
+            client: An assisted service client
+            cluster_id: ID of the cluster to update
+            libvirt_nodes: A dictionary that may contain data about cluster hosts
+        """
+        inventory_hosts = client.get_cluster_hosts(cluster_id)
+
+        for libvirt_mac, libvirt_metadata in libvirt_nodes.items():
+            for host in inventory_hosts:
+                inventory = json.loads(host["inventory"])
+
+                if libvirt_mac.lower() in map(
+                    lambda interface: interface["mac_address"].lower(),
+                    inventory["interfaces"],
+                ):
+                    client.update_host(
+                        infra_env_id=host["infra_env_id"], host_id=host["id"], host_name=libvirt_metadata["name"]
+                    )
 
     def wait_nodes_join_ocp_cluster(self, num_orig_nodes: int, num_new_nodes: int, kubeconfig: Any) -> bool:
         self.approve_workers_on_ocp_cluster(kubeconfig)
