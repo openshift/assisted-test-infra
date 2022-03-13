@@ -29,14 +29,14 @@ from assisted_test_infra.test_infra.controllers import (
 )
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
-from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodeConfig, VSphereControllerConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodeConfig
 from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Cluster
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
-from tests.config.global_configs import Day2ClusterConfig
+from tests.config.global_configs import Day2ClusterConfig, VSphereConfig
 from triggers import get_default_triggers
 from triggers.env_trigger import Trigger
 
@@ -82,7 +82,7 @@ class BaseTest:
         :rtype: new node controller configuration
         """
         if global_variables.platform == consts.Platforms.VSPHERE:
-            config = VSphereControllerConfig()
+            config = VSphereConfig()
         else:
             config = TerraformConfig()
 

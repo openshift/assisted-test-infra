@@ -5,6 +5,7 @@ from assisted_test_infra.test_infra.helper_classes.config import (
     BaseEntityConfig,
     BaseInfraEnvConfig,
     BaseTerraformConfig,
+    BaseVSphereConfig,
 )
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName, InfraEnvName
@@ -19,4 +20,5 @@ __all__ = [
     "utils",
     "BaseEntityConfig",
     "Nodes",
+    "BaseVSphereConfig",
 ]
