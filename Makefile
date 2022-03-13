@@ -217,17 +217,6 @@ kill_all_port_forwardings:
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(UI_SERVICE_NAME)'
 	scripts/utils.sh kill_port_forwardings '$(SERVICE_NAME) $(PROMETHEUS_SERVICE_NAME)'
 
-###########
-# Cluster #
-###########
-
-_install_cluster:
-	src/install_cluster.py -id $(CLUSTER_ID) -ps '$(PULL_SECRET)' --service-name $(SERVICE_NAME) $(OC_PARAMS) -ns $(NAMESPACE) -cn $(CLUSTER_NAME)
-
-install_cluster:
-	skipper make $(SKIPPER_PARAMS) _install_cluster
-
-
 #########
 # Nodes #
 #########
