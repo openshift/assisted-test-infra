@@ -1,4 +1,5 @@
 from contextlib import suppress
+from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from assisted_test_infra.test_infra.helper_classes.config.base_config import Triggerable
@@ -8,6 +9,7 @@ from tests.global_variables.env_variables_defaults import _EnvVariables
 from triggers import Trigger, get_default_triggers
 
 
+@dataclass(frozen=True)
 class DefaultVariables(_EnvVariables, Triggerable):
     __instance: ClassVar = None
 
@@ -43,7 +45,7 @@ class DefaultVariables(_EnvVariables, Triggerable):
         if not hasattr(self, key):
             raise AttributeError(f"Invalid key {key}")
 
-        _EnvVariables.__setattr__(key, value)
+        object.__setattr__(self, key, value)
 
     def _get_data_pool(self) -> object:
         return self
