@@ -14,7 +14,7 @@ munch==2.5.0
 netaddr==0.8.0
 netifaces==0.11.0
 openshift-client==1.0.14
-paramiko==2.9.2
+paramiko==2.10.1
 pre-commit==2.17.0
 pycharm_remote_debugger==0.1.13
 pytest-xdist==2.5.0
