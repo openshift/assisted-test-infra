@@ -464,16 +464,6 @@ class InventoryClient(object):
         log.info("Getting install-config for cluster %s", cluster_id)
         return self.client.v2_get_cluster_install_config(cluster_id=cluster_id)
 
-    def patch_cluster_discovery_ignition(self, cluster_id: str, ignition_info: str) -> None:
-        warnings.warn(
-            "patch_cluster_discovery_ignition is deprecated. Use patch_discovery_ignition instead.", DeprecationWarning
-        )
-        log.info("Patching cluster %s discovery ignition", cluster_id)
-        return self.client.update_discovery_ignition(
-            cluster_id=cluster_id,
-            discovery_ignition_params=models.DiscoveryIgnitionParams(config=json.dumps(ignition_info)),
-        )
-
     def patch_discovery_ignition(self, infra_env_id: str, ignition_info: str) -> None:
         infra_env_update_params = models.InfraEnvUpdateParams(ignition_config_override=json.dumps(ignition_info))
         self.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
