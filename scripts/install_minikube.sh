@@ -8,6 +8,7 @@ function install_minikube() {
     curl --retry 3 -Lo minikube https://storage.googleapis.com/minikube/releases/${minikube_version}/minikube-linux-amd64
     ${SUDO} install minikube /usr/local/bin/
     minikube version
+    rm -f minikube
 }
 
 function install_kubectl() {
@@ -17,8 +18,8 @@ function install_kubectl() {
 
     curl -LO https://dl.k8s.io/${kubectl_version}/bin/linux/amd64/kubectl.sha256
     echo "$(<kubectl.sha256)  kubectl" | sha256sum --check
-    rm -f kubectl.sha256
     ${SUDO} install kubectl /usr/local/bin/
+    rm -f kubectl.sha256 kubectl
     kubectl
 }
 
