@@ -268,7 +268,7 @@ class InventoryClient(object):
 
     def set_pull_secret(self, cluster_id: str, pull_secret: str) -> models.cluster.Cluster:
         log.info("Setting pull secret for cluster %s", cluster_id)
-        update_params = models.ClusterUpdateParams(pull_secret=pull_secret)
+        update_params = models.V2ClusterUpdateParams(pull_secret=pull_secret)
         return self.update_cluster(cluster_id=cluster_id, update_params=update_params)
 
     def update_cluster(self, cluster_id, update_params) -> models.cluster.Cluster:
@@ -457,7 +457,7 @@ class InventoryClient(object):
         self, cluster_id: str, http_proxy: str, https_proxy: Optional[str] = "", no_proxy: Optional[str] = ""
     ) -> models.cluster.Cluster:
         log.info("Setting proxy for cluster %s", cluster_id)
-        update_params = models.ClusterUpdateParams(http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy)
+        update_params = models.V2ClusterUpdateParams(http_proxy=http_proxy, https_proxy=https_proxy, no_proxy=no_proxy)
         return self.update_cluster(cluster_id=cluster_id, update_params=update_params)
 
     def get_cluster_install_config(self, cluster_id: str) -> str:
