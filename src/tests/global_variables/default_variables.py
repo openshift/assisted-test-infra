@@ -13,13 +13,6 @@ from triggers import Trigger, get_default_triggers
 class DefaultVariables(_EnvVariables, Triggerable):
     __instance: ClassVar = None
 
-    def __new__(cls, *args, **kwargs):
-        """Prevent creating another env_var instance"""
-        if isinstance(cls.__instance, cls):
-            raise Exception("Can't initialized more then one global configuration object")
-        cls.__instance = object.__new__(cls, *args, **kwargs)
-        return cls.__instance
-
     def __getattribute__(self, item):
         """Keep __getattribute__ normal behavior for all class attributes but the EnvVar objects.
         If the return value supposed to be of type EnvVar it returns EnvVar.value instead, This makes the EnvVar

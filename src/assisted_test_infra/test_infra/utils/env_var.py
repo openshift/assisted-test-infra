@@ -1,4 +1,3 @@
-import functools
 from typing import Any, Callable, List, Optional
 
 from assisted_test_infra.test_infra.utils.utils import get_env
@@ -36,10 +35,14 @@ class EnvVar:
         return f"{f'{self.__var_keys[0]}=' if len(self.__var_keys) > 0 else ''}{self.__value}"
 
     @property
+    def var_keys(self):
+        return self.__var_keys
+
+    @property
     def is_user_set(self):
         return self.__is_user_set
 
-    @functools.cached_property
+    @property
     def value(self):
         value = self.__default
         for key in self.__var_keys:

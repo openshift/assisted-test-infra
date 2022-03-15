@@ -19,10 +19,18 @@ class NetworkType:
     OpenShiftSDN = "OpenShiftSDN"
     OVNKubernetes = "OVNKubernetes"
 
+    @classmethod
+    def all(cls):
+        return [cls.OpenShiftSDN, cls.OVNKubernetes]
+
 
 class DiskEncryptionMode:
     TPM_VERSION_2 = "tpmv2"
     # TODO: fully support tang mode
+
+    @classmethod
+    def all(cls):
+        return [cls.TPM_VERSION_2]
 
 
 class DiskEncryptionRoles:
@@ -30,6 +38,10 @@ class DiskEncryptionRoles:
     ALL = "all"
     MASTERS = "masters"
     WORKERS = "workers"
+
+    @classmethod
+    def all(cls):
+        return [cls.NONE, cls.ALL, cls.MASTERS, cls.WORKERS]
 
 
 # Files & Directories

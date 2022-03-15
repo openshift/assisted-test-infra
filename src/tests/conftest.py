@@ -15,8 +15,19 @@ def api_client():
     yield global_variables.get_api_client()
 
 
+def get_supported_operators() -> List[str]:
+    try:
+        return sorted(global_variables.get_api_client().get_supported_operators())
+    except RuntimeError:
+        return []  # if no service found return empty operator list
+
+
 def get_available_openshift_versions() -> List[str]:
-    openshift_versions = global_variables.get_api_client().get_openshift_versions()
+    try:
+        openshift_versions = global_variables.get_api_client().get_openshift_versions()
+    except RuntimeError:
+        return [global_variables.openshift_version]  # if no service found return hard-coded version number
+
     available_versions = list(openshift_versions.keys())
     override_version = utils.get_openshift_version(allow_default=False)
 

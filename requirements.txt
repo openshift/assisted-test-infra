@@ -32,3 +32,5 @@ tqdm==4.63.0
 urllib3==1.26.8
 pyvmomi>=7.0.2
 waiting>=1.4.1
+prompt_toolkit==3.0.28
+tabulate==0.8.9

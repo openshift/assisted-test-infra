@@ -3,7 +3,7 @@ from junit_report import JunitTestSuite
 
 import consts
 from tests.base_test import BaseTest
-from tests.conftest import get_available_openshift_versions, global_variables
+from tests.conftest import get_available_openshift_versions, get_supported_operators
 
 
 class TestInstall(BaseTest):
@@ -25,7 +25,7 @@ class TestInstall(BaseTest):
         cluster.start_install_and_wait_for_installed()
 
     @JunitTestSuite()
-    @pytest.mark.parametrize("olm_operators", sorted(global_variables.get_api_client().get_supported_operators()))
+    @pytest.mark.parametrize("olm_operators", get_supported_operators())
     def test_olm_operator(self, cluster, olm_operators):
         cluster.prepare_for_installation()
         cluster.start_install_and_wait_for_installed()

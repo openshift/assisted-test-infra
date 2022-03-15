@@ -5,6 +5,7 @@ from .global_configs import (
     TerraformConfig,
     VSphereConfig,
     global_variables,
+    reset_global_variables,
 )
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "Day2ClusterConfig",
     "VSphereConfig",
     "global_variables",
+    "reset_global_variables",
 ]
