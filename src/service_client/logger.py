@@ -73,6 +73,16 @@ class ColorizingStreamHandler(logging.StreamHandler):
             self.handleError(record)
 
 
+def get_logging_level():
+    level = os.environ.get("LOGGING_LEVEL", "")
+    return logging.getLevelName(level.upper()) if level else logging.DEBUG
+
+
+logging.getLogger("requests").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("asyncio").setLevel(logging.ERROR)
+
+
 def add_log_file_handler(logger: logging.Logger, filename: str) -> logging.FileHandler:
     fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
     fh = logging.FileHandler(filename)
@@ -82,7 +92,9 @@ def add_log_file_handler(logger: logging.Logger, filename: str) -> logging.FileH
 
 
 def add_stream_handler(logger: logging.Logger):
-    fmt = SensitiveFormatter("%(asctime)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)")
+    fmt = SensitiveFormatter(
+        "%(asctime)s  %(name)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)"
+    )
     ch = ColorizingStreamHandler(sys.stdout)
     ch.setFormatter(fmt)
     logger.addHandler(ch)
@@ -96,7 +108,7 @@ logging.getLogger("requests").setLevel(logging.ERROR)
 urllib3_logger.setLevel(logging.ERROR)
 
 log = logging.getLogger(logger_name)
-log.setLevel(logging.DEBUG)
+log.setLevel(get_logging_level())
 
 add_log_file_handler(log, "test_infra.log")
 add_log_file_handler(urllib3_logger, "test_infra.log")

@@ -25,7 +25,7 @@ REPO_NAME := $(or ${REPO_NAME}, "")
 PULL_NUMBER := $(or ${PULL_NUMBER}, "")
 
 # lint
-LINT_CODE_STYLING_DIRS := src/tests src/triggers src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup
+LINT_CODE_STYLING_DIRS := src/tests src/triggers src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup src/cli
 
 # assisted-service
 SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
@@ -375,3 +375,7 @@ deploy_capi_env: start_minikube
 #########
 test_kube_api_parallel:
 	TEST=./src/tests/test_kube_api.py make test_parallel
+
+cli:
+	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
+	TEST_TEARDOWN=false JUNIT_REPORT_DIR=$(REPORTS) LOGGING_LEVEL="error" skipper run -i "python3 ${DEBUG_FLAGS} -m src.cli"

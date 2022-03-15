@@ -17,6 +17,11 @@ from tests.global_variables import DefaultVariables
 global_variables = DefaultVariables()
 
 
+def reset_global_variables():
+    global global_variables
+    global_variables = DefaultVariables()
+
+
 def _get_iso_download_path(entity_name: str):
     return str(
         Path(env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(f"{entity_name}-{env_defaults.DEFAULT_IMAGE_FILENAME}")
