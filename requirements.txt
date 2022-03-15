@@ -18,7 +18,7 @@ paramiko==2.9.2
 pre-commit==2.17.0
 pycharm_remote_debugger==0.1.13
 pytest-xdist==2.5.0
-pytest==7.0.1
+pytest==7.1.0
 python-dateutil==2.8.2
 python-hcl2==3.0.4
 python-terraform==0.10.1
