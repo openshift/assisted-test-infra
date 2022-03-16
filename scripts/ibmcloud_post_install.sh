@@ -24,7 +24,8 @@ log "Starting ibmcloud-post-install.sh"
 
 {
 echo "Install base prerequisites"
-dnf install -y git
+dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+dnf install -y git make
 
 echo "Get AI repo"
 mkdir -p /home/test
