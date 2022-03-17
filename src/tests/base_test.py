@@ -248,6 +248,7 @@ class BaseTest:
         return Nodes(infraenv_controller)
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
         try:
             nodes.prepare_nodes()
@@ -260,6 +261,7 @@ class BaseTest:
                 utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def prepare_infraenv_nodes(self, infraenv_nodes: Nodes, infra_env_configuration: InfraEnvConfig) -> Nodes:
         try:
             infraenv_nodes.prepare_nodes()
@@ -284,10 +286,12 @@ class BaseTest:
         cls.teardown_nat(nat)
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def prepare_nodes_network(self, prepare_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
         yield from self._prepare_nodes_network(prepare_nodes, controller_configuration)
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def prepare_infraenv_nodes_network(
         self, prepare_infraenv_nodes: Nodes, controller_configuration: BaseNodeConfig
     ) -> Nodes:
@@ -381,6 +385,7 @@ class BaseTest:
                 infra_env.deregister()
 
     @pytest.fixture
+    @JunitFixtureTestCase()
     def prepared_cluster(self, cluster):
         cluster.prepare_for_installation()
         yield cluster
