@@ -65,7 +65,8 @@ function download_capi_logs() {
   collect_kube_api_resources "${CAPI_PROVIDER_CRS[@]}"
   # get hypershfit CRs and logs
   collect_kube_api_resources "${HYPERSHIFT_CRS[@]}"
-  ${KUBECTL} logs deployment/operator -n hypershift
+  mkdir -p ${LOGS_DEST}/hypershift
+  ${KUBECTL} logs deployment/operator -n hypershift > ${LOGS_DEST}/hypershift/logs_operator_${DEPLOY_TARGET}.log
   # The pod name is capi-provider in case it's deployed by hypershift
   NAMESPACE=$(get_pod_namespace "capi-provider|cluster-api-provider-agent")
   mkdir ${LOGS_DEST}/${NAMESPACE}
