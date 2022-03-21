@@ -734,6 +734,7 @@ class Cluster(Entity):
         else:
             statuses = [consts.OperatorStatus.AVAILABLE, consts.OperatorStatus.FAILED]
 
+        log.info("Starting to wait for builtin operators")
         operators_utils.wait_till_all_operators_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -743,6 +744,7 @@ class Cluster(Entity):
             timeout=timeout,
             fall_on_error_status=False,
         )
+        log.info("Starting to wait for OLM operators")
         operators_utils.wait_till_all_operators_are_in_status(
             client=self.api_client,
             cluster_id=self.id,

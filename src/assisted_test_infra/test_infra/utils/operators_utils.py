@@ -5,7 +5,7 @@ import waiting
 from assisted_service_client import MonitoredOperator
 
 import consts
-from service_client import log
+from service_client import InventoryClient, log
 
 
 def get_env(env, default=None):
@@ -20,7 +20,12 @@ def parse_olm_operators_from_env():
 
 
 def _are_operators_in_status(
-    operators: List[MonitoredOperator], operators_count: int, statuses: List[str], fall_on_error_status: bool
+    cluster_id: str,
+    client: InventoryClient,
+    operators: List[MonitoredOperator],
+    operators_count: int,
+    statuses: List[str],
+    fall_on_error_status: bool,
 ) -> bool:
     log.info(
         "Asked operators to be in one of the statuses from %s and currently operators statuses are %s",
@@ -34,6 +39,8 @@ def _are_operators_in_status(
                 _Exception = consts.olm_operators.get_exception_factory(operator.name)
                 raise _Exception(f"Operator {operator.name} status is failed with info {operator.status_info}")
 
+    cluster = client.cluster_get(cluster_id=cluster_id).to_dict()
+    log.info("Cluster %s progress info: %s", cluster_id, cluster["progress"])
     if len([operator for operator in operators if operator.status in statuses]) >= operators_count:
         return True
 
@@ -65,6 +72,8 @@ def wait_till_all_operators_are_in_status(
     try:
         waiting.wait(
             lambda: _are_operators_in_status(
+                cluster_id,
+                client,
                 filter_operators_by_type(client.get_cluster_operators(cluster_id), operator_types),
                 operators_count,
                 statuses,
