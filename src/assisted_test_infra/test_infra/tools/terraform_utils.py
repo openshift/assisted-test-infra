@@ -50,17 +50,20 @@ class TerraformUtils:
 
     def set_and_apply(self, refresh: bool = True, **kwargs) -> None:
         defined_variables = self.select_defined_variables(**kwargs)
-        self.change_variables(defined_variables)
+        self.update_variables_file(defined_variables)
         self.init_tf()
         self.apply(refresh=refresh)
 
-    def change_variables(self, variables: Dict[str, str], refresh: bool = True) -> None:
+    def update_variables_file(self, variables: Dict[str, str]):
         with open(self.var_file_path, "r+") as _file:
             tfvars = json.load(_file)
             tfvars.update(variables)
             _file.seek(0)
             _file.truncate()
             json.dump(tfvars, _file)
+
+    def change_variables(self, variables: Dict[str, str], refresh: bool = True) -> None:
+        self.update_variables_file(variables=variables)
         self.apply(refresh=refresh)
 
     def get_state(self) -> Tfstate:
