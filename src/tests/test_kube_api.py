@@ -195,6 +195,7 @@ class TestKubeAPI(BaseKubeAPI):
                     pull_secret_file=ps,
                     agent_namespace=spoke_namespace,
                     provider_image=os.environ.get("PROVIDER_IMAGE", ""),
+                    hypershift_cpo_image=os.environ.get("HYPERSHIFT_IMAGE", ""),
                     ssh_key=ssh_public_key_file,
                 )
 
@@ -396,9 +397,7 @@ class TestLateBinding(BaseKubeAPI):
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_prepare_late_binding_kube_api_ipv4_highly_available(
-            self, unbound_highly_available_infraenv
-    ):
+    def test_prepare_late_binding_kube_api_ipv4_highly_available(self, unbound_highly_available_infraenv):
         infra_env, nodes = unbound_highly_available_infraenv
         agents: List[Agent] = infra_env.wait_for_agents(len(nodes))
         assert len(agents) == len(nodes), f"Expected {len(nodes)} agents, found {len(agents)}"
