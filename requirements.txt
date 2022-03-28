@@ -20,7 +20,7 @@ pycharm_remote_debugger==0.1.13
 pytest-xdist==2.5.0
 pytest==7.1.1
 python-dateutil==2.8.2
-python-hcl2==3.0.4
+python-hcl2==3.0.5
 python-terraform==0.10.1
 pyyaml==6.0
 requests==2.27.1
