@@ -28,6 +28,8 @@ class VSphereController(NodeController):
         config = {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
         # The ISO file isn't available now until preparing for installation
         del config["iso_download_path"]
+
+        self._create_folder(self._config.vsphere_parent_folder)
         self._tf.set_and_apply(**config)
         return self.list_nodes()
 
@@ -72,7 +74,7 @@ class VSphereController(NodeController):
         def start(vm) -> task:
             return vm.PowerOn()
 
-        self.__run_on_vm(node_name, self.cluster_name, start)
+        self.__run_on_vm(node_name, start)
 
     def start_all_nodes(self) -> List[Node]:
         nodes = self.list_nodes()
@@ -88,7 +90,7 @@ class VSphereController(NodeController):
         def shutdown(vm) -> task:
             return vm.PowerOff()
 
-        self.__run_on_vm(node_name, self.cluster_name, shutdown)
+        self.__run_on_vm(node_name, shutdown)
 
     def shutdown_all_nodes(self) -> None:
         nodes = self.list_nodes()
@@ -100,7 +102,7 @@ class VSphereController(NodeController):
         def reboot(vm) -> task:
             return vm.ResetVM_Task()
 
-        self.__run_on_vm(node_name, self.cluster_name, reboot)
+        self.__run_on_vm(node_name, reboot)
 
     def get_ingress_and_api_vips(self) -> dict:
         raise NotImplementedError
@@ -182,26 +184,30 @@ class VSphereController(NodeController):
 
         return [vm_instance for vms_objects in vms_object_type for vm_instance in vms_objects["instances"]]
 
-    def __run_on_vm(self, name: str, folder, action: Callable) -> None:
-        connection = SmartConnect(
-            host=self._config.vsphere_vcenter,
-            user=self._config.vsphere_username,
-            pwd=self._config.vsphere_password,
-            disableSslCertValidation=True,
-        )
+    def _create_folder(self, name: str):
+        connection = self.__new_connection()
         content = connection.RetrieveContent()
-        container = content.viewManager.CreateContainerView(content.rootFolder, [vim.VirtualMachine], True)
-        vm = None
+        datacenter = VSphereController.__search_for_obj(content, vim.Datacenter, self._config.vsphere_datacenter)
 
-        for managed_object_ref in container.view:
-            if managed_object_ref.name == name:
-                vm = managed_object_ref
-                break
+        if datacenter is None:
+            raise ValueError(f"""Unable to locate Datacenter ${self._config.vsphere_datacenter}""")
 
-        container.Destroy()
+        folder = VSphereController.__search_for_obj(content, vim.Folder, name)
+
+        if folder:
+            log.info(f"Folder {name} already exists")
+            return
+
+        log.info(f"Creating folder {name}")
+        datacenter.vmFolder.CreateFolder(name)
+
+    def __run_on_vm(self, name: str, action: Callable) -> None:
+        connection = self.__new_connection()
+        content = connection.RetrieveContent()
+        vm = VSphereController.__search_for_obj(content, vim.VirtualMachine, name)
 
         if vm is None:
-            raise ValueError("Unable to locate VirtualMachine.")
+            raise ValueError(f"""Unable to locate VirtualMachine ${name}""")
 
         vm_task = action(vm)
 
@@ -209,3 +215,24 @@ class VSphereController(NodeController):
             time.sleep(1)
 
         Disconnect(connection)
+
+    def __new_connection(self):
+        return SmartConnect(
+            host=self._config.vsphere_vcenter,
+            user=self._config.vsphere_username,
+            pwd=self._config.vsphere_password,
+            disableSslCertValidation=True,
+        )
+
+    @staticmethod
+    def __search_for_obj(content, vim_type, name) -> Any:
+        obj = None
+        container = content.viewManager.CreateContainerView(content.rootFolder, [vim_type], True)
+
+        for managed_object_ref in container.view:
+            if managed_object_ref.name == name:
+                obj = managed_object_ref
+                break
+
+        container.Destroy()
+        return obj
