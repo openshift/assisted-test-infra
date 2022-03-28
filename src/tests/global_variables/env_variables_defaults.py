@@ -96,6 +96,8 @@ class _EnvVariables(DataPool, ABC):
         ["HOLD_INSTALLATION"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_HOLD_INSTALLATION
     )
 
+    vsphere_parent_folder: str = EnvVar(["VSPHERE_PARENT_FOLDER"], default=env_defaults.DEFAULT_VSHPERE_PARENT_FOLDER)
+    vsphere_folder: str = EnvVar(["VSPHERE_FOLDER"])
     vsphere_cluster: EnvVar = EnvVar(["VSPHERE_CLUSTER"])
     vsphere_username: EnvVar = EnvVar(["VSPHERE_USERNAME"])
     vsphere_password: EnvVar = EnvVar(["VSPHERE_PASSWORD"])
