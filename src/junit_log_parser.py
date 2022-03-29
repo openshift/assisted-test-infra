@@ -90,7 +90,7 @@ class LogsConverter:
         # Update values to match assisted-service logs
         values["level"] = cls.get_level(values["level"])
         if "func" not in values:
-            values["func"] = values["file"].split(":")[0]
+            values["func"] = values["file"].split(":")[0].replace('"', "")
 
         return LogEntry(**values)
 
@@ -123,7 +123,7 @@ class LogsConverter:
     def export_service_logs_to_junit_suites(cls, source_dir: Path, report_dir: Path):
         suites = list()
         for file in source_dir.glob("logs_assisted-service*.log"):
-            suite_name = Path(file).stem.replace("logs_", "")
+            suite_name = "assisted-logs"
             log.info(f"Creating test suite from {suite_name}.log")
             test_cases = cls.get_failure_cases(file, suite_name)
             timestamp = test_cases[0].timestamp if test_cases else None
@@ -159,8 +159,8 @@ class EventsConverter:
         obj = involved_object["kind"].lower() + "/" + involved_object["name"]
         message = event["message"]
         timestamp = event["firstTimestamp"]
-        test_case = TestCase(name=f"{reason}: {obj}", classname="EVENT", category=reason, timestamp=timestamp)
-        test_case.failures.append(CaseFailure(message=message, output=message, type=event_type))
+        test_case = TestCase(name=f"{reason}", classname="EVENT", category=reason, timestamp=timestamp)
+        test_case.failures.append(CaseFailure(message=f"{obj}: {message}", output=f"{obj}: {message}", type=event_type))
         return test_case
 
     @classmethod
