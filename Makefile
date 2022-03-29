@@ -379,3 +379,7 @@ test_kube_api_parallel:
 cli:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	TEST_TEARDOWN=false JUNIT_REPORT_DIR=$(REPORTS) LOGGING_LEVEL="error" skipper run -i "python3 ${DEBUG_FLAGS} -m src.cli"
+
+
+validate_client:
+	skipper run "python3 ${DEBUG_FLAGS} src/service_client/client_validator.py"

@@ -296,3 +296,9 @@ class BaseAsset:
     PROVISIONING_CIDR6 = DEFAULT_MACHINE_NETWORKS_IPV6[1].cidr
     NETWORK_IF = "tt1"
     SECONDARY_NETWORK_IF = "stt1"
+
+
+class DeployTargets:
+    ONPREM = "onprem"
+    MINIKUBE = "minikube"
+    ASSISTED_OPERATOR = "operator"

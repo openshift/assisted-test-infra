@@ -6,12 +6,15 @@ from _pytest.nodes import Item
 import consts
 from assisted_test_infra.test_infra import utils
 from service_client import log
+from service_client.client_validator import verify_client_version
 from tests.config import global_variables
 
 
 @pytest.fixture(scope="session")
 def api_client():
     log.info("--- SETUP --- api_client\n")
+    verify_client_version()
+
     yield global_variables.get_api_client()
 
 
