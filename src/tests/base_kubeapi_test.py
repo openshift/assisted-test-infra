@@ -90,6 +90,13 @@ class BaseKubeAPI(BaseTest):
         terraform_config.master_vcpu = 4
         terraform_config.master_memory = 17920
 
+    @staticmethod
+    def _configure_workers(terraform_config: BaseNodeConfig):
+        terraform_config.masters_count = 0
+        terraform_config.workers_count = 2
+        terraform_config.worker_vcpu = 4
+        terraform_config.workerr_memory = 17920
+
     @classmethod
     def _bind_all(cls, cluster_deployment: ClusterDeployment, agents: List[Agent]):
         for agent in agents:
