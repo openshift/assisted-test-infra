@@ -37,9 +37,24 @@ variable "vsphere_network" {
   description = "vSphere publicly accessible network for cluster ingress and access. e.g VM Network"
 }
 
+variable "vsphere_parent_folder" {
+  type        = string
+  default     = "assisted-test-infra"
+  description = <<EOF
+  Grouping resources together.
+There should be a difference between CI and a manually installed cluster for better management.
+Periodically deleting long-lived CI machines (for example)
+It should be a preexisting folder
+EOF
+}
+
 variable "vsphere_folder" {
   type        = string
-  description = "Create VSphere resources under this folder for easy management(For the CI). Folder name shouldn't end with a slash"
+  description = <<EOF
+  This folder groups the current Openshift cluster vms.
+  Terraform creates this folder, and if it already exists, it fails.
+  Default to cluster_name.
+EOF
   default = ""
 }
 
