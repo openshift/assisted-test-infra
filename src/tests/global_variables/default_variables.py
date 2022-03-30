@@ -38,7 +38,7 @@ class DefaultVariables(_EnvVariables, Triggerable):
         if not hasattr(self, key):
             raise AttributeError(f"Invalid key {key}")
 
-        object.__setattr__(self, key, value)
+        object.__setattr__(self, key, self.get_env(key).copy(value))  # create a new env-var with the new value
 
     def _get_data_pool(self) -> object:
         return self
