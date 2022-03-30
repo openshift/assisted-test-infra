@@ -297,6 +297,11 @@ class TestLateBinding(BaseKubeAPI):
         yield infraenv_configuration, controller_configuration
 
     @pytest.fixture
+    def kube_test_configs_late_binding_workers(self, infraenv_configuration, controller_configuration):
+        self._configure_workers(controller_configuration)
+        yield infraenv_configuration, controller_configuration
+
+    @pytest.fixture
     @JunitFixtureTestCase()
     def unbound_single_node_infraenv(
         self,
@@ -315,6 +320,20 @@ class TestLateBinding(BaseKubeAPI):
     def unbound_highly_available_infraenv(
         self,
         kube_test_configs_late_binding_highly_available,
+        kube_api_context,
+        prepare_infraenv_nodes_network,
+        infra_env_configuration,
+    ):
+        infra_env = self.kube_api_test_prepare_late_binding_infraenv(
+            kube_api_context, prepare_infraenv_nodes_network, infra_env_configuration
+        )
+        yield infra_env, prepare_infraenv_nodes_network
+
+    @pytest.fixture
+    @JunitFixtureTestCase()
+    def unbound_workers_infraenv(
+        self,
+        kube_test_configs_late_binding_workers,
         kube_api_context,
         prepare_infraenv_nodes_network,
         infra_env_configuration,
@@ -397,8 +416,8 @@ class TestLateBinding(BaseKubeAPI):
 
     @JunitTestSuite()
     @pytest.mark.kube_api
-    def test_prepare_late_binding_kube_api_ipv4_highly_available(self, unbound_highly_available_infraenv):
-        infra_env, nodes = unbound_highly_available_infraenv
+    def test_prepare_late_binding_kube_api_ipv4_workers(self, unbound_workers_infraenv):
+        infra_env, nodes = unbound_workers_infraenv
         agents: List[Agent] = infra_env.wait_for_agents(len(nodes))
         assert len(agents) == len(nodes), f"Expected {len(nodes)} agents, found {len(agents)}"
 
