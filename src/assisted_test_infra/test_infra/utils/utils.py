@@ -445,6 +445,8 @@ def get_default_openshift_version(client=None) -> str:
             release_images = json.load(f)
             versions = [v.get("openshift_version") for v in release_images if v.get("default", False)]
 
+    log.info(f"Default openshift version found {versions}")
+
     assert len(versions) == 1, f"There should be exactly one default version {versions}"
     return versions[0]
 
@@ -469,6 +471,7 @@ def get_openshift_version(allow_default=True, client=None) -> str:
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if release_image:
+        log.info(f"Using release image to get default openshift version, release_image={release_image}")
         with pull_secret_file() as pull_secret:
             stdout, _, _ = run_command(
                 f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"

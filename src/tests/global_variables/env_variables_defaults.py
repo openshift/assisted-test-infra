@@ -16,7 +16,7 @@ class _EnvVariables(DataPool, ABC):
     pull_secret: EnvVar = EnvVar(["PULL_SECRET"])
     deploy_target: EnvVar = EnvVar(["DEPLOY_TARGET"])
     offline_token: EnvVar = EnvVar(["OFFLINE_TOKEN"])
-    openshift_version: EnvVar = EnvVar(["OPENSHIFT_VERSION"], default=consts.OpenshiftVersion.VERSION_4_9.value)
+    openshift_version: EnvVar = EnvVar(["OPENSHIFT_VERSION"], default=consts.OpenshiftVersion.VERSION_4_10.value)
     base_dns_domain: EnvVar = EnvVar(["BASE_DOMAIN"], default=env_defaults.DEFAULT_BASE_DNS_DOMAIN)
     masters_count: EnvVar = EnvVar(
         ["MASTERS_COUNT", "NUM_MASTERS"], loader=int, default=env_defaults.DEFAULT_NUMBER_OF_MASTERS
