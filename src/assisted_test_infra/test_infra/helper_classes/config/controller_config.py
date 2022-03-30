@@ -2,6 +2,7 @@ import warnings
 from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 import consts
 
@@ -24,6 +25,7 @@ class BaseNodeConfig(BaseConfig, ABC):
     master_disk: int = None  # disk size in MB.
     master_disk_size_gib: str = None  # disk size in GB.
     master_disk_count: int = None  # number of disks to create
+    master_boot_devices: List[str] = None  # order of boot devices to use
 
     worker_memory: int = None
     worker_vcpu: int = None
@@ -32,6 +34,7 @@ class BaseNodeConfig(BaseConfig, ABC):
     worker_disk: int = None
     worker_disk_size_gib: str = None  # disk size in GB.
     worker_disk_count: int = None
+    worker_boot_devices: List[str] = None
 
     network_mtu: int = None
 

@@ -590,6 +590,18 @@ class LibvirtController(NodeController, ABC):
             raise Exception(f"Failed to set memory for node: {node_name}")
         log.info(f"Successfully set memory to {ram_kib} for node: {node_name}")
 
+    def set_ipxe_url(self, network_name: str, ipxe_url: str):
+        """Adds a <bootp> element with the iPXE file URL to the libvirt network"""
+        network = self.get_network_by_name(network_name)
+        current_xml = network.XMLDesc(0)
+        xml = minidom.parseString(current_xml.encode("utf-8"))
+        dhcpElement = xml.getElementsByTagName("dhcp")[0]
+        bootp = xml.createElement("bootp")
+        bootp.setAttribute("file", ipxe_url)
+        dhcpElement.appendChild(bootp)
+        self.destroy_network(network)
+        self.create_network(xml.toprettyxml())
+
     def _get_xml(self, node_name):
         dom = self.libvirt_connection.lookupByName(node_name)
         current_xml = dom.XMLDesc(0)

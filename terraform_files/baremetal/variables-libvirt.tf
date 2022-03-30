@@ -23,6 +23,16 @@ variable "worker_disk_count" {
   description = "Number of worker disks."
 }
 
+variable "master_boot_devices" {
+  type        = list(string)
+  description = "the list of boot devices in the desired order of boot for masters"
+}
+
+variable "worker_boot_devices" {
+  type        = list(string)
+  description = "the list of boot devices in the desired order of boot for workers"
+}
+
 variable "cluster_domain" {
   type        = string
   description = "Cluster domain"

@@ -1,4 +1,5 @@
 from .iptables import IpTableCommandOption, IptableRule
+from .ipxe_controller.ipxe_controller import IPXEController
 from .nat_controller import NatController
 from .node_controllers import NodeController
 from .node_controllers.libvirt_controller import LibvirtController
@@ -12,6 +13,7 @@ __all__ = [
     "NatController",
     "IptableRule",
     "IpTableCommandOption",
+    "IPXEController",
     "Node",
     "ProxyController",
     "TerraformController",

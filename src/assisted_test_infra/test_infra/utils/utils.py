@@ -64,8 +64,12 @@ def scan_for_free_port(starting_port: int, step: int = 200):
     raise RuntimeError("could not allocate free port for proxy")
 
 
-def run_command(command, shell=False, raise_errors=True, env=None, cwd=None):
+def run_command(command, shell=False, raise_errors=True, env=None, cwd=None, run_in_background=False):
     command = command if shell else shlex.split(command)
+    if run_in_background:
+        subprocess.Popen(command, shell=shell, env=env, cwd=cwd, stderr=subprocess.STDOUT)
+        return
+
     process = subprocess.run(
         command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True, cwd=cwd
     )

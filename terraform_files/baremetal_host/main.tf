@@ -55,8 +55,8 @@ resource "libvirt_domain" "host" {
     }
   }
 
-  boot_device{
-    dev = ["hd", "cdrom"]
+  boot_device {
+    dev = var.boot_devices
   }
 
   dynamic "tpm" {

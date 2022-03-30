@@ -235,6 +235,14 @@ class InventoryClient(object):
         with open(file_path, "wb") as _file:
             _file.write(response.data)
 
+    def download_and_save_infra_env_file(self, infra_env_id: str, file_name: str, file_path: str) -> None:
+        log.info(f"Downloading {file_name} to {file_path}")
+        response = self.client.v2_download_infra_env_files(
+            infra_env_id=infra_env_id, file_name=file_name, _preload_content=False
+        )
+        with open(file_path, "wb") as _file:
+            _file.write(response.data)
+
     def download_manifests(self, cluster_id: str, dir_path: str) -> None:
         log.info(f"Downloading manifests for cluster {cluster_id} into {dir_path}")
         response = self.manifest.v2_list_cluster_manifests(cluster_id=cluster_id, _preload_content=False)

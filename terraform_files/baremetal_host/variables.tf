@@ -71,3 +71,9 @@ variable "vtpm2" {
   description = "Whether of not to emulate TPM v2 device on the host."
   default     = false
 }
+
+variable "boot_devices" {
+  type        = list(string)
+  description = "the list of boot devices in the desired order of boot"
+  default = ["hd", "cdrom"]
+}
