@@ -52,3 +52,11 @@ class EnvVar:
                 value = self.__loader(env) if self.__loader else env
                 break
         return value
+
+    def copy(self, value=None) -> "EnvVar":
+        """Get EnvVar copy, if value is different than None it will set the old EnvVar value"""
+        env = EnvVar(self.__var_keys, loader=self.__loader, default=self.__default)
+        env.__is_user_set = self.__is_user_set
+        env.__value = value if value else self.__value
+
+        return env
