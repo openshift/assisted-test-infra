@@ -95,7 +95,9 @@ class BaseKubeAPI(BaseTest):
         terraform_config.masters_count = 0
         terraform_config.workers_count = 2
         terraform_config.worker_vcpu = 4
-        terraform_config.workerr_memory = 17920
+        terraform_config.worker_memory = 17920
+        terraform_config.ingress_dns = True
+        terraform_config.cluster_name = global_variables.cluster_name
 
     @classmethod
     def _bind_all(cls, cluster_deployment: ClusterDeployment, agents: List[Agent]):

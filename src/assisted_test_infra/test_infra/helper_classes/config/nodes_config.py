@@ -21,7 +21,7 @@ class BaseTerraformConfig(BaseNodeConfig, ABC):
     libvirt_secondary_master_ips: List[str] = None
     libvirt_worker_ips: List[str] = None
     libvirt_secondary_worker_ips: List[str] = None
-
+    ingress_dns: bool = False
     net_asset: Munch = None
     tf_folder: str = None
     network_name: str = None
