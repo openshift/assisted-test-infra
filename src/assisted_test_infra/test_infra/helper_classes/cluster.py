@@ -1,16 +1,11 @@
-import contextlib
-import ipaddress
 import json
-import os
 import random
 import re
 import time
-import warnings
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
-import requests
 import waiting
 import yaml
 from assisted_service_client import models
@@ -24,7 +19,6 @@ from assisted_test_infra.test_infra.controllers.load_balancer_controller import 
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
 from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHost
 from assisted_test_infra.test_infra.helper_classes.entity import Entity
-from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
@@ -167,11 +161,6 @@ class Cluster(Entity):
     def get_preflight_requirements(self):
         return self.api_client.get_preflight_requirements(self.id)
 
-    # TODO remove in favor of generate_infra_env
-    def generate_image(self):
-        warnings.warn("generate_image is deprecated. Use generate_infra_env instead.", DeprecationWarning)
-        self.api_client.generate_image(cluster_id=self.id, ssh_key=self._config.ssh_public_key)
-
     def generate_infra_env(
         self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None, proxy=None
     ) -> InfraEnv:
@@ -217,28 +206,6 @@ class Cluster(Entity):
             proxy=proxy,
         )
         return self.download_infra_env_image(iso_download_path=iso_download_path or self._config.iso_download_path)
-
-    @JunitTestCase()
-    def generate_and_download_image(
-        self, iso_download_path=None, static_network_config=None, iso_image_type=None, ssh_key=None
-    ):
-        warnings.warn(
-            "generate_and_download_image is deprecated. Use generate_and_download_infra_env instead.",
-            DeprecationWarning,
-        )
-        iso_download_path = iso_download_path or self._config.iso_download_path
-
-        # ensure file path exists before downloading
-        if not os.path.exists(iso_download_path):
-            utils.recreate_folder(os.path.dirname(iso_download_path), force_recreate=False)
-
-        self.api_client.generate_and_download_image(
-            cluster_id=self.id,
-            ssh_key=ssh_key or self._config.ssh_public_key,
-            image_path=iso_download_path,
-            image_type=iso_image_type or self._config.iso_image_type,
-            static_network_config=static_network_config,
-        )
 
     def wait_until_hosts_are_disconnected(self, nodes_count: int = None):
         statuses = [consts.NodesStatus.DISCONNECTED]
@@ -655,13 +622,7 @@ class Cluster(Entity):
                 return host["requested_hostname"]
 
     def get_hosts_by_role(self, role, hosts=None):
-        hosts = hosts or self.api_client.get_cluster_hosts(self.id)
-        nodes_by_role = []
-        for host in hosts:
-            if host["role"] == role:
-                nodes_by_role.append(host)
-        log.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
-        return nodes_by_role
+        return self.api_client.get_hosts_by_role(self.id, role, hosts)
 
     def get_random_host_by_role(self, role):
         return random.choice(self.get_hosts_by_role(role))
@@ -866,7 +827,7 @@ class Cluster(Entity):
         # in case of regular cluster, need to set dns after vips exits
         # in our case when nodes are ready, vips will be there for sure
         if self._ha_not_none():
-            vips_info = self.__class__.get_vips_from_cluster(self.api_client, self.id)
+            vips_info = self.api_client.get_vips_from_cluster(self.id)
             self.nodes.controller.set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
@@ -1017,22 +978,12 @@ class Cluster(Entity):
         cluster.wait_until_hosts_are_discovered()
         cluster.wait_for_ready_to_install()
 
-    def get_events(self, host_id="", infra_env_id=""):
-        warnings.warn(
-            "Cluster.get_events is now deprecated, use EventsHandler.get_events instead",
-            PendingDeprecationWarning,
-        )
-        handler = EventsHandler(self.api_client)
-        return handler.get_events(host_id, self.id, infra_env_id)
-
     def _configure_load_balancer(self):
         main_cidr = self.get_primary_machine_cidr()
         secondary_cidr = self.nodes.controller.get_provisioning_cidr()
 
-        master_ips = self.get_master_ips(self.api_client, self.id, main_cidr) + self.get_master_ips(
-            self.api_client, self.id, secondary_cidr
-        )
-        worker_ips = self.get_worker_ips(self.api_client, self.id, main_cidr)
+        master_ips = self.get_master_ips(self.id, main_cidr) + self.get_master_ips(self.id, secondary_cidr)
+        worker_ips = self.get_worker_ips(self.id, main_cidr)
 
         load_balancer_ip = str(IPNetwork(main_cidr).ip + 1)
 
@@ -1046,32 +997,8 @@ class Cluster(Entity):
         matcher = re.match(r"^tt(\d+)$", libvirt_network_if)
         return int(matcher.groups()[0]) if matcher is not None else 0
 
-    @staticmethod
-    def get_inventory_host_nics_data(host: dict, ipv4_first=True):
-        def get_network_interface_ip(interface):
-            addresses = (
-                interface.ipv4_addresses + interface.ipv6_addresses
-                if ipv4_first
-                else interface.ipv6_addresses + interface.ipv4_addresses
-            )
-            return addresses[0].split("/")[0] if len(addresses) > 0 else None
-
-        inventory = models.Inventory(**json.loads(host["inventory"]))
-        interfaces_list = [models.Interface(**interface) for interface in inventory.interfaces]
-        return [
-            {
-                "name": interface.name,
-                "model": interface.product,
-                "mac": interface.mac_address,
-                "ip": get_network_interface_ip(interface),
-                "speed": interface.speed_mbps,
-            }
-            for interface in interfaces_list
-        ]
-
-    @staticmethod
-    def get_hosts_nics_data(hosts: list, ipv4_first=True):
-        return [Cluster.get_inventory_host_nics_data(h, ipv4_first=ipv4_first) for h in hosts]
+    def get_inventory_host_nics_data(self, host: dict, ipv4_first=True):
+        return self.api_client.get_inventory_host_nics_data(host, ipv4_first)
 
     @staticmethod
     def get_cluster_hosts(cluster: models.cluster.Cluster) -> List[ClusterHost]:
@@ -1122,38 +1049,18 @@ class Cluster(Entity):
         if len(cluster_info["hosts"]) == 0:
             raise Exception("No host found")
         network = IPNetwork(machine_cidr)
-        interfaces = Cluster.get_inventory_host_nics_data(cluster_info["hosts"][0], ipv4_first=ipv4_first)
+        interfaces = client.get_inventory_host_nics_data(cluster_info["hosts"][0], ipv4_first=ipv4_first)
         for intf in interfaces:
             ip = intf["ip"]
             if IPAddress(ip) in network:
                 return ip
         raise Exception("IP for single node not found")
 
-    @staticmethod
-    def get_ips_for_role(client, cluster_id, network, role):
-        cluster_info = client.cluster_get(cluster_id).to_dict()
-        ret = []
-        net = IPNetwork(network)
-        hosts_interfaces = Cluster.get_hosts_nics_data([h for h in cluster_info["hosts"] if h["role"] == role])
-        for host_interfaces in hosts_interfaces:
-            for intf in host_interfaces:
-                ip = IPAddress(intf["ip"])
-                if ip in net:
-                    ret = ret + [intf["ip"]]
-        return ret
+    def get_master_ips(self, cluster_id: str, network: str):
+        return self.api_client.get_ips_for_role(cluster_id, network, consts.NodeRoles.MASTER)
 
-    @staticmethod
-    def get_master_ips(client, cluster_id, network):
-        return Cluster.get_ips_for_role(client, cluster_id, network, consts.NodeRoles.MASTER)
-
-    @staticmethod
-    def get_worker_ips(client, cluster_id, network):
-        return Cluster.get_ips_for_role(client, cluster_id, network, consts.NodeRoles.WORKER)
-
-    @staticmethod
-    def get_vips_from_cluster(client, cluster_id):
-        cluster_info = client.cluster_get(cluster_id)
-        return dict(api_vip=cluster_info.api_vip, ingress_vip=cluster_info.ingress_vip)
+    def get_worker_ips(self, cluster_id: str, network: str):
+        return self.api_client.get_ips_for_role(cluster_id, network, consts.NodeRoles.WORKER)
 
     def get_host_disks(self, host, filter=None):
         hosts = self.get_hosts()
@@ -1163,36 +1070,6 @@ class Cluster(Entity):
             return [disk for disk in disks]
         else:
             return [disk for disk in disks if filter(disk)]
-
-    def get_inventory_host_ips_data(self, host: dict):
-        nics = self.get_inventory_host_nics_data(host)
-        return [nic["ip"] for nic in nics]
-
-    # needed for None platform and single node
-    # we need to get ip where api is running
-    def get_kube_api_ip(self, hosts):
-        for host in hosts:
-            for ip in self.get_inventory_host_ips_data(host):
-                if self.is_kubeapi_service_ready(ip):
-                    return ip
-
-    def get_api_vip(self, cluster):
-        cluster = cluster or self.get_details()
-        api_vip = cluster.api_vip
-
-        if not api_vip and cluster.user_managed_networking:
-            log.info("API VIP is not set, searching for api ip on masters")
-            masters = self.get_hosts_by_role(consts.NodeRoles.MASTER, hosts=cluster.to_dict()["hosts"])
-            api_vip = self._wait_for_api_vip(masters)
-
-        log.info("api vip is %s", api_vip)
-        return api_vip
-
-    def _wait_for_api_vip(self, hosts, timeout=180):
-        """Enable some grace time for waiting for API's availability."""
-        return waiting.wait(
-            lambda: self.get_kube_api_ip(hosts=hosts), timeout_seconds=timeout, sleep_seconds=5, waiting_for="API's IP"
-        )
 
     def find_matching_node_name(self, host: ClusterHost, nodes: List[Node]) -> Union[str, None]:
         # Looking for node matches the given host by its mac address (which is unique)
@@ -1211,53 +1088,9 @@ class Cluster(Entity):
 
         return None
 
-    @staticmethod
-    def is_kubeapi_service_ready(ip_or_dns):
-        """Validate if kube-api is ready on given address."""
-        with contextlib.suppress(ValueError):
-            # IPv6 addresses need to be surrounded with square-brackets
-            # to differentiate them from domain names
-            if ipaddress.ip_address(ip_or_dns).version == 6:
-                ip_or_dns = f"[{ip_or_dns}]"
-
-        try:
-            response = requests.get(f"https://{ip_or_dns}:6443/readyz", verify=False, timeout=1)
-            return response.ok
-        except BaseException:
-            return False
-
     def wait_and_kill_installer(self, host):
         # Wait for specific host to be in installing in progress
         self.wait_for_specific_host_status(host=host, statuses=[consts.NodesStatus.INSTALLING_IN_PROGRESS])
         # Kill installer to simulate host error
         selected_node = self.nodes.get_node_from_cluster_host(host)
         selected_node.kill_installer()
-
-
-def get_api_vip_from_cluster(api_client, cluster_info: Union[dict, models.cluster.Cluster], pull_secret):
-    import warnings
-
-    from tests.config import ClusterConfig, InfraEnvConfig
-
-    warnings.warn(
-        "Soon get_api_vip_from_cluster will be deprecated. Avoid using or adding new functionality to "
-        "this function. The function and solution for that case have not been determined yet. It might be "
-        "on another module, or as a classmethod within Cluster class."
-        " For more information see https://issues.redhat.com/browse/MGMT-4975",
-        PendingDeprecationWarning,
-    )
-
-    if isinstance(cluster_info, dict):
-        cluster_info = models.cluster.Cluster(**cluster_info)
-    cluster = Cluster(
-        api_client=api_client,
-        infra_env_config=InfraEnvConfig(),
-        config=ClusterConfig(
-            cluster_name=ClusterName(cluster_info.name),
-            pull_secret=pull_secret,
-            ssh_public_key=cluster_info.ssh_public_key,
-            cluster_id=cluster_info.id,
-        ),
-        nodes=None,
-    )
-    return cluster.get_api_vip(cluster=cluster_info)

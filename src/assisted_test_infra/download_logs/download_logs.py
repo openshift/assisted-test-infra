@@ -21,7 +21,6 @@ from scp import SCPException
 
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
-from assisted_test_infra.test_infra.helper_classes import cluster as helper_cluster
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import AgentClusterInstall, ClusterDeployment
 from assisted_test_infra.test_infra.tools.concurrently import run_concurrently
@@ -212,7 +211,7 @@ def download_logs(
                 config_etc_hosts(
                     cluster["name"],
                     cluster["base_dns_domain"],
-                    helper_cluster.get_api_vip_from_cluster(client, cluster, pull_secret),
+                    client.get_api_vip(cluster, cluster["id"]),
                 )
                 download_must_gather(kubeconfig_path, output_folder)
 
