@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 import base64
+import contextlib
+import ipaddress
 import json
 import os
-import shutil
 import time
-import warnings
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import requests
 import waiting
 from assisted_service_client import ApiClient, Configuration, api, models
 from junit_report import CaseFormatKeys, JsonJunitExporter
+from netaddr import IPAddress, IPNetwork
 from retry import retry
-from urllib3 import HTTPResponse
 
 import consts
 from service_client.logger import log
@@ -163,90 +163,9 @@ class InventoryClient(object):
         infra_envs = self.infra_envs_list()
         return filter(lambda infra_env: infra_env["cluster_id"] == cluster_id, infra_envs)
 
-    @classmethod
-    def _download(cls, response: HTTPResponse, file_path: str, verify_file_size=False) -> None:
-        warnings.warn(
-            "_download is deprecated and soon will be deleted. "
-            "Use infra_env.download_image or cluster.download_image instead.",
-            DeprecationWarning,
-        )
-
-        with open(file_path, "wb") as f:
-            shutil.copyfileobj(response, f)
-        if verify_file_size:
-            content_length = int(response.headers["content-length"])
-            actual_file_size = os.path.getsize(file_path)
-            if actual_file_size < content_length:
-                raise RuntimeError(
-                    f"Could not complete ISO download {file_path}. "
-                    f"Actual size: {actual_file_size}. Expected size: {content_length}"
-                )
-
-    def generate_image(
-        self,
-        cluster_id: str,
-        ssh_key: str,
-        image_type: str = consts.ImageType.FULL_ISO,
-        static_network_config: Optional[list] = None,
-    ) -> models.cluster.Cluster:
-        self.cluster_get(cluster_id=cluster_id)
-        log.info("Generating image for cluster %s", cluster_id)
-        image_create_params = models.ImageCreateParams(
-            ssh_public_key=ssh_key, static_network_config=static_network_config, image_type=image_type
-        )
-        log.info("Generating image with params %s", image_create_params.__dict__)
-        return self.client.generate_cluster_iso(cluster_id=cluster_id, image_create_params=image_create_params)
-
-    @retry(exceptions=RuntimeError, tries=2, delay=3)
-    def download_image(self, cluster_id: str, image_path: str) -> None:
-        warnings.warn(
-            "download_image is deprecated and soon will be deleted. "
-            "Use infra_env.download_image or cluster.download_image instead.",
-            DeprecationWarning,
-        )
-
-        log.info("Downloading image for cluster %s to %s", cluster_id, image_path)
-        response = self.client.download_cluster_iso_with_http_info(cluster_id=cluster_id, _preload_content=False)
-        response_obj = response[0]
-        self._download(response=response_obj, file_path=image_path, verify_file_size=True)
-
-    def generate_and_download_image(
-        self,
-        cluster_id: str,
-        ssh_key: str,
-        image_path: str,
-        image_type: str = consts.ImageType.FULL_ISO,
-        static_network_config: Optional[list] = None,
-    ):
-        warnings.warn(
-            "generate_and_download_image is deprecated and soon will be deleted. "
-            "Use infra_env.download_image or cluster.generate_and_download_image instead.",
-            DeprecationWarning,
-        )
-
-        self.generate_image(
-            cluster_id=cluster_id, ssh_key=ssh_key, image_type=image_type, static_network_config=static_network_config
-        )
-        self.download_image(cluster_id=cluster_id, image_path=image_path)
-
     def update_infra_env(self, infra_env_id: str, infra_env_update_params):
         log.info("Updating infra env %s with values %s", infra_env_id, infra_env_update_params)
         self.client.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
-
-    @retry(exceptions=RuntimeError, tries=2, delay=3)
-    def download_infraenv_image(self, infraenv_id: str, image_path: str) -> None:
-        warnings.warn(
-            "download_infraenv_image is deprecated and soon will be deleted. "
-            "Use infra_env.download_image or cluster.download_image instead.",
-            DeprecationWarning,
-        )
-
-        log.info("Downloading image for infra-env %s to %s", infraenv_id, image_path)
-        response = self.client.download_infra_env_discovery_image_with_http_info(
-            infra_env_id=infraenv_id, _preload_content=False
-        )
-        response_obj = response[0]
-        self._download(response=response_obj, file_path=image_path, verify_file_size=True)
 
     def update_host(self, infra_env_id: str, host_id: str, host_role: str = None, host_name: str = None):
         host_update_params = models.HostUpdateParams(host_role=host_role, host_name=host_name)
@@ -434,16 +353,6 @@ class InventoryClient(object):
         log.info("Reset installation of cluster %s", cluster_id)
         return self.client.v2_reset_cluster(cluster_id=cluster_id)
 
-    def disable_host(self, cluster_id: str, host_id: str) -> models.cluster.Cluster:
-        warnings.warn("disable_host is deprecated. Use unbind_host instead.", DeprecationWarning)
-        log.info(f"Disabling host: {host_id}, in cluster id: {cluster_id}")
-        return self.client.disable_host(cluster_id=cluster_id, host_id=host_id)
-
-    def enable_host(self, cluster_id: str, host_id: str) -> models.cluster.Cluster:
-        warnings.warn("enable_host is deprecated. Use bind_host instead.", DeprecationWarning)
-        log.info(f"Enabling host: {host_id}, in cluster id: {cluster_id}")
-        return self.client.enable_host(cluster_id=cluster_id, host_id=host_id)
-
     def bind_host(self, infra_env_id: str, host_id: str, cluster_id: str) -> None:
         log.info(f"Enabling host: {host_id}, from infra_env {infra_env_id}, in cluster id: {cluster_id}")
         bind_host_params = models.BindHostParams(cluster_id=cluster_id)
@@ -467,15 +376,6 @@ class InventoryClient(object):
     def patch_discovery_ignition(self, infra_env_id: str, ignition_info: str) -> None:
         infra_env_update_params = models.InfraEnvUpdateParams(ignition_config_override=json.dumps(ignition_info))
         self.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
-
-    def get_cluster_discovery_ignition(self, cluster_id: str) -> None:
-        warnings.warn(
-            "get_cluster_discovery_ignition is deprecated. Use get_discovery_ignition instead.", DeprecationWarning
-        )
-        log.info("Getting discovery ignition for cluster %s", cluster_id)
-        return self.client.get_discovery_ignition(
-            cluster_id=cluster_id,
-        )
 
     def get_discovery_ignition(self, infra_env_id: str) -> str:
         infra_env = self.get_infra_env(infra_env_id=infra_env_id)
@@ -528,3 +428,103 @@ class InventoryClient(object):
 
     def get_preflight_requirements(self, cluster_id: str):
         return self.client.v2_get_preflight_requirements(cluster_id=cluster_id)
+
+    def get_hosts_by_role(self, cluster_id: str, role, hosts=None):
+        hosts = hosts or self.get_cluster_hosts(cluster_id)
+        nodes_by_role = []
+        for host in hosts:
+            if host["role"] == role:
+                nodes_by_role.append(host)
+        log.info(f"Found hosts: {nodes_by_role}, that has the role: {role}")
+        return nodes_by_role
+
+    def get_api_vip(self, cluster_info: dict, cluster_id: str = None):
+        cluster = cluster_info or self.cluster_get(cluster_id)
+        api_vip = cluster["api_vip"]
+
+        if not api_vip and cluster.user_managed_networking:
+            log.info("API VIP is not set, searching for api ip on masters")
+            masters = self.get_hosts_by_role(cluster["id"], consts.NodeRoles.MASTER, hosts=cluster.to_dict()["hosts"])
+            api_vip = self._wait_for_api_vip(masters)
+
+        log.info("api vip is %s", api_vip)
+        return api_vip
+
+    @classmethod
+    def _wait_for_api_vip(cls, hosts, timeout=180):
+        """Enable some grace time for waiting for API's availability."""
+        return waiting.wait(
+            lambda: cls.get_kube_api_ip(hosts=hosts), timeout_seconds=timeout, sleep_seconds=5, waiting_for="API's IP"
+        )
+
+    # needed for None platform and single node
+    # we need to get ip where api is running
+    @classmethod
+    def get_kube_api_ip(cls, hosts):
+        for host in hosts:
+            for ip in cls.get_inventory_host_ips_data(host):
+                if cls.is_kubeapi_service_ready(ip):
+                    return ip
+
+    @classmethod
+    def get_inventory_host_ips_data(cls, host: dict):
+        nics = cls.get_inventory_host_nics_data(host)
+        return [nic["ip"] for nic in nics]
+
+    @staticmethod
+    def is_kubeapi_service_ready(ip_or_dns):
+        """Validate if kube-api is ready on given address."""
+        with contextlib.suppress(ValueError):
+            # IPv6 addresses need to be surrounded with square-brackets
+            # to differentiate them from domain names
+            if ipaddress.ip_address(ip_or_dns).version == 6:
+                ip_or_dns = f"[{ip_or_dns}]"
+
+        try:
+            response = requests.get(f"https://{ip_or_dns}:6443/readyz", verify=False, timeout=1)
+            return response.ok
+        except BaseException:
+            return False
+
+    @staticmethod
+    def get_inventory_host_nics_data(host: dict, ipv4_first=True) -> List[Dict[str, str]]:
+        def get_network_interface_ip(interface):
+            addresses = (
+                interface.ipv4_addresses + interface.ipv6_addresses
+                if ipv4_first
+                else interface.ipv6_addresses + interface.ipv4_addresses
+            )
+            return addresses[0].split("/")[0] if len(addresses) > 0 else None
+
+        inventory = models.Inventory(**json.loads(host["inventory"]))
+        interfaces_list = [models.Interface(**interface) for interface in inventory.interfaces]
+
+        return [
+            {
+                "name": interface.name,
+                "model": interface.product,
+                "mac": interface.mac_address,
+                "ip": get_network_interface_ip(interface),
+                "speed": interface.speed_mbps,
+            }
+            for interface in interfaces_list
+        ]
+
+    def get_hosts_nics_data(self, hosts: List[Union[dict, models.Host]], ipv4_first: bool = True):
+        return [self.get_inventory_host_nics_data(h, ipv4_first=ipv4_first) for h in hosts]
+
+    def get_ips_for_role(self, cluster_id, network, role) -> List[str]:
+        cluster_info = self.cluster_get(cluster_id).to_dict()
+        ret = []
+        net = IPNetwork(network)
+        hosts_interfaces = self.get_hosts_nics_data([h for h in cluster_info["hosts"] if h["role"] == role])
+        for host_interfaces in hosts_interfaces:
+            for intf in host_interfaces:
+                ip = IPAddress(intf["ip"])
+                if ip in net:
+                    ret = ret + [intf["ip"]]
+        return ret
+
+    def get_vips_from_cluster(self, cluster_id: str) -> Dict[str, str]:
+        cluster_info = self.cluster_get(cluster_id)
+        return dict(api_vip=cluster_info.api_vip, ingress_vip=cluster_info.ingress_vip)

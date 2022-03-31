@@ -203,13 +203,15 @@ class TestBootstrapInPlace(BaseTest):
             download_must_gather(KUBE_CONFIG, IBIP_DIR)
 
     @JunitTestCase()
-    def waiting_for_installation_completion(self, controller: NodeController):
+    def waiting_for_installation_completion(self, controller: NodeController, cluster_configuration: ClusterConfig):
         vm_ip = controller.master_ips[0][0]
 
         try:
             log.info("Configuring /etc/hosts...")
             utils.config_etc_hosts(
-                cluster_name=controller.cluster_name, base_dns_domain=controller.cluster_domain, api_vip=vm_ip
+                cluster_name=cluster_configuration.cluster_name.get(),
+                base_dns_domain=cluster_configuration.base_dns_domain,
+                api_vip=vm_ip,
             )
 
             log.info("Waiting for installation to complete...")
@@ -240,8 +242,8 @@ class TestBootstrapInPlace(BaseTest):
         image_path = self.embed("installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME)
 
         log.info("Starting node...")
-        controller.image_path = image_path
+        cluster_configuration.iso_download_path = image_path
         controller.start_all_nodes()
         log.info("Node started!")
 
-        self.waiting_for_installation_completion(controller)
+        self.waiting_for_installation_completion(controller, cluster_configuration)
