@@ -57,6 +57,7 @@ resource "vsphere_virtual_machine" "vm" {
   guest_id                    = var.guest_id
   folder                      = vsphere_folder.folder.path
   enable_disk_uuid            = "true"
+  hv_mode                     = "hvOn"
   wait_for_guest_net_routable = true
   wait_for_guest_net_timeout  = 15
   firmware = data.vsphere_virtual_machine.template.firmware
