@@ -52,7 +52,7 @@ variable "vm_name" {
 
 variable "disk_size" {
   type = number
-  default = 80000
+  default = 240000
   description = "The VM disk size in MB. default 80G"
 }
 

@@ -65,7 +65,7 @@ variable "memory" {
 
 variable "disk_size" {
   type = number
-  default = 120
+  default = 240
   description = "The size of the virtual machine's disk, in GB"
 }
 
