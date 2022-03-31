@@ -132,7 +132,7 @@ class BaseKubeAPI(BaseTest):
         log.info("getting iso download url")
         iso_download_url = infra_env.get_iso_download_url()
         log.info("downloading iso from url=%s", iso_download_url)
-        utils.download_iso(iso_download_url, iso_download_path)
+        utils.download_file(iso_download_url, iso_download_path, verify_ssl=False)
         assert os.path.isfile(iso_download_path)
 
     @classmethod

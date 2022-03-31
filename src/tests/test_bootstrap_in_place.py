@@ -84,9 +84,7 @@ class TestBootstrapInPlace(BaseTest):
             return
 
         log.info("Downloading iso to %s", download_path)
-        utils.run_command(
-            f"curl --location {rhcos_url} --retry 10 --retry-connrefused -o {download_path} --continue-at -"
-        )
+        utils.download_file(rhcos_url, download_path, verify_ssl=False)
 
     @staticmethod
     @retry.retry(exceptions=Exception, tries=5, delay=30)
