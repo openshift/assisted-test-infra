@@ -409,7 +409,7 @@ class InventoryClient(object):
         with open(output_file, "wb") as _file:
             events = self.get_events(cluster_id, categories=categories)
             _file.write(json.dumps(events, indent=4).encode())
-            self._events_junit_exporter.collect(events, suite_name=f"cluster_events_{cluster_id}")
+            self._events_junit_exporter.collect(events, suite_name="cluster_events", xml_suffix=cluster_id)
 
     def download_infraenv_events(self, infra_env_id: str, output_file: str, categories: str = None) -> None:
         if categories is None:
