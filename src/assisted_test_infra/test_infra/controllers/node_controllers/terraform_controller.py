@@ -162,6 +162,11 @@ class TerraformController(LibvirtController):
         tfvars["libvirt_worker_ips"] = self._create_address_list(
             self.params.worker_count, starting_ip_addr=worker_starting_ip
         )
+        if self._config.ingress_dns:
+            for service in ["console-openshift-console", "canary-openshift-ingress", "oauth-openshift"]:
+                self.params["libvirt_dns_records"][
+                    ".".join([service, "apps", self._config.cluster_name, self._entity_config.base_dns_domain])
+                ] = tfvars["libvirt_worker_ips"][0][0]
         tfvars["machine_cidr_addresses"] = self.get_all_machine_addresses()
         tfvars["provisioning_cidr_addresses"] = self.get_all_provisioning_addresses()
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
