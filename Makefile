@@ -283,7 +283,8 @@ bring_assisted_service:
 ifeq ($(shell [[ $(OPENSHIFT_CI) == "true" && $(REPO_NAME) == "assisted-service" && $(JOB_TYPE) == "presubmit" ]] && echo true),true)
 	@echo "Running in assisted-service pull request"
 	@cd assisted-service && \
-	git fetch origin pull/$(PULL_NUMBER)/head:assisted-service-pr-$(PULL_NUMBER) && \
+	git checkout . && \
+	git fetch --update-head-ok origin pull/$(PULL_NUMBER)/head:assisted-service-pr-$(PULL_NUMBER) && \
 	git checkout assisted-service-pr-$(PULL_NUMBER)
 else
 	@cd assisted-service && \
