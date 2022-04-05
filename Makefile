@@ -4,7 +4,6 @@
 
 SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
-PULL_PARAM=$(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
 
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 PYTHONPATH := ${PYTHONPATH}:${ROOT_DIR}/src
@@ -126,7 +125,7 @@ create_environment: image_build bring_assisted_service start_minikube
 
 image_build:
 	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.assisted-test-infra | \
-	 $(CONTAINER_COMMAND) build --network=host ${PULL_PARAM} -t $(IMAGE_NAME) -f- .
+	 $(CONTAINER_COMMAND) build --network=host -t $(IMAGE_NAME) -f- .
 
 clean:
 	-rm -rf build assisted-service test_infra.log
