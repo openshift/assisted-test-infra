@@ -88,13 +88,11 @@ variable "root_password" {
 
 variable "ssh_public_key" {
   type = string
-  default = ""
   description = "The public ssh key, added as a ssh authorized key"
 }
 
 variable "ssh_private_key_file" {
   type = string
-  default = ""
   description = "The private ssh key path, used to authenticate against the new template"
 }
 
