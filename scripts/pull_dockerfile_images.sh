@@ -12,7 +12,7 @@ for image in ${images}; do
   if [[ ${image} =~ (.*\/.*:.*) ]]; then
       for i in {1..5}; do
         echo "Image ${image} - pull attempt ${i}"
-        podman pull "${image}" ; rc=$?
+        ${CONTAINER_COMMAND} pull "${image}" ; rc=$?
         if [[ "${rc}" -eq 0 ]]; then
           echo "Image pulled successfully"
           break
