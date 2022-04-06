@@ -10,6 +10,7 @@ terraform {
 locals {
   hasISO = var.iso_download_path != "" && var.iso_download_path != null
   folder = var.vsphere_folder != "" ? var.vsphere_folder : var.cluster_name
+  folder_full_path = "/${var.vsphere_datacenter}/vm/${var.vsphere_parent_folder}/${local.folder}"
 }
 
 provider "vsphere" {
@@ -60,7 +61,9 @@ resource "vsphere_tag" "tag" {
 
 # Creating a folder, all the vms would be created into this folder.
 resource "vsphere_folder" "folder" {
-  path          = "${var.vsphere_parent_folder}/${local.folder}"
+  # don't try to create a pre-existing folder
+  count         = var.vsphere_folder != "" ? 0 : 1
+  path          = "${var.vsphere_parent_folder}/${var.cluster_name}"
   type          = "vm"
   datacenter_id = data.vsphere_datacenter.datacenter.id
   tags          = [vsphere_tag.tag.id]
@@ -87,7 +90,7 @@ resource "vsphere_virtual_machine" "master" {
   num_cores_per_socket        = var.vsphere_control_plane_cores_per_socket
   memory                      = var.master_memory
   guest_id                    = "coreos64Guest"
-  folder                      = vsphere_folder.folder.path
+  folder                      = local.folder_full_path
   enable_disk_uuid            = "true"
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
@@ -127,7 +130,7 @@ resource "vsphere_virtual_machine" "worker" {
   num_cores_per_socket        = var.vsphere_control_plane_cores_per_socket
   memory                      = var.worker_memory
   guest_id                    = "coreos64Guest"
-  folder                      = vsphere_folder.folder.path
+  folder                      = local.folder_full_path
   enable_disk_uuid            = "true"
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
