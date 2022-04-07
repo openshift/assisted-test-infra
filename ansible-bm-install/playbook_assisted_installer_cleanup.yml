@@ -1,6 +1,0 @@
-- name: Cleaning Environment
-  hosts: assisted_installer
-  roles:
-  - okd.assisted_installer.clean
-  tags:
-  - clean

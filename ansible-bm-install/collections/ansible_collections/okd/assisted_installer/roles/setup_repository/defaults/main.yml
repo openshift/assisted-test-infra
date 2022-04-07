@@ -1,3 +1,0 @@
----
-# defaults file for setup_repository
-repository: "https://github.com/openshift/assisted-test-infra.git"

@@ -17,3 +17,4 @@ format = ${cyan}%(path)s${reset}:${yellow_bold}%(row)d${reset}:${green_bold}%(co
 exclude =
     src/consts/__init__.py
     src/assisted_test_infra/test_infra/utils/__init__.py
+    .git

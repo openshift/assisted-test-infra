@@ -329,14 +329,14 @@ pre-commit:
 	pre-commit run --files ./src/assisted_test_infra/test_infra/* ./src/tests/*
 
 _reformat:
-	black $(LINT_CODE_STYLING_DIRS) --line-length=120
-	isort $(LINT_CODE_STYLING_DIRS) --profile=black --line-length=120
+	black . --line-length=120
+	isort . --profile=black --line-length=120
 
 flake8:
 	skipper make _flake8
 
 _flake8:
-	flake8 $(FLAKE8_EXTRA_PARAMS) $(LINT_CODE_STYLING_DIRS) || (tput setaf 3; echo "If you keep seeing this error[s] try to make reformat"; tput sgr0; exit 1)
+	flake8 $(FLAKE8_EXTRA_PARAMS) . || (tput setaf 3; echo "If you keep seeing this error[s] try to make reformat"; tput sgr0; exit 1)
 
 reformat:
 	FLAKE8_EXTRA_PARAMS="$(FLAKE8_EXTRA_PARAMS)" skipper make _reformat

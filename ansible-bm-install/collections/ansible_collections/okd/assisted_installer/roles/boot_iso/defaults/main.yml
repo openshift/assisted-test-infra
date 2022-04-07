@@ -1,9 +1,0 @@
----
-# defaults file for boot_iso
-vcenter_username: "administrator@vsphere.local"
-vcenter_network: "VM Network"
-vcenter_vm_disk: 150
-vcenter_vm_mem_mb: 16384
-vcenter_vm_cpu: 4
-iso_image_location: "/tmp/test_images/"
-iso_name: "assisted-installer-installer-image.iso"

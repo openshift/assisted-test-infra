@@ -8,10 +8,10 @@ the right boot order according to the arguments, and reboots the guest.
 
 import argparse
 import subprocess
-import time
 import sys
-from xml.dom import minidom
 import tempfile
+import time
+from xml.dom import minidom
 
 
 def get_args():
