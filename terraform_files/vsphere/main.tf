@@ -10,7 +10,6 @@ terraform {
 locals {
   hasISO = var.iso_download_path != "" && var.iso_download_path != null
   folder = var.vsphere_folder != "" ? var.vsphere_folder : var.cluster_name
-  folder_full_path = "/${var.vsphere_datacenter}/vm/${var.vsphere_parent_folder}/${local.folder}"
 }
 
 provider "vsphere" {
@@ -90,7 +89,7 @@ resource "vsphere_virtual_machine" "master" {
   num_cores_per_socket        = var.vsphere_control_plane_cores_per_socket
   memory                      = var.master_memory
   guest_id                    = "coreos64Guest"
-  folder                      = local.folder_full_path
+  folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
   enable_disk_uuid            = "true"
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
@@ -130,7 +129,7 @@ resource "vsphere_virtual_machine" "worker" {
   num_cores_per_socket        = var.vsphere_control_plane_cores_per_socket
   memory                      = var.worker_memory
   guest_id                    = "coreos64Guest"
-  folder                      = local.folder_full_path
+  folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
   enable_disk_uuid            = "true"
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
