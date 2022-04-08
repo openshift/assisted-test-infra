@@ -155,7 +155,7 @@ endif
 # General #
 ###########
 
-all: create_full_environment run_full_flow_with_install
+all: setup run_full_flow_with_install
 
 
 destroy: destroy_nodes kill_port_forwardings delete_podman_localhost stop_load_balancer
@@ -163,8 +163,10 @@ destroy: destroy_nodes kill_port_forwardings delete_podman_localhost stop_load_b
 ###############
 # Environment #
 ###############
-create_full_environment:
+setup:
 	./create_full_environment.sh
+
+create_full_environment: setup  # handling backwards-compaibility
 
 create_environment: image_build bring_assisted_service start_minikube
 
