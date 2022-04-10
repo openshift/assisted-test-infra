@@ -5,11 +5,11 @@ import uuid
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 from junit_xml import TestCase, TestSuite, to_xml_report_string
 
-from service_client import log, SuppressAndLog
+from service_client import SuppressAndLog, log
 
 
 @dataclass
@@ -32,21 +32,22 @@ class LogEntry:
     error: Optional[str] = None
 
 
-LOG_FORMAT = r'time="(?P<time>(.*?))" ' \
-             r'level=(?P<level>(.*?)) ' \
-             r'msg="(?P<msg>.*)" ' \
-             r'func=(?P<func>.*) ' \
-             r'file="(?P<file>(.*?))" ' \
-             r'(error="(?P<error>.*)")?'
+LOG_FORMAT = (
+    r'time="(?P<time>(.*?))" '
+    r"level=(?P<level>(.*?)) "
+    r'msg="(?P<msg>.*)" '
+    r"func=(?P<func>.*) "
+    r'file="(?P<file>(.*?))" '
+    r'(error="(?P<error>.*)")?'
+)
 
-LEADER_ELECTION_LOG_FORMAT = r'(?P<level>[IEW](\d{4})) (?P<time>.*?) .*? \d (?P<file>.*?)] (?P<msg>.*)'
+LEADER_ELECTION_LOG_FORMAT = r"(?P<level>[IEW](\d{4})) (?P<time>.*?) .*? \d (?P<file>.*?)] (?P<msg>.*)"
 
 EXPORTED_LOG_LEVELS = ("fatal", "error")
 EXPORTED_EVENT_LEVELS = ("critical", "error")
 
 
 class LogsConverter:
-
     @classmethod
     def _is_duplicate_entry(cls, entry: LogEntry, entry_message: str, fail_cases: Dict[str, List[TestCase]]) -> bool:
         for case in fail_cases.get(entry.func, []):
@@ -55,11 +56,9 @@ class LogsConverter:
         return False
 
     @classmethod
-    def get_log_entry_case(cls, entry: LogEntry,
-                           fail_cases: Dict[str, List[TestCase]],
-                           suite_name: str,
-                           failure_message: str
-                           ) -> List[TestCase]:
+    def get_log_entry_case(
+        cls, entry: LogEntry, fail_cases: Dict[str, List[TestCase]], suite_name: str, failure_message: str
+    ) -> List[TestCase]:
         fail_case: List[TestCase] = list()
 
         if cls._is_duplicate_entry(entry, failure_message, fail_cases):
@@ -164,14 +163,16 @@ class EventsConverter:
         return test_case
 
     @classmethod
-    def export_service_events_to_junit_suite(cls, source_dir: Path, report_dir: Path, events_file_name="k8s_events.json"):
+    def export_service_events_to_junit_suite(
+        cls, source_dir: Path, report_dir: Path, events_file_name="k8s_events.json"
+    ):
         with open(source_dir.joinpath(events_file_name)) as f:
             events_data = json.load(f)
 
         log.info(f"Creating test suite from service events json file - {events_file_name}")
         test_cases = cls.get_event_test_cases(events_data)
 
-        log.info(f"Generating events xml file")
+        log.info("Generating events xml file")
         xml_report = to_xml_report_string(test_suites=[TestSuite(name="EVENTS", test_cases=test_cases)])
         with open(report_dir.joinpath(f"junit_events_parser_{str(uuid.uuid4())[:8]}.xml"), "w") as f:
             log.info(f"Exporting events xml-report with {len(test_cases)} events to {f.name}")
@@ -196,6 +197,6 @@ def main():
         EventsConverter.export_service_events_to_junit_suite(Path(args.src), report_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     log.info("Initializing attempt for creating JUNIT report from service logs")
     main()

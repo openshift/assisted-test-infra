@@ -1,6 +1,0 @@
----
-# defaults file for create_iso
-cluster_id: ""
-iso_image_location: "/tmp/test_images/"
-iso_name: "assisted-installer-installer-image.iso"
-base_dns_domains: ""

@@ -1,4 +1,0 @@
----
-# vars file for boot_iso_existing_os
-
-liveiso_version: "fedora-coreos-31.20200319.dev.1"

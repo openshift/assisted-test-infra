@@ -1,18 +1,20 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+"""
+Idea is to pass os environments to assisted-service config map, to make an easy way to configure assisted-service
 
-# Idea is to pass os environments to assisted-service config map, to make an easy way to configure assisted-service
-#
-# Note: defaulting an env var to "" in Makefile, will result in an empty string value in the configmap.
-# E.g.
-# Makefile:
-#   MY_VAR := $(or $(MY_VAR), "")
-# configmap:
-#   MY_VAR: ""
-#
-# Hence, in order to support unset env vars, avoid override in Makefile.
+Note: defaulting an env var to "" in Makefile, will result in an empty string value in the configmap.
+E.g.
+Makefile:
+  MY_VAR := $(or $(MY_VAR), "")
+configmap:
+  MY_VAR: ""
+
+Hence, in order to support unset env vars, avoid override in Makefile.
+"""
 import json
 import os
+
 import yaml
 
 from deprecated_utils import warn_deprecate
@@ -35,32 +37,34 @@ ENVS = [
     ("CHECK_CLUSTER_VERSION", ""),
     ("HW_VALIDATOR_REQUIREMENTS", ""),
     ("HW_VALIDATOR_MIN_CPU_CORES_SNO", ""),
-    ("HW_VALIDATOR_MIN_RAM_GIB_SNO", "")
+    ("HW_VALIDATOR_MIN_RAM_GIB_SNO", ""),
 ]
 DEFAULT_MASTER_REQUIREMENTS = {
     "cpu_cores": 4,
     "ram_mib": 8192,
     "disk_size_gb": 10,
-    "installation_disk_speed_threshold_ms": 10
+    "installation_disk_speed_threshold_ms": 10,
 }
 DEFAULT_WORKER_REQUIREMENTS = {
     "cpu_cores": 2,
     "ram_mib": 3072,
     "disk_size_gb": 10,
-    "installation_disk_speed_threshold_ms": 10
+    "installation_disk_speed_threshold_ms": 10,
 }
 DEFAULT_SNO_REQUIREMENTS = {
     "cpu_cores": 8,
     "ram_mib": 32768,
     "disk_size_gb": 10,
-    "installation_disk_speed_threshold_ms": 10
+    "installation_disk_speed_threshold_ms": 10,
 }
-DEFAULT_REQUIREMENTS = [{
-    "version": "default",
-    "master": DEFAULT_MASTER_REQUIREMENTS,
-    "worker": DEFAULT_WORKER_REQUIREMENTS,
-    "sno": DEFAULT_SNO_REQUIREMENTS
-}]
+DEFAULT_REQUIREMENTS = [
+    {
+        "version": "default",
+        "master": DEFAULT_MASTER_REQUIREMENTS,
+        "worker": DEFAULT_WORKER_REQUIREMENTS,
+        "sno": DEFAULT_SNO_REQUIREMENTS,
+    }
+]
 
 
 def _read_yaml():
@@ -98,7 +102,8 @@ def update_requirements(requirements_json):
 def set_envs_to_service_cm():
     cm_data = _read_yaml()
     if not cm_data:
-        raise Exception("%s must exists before setting envs to it" % CM_PATH)
+        raise Exception(f"{CM_PATH} must exists before setting envs to it")
+
     cm_data["data"].update(_get_relevant_envs())
     existing_requirements = cm_data["data"].get("HW_VALIDATOR_REQUIREMENTS", "")
     requirements = update_requirements(existing_requirements)

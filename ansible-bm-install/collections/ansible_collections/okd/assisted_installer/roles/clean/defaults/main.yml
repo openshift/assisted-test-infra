@@ -1,5 +1,0 @@
----
-# defaults file for host_vmware_iso
-
-iso_image_location: "/tmp/test_images/"
-vcenter_username: "administrator@vsphere.local"

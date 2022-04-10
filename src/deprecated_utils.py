@@ -1,14 +1,14 @@
-import libvirt
-import waiting
-import xml.dom.minidom as md
-
-from service_client import log
-from assisted_test_infra.test_infra import utils
-import consts as consts
 import sys
 import time
 import warnings
+import xml.dom.minidom as md
 
+import libvirt
+import waiting
+
+import consts as consts
+from assisted_test_infra.test_infra import utils
+from service_client import log
 
 __displayed_warnings = list()
 conn = libvirt.open("qemu:///system")
@@ -50,8 +50,9 @@ def wait_till_nodes_are_ready(nodes_count, network_name):
 
 
 def get_network_leases(network_name):
-    warnings.warn("get_network_leases is deprecated. Use LibvirtController.get_network_leases "
-                  "instead.", DeprecationWarning)
+    warnings.warn(
+        "get_network_leases is deprecated. Use LibvirtController.get_network_leases " "instead.", DeprecationWarning
+    )
     with utils.file_lock_context():
         net = conn.networkLookupByName(network_name)
         leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
@@ -60,16 +61,18 @@ def get_network_leases(network_name):
 
 
 def _get_hosts_from_network(net):
-    warnings.warn("_get_hosts_from_network is deprecated. Use LibvirtController.get_network_leases "
-                  "instead.", DeprecationWarning)
+    warnings.warn(
+        "_get_hosts_from_network is deprecated. Use LibvirtController.get_network_leases " "instead.",
+        DeprecationWarning,
+    )
 
     desc = md.parseString(net.XMLDesc())
     try:
         hosts = (
             desc.getElementsByTagName("network")[0]
-                .getElementsByTagName("ip")[0]
-                .getElementsByTagName("dhcp")[0]
-                .getElementsByTagName("host")
+            .getElementsByTagName("ip")[0]
+            .getElementsByTagName("dhcp")[0]
+            .getElementsByTagName("host")
         )
         return list(
             map(
@@ -85,20 +88,10 @@ def _get_hosts_from_network(net):
         return []
 
 
-def get_network_leases(network_name):
-    warnings.warn("get_network_leases is deprecated. Use LibvirtController.get_network_leases "
-                  "instead.", DeprecationWarning)
-    with utils.file_lock_context():
-        net = conn.networkLookupByName(network_name)
-        leases = net.DHCPLeases()  # TODO: getting the information from the XML dump until dhcp-leases bug is fixed
-        hosts = _get_hosts_from_network(net)
-        return leases + [h for h in hosts if h["ipaddr"] not in [ls["ipaddr"] for ls in leases]]
-
-
 def are_libvirt_nodes_in_cluster_hosts(client, cluster_id, num_nodes):
     try:
         hosts_macs = client.get_hosts_id_with_macs(cluster_id)
-    except BaseException as e:
+    except BaseException:
         log.error("Failed to get nodes macs for cluster: %s", cluster_id)
         return False
     num_macs = len([mac for mac in hosts_macs if mac != ""])
