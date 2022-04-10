@@ -1,25 +1,23 @@
 FROM quay.io/edge-infrastructure/assisted-service:latest AS service
 
-FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:stream8
 
-# CRB repo is required for libvirt-devel
-RUN dnf -y install --enablerepo=crb \
+RUN dnf -y install \
   make \
   gcc \
   unzip \
   wget \
-  curl-minimal \
+  curl \
   git \
   podman \
   httpd-tools \
   jq \
   nss_wrapper \
-  python3 \
-  python3-devel \
+  python39 \
+  python39-devel \
   libvirt-client \
   libvirt-devel \
   libguestfs-tools \
-  libxslt \
    && dnf clean all
 
 RUN curl --retry 5 -Lo packer.zip https://releases.hashicorp.com/packer/1.8.0/packer_1.8.0_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
