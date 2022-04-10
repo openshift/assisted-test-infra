@@ -317,8 +317,8 @@ class Cluster(Entity):
         else:
             log.info("Assigning VIPs statically")
             access_vips = controller.get_ingress_and_api_vips()
-            api_vip = access_vips["api_vip"]
-            ingress_vip = access_vips["ingress_vip"]
+            api_vip = access_vips["api_vip"] if access_vips else None
+            ingress_vip = access_vips["ingress_vip"] if access_vips else None
             machine_networks = None
 
         if self._config.is_ipv4 and self._config.is_ipv6:

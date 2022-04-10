@@ -105,7 +105,7 @@ class VSphereController(NodeController):
         self.__run_on_vm(node_name, reboot)
 
     def get_ingress_and_api_vips(self) -> dict:
-        raise NotImplementedError
+        return None
 
     def format_node_disk(self, node_name: str, disk_index: int = 0) -> None:
         raise NotImplementedError

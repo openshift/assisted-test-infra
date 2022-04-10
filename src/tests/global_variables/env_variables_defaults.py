@@ -97,6 +97,9 @@ class _EnvVariables(DataPool, ABC):
         ["HOLD_INSTALLATION"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_HOLD_INSTALLATION
     )
 
+    api_vip: EnvVar = EnvVar(["API_VIP"])
+    ingress_vip: EnvVar = EnvVar(["INGRESS_VIP"])
+
     vsphere_parent_folder: str = EnvVar(["VSPHERE_PARENT_FOLDER"], default=env_defaults.DEFAULT_VSHPERE_PARENT_FOLDER)
     vsphere_folder: str = EnvVar(["VSPHERE_FOLDER"])
     vsphere_cluster: EnvVar = EnvVar(["VSPHERE_CLUSTER"])
