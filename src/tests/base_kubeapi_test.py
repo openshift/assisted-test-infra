@@ -2,6 +2,7 @@ import os
 from typing import List
 
 import pytest
+import waiting
 import yaml
 from junit_report import JunitFixtureTestCase, JunitTestCase
 from kubernetes.client import ApiClient, CoreV1Api
@@ -150,11 +151,40 @@ class BaseKubeAPI(BaseTest):
 
         log.info("waiting for host agent")
         agents = infra_env.wait_for_agents(len(nodes))
+        node_list = nodes.controller.list_nodes()
         for agent in agents:
             agent.approve()
-            cls.set_agent_hostname(nodes[0], agent, entity_config.is_ipv4)  # Currently only supports single node
+            cls._set_host_name_from_node(node_list, agent, entity_config.is_ipv4)
 
         return agents
+
+    @classmethod
+    def _set_host_name_from_node(cls, nodes: List[Node], agent: Agent, is_ipv4: bool) -> None:
+        """
+        Use the MAC address that is listed in the virt node object to find the interface entry
+        in the host's inventory and take the host name from there
+        The setting of the hostname is required for IPv6 only, because the nodes are booted with
+        hostname equal to localhost which is neither unique not legal name for AI host
+        """
+        if is_ipv4:
+            return
+
+        def find_matching_node_and_return_name():
+            inventory = agent.status().get("inventory", {})
+            for node in nodes:
+                for mac_address in node.macs:
+                    for interface in inventory.get("interfaces", []):
+                        if interface["macAddress"].lower() == mac_address.lower():
+                            return node.name
+
+        hostname = waiting.wait(
+            find_matching_node_and_return_name,
+            timeout_seconds=60,
+            sleep_seconds=1,
+            waiting_for=f"agent={agent.ref} to find a hostname",
+        )
+        log.info(f"patching agent {agent.ref} with hostname {hostname}")
+        agent.patch(hostname=hostname)
 
     @classmethod
     def set_agent_hostname(cls, node: Node, agent: Agent, is_ipv4: bool) -> None:
