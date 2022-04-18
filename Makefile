@@ -22,6 +22,7 @@ OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
 JOB_TYPE := $(or ${JOB_TYPE}, "")
 REPO_NAME := $(or ${REPO_NAME}, "")
 PULL_NUMBER := $(or ${PULL_NUMBER}, "")
+PULL_BASE_REF := $(or ${PULL_BASE_REF}, "")
 
 # lint
 LINT_CODE_STYLING_DIRS := src/tests src/triggers src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup src/cli
@@ -284,6 +285,7 @@ ifeq ($(shell [[ $(OPENSHIFT_CI) == "true" && $(REPO_NAME) == "assisted-service"
 	@cd assisted-service && \
 	git fetch --update-head-ok origin pull/$(PULL_NUMBER)/head:assisted-service-pr-$(PULL_NUMBER) && \
 	git checkout assisted-service-pr-$(PULL_NUMBER)
+	git rebase origin/$(PULL_BASE_REF)
 else
 	@cd assisted-service && \
 	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH) && \
