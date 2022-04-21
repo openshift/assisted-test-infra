@@ -440,7 +440,7 @@ class InventoryClient(object):
 
     def get_api_vip(self, cluster_info: dict, cluster_id: str = None):
         cluster = cluster_info or self.cluster_get(cluster_id)
-        api_vip = cluster["api_vip"]
+        api_vip = cluster.get("api_vip")
 
         if not api_vip and cluster.user_managed_networking:
             log.info("API VIP is not set, searching for api ip on masters")
