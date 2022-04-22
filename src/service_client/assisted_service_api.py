@@ -445,7 +445,8 @@ class InventoryClient(object):
 
         if not api_vip and user_managed_networking:
             log.info("API VIP is not set, searching for api ip on masters")
-            masters = self.get_hosts_by_role(cluster["id"], consts.NodeRoles.MASTER, hosts=cluster.to_dict()["hosts"])
+            hosts = cluster.get("hosts") or cluster.to_dict()["hosts"]
+            masters = self.get_hosts_by_role(cluster["id"], consts.NodeRoles.MASTER, hosts=hosts)
             api_vip = self._wait_for_api_vip(masters)
 
         log.info("api vip is %s", api_vip)
