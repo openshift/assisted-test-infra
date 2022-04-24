@@ -242,13 +242,14 @@ class Cluster(Entity):
     def select_installation_disk(self, host_id: str, disk_paths: List[dict]) -> None:
         self._infra_env.select_host_installation_disk(host_id=host_id, disk_paths=disk_paths)
 
-    def set_disk_encryption(self, mode, roles):
-        disk_encryption_params = models.DiskEncryption(
-            enable_on=roles,
-            mode=mode,
-        )
-        disk_encryption = {"disk_encryption": disk_encryption_params}
-        self.api_client.update_cluster(self.id, disk_encryption)
+    def set_disk_encryption(self, mode: str, roles: str):
+        """
+        :param mode: encryption mode (i.e TPMv2)
+        :param roles: To which role to apply
+        :return: None
+        """
+        disk_encryption_params = models.DiskEncryption(enable_on=roles, mode=mode)
+        self.api_client.update_cluster(self.id, {"disk_encryption": disk_encryption_params})
 
     def set_ocs(self, properties=None):
         self.set_olm_operator(consts.OperatorType.OCS, properties=properties)
