@@ -421,6 +421,15 @@ class Cluster(Entity):
         self.update_config(**advanced_networking)
         self.api_client.update_cluster(self.id, advanced_networking)
 
+    def set_cluster_network_cidr(self, cidr: str, host_prefix: int):
+        """
+        :param cidr: cluster network cidr (e.g 192.128.0.0/13)
+        :param host_prefix: The subnet prefix length to assign to each individual node (e.g 23)
+        :return: None
+        """
+        cluster_network = models.ClusterNetwork(cidr=cidr, host_prefix=host_prefix)
+        self.api_client.update_cluster(self.id, {"cluster_networks": [cluster_network]})
+
     def set_pull_secret(self, pull_secret: str):
         log.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
         self.update_config(pull_secret=pull_secret)
