@@ -78,6 +78,8 @@ class TerraformController(LibvirtController):
     # TODO move all those to conftest and pass it as kwargs
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
     def _terraform_params(self, **kwargs):
+        master_boot_devices = self._config.master_boot_devices
+        worker_boot_devices = self._config.worker_boot_devices
         params = {
             "libvirt_worker_memory": kwargs.get("worker_memory"),
             "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
@@ -104,6 +106,12 @@ class TerraformController(LibvirtController):
             "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE),
+            "master_boot_devices": master_boot_devices
+            if master_boot_devices is not None
+            else consts.DEFAULT_BOOT_DEVICES,
+            "worker_boot_devices": worker_boot_devices
+            if worker_boot_devices is not None
+            else consts.DEFAULT_BOOT_DEVICES,
             **self._get_disk_encryption_appliance(),
         }
 
@@ -177,6 +185,8 @@ class TerraformController(LibvirtController):
         tfvars["running"] = running
         tfvars["libvirt_master_macs"] = static_network.generate_macs(self.params.master_count)
         tfvars["libvirt_worker_macs"] = static_network.generate_macs(self.params.worker_count)
+        tfvars["master_boot_devices"] = self.params.master_boot_devices
+        tfvars["worker_boot_devices"] = self.params.worker_boot_devices
         tfvars.update(self.params)
         tfvars.update(self._secondary_tfvars())
 

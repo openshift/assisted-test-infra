@@ -256,6 +256,11 @@ function additional_configs() {
     sudo sed -ir 's/net.ipv6.conf.all.disable_ipv6[[:blank:]]*=[[:blank:]]*1/net.ipv6.conf.all.disable_ipv6 = 0/g' /etc/sysctl.conf
     sudo sed -i -e '/net.core.somaxconn/d' -e '$a net.core.somaxconn = 2000' /etc/sysctl.conf
     sudo sysctl --load
+    IPXE_BOOT=${IPXE_BOOT:-false}
+    if [ ${IPXE_BOOT} = "true" ]; then
+        echo "Opening port 8500 for iPXE boot."
+        sudo firewall-cmd --zone=libvirt --add-port=8500/tcp
+    fi
 }
 
 if [ $# -eq 0 ]; then

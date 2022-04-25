@@ -44,6 +44,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [On-prem](#on-prem)
   - [Run operator](#run-operator)
   - [Cluster-API-provider-agent](#Cluster-API-provider-agent)
+  - [Test iPXE boot flow](#test-ipxe-boot-flow)
 
 ## Prerequisites
 
@@ -142,6 +143,8 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `ROUTE53_SECRET`              | Amazon Route 53 secret to use for DNS domains registration. |
 | `WORKER_MEMORY`               | memory for worker VM, default: 8892MB |
 | `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub |
+| `IPXE_BOOT`                   | Boots VMs using iPXE if set to `true`, default: `false` |
+
 
 ## Instructions
 
@@ -455,3 +458,20 @@ Run the test:
 ```bash
 ENABLE_KUBE_API=true make test TEST=./src/tests/test_kube_api.py TEST_FUNC=test_capi_provider KUBECONFIG=$HOME/.kube/config
 ```
+
+## Test iPXE boot flow
+To test e2e deploying and installing nodes using iPXE, run the following:
+```bash
+export IPXE_BOOT=true
+make setup
+make run
+make deploy_nodes_with_install
+```
+
+Optional environment variables that may be set for this test
+|     |     |
+| --- | --- |
+| `IPXE_BOOT` | Boots VM hosts using iPXE if set to `true`, default: `false`|
+
+**Notes**:
+* A containerized Python server will be used to host the iPXE scripts for each cluster. This is due to the URL of the iPXE script file hosted in the assisted-service is longer than the character limit allowed in libvirt.

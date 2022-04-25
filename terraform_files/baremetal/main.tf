@@ -83,7 +83,8 @@ module "masters" {
   cpu_mode          = var.master_cpu_mode
   cluster_domain    = var.cluster_domain
   vtpm2             = var.master_vtpm2
-
+  boot_devices      = var.master_boot_devices
+  
   networks          = [
                         {
                           name     = libvirt_network.net.name
@@ -116,7 +117,8 @@ module "workers" {
   cpu_mode          = var.worker_cpu_mode
   cluster_domain    = var.cluster_domain
   vtpm2             = var.worker_vtpm2
-
+  boot_devices      = var.worker_boot_devices
+  
   networks          = [
                         {
                           name     = libvirt_network.net.name

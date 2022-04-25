@@ -20,6 +20,8 @@ from assisted_test_infra.download_logs.download_logs import download_logs
 from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, utils
 from assisted_test_infra.test_infra.controllers import (
     IptableRule,
+    IPXEController,
+    LibvirtController,
     NatController,
     Node,
     NodeController,
@@ -316,6 +318,7 @@ class BaseTest:
         proxy_server,
         prepare_nodes_network: Nodes,
         cluster_configuration: ClusterConfig,
+        ipxe_server,
     ):
         log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
         cluster = Cluster(
@@ -327,6 +330,16 @@ class BaseTest:
 
         if self._does_need_proxy_server(prepare_nodes_network):
             self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
+
+        if global_variables.ipxe_boot:
+            infra_env = cluster.generate_infra_env()
+            ipxe_server_controller = ipxe_server(name="ipxe_controller", api_client=cluster.api_client)
+            ipxe_server_controller.start(infra_env_id=infra_env.id, cluster_name=cluster.name)
+
+            ipxe_server_url = f"http://{consts.DEFAULT_IPXE_SERVER_IP}:{consts.DEFAULT_IPXE_SERVER_PORT}/{cluster.name}"
+            network_name = cluster.nodes.get_cluster_network()
+            libvirt_controller = LibvirtController(config=cluster.nodes.controller, entity_config=cluster_configuration)
+            libvirt_controller.set_ipxe_url(network_name=network_name, ipxe_url=ipxe_server_url)
 
         yield cluster
 
@@ -676,6 +689,22 @@ class BaseTest:
         if global_variables.test_teardown:
             log.info("--- TEARDOWN --- proxy controller")
             for server in proxy_servers:
+                server.remove()
+
+    @pytest.fixture()
+    def ipxe_server(self):
+        log.info("--- SETUP --- ipxe controller")
+        ipxe_server_controllers = []
+
+        def start_ipxe_server(**kwargs):
+            ipxe_server_controller = IPXEController(**kwargs)
+            ipxe_server_controllers.append(ipxe_server_controller)
+            return ipxe_server_controller
+
+        yield start_ipxe_server
+        if global_variables.test_teardown:
+            log.info("--- TEARDOWN --- ipxe controller")
+            for server in ipxe_server_controllers:
                 server.remove()
 
     @staticmethod
