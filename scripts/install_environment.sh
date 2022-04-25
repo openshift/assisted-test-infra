@@ -135,7 +135,6 @@ function install_packages() {
 
     echo "Installing python packages"
     sudo pip3 install aicli
-
 }
 
 function install_skipper() {
