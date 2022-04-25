@@ -36,7 +36,9 @@ class InventoryClient(object):
         self.operators = api.OperatorsApi(api_client=self.api)
         self.manifest = api.ManifestsApi(api_client=self.api)
 
-        fmt = CaseFormatKeys(case_name="cluster_id", severity_key="severity", case_timestamp="event_time")
+        fmt = CaseFormatKeys(
+            case_name="cluster-event-test", static_case_name=True, severity_key="severity", case_timestamp="event_time"
+        )
         self._events_junit_exporter = JsonJunitExporter(fmt)
 
     def get_host(self, configs: Configuration) -> str:
