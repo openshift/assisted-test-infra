@@ -94,6 +94,7 @@ resource "vsphere_virtual_machine" "master" {
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
   wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
+  ignored_guest_ips = var.ignored_guest_ips
 
   network_interface {
     network_id = data.vsphere_network.network.id
@@ -134,6 +135,7 @@ resource "vsphere_virtual_machine" "worker" {
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
   wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
+  ignored_guest_ips = var.ignored_guest_ips
 
   network_interface {
     network_id = data.vsphere_network.network.id

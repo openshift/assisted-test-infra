@@ -141,3 +141,9 @@ The number of vCPUs on the virtual machine will be num_cpus divided by num_cores
 If specified, the value supplied to num_cpus must be evenly divisible by this value. Default: 1
 EOF
 }
+
+variable "ignored_guest_ips" {
+  type    = list(string)
+  default = []
+  description = "List of IP addresses to ignore while waiting for an IP"
+}

@@ -80,3 +80,9 @@ variable "domain" {
   description = "The host domain name"
   default = "redhat.com"
 }
+
+variable "ignored_guest_ips" {
+  type    = list(string)
+  default = []
+  description = "List of IP addresses to ignore while waiting for an IP"
+}

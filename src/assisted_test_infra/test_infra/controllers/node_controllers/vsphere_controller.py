@@ -29,6 +29,9 @@ class VSphereController(NodeController):
         # The ISO file isn't available now until preparing for installation
         del config["iso_download_path"]
 
+        if self._entity_config.api_vip:
+            config["ignored_guest_ips"] = f'["{self._entity_config.api_vip}", "{self._entity_config.ingress_vip}"]'
+
         self._create_folder(self._config.vsphere_parent_folder)
         self._tf.set_and_apply(**config)
         return self.list_nodes()

@@ -46,7 +46,6 @@ data "vsphere_virtual_machine" template {
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
-# Creating the master VMs.
 resource "vsphere_virtual_machine" "vm" {
   name                        = "assisted-ci-build-${var.build_id}"
   resource_pool_id            = data.vsphere_compute_cluster.cluster.resource_pool_id
@@ -61,6 +60,7 @@ resource "vsphere_virtual_machine" "vm" {
   nested_hv_enabled           = "true"
   wait_for_guest_net_routable = true
   wait_for_guest_net_timeout  = 15
+  ignored_guest_ips           = var.ignored_guest_ips
   firmware = data.vsphere_virtual_machine.template.firmware
   scsi_type = data.vsphere_virtual_machine.template.scsi_type
 
