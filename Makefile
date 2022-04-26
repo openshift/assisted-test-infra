@@ -27,9 +27,6 @@ PULL_NUMBER := $(or ${PULL_NUMBER}, "")
 LINT_CODE_STYLING_DIRS := src/tests src/triggers src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup src/cli
 
 # assisted-service
-SERVICE_BRANCH := $(or $(SERVICE_BRANCH), "master")
-SERVICE_BASE_REF := $(or $(SERVICE_BASE_REF), "master")
-SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
 SERVICE := $(or $(SERVICE), quay.io/edge-infrastructure/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:latest)
@@ -275,21 +272,7 @@ deploy_assisted_service: start_minikube bring_assisted_service
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
-	@if ! cd assisted-service >/dev/null 2>&1; then \
-		git clone $(SERVICE_REPO); \
-	fi
-
-ifeq ($(shell [[ $(OPENSHIFT_CI) == "true" && $(REPO_NAME) == "assisted-service" && $(JOB_TYPE) == "presubmit" ]] && echo true),true)
-	@echo "Running in assisted-service pull request"
-	@cd assisted-service && \
-	git fetch --update-head-ok origin pull/$(PULL_NUMBER)/head:assisted-service-pr-$(PULL_NUMBER) && \
-	git checkout assisted-service-pr-$(PULL_NUMBER)
-else
-	@cd assisted-service && \
-	git fetch --force origin $(SERVICE_BASE_REF):FETCH_BASE $(SERVICE_BRANCH) && \
-	git reset --hard FETCH_HEAD && \
-	git rebase FETCH_BASE
-endif
+	./scripts/bring_assisted_service.sh
 
 deploy_monitoring: bring_assisted_service
 	ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ deploy-monitoring
