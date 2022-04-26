@@ -150,7 +150,7 @@ delete_minikube:
 ####################
 
 destroy_onprem:
-	make -C assisted-service/ clean-onprem || true
+	ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ clean-onprem || true
 
 ####################
 # Load balancer    #
@@ -292,7 +292,7 @@ else
 endif
 
 deploy_monitoring: bring_assisted_service
-	make -C assisted-service/ deploy-monitoring
+	ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ deploy-monitoring
 	make deploy_prometheus_ui
 
 delete_all_virsh_resources: destroy_nodes delete_minikube kill_all_port_forwardings
