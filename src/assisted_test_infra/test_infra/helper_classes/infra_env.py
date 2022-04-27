@@ -72,8 +72,16 @@ class InfraEnv(Entity):
             timeout=consts.NODES_REGISTERED_TIMEOUT,
         )
 
-    def update_host(self, host_id: str, host_role: Optional[str] = None, host_name: Optional[str] = None):
-        self.api_client.update_host(infra_env_id=self.id, host_id=host_id, host_role=host_role, host_name=host_name)
+    def update_host(
+        self,
+        host_id: str,
+        host_role: Optional[str] = None,
+        host_name: Optional[str] = None,
+        node_labels: Optional[List[dict]] = None,
+    ):
+        self.api_client.update_host(
+            infra_env_id=self.id, host_id=host_id, host_role=host_role, host_name=host_name, node_labels=node_labels
+        )
 
     def bind_host(self, host_id: str, cluster_id: str) -> None:
         self.api_client.bind_host(infra_env_id=self.id, host_id=host_id, cluster_id=cluster_id)

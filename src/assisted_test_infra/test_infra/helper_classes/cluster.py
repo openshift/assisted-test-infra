@@ -155,6 +155,9 @@ class Cluster(Entity):
         hosts = self.get_hosts()
         return {h["id"]: h["role"] for h in hosts}
 
+    def get_node_labels(self):
+        return {h["id"]: json.loads(h["node_labels"]) for h in self.get_hosts()}
+
     def get_operators(self):
         return self.api_client.get_cluster_operators(self.id)
 
@@ -438,6 +441,10 @@ class Cluster(Entity):
     def set_host_name(self, host_id, requested_name):
         log.info(f"Setting Required Host Name:{requested_name}, for Host ID: {host_id}")
         self._infra_env.update_host(host_id=host_id, host_name=requested_name)
+
+    def set_node_labels(self, host_id: str, node_labels: List[dict]):
+        log.info(f"Setting required node labels: {node_labels}, for host id: {host_id}")
+        self._infra_env.update_host(host_id=host_id, node_labels=node_labels)
 
     def set_additional_ntp_source(self, ntp_source: List[str]):
         log.info(f"Setting Additional NTP source:{ntp_source}")
