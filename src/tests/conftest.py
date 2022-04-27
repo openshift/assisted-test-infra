@@ -9,6 +9,8 @@ from service_client import log
 from service_client.client_validator import verify_client_version
 from tests.config import global_variables
 
+assert global_variables.pull_secret is not None, "Missing pull secret"
+
 
 @pytest.fixture(scope="session")
 def api_client():
