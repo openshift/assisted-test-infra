@@ -21,6 +21,19 @@ fi
 service_active_branch=$(cd assisted-service/ && git rev-parse --abbrev-ref HEAD)
 pr_branch_name=assisted-service-pr-${PULL_NUMBER}
 
+if [[ "${OPENSHIFT_CI}" == "true" ]]; then
+    # Some git commands require user/email to be set, use a dummy global
+    # user/email for CI if one is not already configured
+
+    if ! git config --global --get user.name; then
+        git config --global user.name 'OpenShift CI'
+    fi
+
+    if ! git config --global --get user.email; then
+        git config --global user.email 'fakeciemail@example.com'
+    fi
+fi
+
 if [[ "${OPENSHIFT_CI}" == "true" && "${REPO_NAME}" == "assisted-service" && "${JOB_TYPE}" == "presubmit" ]]; then
   if [[ "${service_active_branch}" == "${pr_branch_name}" ]]; then
     # Assisted-Service source code is already updated and rebased with PULL_BASE_REF.
