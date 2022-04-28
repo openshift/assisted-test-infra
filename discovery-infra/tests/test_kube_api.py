@@ -200,14 +200,14 @@ class TestKubeAPI(BaseKubeAPI):
 
 class TestLateBinding(BaseKubeAPI):
     @pytest.fixture
-    def kube_test_configs_late_binding_single_node(self, infraenv_configuration, controller_configuration):
+    def kube_test_configs_late_binding_single_node(self, infraenv_config, controller_configuration):
         self._configure_single_node(controller_configuration)
-        yield infraenv_configuration, controller_configuration
+        yield infraenv_config, controller_configuration
 
     @pytest.fixture
-    def kube_test_configs_late_binding_highly_available(self, infraenv_configuration, controller_configuration):
+    def kube_test_configs_late_binding_highly_available(self, infraenv_config, controller_configuration):
         self._configure_highly_available(controller_configuration)
-        yield infraenv_configuration, controller_configuration
+        yield infraenv_config, controller_configuration
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -237,10 +237,17 @@ class TestLateBinding(BaseKubeAPI):
         )
         yield infra_env, prepare_infraenv_nodes_network
 
+    @classmethod
+    def _configure_ipv4(cls, cluster_configuration):
+        cluster_configuration.is_ipv4 = True
+        cluster_configuration.cluster_networks = consts.DEFAULT_CLUSTER_NETWORKS_IPV4
+        cluster_configuration.service_networks = consts.DEFAULT_SERVICE_NETWORKS_IPV4
+
     @pytest.fixture
     @JunitFixtureTestCase()
     def unbound_single_node_cluster(self, kube_test_configs_single_node, kube_api_context):
         cluster_config, _ = kube_test_configs_single_node
+        self._configure_ipv4(cluster_config)
         yield self.prepare_late_binding_cluster(
             kube_api_context,
             cluster_config,
@@ -252,6 +259,7 @@ class TestLateBinding(BaseKubeAPI):
     @JunitFixtureTestCase()
     def unbound_highly_available_cluster(self, kube_test_configs_highly_available, kube_api_context):
         cluster_config, _ = kube_test_configs_highly_available
+        self._configure_ipv4(cluster_config)
         yield self.prepare_late_binding_cluster(kube_api_context, cluster_config, num_controlplane_agents=3)
 
     @classmethod
