@@ -8,9 +8,7 @@ import openshift as oc
 import pytest
 import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
-from waiting import TimeoutExpired
 
-from assisted_test_infra.download_logs import collect_debug_info_from_cluster
 from assisted_test_infra.test_infra import Nodes, utils
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
@@ -45,12 +43,12 @@ class TestKubeAPI(BaseKubeAPI):
     @pytest.mark.kube_api
     @JunitTestSuite()
     @pytest.mark.parametrize("is_ipv4, is_ipv6", utils.get_kubeapi_protocol_options())
-    @pytest.mark.override_controller_configuration(sno_controller_configuration.__name__)
     def test_kubeapi(
         self,
         cluster_configuration: ClusterConfig,
         kube_api_context: KubeAPIContext,
         proxy_server: Callable,
+        prepared_controller_configuration: BaseNodeConfig,
         prepare_nodes_network: Nodes,
         is_ipv4: bool,
         is_ipv6: bool,
@@ -59,6 +57,7 @@ class TestKubeAPI(BaseKubeAPI):
             kube_api_context,
             prepare_nodes_network,
             cluster_configuration,
+            prepared_controller_configuration,
             proxy_server if cluster_configuration.is_ipv6 else None,
         )
 
@@ -74,6 +73,7 @@ class TestKubeAPI(BaseKubeAPI):
         kube_api_context: KubeAPIContext,
         nodes: Nodes,
         cluster_config: ClusterConfig,
+        prepared_controller_configuration: BaseNodeConfig,
         proxy_server: Optional[Callable] = None,
         *,
         is_disconnected: bool = False,
@@ -84,7 +84,6 @@ class TestKubeAPI(BaseKubeAPI):
 
         # TODO resolve it from the service if the node controller doesn't have this information
         #  (please see cluster.get_primary_machine_cidr())
-        machine_cidr = nodes.controller.get_primary_machine_cidr()
 
         agent_cluster_install = AgentClusterInstall(
             api_client, f"{cluster_name}-agent-cluster-install", spoke_namespace
@@ -107,16 +106,16 @@ class TestKubeAPI(BaseKubeAPI):
             hyperthreading=cluster_config.hyperthreading,
             control_plane_agents=nodes.masters_count,
             worker_agents=nodes.workers_count,
-            machine_cidr=machine_cidr,
             proxy=proxy.as_dict() if proxy else {},
         )
+
         agent_cluster_install.wait_to_be_ready(ready=False)
 
         if cluster_config.is_static_ip:
             self.apply_static_network_config(kube_api_context, nodes, cluster_name)
 
         if is_disconnected:
-            log.info("getting igntion and install config override for disconected install")
+            log.info("getting ignition and install config override for disconnected install")
             ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
             self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
             ignition_config_override = self.get_ignition_config_override(ca_bundle)
@@ -127,27 +126,30 @@ class TestKubeAPI(BaseKubeAPI):
         infra_env.create(
             cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
         )
+
         agents = self.start_nodes(nodes, infra_env, cluster_config)
 
-        log.info("Waiting for agent status verification")
-        Agent.wait_for_agents_to_install(agents)
+        if len(nodes) == 1:
+            # for single node set the cidr and take the actual ip from the host
+            # the vips is the ip of the host
+            self._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
+            # wait till the ip is set for the node and read it from its inventory
+            self.set_single_node_ip(cluster_deployment, nodes)
+            api_vip = ingress_vip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
+        else:
+            # for multi node allocate 2 address at a safe distance from the beginning
+            # of the available address block to allow enough addresses for workers
+            access_vips = nodes.controller.get_ingress_and_api_vips()
+            api_vip = access_vips["api_vip"]
+            ingress_vip = access_vips["ingress_vip"]
+            # patch the aci with the vips. The cidr will be derived from the range
+            agent_cluster_install.set_api_vip(api_vip)
+            agent_cluster_install.set_ingress_vip(ingress_vip)
 
-        agent_cluster_install.wait_to_be_ready(ready=True)
-        single_node_ip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
-        nodes.controller.set_dns(api_vip=single_node_ip, ingress_vip=single_node_ip)
+        nodes.controller.set_dns(api_vip=api_vip, ingress_vip=ingress_vip)
 
-        log.info("waiting for agent-cluster-install to be in installing state")
-        agent_cluster_install.wait_to_be_installing()
-
-        try:
-            log.info("installation started, waiting for completion")
-            agent_cluster_install.wait_to_be_installed()
-            agent_cluster_install.download_kubeconfig(cluster_config.kubeconfig_path)
-            log.info("installation completed successfully")
-        except TimeoutExpired:
-            log.exception("Failure during kube-api installation flow. Collecting debug info...")
-            collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install)
-            raise
+        log.info("Waiting for install")
+        self._wait_for_install(agent_cluster_install, agents)
 
     @JunitTestCase()
     def capi_test(
