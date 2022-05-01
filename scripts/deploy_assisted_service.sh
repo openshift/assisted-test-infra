@@ -119,7 +119,8 @@ else
         # Forward the minikube registry addon k8s service to the host to push the debug image using localhost:5000
         spawn_port_forwarding_command $REGISTRY_SERVICE_NAME $REGISTRY_SERVICE_HOST_PORT $REGISTRY_SERVICE_NAMESPACE 999 $KUBECONFIG minikube undeclaredip $REGISTRY_SERVICE_PORT $REGISTRY_SERVICE_NAME
         # Set the local registry to the minikube registry (used by the assisted-service update-local-image target)
-        export LOCAL_ASSISTED_ORG=localhost:5000
+        export SUBSYSTEM_LOCAL_REGISTRY=localhost:5000
+
         print_log "Patching assisted service image with a debuggable code "
         (cd assisted-service/ && skipper --env-file ../skipper.env make update-local-image -e CONTAINER_BUILD_EXTRA_PARAMS="--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file")
         DEBUG_DEPLOY_AI_PARAMS="REPLICAS_COUNT=1"
