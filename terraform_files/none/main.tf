@@ -103,7 +103,7 @@ module "workers" {
   memory            = var.libvirt_worker_memory
   vcpu              = var.libvirt_worker_vcpu
   running           = var.running
-  image_path        = var.image_path
+  image_path        = var.worker_image_path
   cluster_domain    = var.cluster_domain
   vtpm2             = var.worker_vtpm2
 
