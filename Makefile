@@ -32,7 +32,7 @@ SERVICE_BASE_REF := $(or $(SERVICE_BASE_REF), "master")
 SERVICE_REPO := $(or $(SERVICE_REPO), "https://github.com/openshift/assisted-service")
 SERVICE := $(or $(SERVICE), quay.io/edge-infrastructure/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
-INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:latest)
+INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:ocm-2.5)
 REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
 
 # ui service
