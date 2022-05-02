@@ -155,6 +155,34 @@ As `$USER` user with `sudo` privileges,
 
 > NOTE: Currently there is an issue with the metal3 pod. The Assisted Installer team is aware of this.
 
+## Adding a new e2e flow
+
+- Before starting, note that test infra is written in python (>= 3.9) and uses [pytest](https://docs.pytest.org/en/6.2.x/contents.html) and [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html) for running all of our e2e test flows.
+- Set up test-infra test environment ([assisted-installer-install-guide](GUIDE.md#assisted-installer-unofficial-install-guide))
+- Make sure that the assisted-service is supporting the tested feature 
+  - For customizing tested components, take a look at [components deployment parameters](README.md#components)
+  - The changes are already on assisted-service master branch
+- Make sure to test the changes for both CI-compatible distro (Rocky Linux 8) and QE's compatible environment (RHEL 8.5).
+- Depends on the test one or more of the following are needed:
+  1. Adding environment variables -
+     - [skipper.env](https://github.com/openshift/assisted-test-infra/blob/master/skipper.env) - All environment variables that are being used inside assisted-test-infra container must be declared on skipper env file.
+     - [env_defaults](https://github.com/openshift/assisted-test-infra/blob/master/src/tests/global_variables/env_variables_defaults.py) - Add the environment variables to the default file and set default if needed
+         * Note 1: Use only `env_defaults` to access environment variables. Do not access them directly using `os.environ` or some other method.
+         * Note 2: Do not set variable default values on the Makefile or on any other file.
+  1. Use one of the existing test functions (depends on the mode you are using) or create a new one:
+     - Some tests can be modified using only different environment variables (e.g. [test_install](https://github.com/openshift/assisted-test-infra/blob/master/src/tests/test_e2e_install.py#L12), [test_kubeapi](https://github.com/openshift/assisted-test-infra/blob/master/src/tests/test_kube_api.py#L49))
+     - After you have ruled out the option to customize an existing test using environment variables only, you can add a new test function (just look on some examples under the [tests](https://github.com/openshift/assisted-test-infra/tree/master/src/tests) package) to one of the existing test files or create a new one if needed.
+  1. [Node controllers](https://github.com/openshift/assisted-test-infra/tree/master/src/assisted_test_infra/test_infra/controllers/node_controllers):
+     - Alter or create any node controller depends on which platform the test is running on (e.g. [terraform_controller](https://github.com/openshift/assisted-test-infra/blob/master/src/assisted_test_infra/test_infra/controllers/node_controllers/terraform_controller.py), [vsphere_controller](https://github.com/openshift/assisted-test-infra/blob/master/src/assisted_test_infra/test_infra/controllers/node_controllers/vsphere_controller.py), [libvirt_controller](https://github.com/openshift/assisted-test-infra/blob/master/src/assisted_test_infra/test_infra/controllers/node_controllers/libvirt_controller.py))
+     - Any new node controller must have its own implementation of [BaseNodeConfig](https://github.com/openshift/assisted-test-infra/blob/master/src/assisted_test_infra/test_infra/helper_classes/config/controller_config.py). The defaults values are taken directly from the env_defaults mentioned above.
+     - The most heavily-used `NodeController` is the `TerraformController` (inherits from `LibvirtController`), so unless adding a new platform or specific platform test, you probably will have to alter one of those two controllers.
+  1. General Purpose Controllers - Running extra services alongside the test (e.g. [ProxyController](https://github.com/openshift/assisted-test-infra/tree/master/src/assisted_test_infra/test_infra/controllers/proxy_controller) on IPv6) are often requires a new controller, if it can be done, run it as an isolated container. You probably will want to declare a new pytest-fixture for creating and destroying it properly.
+  1. [Triggers](https://github.com/openshift/assisted-test-infra/tree/master/src/triggers) - Mechanism for automatic assignment of variables:
+     - On some scenarios we will need to set multiple environment variables for single test (e.g. [SNO](https://github.com/openshift/assisted-test-infra/blob/master/src/triggers/default_triggers.py#L22-#L31)), triggers are mechanism for automatically set environment variables when some condition is met (e.g. `masters_count=1`)
+     - The default triggers are defined [here](https://github.com/openshift/assisted-test-infra/blob/master/src/triggers/default_triggers.py)
+     - The condition for each trigger is defined using python lambda function.
+     - When trigger condition is met, it's setting the [global_variable](https://github.com/openshift/assisted-test-infra/blob/master/src/tests/config/global_configs.py#L17) instance value (if exists) and for each test configurations it's setting the variables as part of the [controller creation fixture](https://github.com/openshift/assisted-test-infra/blob/e474f28865837543346e1a55010f2d0318a06133/src/tests/base_test.py#L225)
+
 ## Troubleshooting
 
 Also see the [troubleshooting section](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit#heading=h.ewz6a9wqulbj) in the **internal** [Assisted Deployment](https://docs.google.com/document/d/1WDc5LQjNnqpznM9YFTGb9Bg1kqPVckgGepS4KBxGSqw/edit?usp=sharing) document.
@@ -266,3 +294,13 @@ Run `make setup`.
 
 <hr>
 <b id="f1">1</b> It can also be a VM running CentOS8 or RHEL8 and able to do `nested` virtualization as it will run minikube inside. VM should have NICs for connecting to the hosts being installed over bridges at the physical host. [↩](#a1)
+
+---
+
+**Problem**
+
+You get `Error: Operation not supported: can't update 'bridge' section of network 'test-infra-net-******'`.
+
+**Solution**
+
+Downgrade libvirt: Run `dnf downgrade libvirt -y`.

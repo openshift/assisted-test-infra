@@ -15,6 +15,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Instructions](#instructions)
     - [Host preparation](#host-preparation)
   - [Usage](#usage)
+  - [Adding a new e2e flow](#new-e2e-flow)  
   - [Full flow cases](#full-flow-cases)
     - [Run full flow with install](#run-full-flow-with-install)
     - [Run full flow without install](#run-full-flow-without-install)
@@ -171,6 +172,10 @@ This will install required packages, configure libvirt, pull relevant Docker ima
 ## Usage
 
 There are different options to use test-infra, which can be found in the makefile.
+
+## Adding a new e2e flow
+
+Documentation about guidelines on how to create a new e2e test can be found [here](GUIDE.md#adding-a-new-e2e-flow)
 
 ## Full flow cases
 
