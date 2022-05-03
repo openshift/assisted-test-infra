@@ -224,7 +224,7 @@ class TestKubeAPI(BaseKubeAPI):
         cls, cluster_deployment: ClusterDeployment, hypershift: HyperShift, spoke_namespace: str, node_count: int
     ):
         log.info("Setting node count to %s", node_count)
-        hypershift.set_nodepool_node_count(node_count)
+        hypershift.set_nodepool_replicas(node_count)
         log.info("waiting for capi provider to set clusterDeployment ref on the agent")
         agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=spoke_namespace)
         log.info("Waiting for agents status verification")
