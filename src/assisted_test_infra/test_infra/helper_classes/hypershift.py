@@ -84,11 +84,10 @@ class HyperShift:
             self._kubeconfig_path = hypershift_kubeconfig_path
         return self._kubeconfig_path
 
-    def set_nodepool_node_count(self, node_count: int) -> None:
-        log.info(f"Setting HyperShift cluster {self.name} node count to: {node_count}")
+    def set_nodepool_replicas(self, node_count: int) -> None:
+        log.info(f"Setting HyperShift cluster {self.name} replicas to: {node_count}")
         crd_api = CustomObjectsApi(self.management_kube_api_client)
-        node_count = node_count
-        body = {"spec": {"nodeCount": node_count}}
+        body = {"spec": {"replicas": node_count}}
         crd_api.patch_namespaced_custom_object(
             group=HyperShift.HYPERSHIFT_API_GROUP,
             version=HyperShift.HYPERSHIFT_API_VERSION,
