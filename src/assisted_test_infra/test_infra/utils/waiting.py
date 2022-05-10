@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import waiting
 
@@ -30,12 +30,16 @@ def _are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_e
     log.info(
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
         statuses,
-        [
-            (i, host["id"], host.get("requested_hostname"), host.get("role"), host["status"], host["status_info"])
-            for i, host in enumerate(hosts, start=1)
-        ],
+        host_statuses(hosts),
     )
     return False
+
+
+def host_statuses(hosts) -> List[Tuple[int, str, str, str, str, str]]:
+    return [
+        (i, host["id"], host.get("requested_hostname"), host.get("role"), host["status"], host["status_info"])
+        for i, host in enumerate(hosts, start=1)
+    ]
 
 
 def wait_till_hosts_with_macs_are_in_status(
@@ -221,4 +225,32 @@ def wait_till_specific_host_is_in_stage(
             f"{[host['progress']['current_stage'] for host in hosts]} "
             f"when waited for {stages}"
         )
+        raise
+
+
+def wait_till_cluster_is_in_status(
+    client,
+    cluster_id,
+    statuses: List[str],
+    timeout=consts.NODES_REGISTERED_TIMEOUT,
+    interval=30,
+    break_statuses: List[str] = None,
+):
+    log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
+    try:
+        if break_statuses:
+            statuses += break_statuses
+        waiting.wait(
+            lambda: utils.is_cluster_in_status(client=client, cluster_id=cluster_id, statuses=statuses),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for=f"Cluster to be in status {statuses}",
+        )
+        if break_statuses and utils.is_cluster_in_status(client, cluster_id, break_statuses):
+            raise BaseException(
+                f"Stop installation process, " f"cluster is in status {client.cluster_get(cluster_id).status}"
+            )
+    except BaseException:
+        log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
+        log.error("Hosts statuses are: %s", host_statuses(client.get_cluster_hosts(cluster_id)))
         raise

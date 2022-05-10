@@ -476,7 +476,7 @@ class Cluster(Entity):
     def start_install(self, retries: int = consts.DEFAULT_INSTALLATION_RETRIES_ON_FALLBACK):
         self.api_client.install_cluster(cluster_id=self.id)
 
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLING, consts.ClusterStatus.READY],
@@ -548,7 +548,7 @@ class Cluster(Entity):
         )
 
     def wait_for_cluster_in_error_status(self):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.ERROR],
@@ -556,7 +556,7 @@ class Cluster(Entity):
         )
 
     def wait_for_pending_for_input_status(self):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.PENDING_FOR_INPUT],
@@ -696,7 +696,7 @@ class Cluster(Entity):
         )
 
     def wait_for_ready_to_install(self):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.READY],
@@ -704,7 +704,7 @@ class Cluster(Entity):
         )
         # This code added due to BZ:1909997, temporarily checking if help to prevent unexpected failure
         time.sleep(10)
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.READY],
@@ -786,7 +786,7 @@ class Cluster(Entity):
         )
 
     def wait_for_install(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLED],
@@ -962,7 +962,7 @@ class Cluster(Entity):
             log.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_cluster_to_be_in_installing_pending_user_action_status(self):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLING_PENDING_USER_ACTION],
@@ -970,7 +970,7 @@ class Cluster(Entity):
         )
 
     def wait_for_cluster_to_be_in_installing_status(self):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLING],
@@ -978,7 +978,7 @@ class Cluster(Entity):
         )
 
     def wait_for_cluster_to_be_in_finalizing_status(self):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.FINALIZING, consts.ClusterStatus.INSTALLED],
@@ -987,7 +987,7 @@ class Cluster(Entity):
         )
 
     def wait_for_cluster_to_be_in_status(self, statuses, timeout=consts.ERROR_TIMEOUT):
-        utils.wait_till_cluster_is_in_status(
+        utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=statuses,
