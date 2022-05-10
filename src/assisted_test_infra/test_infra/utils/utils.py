@@ -23,7 +23,6 @@ from typing import List, Tuple, Union
 
 import filelock
 import requests
-import waiting
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -133,33 +132,6 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
         f"hosts statuses are {host_info}"
     )
     return False
-
-
-def wait_till_cluster_is_in_status(
-    client,
-    cluster_id,
-    statuses: List[str],
-    timeout=consts.NODES_REGISTERED_TIMEOUT,
-    interval=30,
-    break_statuses: List[str] = None,
-):
-    log.info("Wait till cluster %s is in status %s", cluster_id, statuses)
-    try:
-        if break_statuses:
-            statuses += break_statuses
-        waiting.wait(
-            lambda: is_cluster_in_status(client=client, cluster_id=cluster_id, statuses=statuses),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for=f"Cluster to be in status {statuses}",
-        )
-        if break_statuses and is_cluster_in_status(client, cluster_id, break_statuses):
-            raise BaseException(
-                f"Stop installation process, " f"cluster is in status {client.cluster_get(cluster_id).status}"
-            )
-    except BaseException:
-        log.error("Cluster status is: %s", client.cluster_get(cluster_id).status)
-        raise
 
 
 def is_cluster_in_status(client, cluster_id, statuses):
