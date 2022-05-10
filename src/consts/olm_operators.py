@@ -1,3 +1,6 @@
+from consts import GB
+
+
 class OperatorType:
     CNV = "cnv"
     OCS = "ocs"
@@ -58,8 +61,8 @@ class OperatorResource:
                 worker_memory=24000,
                 master_vcpu=12,
                 worker_vcpu=12,
-                master_disk=10737418240,
-                worker_disk=26843545600,
+                master_disk=10 * GB,
+                worker_disk=25 * GB,
                 master_disk_count=1,
                 worker_disk_count=1,
                 worker_count=4,
@@ -69,8 +72,8 @@ class OperatorResource:
                 worker_memory=24000,
                 master_vcpu=12,
                 worker_vcpu=12,
-                master_disk=10737418240,
-                worker_disk=26843545600,
+                master_disk=10 * GB,
+                worker_disk=25 * GB,
                 master_disk_count=1,
                 worker_disk_count=1,
                 worker_count=4,

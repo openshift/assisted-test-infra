@@ -57,7 +57,7 @@ variable "disk_base_name" {
 
 variable "disk_size" {
   type        = number
-  description = "Disk space in MiB allocated to the host."
+  description = "Disk space in bytes allocated to the host."
 }
 
 variable "disk_count" {
