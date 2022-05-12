@@ -100,7 +100,7 @@ class TerraformController(LibvirtController):
             # TODO change to namespace index
             "libvirt_secondary_network_if": self._config.net_asset.libvirt_secondary_network_if,
             "provisioning_cidr": self._config.net_asset.provisioning_cidr,
-            "running": True,
+            "running": self._config.running,
             "single_node_ip": kwargs.get("single_node_ip", ""),
             "master_disk_count": kwargs.get("master_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
@@ -163,6 +163,7 @@ class TerraformController(LibvirtController):
             ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10 + int(tfvars["master_count"])
         )
         tfvars["image_path"] = self._entity_config.iso_download_path
+        tfvars["worker_image_path"] = self._entity_config.worker_iso_download_path or tfvars["image_path"]
         tfvars["master_count"] = self.params.master_count
         self.master_ips = tfvars["libvirt_master_ips"] = self._create_address_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
@@ -216,6 +217,7 @@ class TerraformController(LibvirtController):
 
     def start_all_nodes(self):
         nodes = self.list_nodes()
+
         if len(nodes) == 0:
             self._create_nodes()
             return self.list_nodes()

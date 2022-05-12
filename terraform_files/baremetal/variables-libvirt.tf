@@ -171,7 +171,12 @@ variable "libvirt_worker_memory" {
 
 variable "image_path" {
   type        = string
-  description = "image type"
+  description = "image path"
+}
+
+variable "worker_image_path" {
+  type        = string
+  description = "worker image path"
 }
 
 variable "libvirt_storage_pool_path" {

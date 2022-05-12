@@ -1,10 +1,13 @@
 import json
 import os
 import subprocess
+from typing import Any, Dict, List, Optional
 
 import urllib3
 from kubernetes.client import ApiClient
 from kubernetes.config.kube_config import Configuration, load_kube_config
+
+OC_PATH = "/usr/local/bin/oc"
 
 
 def extend_parser_with_oc_arguments(parser):
@@ -152,27 +155,69 @@ def _load_resource_config_dict(resource):
     return json.loads(raw)
 
 
-def get_operators_status(kubeconfig):
-    command = ["/usr/local/bin/oc", "--kubeconfig", kubeconfig, "get", "clusteroperators", "-o", "json"]
+def oc_list(kubeconfig_path: str, resource: str, namespace: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Runs `oc get <resource_name> [-n namespace] -ojson` and returns the
+    deserialized contents of result["items"].
+    e.g.: oc_list("node") returns [{... node dict}, {... node dict}, ...]
+    May raise SubprocessError
+    """
+    command = [OC_PATH, "--kubeconfig", kubeconfig_path, "get", resource, "-o", "json"]
 
-    response = subprocess.run(command, stdout=subprocess.PIPE)
-    if response.returncode != 0:
-        return {}
+    if namespace is not None:
+        command += ["--namespace", namespace]
 
-    output = json.loads(response.stdout)
-    statuses = {}
+    return json.loads(subprocess.check_output(command))["items"]
 
-    for item in output["items"]:
-        name = item["metadata"]["name"]
-        if "conditions" not in item["status"]:
-            statuses[name] = False
-            continue
 
-        for condition in item["status"]["conditions"]:
-            if condition["type"] == "Available":
-                statuses[name] = condition["status"] == "True"
-                break
-        else:
-            statuses[name] = False
+def _has_condition(resource: str, type: str, status: str) -> bool:
+    """
+    Checks if any of a resource's conditions matches type `type` and has status set to `status`:
+    example usage: _has_condition(resource=node, type="Ready", status="True")
+    """
+    return any(
+        condition["status"] == status
+        for condition in resource["status"].get("conditions", [])
+        if condition["type"] == type
+    )
 
-    return statuses
+
+def get_clusteroperators_status(kubeconfig_path: str) -> Dict[str, bool]:
+    """
+    Returns a dict with clusteroperator names as keys and availability condition as boolean values.
+    e.g.: {"etcd": True, "authentication": False}
+    May raise SubprocessError
+    """
+    return {
+        clusteroperator["metadata"]["name"]: _has_condition(resource=clusteroperator, type="Available", status="True")
+        for clusteroperator in oc_list(kubeconfig_path, "clusteroperators")
+    }
+
+
+def get_nodes_readiness(kubeconfig_path: str) -> Dict[str, bool]:
+    """
+    Returns a dict with node names as keys and readiness as boolean values:
+    e.g.: {"test-infra-cluster-master-0": True, "test-infra-cluster-worker-0": False}
+    May raise SubprocessError
+    """
+    return {
+        node["metadata"]["name"]: _has_condition(resource=node, type="Ready", status="True")
+        for node in oc_list(kubeconfig_path, "nodes")
+    }
+
+
+def get_unapproved_csr_names(kubeconfig_path: str) -> List[str]:
+    """
+    Returns a list of names of  all CertificateSigningRequest resources which
+    are unapproved.
+    May raise SubprocessError
+    """
+    return [
+        csr["metadata"]["name"]
+        for csr in oc_list(kubeconfig_path, "csr")
+        if not _has_condition(resource=csr, type="Approved", status="True")
+    ]
+
+
+def approve_csr(kubeconfig_path: str, csr_name: str):
+    subprocess.check_call([OC_PATH, "--kubeconfig", kubeconfig_path, "adm", "certificate", "approve", csr_name])

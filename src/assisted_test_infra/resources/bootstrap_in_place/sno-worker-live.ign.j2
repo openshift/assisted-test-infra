@@ -1,0 +1,46 @@
+{
+    "ignition": {
+        "config": {},
+        "version": "3.1.0"
+    },
+    "passwd": {
+        "users": [
+            {
+                "name": "core",
+                "sshAuthorizedKeys": ["{{ ssh_public_key }}"]
+            }
+        ]
+    },
+    "storage": {
+        "files": [
+            {
+                "contents": {
+                    "source": "data:text/plain;charset=utf-8;base64,{{ worker_ign_contents | b64encode_utf8 }}",
+                    "verification": {}
+                },
+                "filesystem": "root",
+                "mode": 420,
+                "overwrite": true,
+                "path": "/root/config.ign"
+            },
+            {
+                "contents": {
+                    "source": "data:text/plain;charset=utf-8;base64,{{ install_sh_contents | b64encode_utf8 }}",
+                    "verification": {}
+                },
+                "filesystem": "root",
+                "mode": 448,
+                "path": "/usr/local/bin/install.sh"
+            }
+        ]
+    },
+    "systemd": {
+        "units": [
+            {
+            "contents": "[Service]\nType=oneshot\nExecStart=/usr/local/bin/install.sh\nEnvironment=INSTALL_DEVICE={{ install_device }}\n[Install]\nWantedBy=multi-user.target\n",
+                "enabled": true,
+                "name": "coreos-install.service"
+            }
+        ]
+    }
+}

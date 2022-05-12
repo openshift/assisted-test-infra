@@ -245,8 +245,10 @@ deploy_static_network_config_day2_nodes_with_install:
 install_day1_and_day2_cloud:
 	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
 
+.PHONY: deploy_ibip
 deploy_ibip:
-	skipper make $(SKIPPER_PARAMS) _test TEST=./src/tests/test_bootstrap_in_place.py
+	# To deploy with a worker node, set TEST_FUNC=test_bip_add_worker
+	skipper make $(SKIPPER_PARAMS) _test TEST=./src/tests/test_bootstrap_in_place.py TEST_FUNC=$(or ${TEST_FUNC},'test_bootstrap_in_place_sno')
 
 redeploy_nodes: destroy_nodes deploy_nodes
 

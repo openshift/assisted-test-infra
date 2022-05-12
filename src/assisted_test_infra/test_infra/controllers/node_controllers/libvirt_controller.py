@@ -207,7 +207,7 @@ class LibvirtController(NodeController, ABC):
         nodes = self.list_nodes()
 
         for node in nodes:
-            self.shutdown_node(node.name())
+            self.shutdown_node(node.name)
 
     def start_node(self, node_name, check_ips=True):
         log.info("Going to power-on %s, check ips flag %s", node_name, check_ips)
@@ -230,7 +230,7 @@ class LibvirtController(NodeController, ABC):
         nodes = self.list_nodes()
 
         for node in nodes:
-            self.start_node(node.name())
+            self.start_node(node.name)
         return nodes
 
     @staticmethod

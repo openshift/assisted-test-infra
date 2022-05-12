@@ -17,6 +17,7 @@ class BaseEntityConfig(BaseConfig, ABC):
     high_availability_mode: str = None
     hyperthreading: str = None
     iso_download_path: str = None
+    worker_iso_download_path: str = None
     iso_image_type: str = None
     download_image: bool = None
     platform: str = None
