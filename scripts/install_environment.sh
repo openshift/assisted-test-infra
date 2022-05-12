@@ -12,9 +12,7 @@ function version_is_greater() {
     false
 }
 
-function install_libvirt() {
-    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
-
+function setup_epel() {
     # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
     case "${PRETTY_NAME}" in
     "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"* | "Rocky Linux 8"*)
@@ -26,12 +24,20 @@ function install_libvirt() {
             https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
         ;;
     esac
+}
 
-    # The package selinux-policy should be installed first because otherwise, RPMs install will fail due to a lack of SELinux config.
-    # Some RPMs have SELinux plugins that will search for /etc/selinux/targeted/contexts/files/file_contexts
-    # See https://access.redhat.com/solutions/6062341
-    echo "Install selinux-policy RPM"
-    sudo dnf install -y selinux-policy
+function install_libvirt() {
+    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+
+    if [ "${DISK_ENCRYPTION_MODE:-}" == "tpmv2" ]; then
+        setup_epel
+
+        # The package selinux-policy should be installed first because otherwise, RPMs install will fail due to a lack of SELinux config.
+        # Some RPMs have SELinux plugins that will search for /etc/selinux/targeted/contexts/files/file_contexts
+        # See https://access.redhat.com/solutions/6062341
+        echo "Install selinux-policy RPM"
+        sudo dnf install -y selinux-policy
+    fi
 
     # TODO: support libvirt >= 6.0.0-37-1
     SPECIFIC_LIBVIRT_VERSION=""
@@ -46,9 +52,14 @@ function install_libvirt() {
         libvirt-devel${SPECIFIC_LIBVIRT_VERSION} \
         libvirt-daemon-kvm${SPECIFIC_LIBVIRT_VERSION} \
         qemu-kvm \
-        libgcrypt \
-        swtpm \
-        swtpm-tools
+        libgcrypt
+
+    if [ "${DISK_ENCRYPTION_MODE:-}" == "tpmv2" ]; then
+        echo "Installing swtpm packages..."
+        sudo dnf install -y \
+            swtpm \
+            swtpm-tools
+    fi
 
     sudo systemctl enable libvirtd
 
