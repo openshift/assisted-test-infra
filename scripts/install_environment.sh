@@ -12,47 +12,18 @@ function version_is_greater() {
     false
 }
 
-function setup_epel() {
-    # RHEL and CentOS require epel-release for swtpm and swtpm-tools packages
-    case "${PRETTY_NAME}" in
-    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"* | "Rocky Linux 8"*)
-        sudo dnf install -y \
-            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-        ;;
-    "Red Hat Enterprise Linux 7"* | "CentOS Linux 7"*)
-        sudo dnf install -y \
-            https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-        ;;
-    esac
-}
-
 function install_libvirt() {
     source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
 
-    if [ "${DISK_ENCRYPTION_MODE:-}" == "tpmv2" ]; then
-        setup_epel
-
-        # The package selinux-policy should be installed first because otherwise, RPMs install will fail due to a lack of SELinux config.
-        # Some RPMs have SELinux plugins that will search for /etc/selinux/targeted/contexts/files/file_contexts
-        # See https://access.redhat.com/solutions/6062341
-        echo "Install selinux-policy RPM"
-        sudo dnf install -y selinux-policy
-    fi
-
-    echo "Installing libvirt..."
+    echo "Installing libvirt-related packages..."
     sudo dnf install -y \
         libvirt \
         libvirt-devel \
         libvirt-daemon-kvm \
         qemu-kvm \
-        libgcrypt
-
-    if [ "${DISK_ENCRYPTION_MODE:-}" == "tpmv2" ]; then
-        echo "Installing swtpm packages..."
-        sudo dnf install -y \
-            swtpm \
-            swtpm-tools
-    fi
+        libgcrypt \
+        swtpm \
+        swtpm-tools
 
     sudo systemctl enable libvirtd
 
@@ -259,11 +230,9 @@ function additional_configs() {
     sudo sed -ir 's/net.ipv6.conf.all.disable_ipv6[[:blank:]]*=[[:blank:]]*1/net.ipv6.conf.all.disable_ipv6 = 0/g' /etc/sysctl.conf
     sudo sed -i -e '/net.core.somaxconn/d' -e '$a net.core.somaxconn = 2000' /etc/sysctl.conf
     sudo sysctl --load
-    IPXE_BOOT=${IPXE_BOOT:-false}
-    if [ ${IPXE_BOOT} = "true" ]; then
-        echo "Opening port 8500 for iPXE boot."
-        sudo firewall-cmd --zone=libvirt --add-port=8500/tcp
-    fi
+
+    echo "opening port 8500 for iPXE boot"
+    sudo firewall-cmd --zone=libvirt --add-port=8500/tcp
 }
 
 if [ $# -eq 0 ]; then
