@@ -32,7 +32,6 @@ echo "Done installing"
 
 echo "Creating image"
 make bring_assisted_service
-scripts/pull_dockerfile_images.sh
 make image_build
 echo "Done creating image"
 
