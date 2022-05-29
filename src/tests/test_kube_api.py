@@ -211,7 +211,7 @@ class TestKubeAPI(BaseKubeAPI):
         waiting.wait(
             _cluster_deployment_installed,
             sleep_seconds=1,
-            timeout_seconds=60,
+            timeout_seconds=600,
             waiting_for="clusterDeployment to get created",
             expected_exceptions=Exception,
         )
