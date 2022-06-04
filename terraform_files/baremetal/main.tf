@@ -152,8 +152,8 @@ data "libvirt_network_dns_host_template" "api" {
 }
 
 data "libvirt_network_dns_host_template" "api-int" {
-  count    = var.bootstrap_in_place ? 1 : 0
-  ip       = var.single_node_ip
+  count    = 1
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip
   hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
 }
 
