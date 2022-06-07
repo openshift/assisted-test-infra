@@ -34,6 +34,7 @@ class HyperShift:
         agent_namespace: str,
         provider_image: str = "",
         hypershift_cpo_image: str = "",
+        release_image: str = "",
         ssh_key: str = "",
     ):
         log.info(f"Creating HyperShift cluster {self.name}")
@@ -47,8 +48,14 @@ class HyperShift:
         if hypershift_cpo_image:
             log.info(f"Using hypershift control-plane-operator image {hypershift_cpo_image}")
             cmd += f" --control-plane-operator-image={hypershift_cpo_image}"
+        if release_image:
+            log.info(f"Using release image {release_image}")
+            cmd += f" --release-image={release_image}"
+
         if ssh_key:
             cmd += f" --ssh-key {ssh_key}"
+
+        log.info(f"Create command is: {cmd}")
         utils.run_command_with_output(cmd, cwd=HYPERSHIFT_DIR)
 
     def delete(self):
