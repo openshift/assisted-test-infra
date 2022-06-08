@@ -212,14 +212,21 @@ class BaseTest:
 
     @pytest.fixture
     def trigger_configurations(
-        self, triggers_enabled, cluster_configuration, controller_configuration, infra_env_configuration, triggers
+        self,
+        triggers_enabled,
+        cluster_configuration,
+        day2_cluster_configuration,
+        controller_configuration,
+        infra_env_configuration,
+        triggers,
     ):
 
         if triggers_enabled:
             Trigger.trigger_configurations(
-                [cluster_configuration, controller_configuration, infra_env_configuration], triggers
+                [cluster_configuration, controller_configuration, infra_env_configuration, day2_cluster_configuration],
+                triggers,
             )
-        yield cluster_configuration, controller_configuration, infra_env_configuration
+        yield
 
     @pytest.fixture
     def controller(
