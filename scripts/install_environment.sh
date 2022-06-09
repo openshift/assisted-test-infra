@@ -233,6 +233,9 @@ function additional_configs() {
 
     echo "opening port 8500 for iPXE boot"
     sudo firewall-cmd --zone=libvirt --add-port=8500/tcp
+
+    echo "opening port 7500 for Tang server"
+    sudo firewall-cmd --zone=libvirt --add-port=7500/tcp
 }
 
 if [ $# -eq 0 ]; then

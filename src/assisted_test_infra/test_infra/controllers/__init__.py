@@ -7,6 +7,7 @@ from .node_controllers.node import Node
 from .node_controllers.terraform_controller import TerraformController
 from .node_controllers.vsphere_controller import VSphereController
 from .proxy_controller.proxy_controller import ProxyController
+from .tang_controller.tang_controller import TangController
 
 __all__ = [
     "NodeController",
@@ -16,6 +17,7 @@ __all__ = [
     "IPXEController",
     "Node",
     "ProxyController",
+    "TangController",
     "TerraformController",
     "LibvirtController",
     "VSphereController",
