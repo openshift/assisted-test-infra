@@ -29,4 +29,5 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     ingress_vip: str = None
     disk_encryption_mode: str = None
     disk_encryption_roles: str = None
+    tang_servers: str = None
     ipxe_boot: bool = None
