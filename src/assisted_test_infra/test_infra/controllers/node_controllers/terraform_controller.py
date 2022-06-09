@@ -61,17 +61,18 @@ class TerraformController(LibvirtController):
             return {}
 
         assert (
-            self._entity_config.disk_encryption_mode == consts.DiskEncryptionMode.TPM_VERSION_2
-        ), "Currently only supporting TPMv2"
+            self._entity_config.disk_encryption_mode in consts.DiskEncryptionMode.all()
+        ), f"{self._entity_config.disk_encryption_mode} is not a supported disk encryption mode"
 
         master_vtpm2 = worker_vtpm2 = False
 
-        if self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.ALL:
-            master_vtpm2 = worker_vtpm2 = True
-        elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.MASTERS:
-            master_vtpm2 = True
-        elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.WORKERS:
-            worker_vtpm2 = True
+        if self._entity_config.disk_encryption_mode == consts.DiskEncryptionMode.TPM_VERSION_2:
+            if self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.ALL:
+                master_vtpm2 = worker_vtpm2 = True
+            elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.MASTERS:
+                master_vtpm2 = True
+            elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.WORKERS:
+                worker_vtpm2 = True
 
         return {"master_vtpm2": master_vtpm2, "worker_vtpm2": worker_vtpm2}
 

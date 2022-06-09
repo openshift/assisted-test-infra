@@ -26,6 +26,7 @@ from assisted_test_infra.test_infra.controllers import (
     Node,
     NodeController,
     ProxyController,
+    TangController,
     TerraformController,
     VSphereController,
 )
@@ -325,9 +326,13 @@ class BaseTest:
         proxy_server,
         prepare_nodes_network: Nodes,
         cluster_configuration: ClusterConfig,
-        ipxe_server,
+        ipxe_server: Callable,
+        tang_server: Callable,
     ):
         log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
+        if cluster_configuration.disk_encryption_mode == consts.DiskEncryptionMode.TANG:
+            self._start_tang_server(tang_server, cluster_configuration)
+
         cluster = Cluster(
             api_client=api_client,
             config=cluster_configuration,
@@ -365,6 +370,21 @@ class BaseTest:
             with suppress(ApiException):
                 log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
                 cluster.delete()
+
+    @classmethod
+    def _start_tang_server(
+        cls, tang_server: Callable, cluster_configuration: ClusterConfig, server_name: str = "tang1"
+    ):
+        new_tang_server = tang_server(
+            name=server_name, port=consts.DEFAULT_TANG_SERVER_PORT, pull_secret=cluster_configuration.pull_secret
+        )
+        new_tang_server.run_tang_server()
+        new_tang_server.set_thumbprint()
+        cluster_configuration.disk_encryption_roles = consts.DiskEncryptionRoles.ALL
+        cluster_configuration.disk_encryption_mode = consts.DiskEncryptionMode.TANG
+        cluster_configuration.tang_servers = (
+            f'[{{"url":"{new_tang_server.address}","thumbprint":"{new_tang_server.thumbprint}"}}]'
+        )
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -696,6 +716,23 @@ class BaseTest:
         if global_variables.test_teardown:
             log.info("--- TEARDOWN --- proxy controller")
             for server in proxy_servers:
+                server.remove()
+
+    @pytest.fixture()
+    def tang_server(self):
+        log.info("--- SETUP --- Tang controller")
+        tang_servers = []
+
+        def start_tang_server(**kwargs):
+            tang_server = TangController(**kwargs)
+            tang_servers.append(tang_server)
+
+            return tang_server
+
+        yield start_tang_server
+        if global_variables.test_teardown:
+            log.info("--- TEARDOWN --- Tang controller")
+            for server in tang_servers:
                 server.remove()
 
     @pytest.fixture()
