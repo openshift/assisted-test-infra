@@ -123,7 +123,7 @@ class HyperShift:
             version=HyperShift.HYPERSHIFT_API_VERSION,
             plural=HyperShift.HOSTED_CONTROL_PLANE_PLOURAL,
             name=self.name,
-            namespace="-".join([HyperShift.NODEPOOL_NAMESPACE, self.name]),
+            namespace=self.namespace,
         )
 
     def get_nodes(self, ready: bool = False) -> V1NodeList:
@@ -149,6 +149,10 @@ class HyperShift:
             timeout_seconds=DEFAULT_WAIT_FOR_NODES_TIMEOUT,
             waiting_for="nodes to join the hypershift cluster",
         )
+
+    @property
+    def namespace(self):
+        return "-".join([HyperShift.NODEPOOL_NAMESPACE, self.name])
 
 
 def filterNodeByReadyStatus(nodes: V1NodeList) -> V1NodeList:
