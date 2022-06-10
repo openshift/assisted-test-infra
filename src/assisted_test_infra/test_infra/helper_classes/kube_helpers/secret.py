@@ -36,6 +36,19 @@ class Secret(BaseResource):
 
         log.info("created secret %s", self.ref)
 
+    def create_with_data(self, secret_data: dict):
+        self.v1_api.create_namespaced_secret(
+            body={
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": self.ref.as_dict(),
+                "stringData": secret_data,
+            },
+            namespace=self.ref.namespace,
+        )
+
+        log.info("created secret %s", self.ref)
+
     def delete(self) -> None:
         self.v1_api.delete_namespaced_secret(name=self.ref.name, namespace=self.ref.namespace)
 
