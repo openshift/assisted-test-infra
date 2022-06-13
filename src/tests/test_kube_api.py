@@ -196,7 +196,11 @@ class TestKubeAPI(BaseKubeAPI):
                     agent_namespace=spoke_namespace,
                     provider_image=os.environ.get("PROVIDER_IMAGE", ""),
                     hypershift_cpo_image=os.environ.get("HYPERSHIFT_IMAGE", ""),
-                    release_image=os.environ.get("ASSISTED_OPENSHIFT_INSTALL_RELEASE_IMAGE", ""),
+                    # This is the default that hypershift should use in ocm-2.5
+                    release_image=os.environ.get(
+                        "ASSISTED_OPENSHIFT_INSTALL_RELEASE_IMAGE",
+                        "quay.io/openshift-release-dev/ocp-release:4.10.9-x86_64",
+                    ),
                     ssh_key=ssh_public_key_file,
                 )
 
