@@ -57,6 +57,7 @@ _default_triggers = frozendict(
         "lso_operator": OlmOperatorsTrigger(condition=lambda config: "lso" in config.olm_operators, operator="lso"),
         "cnv_operator": OlmOperatorsTrigger(condition=lambda config: "cnv" in config.olm_operators, operator="cnv"),
         "odf_operator": OlmOperatorsTrigger(condition=lambda config: "odf" in config.olm_operators, operator="odf"),
+        "lvm_operator": OlmOperatorsTrigger(condition=lambda config: "lvm" in config.olm_operators, operator="lvm"),
         "ipxe_boot": Trigger(
             condition=lambda config: config.ipxe_boot is True,
             download_image=False,
