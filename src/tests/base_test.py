@@ -333,6 +333,7 @@ class BaseTest:
         if cluster_configuration.disk_encryption_mode == consts.DiskEncryptionMode.TANG:
             self._start_tang_server(tang_server, cluster_configuration)
 
+
         cluster = Cluster(
             api_client=api_client,
             config=cluster_configuration,

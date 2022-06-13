@@ -1,4 +1,5 @@
 import socket
+from time import sleep
 
 import consts
 from assisted_test_infra.test_infra import utils
@@ -48,6 +49,15 @@ class TangController:
             f"--authfile={auth_file}",
         ]
         utils.run_container(container_name=self._name, image=self._image, flags=run_flags)
+
+        for _ in range(100):
+            try:
+                out, err, retval = utils.run_command(["podman", "ps"])
+                log.info(f"({out}, {err}, {retval})")
+            except Exception as e:
+                log.exception(f"({out}, {err}, {retval}): {e}")
+
+            sleep(5)
 
     def set_thumbprint(self):
         exec_command = (
