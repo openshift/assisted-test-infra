@@ -9,6 +9,7 @@ from service_client import log
 
 HYPERSHIFT_DIR = "build/hypershift/"
 DEFAULT_WAIT_FOR_NODES_TIMEOUT = 10 * 60
+WAIT_FOR_HYPERSHIFT_CONTROL_PLANE_TIMEOUT = 20 * 60
 
 
 class HyperShift:
@@ -111,7 +112,7 @@ class HyperShift:
         return waiting.wait(
             lambda: self.get_control_plane().get("status", {}).get("ready"),
             sleep_seconds=5,
-            timeout_seconds=DEFAULT_WAIT_FOR_NODES_TIMEOUT,
+            timeout_seconds=WAIT_FOR_HYPERSHIFT_CONTROL_PLANE_TIMEOUT,
             waiting_for="hypershift kube-apiserver",
             expected_exceptions=Exception,
         )
