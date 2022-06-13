@@ -356,21 +356,44 @@ def touch(path):
         os.utime(path, None)
 
 
-def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str):
+def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str = None, ingress_vip: str = None):
+    suffix = cluster_name + "." + base_dns_domain
+
+    dns = {}
+
+    if api_vip:
+        dns["api" + suffix] = api_vip
+
+    if ingress_vip:
+        dns["oauth-openshift.apps" + suffix] = ingress_vip
+        dns["console-openshift-console.apps" + suffix] = ingress_vip
+        dns["grafana-openshift-monitoring.apps" + suffix] = ingress_vip
+        dns["thanos-querier-openshift-monitoring.apps" + suffix] = ingress_vip
+        dns["prometheus-k8s-openshift-monitoring.apps" + suffix] = ingress_vip
+        dns["alertmanager-main-openshift-monitoring.apps" + suffix] = ingress_vip
+        update_etc_hosts(dns)
+
+
+def update_etc_hosts(dns_map: dict[str, str]) -> None:
     lock_file = "/tmp/test_etc_hosts.lock"
-    api_vip_dnsname = "api." + cluster_name + "." + base_dns_domain
     with file_lock_context(lock_file):
         with open("/etc/hosts", "r") as f:
             hosts_lines = f.readlines()
+
         for i, line in enumerate(hosts_lines):
-            if api_vip_dnsname in line:
-                hosts_lines[i] = f"{api_vip} {api_vip_dnsname}\n"
-                break
-        else:
-            hosts_lines.append(f"{api_vip} {api_vip_dnsname}\n")
+            for dns_name, ip in dns_map.items():
+                if dns_name in line:
+                    # Update existing line
+                    hosts_lines[i] = f"{ip} {dns_name}\n"
+                    del dns_map[dns_name]
+                    break
+
+        for dns_name, ip in dns_map.items():
+            hosts_lines.append(f"{ip} {dns_name}\n")
+
         with open("/etc/hosts", "w") as f:
             f.writelines(hosts_lines)
-            log.info("Updated /etc/hosts with record: %s %s", api_vip, api_vip_dnsname)
+            log.info("Updated /etc/hosts with record: %s %s", ip, dns_name)
 
 
 def run_container(container_name, image, flags=None, command=""):
