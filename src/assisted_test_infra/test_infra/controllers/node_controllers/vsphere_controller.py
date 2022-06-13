@@ -13,7 +13,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node import Nod
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.vsphere_config import BaseVSphereConfig
 from assisted_test_infra.test_infra.tools import terraform_utils
-from assisted_test_infra.test_infra.utils import TerraformControllerUtil, utils
+from assisted_test_infra.test_infra.utils import TerraformControllerUtil
 from service_client import log
 
 
@@ -172,9 +172,6 @@ class VSphereController(NodeController):
 
     def set_single_node_ip(self, ip):
         raise NotImplementedError
-
-    def set_dns(self, api_vip: str, ingress_vip: str) -> None:
-        utils.config_etc_hosts(self.cluster_name, self._entity_config.base_dns_domain, api_vip, ingress_vip)
 
     def __get_vm(self, node_name: str) -> Dict[str, Any]:
         return next((vm for vm in self.__get_vms() if vm["attributes"]["name"] == node_name), None)
