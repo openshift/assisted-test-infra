@@ -11,6 +11,10 @@ volumes:
   - /usr/bin/kubectl:/usr/bin/kubectl
   - /usr/local/bin/kubectl:/usr/local/bin/kubectl
   - $MINIKUBE_HOME:$MINIKUBE_HOME
+
+  # podman
+  - /var/lib/containers:/var/lib/containers
+
   # config
   - $HOME/.kube/:$HOME/.kube/
   - $HOME/.minikube/:$HOME/.minikube/
