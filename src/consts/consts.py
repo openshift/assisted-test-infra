@@ -28,11 +28,11 @@ class NetworkType:
 
 class DiskEncryptionMode:
     TPM_VERSION_2 = "tpmv2"
-    # TODO: fully support tang mode
+    TANG = "tang"
 
     @classmethod
     def all(cls):
-        return [cls.TPM_VERSION_2]
+        return [cls.TPM_VERSION_2, cls.TANG]
 
 
 class DiskEncryptionRoles:
@@ -110,6 +110,7 @@ DEFAULT_SERVICE_NETWORKS_IPV4V6 = DEFAULT_SERVICE_NETWORKS_IPV4 + DEFAULT_SERVIC
 DEFAULT_PROXY_SERVER_PORT = 3129
 DEFAULT_LOAD_BALANCER_PORT = 6443
 DEFAULT_IPXE_SERVER_PORT = 8500
+DEFAULT_TANG_SERVER_PORT = 7500
 DEFAULT_IPXE_SERVER_IP = "192.168.122.1"
 
 TEST_INFRA = "test-infra"

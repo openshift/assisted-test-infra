@@ -100,6 +100,7 @@ class Cluster(Entity):
         disk_encryption = models.DiskEncryption(
             enable_on=self._config.disk_encryption_roles,
             mode=self._config.disk_encryption_mode,
+            tang_servers=self._config.tang_servers,
         )
 
         platform = (
@@ -245,13 +246,16 @@ class Cluster(Entity):
     def select_installation_disk(self, host_id: str, disk_paths: List[dict]) -> None:
         self._infra_env.select_host_installation_disk(host_id=host_id, disk_paths=disk_paths)
 
-    def set_disk_encryption(self, mode: str, roles: str):
+    def set_disk_encryption(self, mode: str, roles: str, tang_servers: str = None):
         """
-        :param mode: encryption mode (i.e TPMv2)
+        :param mode: encryption mode (e.g. "tpmv2")
         :param roles: To which role to apply
+        :param tang_servers: List of tang servers and their thumbprints, e.g:
+            [{\"url\":\"http://10.46.46.11:7500\",\"thumbprint\":\"GzLKmSCjScL23gy7rfzLzkH-Mlg\"},
+            {\"url\":\"http://10.46.46.62:7500\",\"thumbprint\":\"wenz_yQJ7eAyHJyluAl_JmJmd5E\"}]
         :return: None
         """
-        disk_encryption_params = models.DiskEncryption(enable_on=roles, mode=mode)
+        disk_encryption_params = models.DiskEncryption(enable_on=roles, mode=mode, tang_servers=tang_servers)
         self.api_client.update_cluster(self.id, {"disk_encryption": disk_encryption_params})
 
     def set_ocs(self, properties=None):

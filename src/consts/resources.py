@@ -1,6 +1,5 @@
 from consts import GB
 
-
 DEFAULT_WORKER_MEMORY: int = 8892
 DEFAULT_MASTER_MEMORY: int = 16984
 DEFAULT_MTU: int = 1500
