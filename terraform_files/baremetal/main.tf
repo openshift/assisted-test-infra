@@ -186,9 +186,3 @@ data "libvirt_network_dns_host_template" "assisted_service" {
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
   hostname = "assisted-service-assisted-installer.apps.${var.cluster_name}.${var.cluster_domain}"
 }
-
-resource "local_file" "dns_forwarding_config" {
-  count    = var.dns_forwarding_file != "" && var.dns_forwarding_file_name != "" ? 1 : 0
-  content  = var.dns_forwarding_file
-  filename = var.dns_forwarding_file_name
-}

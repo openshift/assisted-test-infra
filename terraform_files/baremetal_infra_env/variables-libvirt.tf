@@ -224,19 +224,6 @@ variable "libvirt_dns_records" {
   default = {}
 }
 
-variable "dns_forwarding_file" {
-  type = string
-  description = "Contents of dns forwarding file"
-  default = ""
-}
-
-
-variable "dns_forwarding_file_name" {
-  type = string
-  description = "The file name of dns forwarding file"
-  default = ""
-}
-
 variable "infra_env_domain" {
   type = string
   description = "Domain for infra env"

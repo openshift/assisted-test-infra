@@ -121,9 +121,3 @@ module "workers" {
   disk_size         = var.libvirt_worker_disk
   disk_count        = var.worker_disk_count
 }
-
-resource "local_file" "dns_forwarding_config" {
-  count    = var.dns_forwarding_file != "" && var.dns_forwarding_file_name != "" ? 1 : 0
-  content  = var.dns_forwarding_file
-  filename = var.dns_forwarding_file_name
-}

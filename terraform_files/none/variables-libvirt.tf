@@ -172,19 +172,6 @@ variable "load_balancer_config_file" {
   default = ""
 }
 
-variable "dns_forwarding_file" {
-  type = string
-  description = "Contents of dns forwarding file"
-  default = ""
-}
-
-
-variable "dns_forwarding_file_name" {
-  type = string
-  description = "The file name of dns forwarding file"
-  default = ""
-}
-
 variable "master_vtpm2" {
   type        = bool
   description = "Whether or not to emulate TPM v2 device on master nodes."

@@ -1,4 +1,4 @@
-from consts import GB, DISK_SIZE_100GB
+from consts import DISK_SIZE_100GB, GB
 
 DEFAULT_WORKER_MEMORY: int = 8892
 DEFAULT_MASTER_MEMORY: int = 16984
