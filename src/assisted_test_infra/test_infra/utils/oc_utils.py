@@ -177,7 +177,7 @@ def _has_condition(resource: str, type: str, status: str) -> bool:
     """
     return any(
         condition["status"] == status
-        for condition in resource["status"].get("conditions", [])
+        for condition in resource.get("status", {}).get("conditions", [])
         if condition["type"] == type
     )
 
