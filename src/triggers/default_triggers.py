@@ -9,7 +9,7 @@ from triggers.olm_operators_trigger import OlmOperatorsTrigger
 _default_triggers = frozendict(
     {
         "remote_deployment": Trigger(
-            condition=lambda config: config.remote_service_url is not None, worker_disk=consts.DISK_SIZE_120GB
+            condition=lambda config: config.remote_service_url is not None, worker_disk=consts.DISK_SIZE_100GB
         ),
         "none_platform": Trigger(
             condition=lambda config: config.platform == consts.Platforms.NONE,
