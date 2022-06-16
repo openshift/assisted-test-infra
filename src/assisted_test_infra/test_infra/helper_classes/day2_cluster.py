@@ -227,12 +227,11 @@ class Day2Cluster(ABC):
 
     def are_libvirt_nodes_in_cluster_hosts(self) -> bool:
         try:
-            hosts_macs = self.api_client.get_hosts_id_with_macs(self.config.cluster_id)
-        except BaseException:
-            log.error("Failed to get nodes macs for cluster: %s", self.config.cluster_id)
+            hosts = self.api_client.get_cluster_hosts(self.config.cluster_id)
+        except Exception:
+            log.exception("Failed to get cluster hosts: %s", self.config.cluster_id)
             return False
-        num_macs = len([mac for mac in hosts_macs if mac != ""])
-        return num_macs >= self.config.day2_workers_count
+        return len(hosts) >= self.config.day2_workers_count
 
     def set_nodes_hostnames_if_needed(self, network_name: str):
         if self.config.is_ipv6 or self.config.is_static_ip:
