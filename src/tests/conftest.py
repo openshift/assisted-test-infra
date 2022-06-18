@@ -1,3 +1,4 @@
+from logging import getLogger, FileHandler
 from typing import List
 
 import pytest
@@ -5,12 +6,24 @@ from _pytest.nodes import Item
 
 import consts
 from assisted_test_infra.test_infra import utils
-from service_client import log
+from service_client import log, SensitiveFormatter
 from service_client.client_validator import verify_client_version
 from tests.config import global_variables
 
 assert global_variables.pull_secret is not None, "Missing pull secret"
 
+@pytest.fixture(scope="session", autouse=True)
+def setup_worker_log(worker_id):
+    def configure_logger(logger):
+        fmt = SensitiveFormatter("%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s")
+        fh = FileHandler("test_infra_{worker_id}.log")
+        fh.setFormatter(fmt)
+        logger.addHandler(fh)
+        lg.setLevel('INFO')
+
+    required_loggers = ["", "urllib3"]
+    for logger in required_loggers:
+        configure_logger(getLogger(logger))
 
 @pytest.fixture(scope="session")
 def api_client():
