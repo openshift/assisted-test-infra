@@ -328,7 +328,7 @@ class Cluster(Entity):
         elif self._config.vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             log.info("Letting access VIPs be deducted from machine networks")
             api_vip = ingress_vip = None
-            machine_networks = self.get_machine_networks()
+            machine_networks = [self.get_machine_networks()[0]]
 
         else:
             log.info("Assigning VIPs statically")
