@@ -37,6 +37,7 @@ class ProxyController:
             self._create_conf_from_template(denied_port=denied_port)
             self._create_user_file_for_auth()
             self._run_proxy_server()
+        log.info("test")
 
     def remove(self):
         if self.address:
