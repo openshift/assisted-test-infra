@@ -3,10 +3,11 @@ import shutil
 
 import consts
 from assisted_test_infra.test_infra import utils
+from assisted_test_infra.test_infra.controllers.containerized_controller import ContainerizedController
 from service_client import InventoryClient, log
 
 
-class IPXEController:
+class IPXEController(ContainerizedController):
     def __init__(
         self,
         api_client: InventoryClient,
@@ -14,32 +15,19 @@ class IPXEController:
         port: int = consts.DEFAULT_IPXE_SERVER_PORT,
         ip: str = consts.DEFAULT_IPXE_SERVER_IP,
     ):
-        self._name = name
+        super().__init__(name, port, name)
         self._ip = ip
-        self._port = port
         self._api_client = api_client
         self._dir = os.path.dirname(os.path.realpath(__file__))
         self._ipxe_scripts_folder = f"{self._dir}/server/ipxe_scripts"
 
-    def remove(self):
-        log.info(f"Removing iPXE Server {self._name}")
-        utils.remove_running_container(container_name=self._name)
-        self._remove_ipxe_scripts_folder()
-
-    def start(self, infra_env_id: str, cluster_name: str):
+    def _on_container_start(self, infra_env_id: str, cluster_name: str):
         log.info("Preparing iPXE server")
         self._download_ipxe_script(infra_env_id=infra_env_id, cluster_name=cluster_name)
         self._build_server_image()
-        self.run_ipxe_server()
 
-    def run_ipxe_server(self):
-        log.info(f"Running iPXE Server {self._name}")
-        run_flags = [
-            "-d",
-            "--network=host",
-            f"--publish {self._port}:{self._port}",
-        ]
-        utils.run_container(container_name=self._name, image=self._name, flags=run_flags)
+    def _on_container_removed(self):
+        self._remove_ipxe_scripts_folder()
 
     def _build_server_image(self):
         log.info(f"Creating Image for iPXE Server {self._name}")
