@@ -346,7 +346,7 @@ class BaseTest:
         if global_variables.ipxe_boot:
             infra_env = cluster.generate_infra_env()
             ipxe_server_controller = ipxe_server(name="ipxe_controller", api_client=cluster.api_client)
-            ipxe_server_controller.start(infra_env_id=infra_env.id, cluster_name=cluster.name)
+            ipxe_server_controller.run(infra_env_id=infra_env.id, cluster_name=cluster.name)
 
             ipxe_server_url = f"http://{consts.DEFAULT_IPXE_SERVER_IP}:{consts.DEFAULT_IPXE_SERVER_PORT}/{cluster.name}"
             network_name = cluster.nodes.get_cluster_network()
@@ -378,10 +378,8 @@ class BaseTest:
         new_tang_server = tang_server(
             name=server_name, port=consts.DEFAULT_TANG_SERVER_PORT, pull_secret=cluster_configuration.pull_secret
         )
-        new_tang_server.run_tang_server()
+        new_tang_server.run()
         new_tang_server.set_thumbprint()
-        cluster_configuration.disk_encryption_roles = consts.DiskEncryptionRoles.ALL
-        cluster_configuration.disk_encryption_mode = consts.DiskEncryptionMode.TANG
         cluster_configuration.tang_servers = (
             f'[{{"url":"{new_tang_server.address}","thumbprint":"{new_tang_server.thumbprint}"}}]'
         )
@@ -585,7 +583,7 @@ class BaseTest:
 
         machine_cidr = nodes.controller.get_primary_machine_cidr()
         host_ip = str(IPNetwork(machine_cidr).ip + 1)
-        return proxy_server(name=proxy_name, port=port, dir=proxy_name, host_ip=host_ip, is_ipv6=nodes.is_ipv6)
+        return proxy_server(name=proxy_name, port=port, host_ip=host_ip, is_ipv6=nodes.is_ipv6)
 
     @classmethod
     def get_proxy(
@@ -708,8 +706,9 @@ class BaseTest:
 
         def start_proxy_server(**kwargs):
             proxy_server = ProxyController(**kwargs)
-            proxy_servers.append(proxy_server)
+            proxy_server.run()
 
+            proxy_servers.append(proxy_server)
             return proxy_server
 
         yield start_proxy_server

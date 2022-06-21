@@ -2,52 +2,36 @@ import socket
 
 import consts
 from assisted_test_infra.test_infra import utils
-from service_client import log
+from assisted_test_infra.test_infra.controllers.containerized_controller import ContainerizedController
 
 
-class TangController:
+class TangController(ContainerizedController):
     """
     TangController deploys a Tang server inside container which running on hypervisor, port 7500
     It allows deploying AI OCP cluster encrypted with tang mode
     """
 
+    IMAGE = "registry.redhat.io/rhel8/tang"
+
     def __init__(self, name: str = None, port: int = consts.DEFAULT_TANG_SERVER_PORT, pull_secret: str = None):
-        self._name = name
-        self._port = port
+        extra_flags = [f"-e PORT={port}", f"--authfile={self._create_auth_file(name, pull_secret)}"]
+        super().__init__(name, port, self.IMAGE, extra_flags)
         self.ip = None
         self.address = None
         self.thumbprint = None
-        self._pull_secret = pull_secret
-        self._image = "registry.redhat.io/rhel8/tang"
         self._set_server_address()
-
-    def remove(self):
-        log.info(f"Removing Tang Server {self._name}")
-        utils.remove_running_container(container_name=self._name)
 
     def _set_server_address(self):
         host_name = socket.gethostname()
         self.ip = socket.gethostbyname(host_name)
         self.address = f"http://{self.ip}:{self._port}"
 
-    def _create_auth_file(self):
-        filename = f"{consts.WORKING_DIR}/{self._name}_authfile"
+    @classmethod
+    def _create_auth_file(cls, name: str, pull_secret: str):
+        filename = f"{consts.WORKING_DIR}/{name}_authfile"
         with open(filename, "w") as opened_file:
-            opened_file.write(self._pull_secret)
+            opened_file.write(pull_secret)
         return filename
-
-    def run_tang_server(self):
-        log.info(f"Running Tang Server {self._name}")
-        auth_file = self._create_auth_file()
-        run_flags = [
-            "-d",
-            "--restart=always",
-            "--network=host",
-            f"-e PORT={self._port}",
-            f"--publish {self._port}:{self._port}",
-            f"--authfile={auth_file}",
-        ]
-        utils.run_container(container_name=self._name, image=self._image, flags=run_flags)
 
     def set_thumbprint(self):
         exec_command = (
