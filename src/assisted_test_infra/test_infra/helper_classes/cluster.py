@@ -383,6 +383,10 @@ class Cluster(Entity):
 
         return networks
 
+    def set_network_type(self, network_type: str):
+        log.info(f"Setting Network type:{network_type} for cluster: {self.id}")
+        self.api_client.update_cluster(self.id, {"network_type": network_type})
+
     def set_ingress_and_api_vips(self, vips):
         log.info(f"Setting API VIP:{vips['api_vip']} and ingress VIP:{vips['ingress_vip']} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, vips)
