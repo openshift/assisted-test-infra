@@ -851,7 +851,7 @@ class Cluster(Entity):
             main_cidr = self.get_primary_machine_cidr()
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
             self.nodes.controller.set_single_node_ip(ip)
-            self.nodes.controller.set_dns(api_vip=ip, ingress_vip=ip)
+            self.nodes.controller.set_dns(api_ip=ip, ingress_ip=ip)
 
         self.wait_for_ready_to_install()
 
@@ -859,7 +859,7 @@ class Cluster(Entity):
         # in our case when nodes are ready, vips will be there for sure
         if self._ha_not_none():
             vips_info = self.api_client.get_vips_from_cluster(self.id)
-            self.nodes.controller.set_dns(api_vip=vips_info["api_vip"], ingress_vip=vips_info["ingress_vip"])
+            self.nodes.controller.set_dns(api_ip=vips_info["api_vip"], ingress_ip=vips_info["ingress_vip"])
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)

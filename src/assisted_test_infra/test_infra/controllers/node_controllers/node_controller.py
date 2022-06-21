@@ -202,7 +202,7 @@ class NodeController(ABC):
     def notify_iso_ready(self) -> None:
         pass
 
-    def set_dns(self, api_vip: str, ingress_vip: str) -> None:
+    def set_dns(self, api_ip: str, ingress_ip: str) -> None:
         pass
 
     def set_dns_for_user_managed_network(self) -> None:

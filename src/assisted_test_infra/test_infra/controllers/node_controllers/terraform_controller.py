@@ -3,7 +3,6 @@ import json
 import os
 import shutil
 import warnings
-from textwrap import dedent
 from typing import Dict, List, Union
 
 from munch import Munch
@@ -281,16 +280,13 @@ class TerraformController(LibvirtController):
 
         return addresses
 
-    def set_dns(self, api_vip: str, ingress_vip: str) -> None:
-        base_domain = self._entity_config.base_dns_domain
-        fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{self._entity_name}.conf"
-        contents = dedent(
-            f"""
-                    address=/api.{self._entity_name}.{base_domain}/{api_vip}
-                    address=/.apps.{self._entity_name}.{base_domain}/{ingress_vip}
-                    """
+    def set_dns(self, api_ip: str, ingress_ip: str) -> None:
+        utils.add_dns_record(
+            cluster_name=self._entity_name,
+            base_dns_domain=self._entity_config.base_dns_domain,
+            api_ip=api_ip,
+            ingress_ip=ingress_ip,
         )
-        self.tf.change_variables({"dns_forwarding_file": contents, "dns_forwarding_file_name": fname})
 
     def set_dns_for_user_managed_network(self) -> None:
         machine_cidr = self.get_primary_machine_cidr()

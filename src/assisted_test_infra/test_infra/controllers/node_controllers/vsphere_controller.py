@@ -13,7 +13,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node import Nod
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.vsphere_config import BaseVSphereConfig
 from assisted_test_infra.test_infra.tools import terraform_utils
-from assisted_test_infra.test_infra.utils import TerraformControllerUtil
+from assisted_test_infra.test_infra.utils import TerraformControllerUtil, utils
 from service_client import log
 
 
@@ -106,6 +106,14 @@ class VSphereController(NodeController):
 
     def get_ingress_and_api_vips(self) -> dict:
         return None
+
+    def set_dns(self, api_ip: str, ingress_ip: str) -> None:
+        utils.add_dns_record(
+            cluster_name=self.cluster_name,
+            base_dns_domain=self._entity_config.base_dns_domain,
+            api_ip=api_ip,
+            ingress_ip=ingress_ip,
+        )
 
     def format_node_disk(self, node_name: str, disk_index: int = 0) -> None:
         raise NotImplementedError
