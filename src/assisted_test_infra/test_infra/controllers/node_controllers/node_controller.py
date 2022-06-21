@@ -195,6 +195,10 @@ class NodeController(ABC):
     def get_network_by_name(self, network_name: str) -> libvirt.virNetwork:
         pass
 
+    def wait_till_nodes_are_ready(self, network_name: str):
+        """If not overridden - do not wait"""
+        pass
+
     @abstractmethod
     def destroy_network(self, network: libvirt.virNetwork):
         pass

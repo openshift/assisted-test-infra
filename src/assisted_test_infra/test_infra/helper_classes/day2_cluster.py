@@ -11,13 +11,12 @@ import waiting
 
 import consts
 from assisted_test_infra.test_infra import utils
-from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from assisted_test_infra.test_infra.controllers import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.day2_cluster_config import BaseDay2ClusterConfig
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from service_client import log
 from service_client.assisted_service_api import InventoryClient
-from tests.config import ClusterConfig, TerraformConfig
 
 
 class Day2Cluster(ABC):
@@ -72,7 +71,7 @@ class Day2Cluster(ABC):
         log.info(f"Downloading image {iso_download_url} to {image_path}")
         utils.download_file(iso_download_url, image_path, False)
 
-    def start_install_and_wait_for_installed(self):
+    def start_install_and_wait_for_installed(self, libvirt_controller: NodeController):
         cluster_name = self.config.day1_cluster_name
         # Running twice as a workaround for an issue with terraform not spawning a new node on first apply.
         for _ in range(2):
@@ -88,9 +87,6 @@ class Day2Cluster(ABC):
         tfvars = utils.get_tfvars(self.config.tf_folder)
         tf_network_name = tfvars["libvirt_network_name"]
 
-        config = TerraformConfig()
-        config.nodes_count = num_nodes_to_wait
-        libvirt_controller = LibvirtController(config=config, entity_config=ClusterConfig())
         libvirt_controller.wait_till_nodes_are_ready(network_name=tf_network_name)
 
         # Wait for day2 nodes
