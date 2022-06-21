@@ -269,6 +269,7 @@ class BaseTest:
                 nodes.destroy_all_nodes()
                 log.info(f"--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n")
                 utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
+                self.delete_dnsmasq_conf_file(cluster_name=cluster_configuration.cluster_name)
 
     @pytest.fixture
     @JunitFixtureTestCase()
@@ -474,6 +475,7 @@ class BaseTest:
                 log.info(f"--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n")
                 utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
                 self.teardown_nat(_nat)
+                self.delete_dnsmasq_conf_file(cluster_name=_cluster_config.cluster_name)
 
         finally:
             if _net_asset:
@@ -788,6 +790,12 @@ class BaseTest:
             + " String value: "
             + string
         )
+
+    def delete_dnsmasq_conf_file(self, cluster_name):
+        with SuppressAndLog(FileNotFoundError):
+            fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
+            log.info(f"--- TEARDOWN --- deleting dnsmasq file: {fname}\n")
+            os.remove(fname)
 
     def collect_test_logs(self, cluster, api_client, request, nodes: Nodes):
         log_dir_name = f"{global_variables.log_folder}/{request.node.name}"
