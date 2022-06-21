@@ -66,6 +66,7 @@ module "masters" {
   name              = "${var.infra_env_name}-master-${count.index}"
   memory            = var.libvirt_master_memory
   vcpu              = var.libvirt_master_vcpu
+  machine_type      = var.libvirt_machine_type
   running           = var.running
   image_path        = var.image_path
   cpu_mode          = var.master_cpu_mode
@@ -99,6 +100,7 @@ module "workers" {
   name              = "${var.infra_env_name}-worker-${count.index}"
   memory            = var.libvirt_worker_memory
   vcpu              = var.libvirt_worker_vcpu
+  machine_type      = var.libvirt_machine_type
   running           = var.running
   image_path        = var.worker_image_path
   cpu_mode          = var.worker_cpu_mode

@@ -255,3 +255,9 @@ variable "libvirt_dns_records" {
   description = "DNS records to be added to the libvirt network"
   default = {}
 }
+
+variable "libvirt_machine_type" {
+  description = "Machine type for libvirt provisioned VMs"
+  type = string
+  default = "" 
+} 

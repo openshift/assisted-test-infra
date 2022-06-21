@@ -37,6 +37,7 @@ class BaseNodesConfig(BaseConfig, ABC):
 
     network_mtu: int = None
     tf_platform: str = None  # todo - make all tf dependent platforms (e.g. vsphere, nutanix) inherit from BaseTerraformConfig  # noqa E501
+    machine_type: str = None
 
     @property
     def nodes_count(self):

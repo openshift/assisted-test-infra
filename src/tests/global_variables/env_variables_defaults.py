@@ -54,6 +54,7 @@ class _EnvVariables(DataPool, ABC):
     iso_image_type: EnvVar = EnvVar(["ISO_IMAGE_TYPE"], default=env_defaults.DEFAULT_IMAGE_TYPE)
     worker_vcpu: EnvVar = EnvVar(["WORKER_CPU"], loader=int, default=resources.DEFAULT_WORKER_CPU)
     master_vcpu: EnvVar = EnvVar(["MASTER_CPU"], loader=int, default=resources.DEFAULT_MASTER_CPU)
+    machine_type: EnvVar = EnvVar(["MACHINE_TYPE"], default=resources.DEFAULT_MACHINE_TYPE)
     test_teardown: EnvVar = EnvVar(
         ["TEST_TEARDOWN"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_TEST_TEARDOWN
     )

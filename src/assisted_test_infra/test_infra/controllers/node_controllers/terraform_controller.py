@@ -77,6 +77,7 @@ class TerraformController(LibvirtController):
             "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
             "libvirt_worker_vcpu": kwargs.get("worker_vcpu", resources.DEFAULT_MASTER_CPU),
             "libvirt_master_vcpu": kwargs.get("master_vcpu", resources.DEFAULT_MASTER_CPU),
+            "libvirt_machine_type": kwargs.get("machine_type", resources.DEFAULT_MACHINE_TYPE),
             "worker_count": kwargs.get("workers_count", 0),
             "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
             "machine_cidr": self.get_primary_machine_cidr(),

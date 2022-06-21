@@ -15,4 +15,10 @@
         <log file="/var/log/libvirt/qemu/{/domain/name}-console.log" append="on"/>
       </xsl:copy>
   </xsl:template>
+
+  <xsl:template match="/domain/devices/disk[@device='cdrom']/target/@bus">
+    <xsl:attribute name="bus">
+      <xsl:value-of select="'sata'"/>
+    </xsl:attribute>
+  </xsl:template>
 </xsl:stylesheet>

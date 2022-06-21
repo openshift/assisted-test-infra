@@ -77,3 +77,8 @@ variable "boot_devices" {
   description = "the list of boot devices in the desired order of boot"
   default = ["hd", "cdrom"]
 }
+
+variable "machine_type" {
+  type           = string
+  description = "Machine type for libvirt provisioned VMs" 
+}

@@ -29,6 +29,7 @@ resource "libvirt_domain" "host" {
     }
     content {
       volume_id = disk.value
+      scsi = true
     }
   }
 
@@ -68,8 +69,10 @@ resource "libvirt_domain" "host" {
     }
   }
 
+  machine = var.machine_type
+
   xml {
-    xslt = file("consolemodel.xsl")
+    xslt = file("../baremetal_host/console_cdrom_model.xsl")
   }
 }
 

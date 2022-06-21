@@ -179,3 +179,9 @@ variable "worker_vtpm2" {
   description = "Whether or not to emulate TPM v2 device on worker nodes."
   default     = false
 }
+
+variable "libvirt_machine_type" {
+  description = "Machine type for libvirt provisioned VMs"
+  type = string
+  default = "" 
+}
