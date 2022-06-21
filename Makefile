@@ -114,7 +114,7 @@ destroy: destroy_nodes delete_minikube kill_port_forwardings destroy_onprem stop
 # Environment #
 ###############
 setup:
-	./create_full_environment.sh
+	./scripts/create_full_environment.sh
 
 create_environment: image_build bring_assisted_service start_minikube
 
