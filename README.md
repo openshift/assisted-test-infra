@@ -1,3 +1,9 @@
+# !! Warning !!
+
+It's not recommended to run the code in this repo locally on your personal
+machine, as it makes some opinionated configuration changes to the machine it's
+running on
+
 # Test-Infra
 
 This project deploys the OpenShift Assisted Installer in Minikube and spawns libvirt VMs that represent bare metal hosts.
@@ -49,7 +55,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 
 ## Prerequisites
 
-- CentOS 8 or RHEL 8 host
+- CentOS 8, RHEL 8 or Rocky 8 host
 - File system that supports d_type
 - Ideally on a bare metal host with at least 64G of RAM.
 - Run as a user with password-less `sudo` access or be ready to enter `sudo` password for prepare phase.

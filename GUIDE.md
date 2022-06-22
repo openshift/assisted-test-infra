@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Only usage of CentOS8 / RHEL8 / Fedora on the assisted installer host<sup id="a1">[1](#f1)</sup> is supported
+1. Only usage of CentOS8 / RHEL8 / Rocky8 on the assisted installer host<sup id="a1">[1](#f1)</sup> is supported
    - This host will run minikube and the UI for deploying OpenShift on Bare Metal
 1. Setup DHCP/DNS records for the following OpenShift nodes and VIPs. List includes
    - Master nodes
@@ -125,7 +125,7 @@ As `$USER` user with `sudo` privileges,
 
         sshpass -p '*****' ssh root@<iDRAC-IP> racadm remoteimage -d
 
-1.  The `live.iso` should reboot the nodes and boot them into a Fedora Live image. Once it has done this, shortly you will notice the nodes becoming discoverable for your cluster via the `http://<host-ip>:6008/clusters/<cluster-id>` dashboard.
+1.  The `live.iso` should reboot the nodes and boot them into an RHCOS Live image. Once it has done this, shortly you will notice the nodes becoming discoverable for your cluster via the `http://<host-ip>:6008/clusters/<cluster-id>` dashboard.
 
 1.  Once the nodes are now available on the dashboard, select the appropriate role for each OpenShift cluster node.
 
