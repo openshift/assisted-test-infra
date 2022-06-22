@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     libvirt = {
-      source = "dmacvicar/libvirt"
-      version = "0.6.12"
+      source = "assisted-test-infra-registry.local/openshift-assisted/libvirt"
+      version = "9.9.9"
     }
   }
 }

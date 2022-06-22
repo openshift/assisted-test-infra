@@ -37,6 +37,11 @@ ENV GOPATH=/go
 ENV GOCACHE=/go/.cache
 ENV PATH=$PATH:/usr/local/go/bin:/go/bin
 
+COPY Makefile.terraform_fork .
+
+ENV TERRAFORM_PROVIDER_LIBVIRT_FORK_GIT_REVISION=734281d20f9c50da411cf2d7db1aa4303746b3f2
+RUN make -f Makefile.terraform_fork install
+
 COPY . .
 
 RUN chgrp -R 0 /home/assisted-test-infra && \

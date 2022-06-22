@@ -1,6 +1,5 @@
 registry: quay.io
-build-container-image: test-infra
-build-container-tag: latest
+build-container-image: assisted-test-infra
 
 volumes:
   # programs
@@ -40,4 +39,6 @@ volumes:
   - /etc/NetworkManager/dnsmasq.d:/etc/NetworkManager/dnsmasq.d
 env_file:
   - skipper.env
+env:
+  GOCACHE: "/go/pkg/mod"
 

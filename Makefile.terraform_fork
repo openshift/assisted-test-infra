@@ -1,0 +1,43 @@
+TF_LIBVIRT_PROJECT = terraform-provider-libvirt
+TF_LIBVIRT_BINARY = terraform-provider-libvirt
+TF_LIBVIRT_FORK_URL = https://github.com/openshift-assisted/$(TF_LIBVIRT_PROJECT)
+TF_LIBVIRT_FORK_DIR = /opt/$(TF_LIBVIRT_PROJECT)
+TF_LIBVIRT_LOCAL_REGISTRY = /usr/share/terraform/plugins/assisted-test-infra-registry.local/openshift-assisted/libvirt/9.9.9/linux_amd64
+
+# Allows users to specify the git revision that will be switched to before building the fork
+# Only git commit hashes are allowed. It must be an ancestor of the main branch.
+TERRAFORM_PROVIDER_LIBVIRT_FORK_GIT_REVISION := $(or ${TERRAFORM_PROVIDER_LIBVIRT_FORK_GIT_REVISION},"")
+
+.PHONY: install
+install: $(TF_LIBVIRT_LOCAL_REGISTRY)/$(TF_LIBVIRT_BINARY)
+
+# A folder containing a clone of our fork of the libvirt terraform provider
+$(TF_LIBVIRT_FORK_DIR):
+	git clone $(TF_LIBVIRT_FORK_URL) $@ 
+
+# A folder acting as local registry of libvirt providers
+# (See https://www.terraform.io/language/providers/requirements#in-house-providers)
+$(TF_LIBVIRT_LOCAL_REGISTRY):
+	mkdir -p $@
+
+# .PHONY because we can't know whether it's stale or not, we always want to git pull
+# and run the build, the go toolchain will decide if anything needs rebuilding in practice,
+# we should not leave it up to make.
+.PHONY: $(TF_LIBVIRT_FORK_DIR)/$(TF_LIBVIRT_BINARY)
+
+# Create the actual binary by building. Requires Go.
+$(TF_LIBVIRT_FORK_DIR)/$(TF_LIBVIRT_BINARY): $(TF_LIBVIRT_FORK_DIR)
+	git -C $(TF_LIBVIRT_FORK_DIR) fetch origin main
+	if [ "$(TERRAFORM_PROVIDER_LIBVIRT_FORK_GIT_REVISION)" = "" ]; then\
+		# User didn't ask for any particular revision, so use the tip of the main branch\
+		git -C $(TF_LIBVIRT_FORK_DIR) switch --detach origin/main;\
+	else \
+		# User asked for a particular revision, switch to it before building\
+		git -C $(TF_LIBVIRT_FORK_DIR) switch --detach "$(TERRAFORM_PROVIDER_LIBVIRT_FORK_GIT_REVISION)";\
+	fi;
+	make -C $(TF_LIBVIRT_FORK_DIR)
+
+# Copy the build binary into our local "terraform registry"
+$(TF_LIBVIRT_LOCAL_REGISTRY)/$(TF_LIBVIRT_BINARY): $(TF_LIBVIRT_FORK_DIR)/$(TF_LIBVIRT_BINARY) $(TF_LIBVIRT_LOCAL_REGISTRY) 
+	cp -r $< $@
+
