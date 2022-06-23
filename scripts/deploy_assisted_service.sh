@@ -125,7 +125,7 @@ else
         (cd assisted-service/ && skipper --env-file ../skipper.env make update-local-image -e CONTAINER_BUILD_EXTRA_PARAMS="--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file")
         DEBUG_DEPLOY_AI_PARAMS="REPLICAS_COUNT=1"
         # Override the SERVICE environment variable with the local registry debug image
-        export SERVICE="${LOCAL_ASSISTED_ORG}/assisted-service:latest"
+        export SERVICE="${SUBSYSTEM_LOCAL_REGISTRY}/assisted-service:latest"
     fi
 
     skipper run src/update_assisted_service_cm.py
