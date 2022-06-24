@@ -42,9 +42,12 @@ resource "libvirt_network" "net" {
     # that's because IPs ending with 64 and 65 are being used statically for
     # API and ingress, and libvirt terraform provider doesn't currently
     # support choosing DHCP range as a subset of the CIDR.
+    # (mko) For the same reason we change range for IPv4 network. Because we
+    # hardcode API and Ingress VIPs, it happens at times that they collide.
     # Please change the code when the following issue is done:
     # https://github.com/dmacvicar/terraform-provider-libvirt/issues/794
-    xslt = file("limit_ipv6_dhcp_range.xsl")
+
+    xslt = file("limit_ip_dhcp_range.xsl")
   }
 }
 

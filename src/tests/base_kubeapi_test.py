@@ -109,12 +109,13 @@ class BaseKubeAPI(BaseTest):
     def _get_vips(cls, nodes: Nodes):
         main_cidr = nodes.controller.get_primary_machine_cidr()
 
-        # Arbitrarily choose 3, 4 (e.g. 192.168.128.3 and 192.168.128.4) for the VIPs
-        # Terraform/libvirt allocates IPs in the 10+ range so these should be safe to use
-        # TODO: Find a more robust solution to choose the VIPs. KubeAPI Assisted does not do
-        #  DHCP for VIPs.
-        api_vip = str(IPNetwork(main_cidr).ip + 3)
-        ingress_vip = str(IPNetwork(main_cidr).ip + 4)
+        # Arbitrarily choose 100 and 101 (e.g. 192.168.128.100 and 192.168.128.101) for the VIPs
+        # Terraform/libvirt allocates IPs in the 2-90 range so these should be safe to use.
+        # The configuration applied to the Terraform networks is stored in the following files
+        # * terraform_files/baremetal/limit_ip_dhcp_range.xsl
+        # * terraform_files/baremetal_infra_env/limit_ip_dhcp_range.xsl
+        api_vip = str(IPNetwork(main_cidr).ip + 100)
+        ingress_vip = str(IPNetwork(main_cidr).ip + 101)
 
         return api_vip, ingress_vip
 
