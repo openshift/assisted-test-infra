@@ -42,7 +42,7 @@ pipeline {
                 sh "git clone https://github.com/openshift-assisted/assisted-installer-deployment --branch ${ASSISTED_INSTALLER_DEPLOYMENT_BRANCH}"
 
                 dir ('assisted-installer-deployment') {
-                    sh "pip install -r requirements-rht.txt"
+                    sh "pip3 install -r requirements-rht.txt"
                     sh "skipper run ./tools/create_triage_tickets.py --jira-access-token ${JIRA_ACCESS_TOKEN} -v"
                 }
             }
