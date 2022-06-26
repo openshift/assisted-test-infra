@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import secrets
@@ -252,13 +253,9 @@ class LibvirtController(NodeController, ABC):
             log.info("Path to %s disk not exists. Skipping", disk_path)
             return
 
-        command = f"qemu-img info {disk_path} | grep 'virtual size'"
-        output = utils.run_command(command, shell=True)
-        image_size = output[0].split(" ")[2]
-        # Fix for libvirt 6.0.0
-        if image_size.isdigit():
-            image_size += "G"
-
+        command = f"qemu-img info {disk_path} --output json"
+        output, _, _ = utils.run_command(command, shell=True)
+        image_size = json.loads(output)["virtual-size"]
         cls.create_disk(disk_path, image_size)
 
     @classmethod
