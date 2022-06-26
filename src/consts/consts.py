@@ -141,7 +141,8 @@ REQUIRED_ASSET_FIELDS = (
 )
 
 # DISK SIZES
-DISK_SIZE_120GB = 120 * 2**30
+GB = 10**9
+DISK_SIZE_100GB = 100 * GB
 
 
 class RemoteEnvironment:

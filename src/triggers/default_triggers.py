@@ -9,13 +9,13 @@ from triggers.olm_operators_trigger import OlmOperatorsTrigger
 _default_triggers = frozendict(
     {
         "production": Trigger(
-            condition=("remote_service_url", consts.RemoteEnvironment.PRODUCTION), worker_disk=consts.DISK_SIZE_120GB
+            condition=("remote_service_url", consts.RemoteEnvironment.PRODUCTION), worker_disk=consts.DISK_SIZE_100GB
         ),
         "staging": Trigger(
-            condition=("remote_service_url", consts.RemoteEnvironment.STAGING), worker_disk=consts.DISK_SIZE_120GB
+            condition=("remote_service_url", consts.RemoteEnvironment.STAGING), worker_disk=consts.DISK_SIZE_100GB
         ),
         "integration": Trigger(
-            condition=("remote_service_url", consts.RemoteEnvironment.INTEGRATION), worker_disk=consts.DISK_SIZE_120GB
+            condition=("remote_service_url", consts.RemoteEnvironment.INTEGRATION), worker_disk=consts.DISK_SIZE_100GB
         ),
         "none_platform": Trigger(
             ("platform", consts.Platforms.NONE), user_managed_networking=True, vip_dhcp_allocation=False
