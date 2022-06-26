@@ -75,3 +75,7 @@ class ProxyController(ContainerizedController):
             )
             utils.run_command(create_user_file_cmd, shell=True)
             self.user_file_path = f"{self.config_dir_path}/squid-users"
+
+    def run(self, **kwargs):
+        if self._name:
+            super().run(**kwargs)
