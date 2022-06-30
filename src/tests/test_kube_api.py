@@ -222,6 +222,9 @@ class TestKubeAPI(BaseKubeAPI):
         hypershift.wait_for_control_plane_ready()
         self.set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, spoke_namespace, node_count=1)
         self.set_node_count_and_wait_for_ready_nodes(cluster_deployment, hypershift, spoke_namespace, node_count=2)
+        self.scale_down_nodepool_and_wait_for_unbounded_agent(
+            cluster_deployment, hypershift, spoke_namespace, node_count=1
+        )
 
     @classmethod
     def set_node_count_and_wait_for_ready_nodes(
@@ -237,6 +240,21 @@ class TestKubeAPI(BaseKubeAPI):
         hypershift.wait_for_nodes(node_count)
         log.info("Waiting for node to become ready")
         hypershift.wait_for_nodes(node_count, ready=True)
+
+    @classmethod
+    def scale_down_nodepool_and_wait_for_unbounded_agent(
+        cls, cluster_deployment: ClusterDeployment, hypershift: HyperShift, spoke_namespace: str, node_count: int
+    ):
+        agents = cluster_deployment.list_agents()
+        log.info("Setting node count to %s", node_count)
+        hypershift.set_nodepool_replicas(node_count)
+        log.info("waiting for capi provider to remove clusterDeployment ref from the agent")
+        updated_agents = cluster_deployment.wait_for_agents(node_count, agents_namespace=spoke_namespace)
+        removed_agent = set(agents) - set(updated_agents)
+        log.info("Agent: {} removed")
+        log.info("Waiting for agent to unbind")
+        Agent.wait_for_agents_to_unbound(list(removed_agent))
+        log.info("Scale down completed")
 
     @classmethod
     def setup_proxy(
