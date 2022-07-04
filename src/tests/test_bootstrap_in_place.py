@@ -180,7 +180,7 @@ class TestBootstrapInPlace(BaseTest):
             return TerraformConfig(
                 masters_count=1,
                 workers_count=0,
-                master_memory=16 * 1024,  # in megabytes
+                master_memory=16 * consts.MiB_UNITS,
                 master_vcpu=16,
                 bootstrap_in_place=True,
             )
@@ -188,9 +188,9 @@ class TestBootstrapInPlace(BaseTest):
             return TerraformConfig(
                 masters_count=1,
                 workers_count=1,
-                master_memory=16 * 1024,  # in megabytes
+                master_memory=16 * consts.MiB_UNITS,
                 master_vcpu=16,
-                worker_memory=16 * 1024,  # in megabytes
+                worker_memory=8 * consts.MiB_UNITS,
                 worker_vcpu=16,
                 bootstrap_in_place=True,
                 running=False,
