@@ -1,4 +1,4 @@
-black==22.3.0
+black==22.6.0
 isort==5.10.1
 flake8==4.0.1
 flake8-bugbear==22.7.1              # Flake8 plugin that help identify likely bugs and design problems
