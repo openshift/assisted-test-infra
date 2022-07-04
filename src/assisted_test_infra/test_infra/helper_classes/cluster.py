@@ -537,13 +537,16 @@ class Cluster(Entity):
             fall_on_error_status=fall_on_error_status,
         )
 
-    def wait_for_specific_host_status(self, host, statuses, nodes_count: int = MINIMUM_NODES_TO_WAIT):
+    def wait_for_specific_host_status(
+        self, host, statuses, nodes_count: int = MINIMUM_NODES_TO_WAIT, timeout: int = consts.NODES_REGISTERED_TIMEOUT
+    ):
         utils.waiting.wait_till_specific_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             host_name=host.get("requested_hostname"),
             statuses=statuses,
             nodes_count=nodes_count,
+            timeout=timeout,
         )
 
     def wait_for_specific_host_stage(self, host: dict, stage: str, inclusive: bool = True):

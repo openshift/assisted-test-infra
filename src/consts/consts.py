@@ -278,6 +278,7 @@ class HostEvents:
     JOINED = "reached installation stage Joined"
     DONE = "reached installation stage Done"
     INSTALLED = "updated status from installing-in-progress to installed"
+    DISCONNECTED = "validation 'connected' that used to succeed is now failing"
 
 
 class HostStatusInfo:
