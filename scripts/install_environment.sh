@@ -37,6 +37,8 @@ function install_libvirt() {
     sudo sed -i -e 's/#tcp_port/tcp_port/g' /etc/libvirt/libvirtd.conf
     sudo sed -i -e 's/#security_driver = "selinux"/security_driver = "none"/g' /etc/libvirt/qemu.conf
 
+    allow_libvirt_cross_network_traffic
+
     if ! version_is_greater "$current_version" "$minimum_version"; then
         add_libvirt_listen_flag
     else
@@ -85,6 +87,27 @@ function is_libvirtd_tcp_socket_enabled_and_running() {
     else
         echo "true"
     fi
+}
+
+function allow_libvirt_cross_network_traffic() {
+    # Flush LIBVIRT_FWI chain each time the network configuration is being
+    # updated by libvirt.
+    #
+    # By default, LIBVIRT_FWI chain managed by libvirt denies the traffic
+    # between guest networks, flushing it makes this traffic possible.
+    #
+    # It is required in order to let a cluster being installed to contact the
+    # HUB cluster located in another libvirt network (e.g.: to retrieve the
+    # rootfs).
+    echo "Installing libvirt network hook to allow cross network traffic"
+    hook_dir="/etc/libvirt/hooks/network.d"
+    hook_filename="${hook_dir}/allow-cross-network-traffic.sh"
+    sudo mkdir -p "${hook_dir}"
+    sudo tee "${hook_filename}" << EOF
+#!/usr/bin/env sh
+iptables --flush LIBVIRT_FWI || true
+EOF
+    chmod +x "${hook_filename}"
 }
 
 function install_runtime_container() {
