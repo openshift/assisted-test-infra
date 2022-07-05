@@ -309,6 +309,11 @@ class TerraformController(LibvirtController):
         self._delete_virsh_resources(
             self._entity_name.get(), self.params.libvirt_network_name, self.params.libvirt_secondary_network_name
         )
+        tfstate_path = f"{self.tf_folder}/{self.tf.STATE_FILE}"
+        if os.path.exists(tfstate_path):
+            log.info(f"Deleting tf state file: {tfstate_path}")
+            os.remove(tfstate_path)
+
         if delete_tf_folder:
             log.info("Deleting %s", self.tf_folder)
             shutil.rmtree(self.tf_folder)
