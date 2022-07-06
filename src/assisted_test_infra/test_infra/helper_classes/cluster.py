@@ -3,7 +3,6 @@ import random
 import re
 import time
 from collections import Counter
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
 import waiting
@@ -17,8 +16,8 @@ import consts
 from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, ClusterName, exceptions, utils
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
+from assisted_test_infra.test_infra.helper_classes.base_cluster import BaseCluster
 from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHost
-from assisted_test_infra.test_infra.helper_classes.entity import Entity
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import static_network, terraform_utils
@@ -27,11 +26,9 @@ from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are
 from service_client import InventoryClient, log
 
 
-class Cluster(Entity):
+class Cluster(BaseCluster):
     MINIMUM_NODES_TO_WAIT = 1
     EVENTS_THRESHOLD = 500  # TODO - remove EVENTS_THRESHOLD after removing it from kni-assisted-installer-auto
-
-    _config: BaseClusterConfig
 
     def __init__(
         self,
@@ -40,22 +37,12 @@ class Cluster(Entity):
         infra_env_config: BaseInfraEnvConfig,
         nodes: Optional[Nodes] = None,
     ):
-        self._infra_env_config = infra_env_config
+        self._was_existed = False
 
-        super().__init__(api_client, config, nodes)
-        self._infra_env = None
-
-        # Update infraEnv configurations
-        self._infra_env_config.cluster_id = config.cluster_id
-        self._infra_env_config.openshift_version = self._config.openshift_version
-        self._infra_env_config.pull_secret = self._config.pull_secret
+        super().__init__(api_client, config, infra_env_config, nodes)
 
         self._high_availability_mode = config.high_availability_mode
         self.name = config.cluster_name.get()
-
-    @property
-    def id(self):
-        return self._config.cluster_id
 
     @property
     def kubeconfig_path(self):
@@ -64,6 +51,10 @@ class Cluster(Entity):
     @property
     def iso_download_path(self):
         return self._config.iso_download_path
+
+    @property
+    def was_existed(self) -> bool:
+        return self._was_existed
 
     @property
     def enable_image_download(self):
@@ -99,6 +90,7 @@ class Cluster(Entity):
             self._infra_env_config.infra_env_id = infra_env.get("id")
             self._infra_env = InfraEnv(self.api_client, self._infra_env_config, self.nodes)
             log.info(f"Found infra-env {self._infra_env.id} for cluster {self.id}")
+            self._was_existed = True
             break
         else:
             log.warning(f"Could not find any infra-env object for cluster ID {self.id}")
@@ -154,9 +146,6 @@ class Cluster(Entity):
             self._infra_env.deregister()
         self._infra_env = None
 
-    def get_details(self):
-        return self.api_client.cluster_get(self.id)
-
     def get_cluster_name(self):
         return self.get_details().name
 
@@ -182,29 +171,9 @@ class Cluster(Entity):
     def get_preflight_requirements(self):
         return self.api_client.get_preflight_requirements(self.id)
 
-    def generate_infra_env(
-        self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None, proxy=None
-    ) -> InfraEnv:
-        if self._infra_env:
-            return self._infra_env
-
-        self._infra_env_config.ssh_public_key = ssh_key or self._config.ssh_public_key
-        self._infra_env_config.iso_image_type = iso_image_type or self._config.iso_image_type
-        self._infra_env_config.static_network_config = static_network_config
-        self._infra_env_config.ignition_config_override = ignition_info
-        self._infra_env_config.proxy = proxy or self._config.proxy
-        infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config, nodes=self.nodes)
-        self._infra_env = infra_env
-        return infra_env
-
     def update_infra_env_proxy(self, proxy: models.Proxy) -> None:
         self._infra_env_config.proxy = proxy
         self._infra_env.update_proxy(proxy=proxy)
-
-    def download_infra_env_image(self, iso_download_path=None) -> Path:
-        iso_download_path = iso_download_path or self._config.iso_download_path
-        log.debug(f"Downloading ISO to {iso_download_path}")
-        return self._infra_env.download_image(iso_download_path=iso_download_path)
 
     def update_tags(self, tags: str):
         log.info(f"Setting cluster tags: {tags} for cluster: {self.id}")
@@ -215,25 +184,6 @@ class Cluster(Entity):
         tags = self.get_details().tags
         self._config.cluster_tags = tags
         return tags
-
-    @JunitTestCase()
-    def generate_and_download_infra_env(
-        self,
-        iso_download_path=None,
-        static_network_config=None,
-        iso_image_type=None,
-        ssh_key=None,
-        ignition_info=None,
-        proxy=None,
-    ) -> Path:
-        self.generate_infra_env(
-            static_network_config=static_network_config,
-            iso_image_type=iso_image_type,
-            ssh_key=ssh_key,
-            ignition_info=ignition_info,
-            proxy=proxy,
-        )
-        return self.download_infra_env_image(iso_download_path=iso_download_path or self._config.iso_download_path)
 
     def wait_until_hosts_are_disconnected(self, nodes_count: int = None):
         statuses = [consts.NodesStatus.DISCONNECTED]
@@ -483,11 +433,6 @@ class Cluster(Entity):
         """
         cluster_network = models.ClusterNetwork(cidr=cidr, host_prefix=host_prefix)
         self.api_client.update_cluster(self.id, {"cluster_networks": [cluster_network]})
-
-    def set_pull_secret(self, pull_secret: str):
-        log.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
-        self.update_config(pull_secret=pull_secret)
-        self.api_client.update_cluster(self.id, {"pull_secret": pull_secret})
 
     def set_host_name(self, host_id, requested_name):
         log.info(f"Setting Required Host Name:{requested_name}, for Host ID: {host_id}")
@@ -876,18 +821,6 @@ class Cluster(Entity):
             self._high_availability_mode != consts.HighAvailabilityMode.NONE
             and self._config.platform != consts.Platforms.NONE
         )
-
-    def get_iso_download_path(self, iso_download_path: str = None):
-        return iso_download_path or self._infra_env_config.iso_download_path
-
-    def download_image(self, iso_download_path: str = None) -> Path:
-        if self._infra_env is None:
-            log.warning("No infra_env found. Generating infra_env and downloading ISO")
-            return self.generate_and_download_infra_env(
-                iso_download_path=iso_download_path or self._config.iso_download_path,
-                iso_image_type=self._config.iso_image_type,
-            )
-        return self._infra_env.download_image(iso_download_path)
 
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):
