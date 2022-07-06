@@ -195,7 +195,7 @@ class NodeController(ABC):
     def get_network_by_name(self, network_name: str) -> libvirt.virNetwork:
         pass
 
-    def wait_till_nodes_are_ready(self, network_name: str):
+    def wait_till_nodes_are_ready(self, network_name: str = None):
         """If not overridden - do not wait"""
         pass
 
@@ -213,4 +213,7 @@ class NodeController(ABC):
         pass
 
     def set_ipxe_url(self, network_name: str, ipxe_url: str):
+        pass
+
+    def get_day2_static_network_data(self):
         pass
