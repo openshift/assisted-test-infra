@@ -100,7 +100,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _deploy_nodes _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _destroy_terraform
 
 ###########
 # General #
@@ -228,21 +228,6 @@ deploy_nodes: start_load_balancer
 
 deploy_static_network_config_nodes:
 	make deploy_nodes ADDITIONAL_PARAMS="'--with-static-network-config'"
-
-deploy_day2_nodes:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster'"
-
-deploy_day2_cloud_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster ${ADDITIONAL_PARAMS}'" DEPLOY_TARGET=minikube
-
-deploy_static_network_config_day2_nodes:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'--day2-cloud-cluster --with-static-network-config'"
-
-deploy_static_network_config_day2_nodes_with_install:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --with-static-network-config'"
-
-install_day1_and_day2_cloud:
-	skipper make $(SKIPPER_PARAMS) _deploy_nodes NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) NAMESPACE=$(NAMESPACE) $(SKIPPER_PARAMS) ADDITIONAL_PARAMS="'-in --day2-cloud-cluster --day1-cluster ${ADDITIONAL_PARAMS}'"
 
 .PHONY: deploy_ibip
 deploy_ibip:
