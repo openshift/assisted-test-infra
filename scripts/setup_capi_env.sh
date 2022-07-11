@@ -39,7 +39,5 @@ deploy_hypershift() {
 
 echo "Deploying HyperShift"
 deploy_hypershift
-echo "Alow route to minikube network - required for hosts to pull ignition"
-iptables -D LIBVIRT_FWI -o virbr1 -j REJECT --reject-with icmp-port-unreachable || true
 echo "Set worker label for minikube"
 kubectl get nodes minikube && kubectl label node minikube node-role.kubernetes.io/worker="" --overwrite

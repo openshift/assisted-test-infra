@@ -90,8 +90,8 @@ function is_libvirtd_tcp_socket_enabled_and_running() {
 }
 
 function allow_libvirt_cross_network_traffic() {
-    # Flush LIBVIRT_FWI chain each time the network configuration is being
-    # updated by libvirt.
+    # Remove Reject rules from LIBVIRT_FWI and LIBVIRT_FWO chains each time the network
+    # configuration is being updated by libvirt.
     #
     # By default, LIBVIRT_FWI chain managed by libvirt denies the traffic
     # between guest networks, flushing it makes this traffic possible.
@@ -105,7 +105,7 @@ function allow_libvirt_cross_network_traffic() {
     sudo mkdir -p "${hook_dir}"
     sudo tee "${hook_filename}" << EOF
 #!/usr/bin/env sh
-iptables --flush LIBVIRT_FWI || true
+iptables-save -c | egrep -v 'LIBVIRT_FW[IO] .* REJECT' | iptables-restore || true
 EOF
     chmod +x "${hook_filename}"
 }
