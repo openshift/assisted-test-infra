@@ -1,8 +1,8 @@
 import json
 import os
+from distutils.dir_util import copy_tree
 from pathlib import Path
 
-from assisted_test_infra.test_infra.utils import utils
 from consts import consts
 from service_client import log
 
@@ -17,8 +17,8 @@ class TerraformControllerUtil:
     def create_folder(cls, cluster_name: str, platform: str):
         tf_folder = cls.get_folder(cluster_name)
         log.info("Creating %s as terraform folder", tf_folder)
-        utils.recreate_folder(tf_folder)
         cls._copy_template_tree(tf_folder)
+
         tf_folder = os.path.join(tf_folder, platform)
         cls.create_tfvars_file(tf_folder)
         return tf_folder
@@ -34,5 +34,5 @@ class TerraformControllerUtil:
         return str(tfvars_file)
 
     @classmethod
-    def _copy_template_tree(cls, dst):
-        utils.copy_tree(src=consts.TF_TEMPLATES_ROOT, dst=dst)
+    def _copy_template_tree(cls, dst: str):
+        copy_tree(src=consts.TF_TEMPLATES_ROOT, dst=dst)

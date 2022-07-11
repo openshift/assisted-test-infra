@@ -14,7 +14,6 @@ import tempfile
 import time
 import warnings
 from contextlib import contextmanager
-from distutils.dir_util import copy_tree
 from distutils.util import strtobool
 from functools import wraps
 from pathlib import Path
@@ -518,10 +517,6 @@ def get_openshift_release_image(allow_default=True):
         ][0]
 
     return release_image
-
-
-def copy_template_tree(dst: str):
-    copy_tree(src=consts.TF_TEMPLATES_ROOT, dst=dst)
 
 
 @contextmanager

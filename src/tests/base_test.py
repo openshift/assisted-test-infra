@@ -807,7 +807,10 @@ class BaseTest:
                 self._is_test_failed(request),
                 pull_secret=global_variables.pull_secret,
             )
-        self._collect_virsh_logs(nodes, log_dir_name)
+
+        if isinstance(nodes.controller, LibvirtController):
+            self._collect_virsh_logs(nodes, log_dir_name)
+
         self._collect_journalctl(nodes, log_dir_name)
 
     @classmethod
