@@ -17,6 +17,7 @@ import os
 
 import yaml
 
+from consts.consts import MiB_UNITS
 from deprecated_utils import warn_deprecate
 
 warn_deprecate()
@@ -41,19 +42,19 @@ ENVS = [
 ]
 DEFAULT_MASTER_REQUIREMENTS = {
     "cpu_cores": 4,
-    "ram_mib": 8192,
+    "ram_mib": 8 * MiB_UNITS,
     "disk_size_gb": 10,
     "installation_disk_speed_threshold_ms": 10,
 }
 DEFAULT_WORKER_REQUIREMENTS = {
     "cpu_cores": 2,
-    "ram_mib": 3072,
+    "ram_mib": 3 * MiB_UNITS,
     "disk_size_gb": 10,
     "installation_disk_speed_threshold_ms": 10,
 }
 DEFAULT_SNO_REQUIREMENTS = {
     "cpu_cores": 8,
-    "ram_mib": 32768,
+    "ram_mib": 16 * MiB_UNITS,
     "disk_size_gb": 10,
     "installation_disk_speed_threshold_ms": 10,
 }

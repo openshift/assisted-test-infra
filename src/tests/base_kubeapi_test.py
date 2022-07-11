@@ -25,6 +25,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
+from consts.consts import MiB_UNITS
 from service_client import ClientFactory, log
 from tests.base_test import BaseTest
 from tests.config import global_variables
@@ -82,21 +83,21 @@ class BaseKubeAPI(BaseTest):
         terraform_config.masters_count = 1
         terraform_config.workers_count = 0
         terraform_config.master_vcpu = 8
-        terraform_config.master_memory = 35840
+        terraform_config.master_memory = 16 * MiB_UNITS
 
     @staticmethod
     def _configure_highly_available(terraform_config: BaseNodeConfig):
         terraform_config.masters_count = 3
         terraform_config.workers_count = 0
         terraform_config.master_vcpu = 4
-        terraform_config.master_memory = 17920
+        terraform_config.master_memory = 16 * MiB_UNITS
 
     @staticmethod
     def _configure_workers(terraform_config: BaseNodeConfig):
         terraform_config.masters_count = 0
         terraform_config.workers_count = 2
         terraform_config.worker_vcpu = 4
-        terraform_config.worker_memory = 17920
+        terraform_config.worker_memory = 8 * MiB_UNITS
         terraform_config.ingress_dns = True
         terraform_config.cluster_name = global_variables.cluster_name
 
