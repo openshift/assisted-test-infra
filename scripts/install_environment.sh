@@ -90,8 +90,8 @@ function is_libvirtd_tcp_socket_enabled_and_running() {
 }
 
 function allow_libvirt_cross_network_traffic() {
-    # remove Reject rules from LIBVIRT_FWI and LIBVIRT_FWO chains each time the network configuration is being
-    # updated by libvirt.
+    # Remove Reject rules from LIBVIRT_FWI and LIBVIRT_FWO chains each time the network
+    # configuration is being updated by libvirt.
     #
     # By default, LIBVIRT_FWI chain managed by libvirt denies the traffic
     # between guest networks, flushing it makes this traffic possible.
