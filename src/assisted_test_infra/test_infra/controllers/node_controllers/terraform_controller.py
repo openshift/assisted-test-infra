@@ -41,18 +41,10 @@ class TerraformController(LibvirtController):
         return self._entity_name.get()
 
     def _create_tf_folder(self, name: str, platform: str):
-        tf_folder = TerraformControllerUtil.get_folder(cluster_name=name)
-        log.info("Creating %s as terraform folder", tf_folder)
-        utils.recreate_folder(tf_folder)
-        utils.copy_template_tree(tf_folder)
-
-        if platform == consts.Platforms.NONE:
-            return os.path.join(tf_folder, consts.Platforms.NONE)
-
         if isinstance(self._entity_config, BaseInfraEnvConfig):
-            return os.path.join(tf_folder, "baremetal_infra_env")
+            return TerraformControllerUtil.create_folder(name, "baremetal_infra_env")
 
-        return os.path.join(tf_folder, consts.Platforms.BARE_METAL)
+        return TerraformControllerUtil.create_folder(name, platform)
 
     def _get_disk_encryption_appliance(self):
         if isinstance(self._entity_config, BaseInfraEnvConfig):
@@ -150,21 +142,20 @@ class TerraformController(LibvirtController):
 
     # Filling tfvars json files with terraform needed variables to spawn vms
     def _fill_tfvars(self, running=True):
-        tfvars_json_file = os.path.join(self.tf_folder, consts.TFVARS_JSON_NAME)
         log.info("Filling tfvars")
-        with open(tfvars_json_file) as _file:
-            tfvars = json.load(_file)
 
+        tfvars = dict()
         machine_cidr = self.get_primary_machine_cidr()
 
+        tfvars["libvirt_uri"] = consts.LIBVIRT_URI
+        tfvars["master_count"] = self.params.master_count
         log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10)
         worker_starting_ip = str(
-            ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10 + int(tfvars["master_count"])
+            ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10 + tfvars["master_count"]
         )
         tfvars["image_path"] = self._entity_config.iso_download_path
         tfvars["worker_image_path"] = self._entity_config.worker_iso_download_path or tfvars["image_path"]
-        tfvars["master_count"] = self.params.master_count
         self.master_ips = tfvars["libvirt_master_ips"] = self._create_address_list(
             self.params.master_count, starting_ip_addr=master_starting_ip
         )
@@ -191,7 +182,7 @@ class TerraformController(LibvirtController):
         tfvars.update(self.params)
         tfvars.update(self._secondary_tfvars())
 
-        with open(tfvars_json_file, "w") as _file:
+        with open(os.path.join(self.tf_folder, consts.TFVARS_JSON_NAME), "w") as _file:
             json.dump(tfvars, _file)
 
     def _secondary_tfvars(self):
@@ -309,7 +300,7 @@ class TerraformController(LibvirtController):
         self._delete_virsh_resources(
             self._entity_name.get(), self.params.libvirt_network_name, self.params.libvirt_secondary_network_name
         )
-        tfstate_path = f"{self.tf_folder}/{self.tf.STATE_FILE}"
+        tfstate_path = f"{self.tf_folder}/{consts.TFSTATE_FILE}"
         if os.path.exists(tfstate_path):
             log.info(f"Deleting tf state file: {tfstate_path}")
             os.remove(tfstate_path)
