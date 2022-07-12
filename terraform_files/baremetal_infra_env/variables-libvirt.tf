@@ -179,15 +179,6 @@ variable "running" {
   default     = true
 }
 
-variable "cluster_inventory_id" {
-  type      = string
-}
-
-variable "static_macs" {
-  description = "If true, static macs are configured for the network interfaces"
-  type        = bool
-}
-
 variable "single_node_ip" {
   description = "IP address of single node.  Used for DNS"
   type = string

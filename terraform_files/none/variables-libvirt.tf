@@ -156,10 +156,6 @@ variable "running" {
   default     = true
 }
 
-variable "cluster_inventory_id" {
-  type      = string
-}
-
 variable "load_balancer_ip" {
   type = string
   description = "IP address for load balancer"

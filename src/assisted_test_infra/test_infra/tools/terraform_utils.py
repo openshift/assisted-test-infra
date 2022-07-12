@@ -7,18 +7,16 @@ import hcl2
 from python_terraform import IsFlagged, Terraform, TerraformCommandError, Tfstate
 from retry import retry
 
+from consts import consts
 from service_client import log
 
 
 class TerraformUtils:
-    VAR_FILE = "terraform.tfvars.json"
-    STATE_FILE = "terraform.tfstate"
-
     def __init__(self, working_dir: str, terraform_init: bool = True):
         log.info("TF FOLDER %s ", working_dir)
         self.working_dir = working_dir
-        self.var_file_path = os.path.join(working_dir, self.VAR_FILE)
-        self.tf = Terraform(working_dir=working_dir, state=self.STATE_FILE, var_file=self.VAR_FILE)
+        self.var_file_path = os.path.join(working_dir, consts.TFVARS_JSON_NAME)
+        self.tf = Terraform(working_dir=working_dir, state=consts.TFSTATE_FILE, var_file=consts.TFVARS_JSON_NAME)
 
         if terraform_init:
             self.init_tf()
@@ -67,7 +65,7 @@ class TerraformUtils:
         self.apply(refresh=refresh)
 
     def get_state(self) -> Tfstate:
-        self.tf.read_state_file(self.STATE_FILE)
+        self.tf.read_state_file(consts.TFSTATE_FILE)
         return self.tf.tfstate
 
     def get_resources(self, resource_type: str = None) -> List[Dict[str, Any]]:

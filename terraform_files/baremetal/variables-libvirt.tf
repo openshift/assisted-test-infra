@@ -215,18 +215,9 @@ variable "worker_vtpm2" {
   default     = false
 }
 
-variable "cluster_inventory_id" {
-  type      = string
-}
-
 variable "bootstrap_in_place" {
   type    = bool
   default = false
-}
-
-variable "static_macs" {
-  description = "If true, static macs are configured for the network interfaces"
-  type        = bool
 }
 
 variable "single_node_ip" {

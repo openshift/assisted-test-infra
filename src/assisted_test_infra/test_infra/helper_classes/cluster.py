@@ -363,7 +363,7 @@ class Cluster(Entity):
 
         return cidr
 
-    def get_machine_networks(self):
+    def get_machine_networks(self) -> List[str]:
         networks = []
 
         primary_machine_cidr = self.nodes.controller.get_primary_machine_cidr()
@@ -376,7 +376,7 @@ class Cluster(Entity):
 
         if not networks:
             # Support controllers which the machine cidr is not configurable. taking it from the AI instead
-            networks = self.get_cluster_matching_cidrs(Cluster.get_cluster_hosts(self.get_details()))
+            networks = list(self.get_cluster_matching_cidrs(Cluster.get_cluster_hosts(self.get_details())))
 
             if not networks:
                 raise RuntimeError("No matching cidr for DHCP")
