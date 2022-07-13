@@ -151,6 +151,20 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `WORKER_MEMORY`               | memory for worker VM, default: 8892MB |
 | `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub |
 | `IPXE_BOOT`                   | Boots VMs using iPXE if set to `true`, default: `false` |
+| `PLATFORM`                    | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, default: `baremetal` |
+
+
+## Vsphere parameters
+
+|     |     |
+| --- | --- |
+| `VSPHERE_CLUSTER`                 | vSphere cluster name, vsphere cluster is a cluster of hosts that it manages, mandatory for vsphere platform |
+| `VSPHERE_VCENTER`                 | vSphere vcenter server ip address or fqdn (vCenter server name for vSphere API operations), mandatory for vsphere platform |
+| `VSPHERE_DATACENTER`              | vSphere data center name, mandatory for vsphere platform |
+| `VSPHERE_NETWORK`                 | vSphere publicly accessible network for cluster ingress and access. e.g VM Network, mandatory for vsphere platform |
+| `VSPHERE_DATASTORE`               | vSphere data store name, mandatory for vsphere platform |
+| `VSPHERE_USERNAME`                | vSphere vcenter server username, mandatory for vsphere platform |
+| `VSPHERE_PASSWORD`                | vSphere vcenter server password, mandatory for vsphere platform |
 
 
 ## Instructions
