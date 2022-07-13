@@ -1,4 +1,4 @@
-//////
+    //////
 // vSphere variables
 //////
 
@@ -14,7 +14,7 @@ variable "vsphere_username" {
 
 variable "vsphere_password" {
   type        = string
-  description = "vSphere vcenter server username"
+  description = "vSphere vcenter server password"
 }
 
 variable "vsphere_cluster" {
