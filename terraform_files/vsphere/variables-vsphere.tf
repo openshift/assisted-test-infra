@@ -4,7 +4,7 @@
 
 variable "vsphere_vcenter" {
   type        = string
-  description = "vSphere vcenter server ip address or fqdn (vCenter server name for vSphere API operations)"
+  description = "vSphere 111 vcenter server ip address or fqdn (vCenter server name for vSphere API operations)"
 }
 
 variable "vsphere_username" {
