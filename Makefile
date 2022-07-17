@@ -136,6 +136,9 @@ start_minikube:
 	scripts/run_minikube.sh
 	eval $(minikube docker-env)
 
+delete_clusters:
+	TEST=./src/tests/test_targets.py TEST_FUNC=test_delete_clusters $(MAKE) test
+
 delete_minikube:
 	skipper run python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 	minikube delete --all

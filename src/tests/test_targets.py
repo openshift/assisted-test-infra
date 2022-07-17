@@ -1,8 +1,11 @@
 import pytest
 from junit_report import JunitTestSuite
 
+from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig
+from service_client import InventoryClient, log
 from tests.base_test import BaseTest
+from tests.config import ClusterConfig, InfraEnvConfig
 
 
 class TestMakefileTargets(BaseTest):
@@ -24,7 +27,19 @@ class TestMakefileTargets(BaseTest):
         prepared_controller_configuration.workers_count = 0
         yield prepared_controller_configuration
 
-    @JunitTestSuite()
     @pytest.mark.override_controller_configuration(download_iso_override_nodes_count.__name__)
     def test_target_download_iso(self, cluster):
         cluster.download_image()
+
+    @JunitTestSuite()
+    def test_delete_clusters(self, api_client: InventoryClient, cluster_configuration):
+        """Delete all clusters or single cluster if CLUSTER_ID is given"""
+
+        cluster_id = cluster_configuration.cluster_id
+        clusters = api_client.clusters_list() if not cluster_id else [{"id": cluster_id}]
+
+        for cluster_info in clusters:
+            cluster = Cluster(api_client, ClusterConfig(cluster_id=cluster_info["id"]), InfraEnvConfig())
+            cluster.delete()
+
+        log.info(f"Successfully deleted {len(clusters)} clusters")
