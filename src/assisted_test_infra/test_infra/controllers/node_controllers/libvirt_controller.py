@@ -607,7 +607,7 @@ class LibvirtController(NodeController, ABC):
     def format_node_disk(self, node_name: str, disk_index: int = 0) -> None:
         raise NotImplementedError
 
-    def get_ingress_and_api_vips(self) -> dict:
+    def get_ingress_and_api_vips(self, is_highly_available: bool = False) -> dict:
         raise NotImplementedError
 
     def get_cluster_network(self) -> str:

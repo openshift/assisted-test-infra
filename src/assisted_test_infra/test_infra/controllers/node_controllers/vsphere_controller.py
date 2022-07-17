@@ -109,10 +109,10 @@ class VSphereController(NodeController):
 
         self.__run_on_vm(node_name, reboot)
 
-    def get_ingress_and_api_vips(self) -> dict:
+    def get_ingress_and_api_vips(self, is_highly_available: bool = False) -> dict:
         if self._entity_config.api_vip and self._entity_config.ingress_vip:
             return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
-        # Not used when DHCP is enabled
+
         return None
 
     def set_dns(self, api_ip: str, ingress_ip: str) -> None:
