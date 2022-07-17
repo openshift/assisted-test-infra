@@ -16,14 +16,14 @@ class BaseEntityConfig(BaseConfig, ABC):
     user_managed_networking: bool = None
     high_availability_mode: str = None
     hyperthreading: str = None
-    iso_download_path: str = None
+    iso_download_path: str = None  # TODO Needed only on infra env. Remove from here and move to BaseInfraEnvConfig
     worker_iso_download_path: str = None
     iso_image_type: str = None
     download_image: bool = None
     platform: str = None
-    is_static_ip: bool = None
     is_ipv4: bool = None
     is_ipv6: bool = None
     base_dns_domain: str = None
     entity_name: BaseName = None
     proxy: models.Proxy = None
+    ipxe_boot: bool = None

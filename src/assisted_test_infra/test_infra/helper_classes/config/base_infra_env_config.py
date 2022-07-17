@@ -17,3 +17,4 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     static_network_config: List[dict] = None
     ignition_config_override: str = None
     verify_download_iso_ssl: bool = None
+    is_static_ip: bool = None

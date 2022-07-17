@@ -10,6 +10,7 @@ import consts
 from assisted_test_infra.test_infra import BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.helper_classes.entity import Entity
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
+from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_infra_env_hosts_are_in_status
 from service_client import InventoryClient, log
 
@@ -47,14 +48,19 @@ class InfraEnv(Entity):
         self._config.infra_env_id = infra_env.id
         return infra_env.id
 
+    def get_iso_download_path(self, iso_download_path: str = None):
+        return iso_download_path or self._config.iso_download_path
+
     @JunitTestCase()
     def download_image(self, iso_download_path: str = None) -> Path:
         iso_download_url = self.get_details().download_url
-        iso_download_path = iso_download_path or self._config.iso_download_path
+        iso_download_path = self.get_iso_download_path(iso_download_path)
 
         # ensure file path exists before downloading
         if not os.path.exists(iso_download_path):
             utils.recreate_folder(os.path.dirname(iso_download_path), force_recreate=False)
+
+        self._update_static_network()
 
         log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
         return utils.download_file(iso_download_url, iso_download_path, self._config.verify_download_iso_ssl)
@@ -105,6 +111,20 @@ class InfraEnv(Entity):
         self.update_config(proxy=proxy)
         infra_env_update_params = models.InfraEnvUpdateParams(proxy=self._config.proxy)
         self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
+
+    def _update_static_network(self):
+        if not self._config.is_static_ip:
+            return
+
+        if self._config.static_network_config is None:
+            log.info("No static network configuration found, generating new network configurations")
+            static_network_config = static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
+            self._config.static_network_config = static_network_config
+
+        log.info(f"Updating InfraEnv {self.id} static network configuration")
+        infra_env_update_params = models.InfraEnvUpdateParams(static_network_config=self._config.static_network_config)
+        self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
+        log.info(f"InfraEnv static network configuration successfully updated {self._config.static_network_config}")
 
     def update_static_network_config(self, static_network_config: List[dict]) -> None:
         self.update_config(static_network_config=static_network_config)

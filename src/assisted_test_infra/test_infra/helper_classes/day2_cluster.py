@@ -24,7 +24,7 @@ class Day2Cluster(ABC):
         self.config = config
         self.api_client = api_client
 
-    def prepare_for_installation(self):
+    def prepare_for_installation(self, iso_download_path: str = None):
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
 
         cluster = self.api_client.cluster_get(cluster_id=self.config.day1_cluster_id)
@@ -67,9 +67,9 @@ class Day2Cluster(ABC):
         self.config.infra_env_id = infra_env.id
         # Download image
         iso_download_url = infra_env.download_url
-        image_path = os.path.join(consts.IMAGE_FOLDER, f"{self.config.day1_cluster_name}-installer-image.iso")
-        log.info(f"Downloading image {iso_download_url} to {image_path}")
-        utils.download_file(iso_download_url, image_path, False)
+        log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
+
+        utils.download_file(iso_download_url, iso_download_path, False)
 
     def start_install_and_wait_for_installed(self, libvirt_controller: NodeController):
         cluster_name = self.config.day1_cluster_name

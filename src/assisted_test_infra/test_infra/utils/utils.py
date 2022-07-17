@@ -225,7 +225,7 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
         if is_assisted_service_reachable(url):
             return url
 
-    raise RuntimeError(f"could not find any reachable url to {service} service " f"in {namespace} namespace")
+    raise RuntimeError(f"could not find any reachable url to {service} service in {namespace} namespace")
 
 
 def get_local_assisted_service_url(namespace, service, deploy_target):
@@ -592,3 +592,11 @@ def get_kubeapi_protocol_options() -> List[Tuple[bool, bool]]:
         return [(False, True)]
 
     return [(False, True), (True, False)]
+
+
+def get_iso_download_path(entity_name: str):
+    return str(
+        Path(consts.env_defaults.DEFAULT_IMAGE_FOLDER).joinpath(
+            f"{entity_name}-{consts.env_defaults.DEFAULT_IMAGE_FILENAME}"
+        )
+    ).strip()

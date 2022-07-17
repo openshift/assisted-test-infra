@@ -15,5 +15,5 @@ class TestDay2(BaseTest):
             cluster.start_install_and_wait_for_installed()
 
         day2_cluster.config.day1_cluster_id = cluster.id
-        day2_cluster.prepare_for_installation()
+        day2_cluster.prepare_for_installation(iso_download_path=cluster.get_iso_download_path())
         day2_cluster.start_install_and_wait_for_installed(controller)

@@ -26,6 +26,11 @@ class Nodes:
         self.controller = node_controller
         self._nodes = None
         self._nodes_as_dict = None
+        self.__is_prepared = False
+
+    @property
+    def is_prepared(self) -> bool:
+        return self.__is_prepared
 
     @property
     def masters_count(self):
@@ -115,9 +120,12 @@ class Nodes:
 
     def destroy_all_nodes(self):
         self.controller.destroy_all_nodes()
+        self.__is_prepared = False
 
     def prepare_nodes(self):
-        self.controller.prepare_nodes()
+        if not self.__is_prepared:
+            self.controller.prepare_nodes()
+            self.__is_prepared = True
 
     def reboot_all(self):
         self.run_for_all_nodes("restart")

@@ -88,12 +88,16 @@ class Cluster(Entity):
     def update_existing(self) -> str:
         log.info(f"Fetching existing cluster with id {self._config.cluster_id}")
         self._update_existing_cluster_config(self.api_client, self._config.cluster_id)
-        infra_envs = self.api_client.infra_envs_list()
-        for infra_env in infra_envs:
-            if infra_env.get("cluster_id") == self._config.cluster_id:
-                self._infra_env_config.infra_env_id = infra_env.get("id")
-                self._infra_env = InfraEnv(self.api_client, self._infra_env_config, self.nodes)
-                break
+
+        # Assuming single or no infra_env - TODO need to change when adding multi-infra_env support to test_infra
+        for infra_env in self.api_client.get_infra_env_by_cluster_id(self.id):
+            self._infra_env_config.infra_env_id = infra_env.get("id")
+            self._infra_env = InfraEnv(self.api_client, self._infra_env_config, self.nodes)
+            log.info(f"Found infra-env {self._infra_env.id} for cluster {self.id}")
+            break
+        else:
+            log.warning(f"Could not find any infra-env object for cluster ID {self.id}")
+
         return self._config.cluster_id
 
     def _create(self) -> str:
@@ -176,7 +180,7 @@ class Cluster(Entity):
         self._infra_env_config.static_network_config = static_network_config
         self._infra_env_config.ignition_config_override = ignition_info
         self._infra_env_config.proxy = proxy or self._config.proxy
-        infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config)
+        infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config, nodes=self.nodes)
         self._infra_env = infra_env
         return infra_env
 
@@ -199,9 +203,6 @@ class Cluster(Entity):
         ignition_info=None,
         proxy=None,
     ) -> Path:
-        if self._config.is_static_ip and static_network_config is None:
-            static_network_config = static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
-
         self.generate_infra_env(
             static_network_config=static_network_config,
             iso_image_type=iso_image_type,
@@ -830,6 +831,9 @@ class Cluster(Entity):
             and self._config.platform != consts.Platforms.NONE
         )
 
+    def get_iso_download_path(self, iso_download_path: str = None):
+        return iso_download_path or self._infra_env_config.iso_download_path
+
     def download_image(self, iso_download_path: str = None) -> Path:
         if self._infra_env is None:
             log.warning("No infra_env found. Generating infra_env and downloading ISO")
@@ -1117,7 +1121,7 @@ class Cluster(Entity):
                     return node.name
 
         # IPv6 static ips
-        if self._config.is_static_ip:
+        if self._infra_env_config.is_static_ip:
             mappings = static_network.get_name_to_mac_addresses_mapping(self.nodes.controller.tf_folder)
             for mac in host.macs():
                 for name, macs in mappings.items():

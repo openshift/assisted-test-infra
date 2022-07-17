@@ -94,8 +94,23 @@ class TestKubeAPI(BaseKubeAPI):
 
         cluster_deployment = ClusterDeployment(api_client, cluster_name, spoke_namespace)
         cluster_deployment.create(agent_cluster_install_ref=agent_cluster_install.ref, secret=secret)
-
         proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
+
+        if is_disconnected:
+            log.info("getting ignition and install config override for disconnected install")
+            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
+            self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
+            ignition_config_override = self.get_ignition_config_override(ca_bundle)
+        else:
+            ignition_config_override = None
+
+        infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
+        infraenv = infra_env.create(
+            cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
+        )
+        cluster_config.iso_download_path = utils.get_iso_download_path(infraenv.get("metadata", {}).get("name"))
+        nodes.prepare_nodes()
+
         agent_cluster_install.create(
             cluster_deployment_ref=cluster_deployment.ref,
             image_set_ref=self.deploy_image_set(cluster_name, api_client),
@@ -113,19 +128,6 @@ class TestKubeAPI(BaseKubeAPI):
 
         if cluster_config.is_static_ip:
             self.apply_static_network_config(kube_api_context, nodes, cluster_name)
-
-        if is_disconnected:
-            log.info("getting ignition and install config override for disconnected install")
-            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
-            self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
-            ignition_config_override = self.get_ignition_config_override(ca_bundle)
-        else:
-            ignition_config_override = None
-
-        infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
-        infra_env.create(
-            cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
-        )
 
         agents = self.start_nodes(nodes, infra_env, cluster_config)
 
@@ -164,6 +166,8 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_name = cluster_config.cluster_name.get()
         api_client = kube_api_context.api_client
         spoke_namespace = kube_api_context.spoke_namespace
+        cluster_config.iso_download_path = utils.get_iso_download_path(cluster_name)
+        nodes.prepare_nodes()
 
         secret = Secret(api_client, f"{cluster_name}-secret", spoke_namespace)
         secret.create(pull_secret=cluster_config.pull_secret)
@@ -489,8 +493,10 @@ class TestLateBinding(BaseKubeAPI):
     ):
         api_client = kube_api_context.api_client
         spoke_namespace = kube_api_context.spoke_namespace
-
         infraenv_name = infraenv_config.entity_name.get()
+        infraenv_config.iso_download_path = utils.get_iso_download_path(infraenv_name)
+        nodes.prepare_nodes()
+
         spoke_namespace = spoke_namespace
         secret = Secret(api_client, f"{infraenv_name}-secret", spoke_namespace)
         secret.create(pull_secret=infraenv_config.pull_secret)
