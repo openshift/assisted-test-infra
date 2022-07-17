@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Only usage of CentOS8 / RHEL8 / Rocky8 on the assisted installer host<sup id="a1">[1](#f1)</sup> is supported
+1. Only usage of CentOS8 / RHEL8 / Rocky8 / AlmaLinux on the assisted installer host<sup id="a1">[1](#f1)</sup> is supported
    - This host will run minikube and the UI for deploying OpenShift on Bare Metal
 1. Setup DHCP/DNS records for the following OpenShift nodes and VIPs. List includes
    - Master nodes
@@ -159,7 +159,7 @@ As `$USER` user with `sudo` privileges,
 
 - Before starting, note that test infra is written in python (>= 3.9) and uses [pytest](https://docs.pytest.org/en/6.2.x/contents.html) and [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html) for running all of our e2e test flows.
 - Set up test-infra test environment ([assisted-installer-install-guide](GUIDE.md#assisted-installer-unofficial-install-guide))
-- Make sure that the assisted-service is supporting the tested feature 
+- Make sure that the assisted-service is supporting the tested feature
   - For customizing tested components, take a look at [components deployment parameters](README.md#components)
   - The changes are already on assisted-service master branch
 - Make sure to test the changes for both CI-compatible distro (Rocky Linux 8) and QE's compatible environment (RHEL 8.5).

@@ -21,7 +21,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Instructions](#instructions)
     - [Host preparation](#host-preparation)
   - [Usage](#usage)
-  - [Adding a new e2e flow](#new-e2e-flow)  
+  - [Adding a new e2e flow](#new-e2e-flow)
   - [Full flow cases](#full-flow-cases)
     - [Run full flow with install](#run-full-flow-with-install)
     - [Run full flow without install](#run-full-flow-without-install)
@@ -55,7 +55,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 
 ## Prerequisites
 
-- CentOS 8, RHEL 8 or Rocky 8 host
+- CentOS 8 / RHEL 8 / Rocky 8 / AlmaLinux 8 host
 - File system that supports d_type
 - Ideally on a bare metal host with at least 64G of RAM.
 - Run as a user with password-less `sudo` access or be ready to enter `sudo` password for prepare phase.
