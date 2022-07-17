@@ -21,9 +21,45 @@ function install_libvirt() {
         libvirt-devel \
         libvirt-daemon-kvm \
         qemu-kvm \
-        libgcrypt \
-        swtpm \
-        swtpm-tools
+        libgcrypt
+
+    # TODO: get swtpm RPMs from EPEL as soon as 0.7.1 or later lands there.
+    # based on: https://github.com/stefanberger/swtpm/wiki#compile-and-install-on-linux
+
+    echo "Enable EPEL"
+    sudo dnf install -y  epel-release
+
+    echo "Install swtpm dependencies"
+    sudo dnf install -y \
+        libtasn1-devel \
+        expect \
+        socat \
+        python3-twisted \
+        fuse-devel \
+        glib2-devel \
+        gnutls-devel \
+        gnutls-utils \
+        gnutls \
+        json-glib-devel \
+        autoconf \
+        automake \
+        libtool \
+        openssl-devel \
+        libtpms \
+        libtpms-devel \
+        libseccomp-devel \
+        net-tools \
+        iproute \
+        git \
+        make
+
+    echo "Install swtpm v0.7.1 from source"
+    git clone --depth 1 --branch v0.7.1 https://github.com/stefanberger/swtpm.git
+    pushd swtpm
+    ./autogen.sh --with-openssl --prefix=/usr
+    make -j4
+    make install
+    popd
 
     sudo systemctl enable libvirtd
 
