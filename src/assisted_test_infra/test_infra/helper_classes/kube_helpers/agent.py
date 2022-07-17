@@ -144,7 +144,7 @@ class Agent(BaseCustomResource):
     ) -> None:
         cls.wait_till_all_agents_are_in_status(
             agents=agents,
-            statusType=consts.AgentStatus.BOUND,
+            status_type=consts.AgentStatus.BOUND,
             timeout=timeout,
         )
 
@@ -160,7 +160,7 @@ class Agent(BaseCustomResource):
         ):
             cls.wait_till_all_agents_are_in_status(
                 agents=agents,
-                statusType=status_type,
+                status_type=status_type,
                 timeout=timeout,
             )
 
@@ -171,7 +171,7 @@ class Agent(BaseCustomResource):
         cls.wait_for_agents_to_be_ready_for_install(agents=agents, timeout=timeout)
         cls.wait_till_all_agents_are_in_status(
             agents=agents,
-            statusType=consts.AgentStatus.BOUND,
+            status_type=consts.AgentStatus.BOUND,
             status="False",
             timeout=timeout,
         )
@@ -183,14 +183,14 @@ class Agent(BaseCustomResource):
         cls.wait_for_agents_to_be_ready_for_install(agents=agents, timeout=timeout)
         cls.wait_till_all_agents_are_in_status(
             agents=agents,
-            statusType=consts.AgentStatus.INSTALLED,
+            status_type=consts.AgentStatus.INSTALLED,
             timeout=timeout,
         )
 
     @staticmethod
     def are_agents_in_status(
         agents: List["Agent"],
-        statusType: str,
+        status_type: str,
         status: str,
     ) -> bool:
         agents_conditions = {
@@ -199,29 +199,29 @@ class Agent(BaseCustomResource):
         }
 
         log.info(
-            f"Waiting for agents to have the condition '{statusType}' ="
+            f"Waiting for agents to have the condition '{status_type}' ="
             f" '{status}' and currently agent conditions are {agents_conditions}"
         )
 
-        return all(agent_conditions.get(statusType, None) == status for agent_conditions in agents_conditions.values())
+        return all(agent_conditions.get(status_type, None) == status for agent_conditions in agents_conditions.values())
 
     @staticmethod
     def wait_till_all_agents_are_in_status(
         agents: List["Agent"],
-        statusType: str,
+        status_type: str,
         timeout,
         status="True",
         interval=10,
     ) -> None:
-        log.info(f"Now Wait till agents have status as {statusType}")
+        log.info(f"Now Wait till agents have status as {status_type}")
 
         waiting.wait(
             lambda: Agent.are_agents_in_status(
                 agents,
-                statusType,
+                status_type,
                 status=status,
             ),
             timeout_seconds=timeout,
             sleep_seconds=interval,
-            waiting_for=f"Agents to have {statusType} status",
+            waiting_for=f"Agents to have {status_type} status",
         )

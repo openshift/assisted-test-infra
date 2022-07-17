@@ -592,10 +592,10 @@ class LibvirtController(NodeController, ABC):
         network = self.get_network_by_name(network_name)
         current_xml = network.XMLDesc(0)
         xml = minidom.parseString(current_xml.encode("utf-8"))
-        dhcpElement = xml.getElementsByTagName("dhcp")[0]
+        dhcp_element = xml.getElementsByTagName("dhcp")[0]
         bootp = xml.createElement("bootp")
         bootp.setAttribute("file", ipxe_url)
-        dhcpElement.appendChild(bootp)
+        dhcp_element.appendChild(bootp)
         self.destroy_network(network)
         self.create_network(xml.toprettyxml())
 
