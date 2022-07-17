@@ -388,11 +388,13 @@ class BaseTest:
         api_client: InventoryClient,
         request: FixtureRequest,
         day2_cluster_configuration: Day2ClusterConfig,
+        infra_env_configuration: InfraEnvConfig,
     ):
         log.debug(f"--- SETUP --- Creating Day2 cluster for test: {request.node.name}\n")
         cluster = Day2Cluster(
             api_client=api_client,
             config=day2_cluster_configuration,
+            infra_env_config=infra_env_configuration,
         )
 
         yield cluster

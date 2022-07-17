@@ -56,8 +56,9 @@ class Entity(ABC):
                 raise KeyError(f"The key {k} is not present in {self._config.__class__.__name__}")
             setattr(self._config, k, v)
 
-    def prepare_for_installation(self, **kwargs):
+    def prepare_for_installation(self, is_static_ip: bool = False, **kwargs):
         self.update_config(**kwargs)
+
         log.info(
             f"Preparing for installation with {self._entity_class_name} configurations: "
             f"{self._entity_class_name}_config={self._config}"
@@ -65,11 +66,11 @@ class Entity(ABC):
 
         self.nodes.controller.log_configuration()
 
-        if self._config.download_image and not self._config.is_static_ip:
+        if self._config.download_image and not is_static_ip:
             self.download_image()
 
         self.nodes.prepare_nodes()
-        if self._config.is_static_ip:
+        if is_static_ip:
             # On static IP installation re-download the image after preparing nodes and setting the
             # static IP configurations
             if self._config.download_image:
@@ -80,7 +81,7 @@ class Entity(ABC):
         if self._config.ipxe_boot:
             self._set_ipxe_url()
 
-        self.nodes.start_all(check_ips=not (self._config.is_static_ip and self._config.is_ipv6))
+        self.nodes.start_all(check_ips=not (is_static_ip and self._config.is_ipv6))
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
 
     def _set_ipxe_url(self):
