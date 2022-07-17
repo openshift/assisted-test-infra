@@ -159,19 +159,19 @@ class AgentClusterInstall(BaseCustomResource):
         if not mode:
             return
 
-        mastersMode, workersMode = "Enabled", "Enabled"
+        masters_mode, workers_mode = "Enabled", "Enabled"
         if mode == "none" or mode == "workers":
-            mastersMode = "Disabled"
+            masters_mode = "Disabled"
         if mode == "none" or mode == "masters":
-            workersMode = "Disabled"
+            workers_mode = "Disabled"
 
         spec["controlPlane"] = {
-            "hyperthreading": mastersMode,
+            "hyperthreading": masters_mode,
             "name": "master",
         }
         spec["compute"] = [
             {
-                "hyperthreading": workersMode,
+                "hyperthreading": workers_mode,
                 "name": "worker",
             }
         ]

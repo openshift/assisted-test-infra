@@ -56,13 +56,13 @@ class ClusterImageSet(BaseResource):
 
         log.info("created cluster imageset %s: %s", self.ref, pformat(yaml_data))
 
-    def create(self, releaseImage: str):
+    def create(self, release_image: str):
         body = {
             "apiVersion": f"{self._api_group}/{self._api_version}",
             "kind": "ClusterImageSet",
             "metadata": self.ref.as_dict(),
             "spec": {
-                "releaseImage": releaseImage,
+                "releaseImage": release_image,
             },
         }
         self.crd_api.create_cluster_custom_object(

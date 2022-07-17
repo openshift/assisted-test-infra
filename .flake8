@@ -9,7 +9,6 @@ ignore =
 
 max-line-length = 120
 max-complexity = 18
-select = B,C,E,F,W,T4,B9
 format = ${cyan}%(path)s${reset}:${yellow_bold}%(row)d${reset}:${green_bold}%(col)d${reset}: ${red_bold}%(code)s${reset} %(text)s
 
 ; Exclude consts and utils __init__ files due to violation of F401 - imported but unused

@@ -392,8 +392,8 @@ def collect_debug_info_from_cluster(cluster_deployment, agent_cluster_install, o
 
 def fetch_url_and_write_to_file(url_key, file_name, debug_info, output_folder):
     if url_key in debug_info:
-        logsURL = debug_info[url_key]
-        content = fetch_url(logsURL)
+        logs_url = debug_info[url_key]
+        content = fetch_url(logs_url)
         output_file = os.path.join(output_folder, file_name)
         with open(output_file, "wb") as _file:
             _file.write(content)

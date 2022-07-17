@@ -137,7 +137,7 @@ class HyperShift:
             log.exception("Failed listing nodes")
             return V1NodeList()
         if ready:
-            return filterNodeByReadyStatus(nodes)
+            return filter_node_by_ready_status(nodes)
         return nodes
 
     def wait_for_nodes(self, node_count: int, ready: bool = False) -> V1NodeList:
@@ -156,7 +156,7 @@ class HyperShift:
         return "-".join([HyperShift.NODEPOOL_NAMESPACE, self.name])
 
 
-def filterNodeByReadyStatus(nodes: V1NodeList) -> V1NodeList:
+def filter_node_by_ready_status(nodes: V1NodeList) -> V1NodeList:
     filtered_items = []
     for node in nodes.items:
         for condition in node.status.conditions:

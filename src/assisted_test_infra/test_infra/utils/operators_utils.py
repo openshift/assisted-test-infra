@@ -36,7 +36,7 @@ def _are_operators_in_status(
     if fall_on_error_status:
         for operator in operators:
             if operator.status == consts.OperatorStatus.FAILED:
-                _Exception = consts.olm_operators.get_exception_factory(operator.name)
+                _Exception = consts.olm_operators.get_exception_factory(operator.name)  # noqa: N806
                 raise _Exception(f"Operator {operator.name} status is failed with info {operator.status_info}")
 
     cluster = client.cluster_get(cluster_id=cluster_id).to_dict()
