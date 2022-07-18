@@ -2,7 +2,8 @@
 
 export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
 
-images=$(cat Dockerfile.* ./*/Dockerfile.* | grep -i FROM | awk '{print $2}')
+dockerfiles=$(find . -name "Dockerfile.*" -not -name "*.ocp")
+images=$(cat ${dockerfiles} | grep -i FROM | awk '{print $2}')
 images=${images//--from=}
 
 echo "### Attempting to pull assisted dockerfile images (best effort) ###"
