@@ -56,11 +56,10 @@ def download_cluster_logs(
     must_gather: bool,
     update_by_events: bool = False,
     retry_interval: int = RETRY_INTERVAL,
-    pull_secret="",
 ):
     @JunitTestSuite(custom_filename=f"junit_download_report_{cluster['id']}")
     def download_logs_suite():
-        return download_logs(client, cluster, dest, must_gather, update_by_events, retry_interval, pull_secret)
+        return download_logs(client, cluster, dest, must_gather, update_by_events, retry_interval)
 
     return download_logs_suite()
 
@@ -122,7 +121,6 @@ def download_logs(
     must_gather: bool,
     update_by_events: bool = False,
     retry_interval: int = RETRY_INTERVAL,
-    pull_secret="",
 ):
     if "hosts" not in cluster or len(cluster["hosts"]) == 0:
         cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"])
@@ -138,7 +136,7 @@ def download_logs(
     try:
         write_metadata_file(client, cluster, os.path.join(output_folder, "metadata.json"))
 
-        with SuppressAndLog(requests.exceptions.RequestException, ConnectionError):
+        with SuppressAndLog(requests.exceptions.RequestException, ConnectionError, KeyboardInterrupt):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
 
         for cluster_file in (
@@ -147,28 +145,28 @@ def download_logs(
             "worker.ign",
             "install-config.yaml",
         ):
-            with SuppressAndLog(assisted_service_client.rest.ApiException):
+            with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
                 client.download_and_save_file(
                     cluster["id"], cluster_file, os.path.join(output_folder, "cluster_files", cluster_file)
                 )
 
-        with SuppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             download_manifests(client, cluster["id"], output_folder)
 
         infra_env_list = set()
         for host_id, infra_env_id in map(lambda host: (host["id"], host["infra_env_id"]), cluster["hosts"]):
-            with SuppressAndLog(assisted_service_client.rest.ApiException):
+            with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
                 client.download_host_ignition(infra_env_id, host_id, os.path.join(output_folder, "cluster_files"))
             if infra_env_id not in infra_env_list:
                 infra_env_list.add(infra_env_id)
-                with SuppressAndLog(assisted_service_client.rest.ApiException):
+                with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
                     client.download_infraenv_events(infra_env_id, get_infraenv_events_path(infra_env_id, output_folder))
 
-        with SuppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             client.download_cluster_events(cluster["id"], get_cluster_events_path(cluster, output_folder))
             shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
-        with SuppressAndLog(assisted_service_client.rest.ApiException):
+        with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             are_masters_in_configuring_state = are_host_progress_in_stage(
                 cluster["hosts"], [HostsProgressStages.CONFIGURING], 2
             )

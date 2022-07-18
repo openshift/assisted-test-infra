@@ -805,7 +805,6 @@ class BaseTest:
                 cluster_details,
                 log_dir_name,
                 self._is_test_failed(request),
-                pull_secret=global_variables.pull_secret,
             )
 
         if isinstance(nodes.controller, LibvirtController):

@@ -56,7 +56,6 @@ def main():
             args.dest,
             args.must_gather,
             args.update_by_events,
-            pull_secret=args.pull_secret,
         )
     else:
         clusters = get_clusters(client, args.download_all)
@@ -67,9 +66,7 @@ def main():
 
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
-                download_cluster_logs(
-                    client, cluster, args.dest, args.must_gather, args.update_by_events, pull_secret=args.pull_secret
-                )
+                download_cluster_logs(client, cluster, args.dest, args.must_gather, args.update_by_events)
 
         log.info("Cluster installation statuses: %s", dict(Counter(cluster["status"] for cluster in clusters).items()))
 
