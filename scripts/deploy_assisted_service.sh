@@ -126,6 +126,13 @@ else
         DEBUG_DEPLOY_AI_PARAMS="REPLICAS_COUNT=1"
         # Override the SERVICE environment variable with the local registry debug image
         export SERVICE="${SUBSYSTEM_LOCAL_REGISTRY}/assisted-service:latest"
+
+        # Force removing the debugable image before re-deploying the service
+        # Change replicas to 0 so when applying the deployment it will identify the changes and allow deleting the
+        # image if it's already in use in the current pods
+        kubectl scale -n assisted-installer --replicas=0 deployment assisted-service || true
+        kubectl wait --for=delete -n assisted-installer pod $(kubectl -n assisted-installer get pods | grep assisted-service | awk '{print $1}')
+        minikube image rm "${SERVICE}" || true
     fi
 
     skipper run src/update_assisted_service_cm.py
