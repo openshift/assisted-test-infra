@@ -3,6 +3,7 @@ from base64 import b64decode
 import waiting
 from kubernetes.client import ApiClient, CoreV1Api, CustomObjectsApi, V1NodeList
 
+import consts
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import Secret, create_kube_api_client
 from service_client import log
@@ -33,6 +34,7 @@ class HyperShift:
         self,
         pull_secret_file: str,
         agent_namespace: str,
+        base_domain: str = consts.env_defaults.DEFAULT_BASE_DNS_DOMAIN,
         provider_image: str = "",
         hypershift_cpo_image: str = "",
         release_image: str = "",
@@ -41,7 +43,7 @@ class HyperShift:
         log.info(f"Creating HyperShift cluster {self.name}")
         cmd = (
             f"./bin/hypershift create cluster agent --pull-secret {pull_secret_file} --name {self.name}"
-            f" --agent-namespace {agent_namespace}"
+            f" --agent-namespace {agent_namespace} --base-domain {base_domain}"
         )
         if provider_image:
             log.info(f"Using provider image {provider_image}")
