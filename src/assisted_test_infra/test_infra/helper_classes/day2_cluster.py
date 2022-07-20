@@ -10,7 +10,7 @@ from typing import Any
 import waiting
 
 import consts
-from assisted_test_infra.test_infra import utils
+from assisted_test_infra.test_infra import BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.controllers import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.day2_cluster_config import BaseDay2ClusterConfig
 from assisted_test_infra.test_infra.tools import static_network
@@ -20,11 +20,14 @@ from service_client.assisted_service_api import InventoryClient
 
 
 class Day2Cluster(ABC):
-    def __init__(self, api_client: InventoryClient, config: BaseDay2ClusterConfig):
+    def __init__(
+        self, api_client: InventoryClient, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig
+    ):
         self.config = config
         self.api_client = api_client
+        self._infra_env_config = infra_env_config
 
-    def prepare_for_installation(self):
+    def prepare_for_installation(self, iso_download_path: str = None):
         utils.recreate_folder(consts.IMAGE_FOLDER, force_recreate=False)
 
         cluster = self.api_client.cluster_get(cluster_id=self.config.day1_cluster_id)
@@ -50,7 +53,7 @@ class Day2Cluster(ABC):
         self.configure_terraform(self.config.tf_folder, self.config.day2_workers_count, api_vip_ip)
 
         static_network_config = None
-        if self.config.is_static_ip:
+        if self._infra_env_config.is_static_ip:
             static_network_config = static_network.generate_day2_static_network_data_from_tf(
                 self.config.tf_folder, self.config.day2_workers_count
             )
@@ -67,9 +70,9 @@ class Day2Cluster(ABC):
         self.config.infra_env_id = infra_env.id
         # Download image
         iso_download_url = infra_env.download_url
-        image_path = os.path.join(consts.IMAGE_FOLDER, f"{self.config.day1_cluster_name}-installer-image.iso")
-        log.info(f"Downloading image {iso_download_url} to {image_path}")
-        utils.download_file(iso_download_url, image_path, False)
+        log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
+
+        utils.download_file(iso_download_url, iso_download_path, False)
 
     def start_install_and_wait_for_installed(self, libvirt_controller: NodeController):
         cluster_name = self.config.day1_cluster_name
@@ -230,7 +233,7 @@ class Day2Cluster(ABC):
         return len(hosts) >= self.config.day2_workers_count
 
     def set_nodes_hostnames_if_needed(self, network_name: str):
-        if self.config.is_ipv6 or self.config.is_static_ip:
+        if self.config.is_ipv6 or self._infra_env_config.is_static_ip:
             tf = utils.TerraformUtils(working_dir=self.config.tf_folder)
             libvirt_nodes = utils.extract_nodes_from_tf_state(tf.get_state(), network_name, consts.NodeRoles.WORKER)
             log.info(

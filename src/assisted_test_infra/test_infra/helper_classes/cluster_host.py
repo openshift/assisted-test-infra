@@ -23,7 +23,10 @@ class ClusterHost:
         )
 
     def has_hostname(self) -> bool:
-        return self.get_hostname() != DEFAULT_HOSTNAME
+        hostname = self.get_hostname()
+        if not hostname or hostname.startswith(DEFAULT_HOSTNAME):
+            return False
+        return True
 
     def interfaces(self) -> List[Interface]:
         return [Interface(**interface) for interface in self.__inventory.interfaces]

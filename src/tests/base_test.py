@@ -261,7 +261,6 @@ class BaseTest:
     @JunitFixtureTestCase()
     def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
         try:
-            nodes.prepare_nodes()
             yield nodes
         finally:
             if global_variables.test_teardown:
@@ -275,7 +274,6 @@ class BaseTest:
     @JunitFixtureTestCase()
     def prepare_infraenv_nodes(self, infraenv_nodes: Nodes, infra_env_configuration: InfraEnvConfig) -> Nodes:
         try:
-            infraenv_nodes.prepare_nodes()
             yield infraenv_nodes
         finally:
             if global_variables.test_teardown:
@@ -348,11 +346,9 @@ class BaseTest:
             infra_env = cluster.generate_infra_env()
             ipxe_server_controller = ipxe_server(name="ipxe_controller", api_client=cluster.api_client)
             ipxe_server_controller.run(infra_env_id=infra_env.id, cluster_name=cluster.name)
-
-            ipxe_server_url = f"http://{consts.DEFAULT_IPXE_SERVER_IP}:{consts.DEFAULT_IPXE_SERVER_PORT}/{cluster.name}"
-            network_name = cluster.nodes.get_cluster_network()
-            libvirt_controller = LibvirtController(config=cluster.nodes.controller, entity_config=cluster_configuration)
-            libvirt_controller.set_ipxe_url(network_name=network_name, ipxe_url=ipxe_server_url)
+            cluster_configuration.iso_download_path = utils.get_iso_download_path(
+                infra_env_configuration.entity_name.get()
+            )
 
         yield cluster
 
@@ -392,11 +388,13 @@ class BaseTest:
         api_client: InventoryClient,
         request: FixtureRequest,
         day2_cluster_configuration: Day2ClusterConfig,
+        infra_env_configuration: InfraEnvConfig,
     ):
         log.debug(f"--- SETUP --- Creating Day2 cluster for test: {request.node.name}\n")
         cluster = Day2Cluster(
             api_client=api_client,
             config=day2_cluster_configuration,
+            infra_env_config=infra_env_configuration,
         )
 
         yield cluster
@@ -449,8 +447,6 @@ class BaseTest:
             nodes = Nodes(controller)
             nodes_data["nodes"] = nodes
 
-            nodes.prepare_nodes()
-
             interfaces = self.nat_interfaces(tf_config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
             nat.add_nat_rules()
@@ -498,8 +494,6 @@ class BaseTest:
             controller = TerraformController(tf_config, entity_config=infraenv_config)
             nodes = Nodes(controller)
             nodes_data["nodes"] = nodes
-
-            nodes.prepare_nodes()
 
             interfaces = self.nat_interfaces(tf_config)
             nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
@@ -576,7 +570,7 @@ class BaseTest:
 
     @staticmethod
     def _does_need_proxy_server(nodes: Nodes):
-        return nodes and nodes.is_ipv6 and not nodes.is_ipv4
+        return nodes is not None and nodes.is_ipv6 and not nodes.is_ipv4
 
     @staticmethod
     def get_proxy_server(nodes: Nodes, cluster_config: ClusterConfig, proxy_server: Callable) -> ProxyController:

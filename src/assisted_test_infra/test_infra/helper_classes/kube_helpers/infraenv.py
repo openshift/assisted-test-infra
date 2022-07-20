@@ -1,7 +1,7 @@
 import re
 import warnings
 from pprint import pformat
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import waiting
 import yaml
@@ -67,6 +67,7 @@ class InfraEnv(BaseCustomResource):
     ):
         super().__init__(name, namespace)
         self.crd_api = CustomObjectsApi(kube_api_client)
+        self._iso_download_path = None
 
     def create_from_yaml(self, yaml_data: dict) -> None:
         self.crd_api.create_namespaced_custom_object(
@@ -88,7 +89,7 @@ class InfraEnv(BaseCustomResource):
         nmstate_label: Optional[str] = None,
         ssh_pub_key: Optional[str] = None,
         **kwargs,
-    ) -> None:
+    ) -> Dict:
         body = {
             "apiVersion": f"{consts.CRD_API_GROUP}/{consts.CRD_API_VERSION}",
             "kind": "InfraEnv",
@@ -113,7 +114,7 @@ class InfraEnv(BaseCustomResource):
             spec["sshAuthorizedKey"] = ssh_pub_key
 
         spec.update(kwargs)
-        self.crd_api.create_namespaced_custom_object(
+        infraenv = self.crd_api.create_namespaced_custom_object(
             group=consts.CRD_API_GROUP,
             version=consts.CRD_API_VERSION,
             plural=self._plural,
@@ -122,6 +123,7 @@ class InfraEnv(BaseCustomResource):
         )
 
         log.info("created infraEnv %s: %s", self.ref, pformat(body))
+        return infraenv
 
     def patch(
         self,

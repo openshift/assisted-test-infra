@@ -161,9 +161,9 @@ class InventoryClient(object):
     def cluster_get(self, cluster_id: str) -> models.cluster.Cluster:
         return self.client.v2_get_cluster(cluster_id=cluster_id)
 
-    def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[models.infra_env.InfraEnv]:
+    def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[Union[models.infra_env.InfraEnv, Dict[str, Any]]]:
         infra_envs = self.infra_envs_list()
-        return filter(lambda infra_env: infra_env["cluster_id"] == cluster_id, infra_envs)
+        return [infra_env for infra_env in infra_envs if infra_env["cluster_id"] == cluster_id]
 
     def update_infra_env(self, infra_env_id: str, infra_env_update_params):
         log.info("Updating infra env %s with values %s", infra_env_id, infra_env_update_params)

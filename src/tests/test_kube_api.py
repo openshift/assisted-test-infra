@@ -9,7 +9,7 @@ import pytest
 import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 
-from assisted_test_infra.test_infra import Nodes, utils
+from assisted_test_infra.test_infra import BaseInfraEnvConfig, Nodes, utils
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
@@ -52,20 +52,26 @@ class TestKubeAPI(BaseKubeAPI):
         prepare_nodes_network: Nodes,
         is_ipv4: bool,
         is_ipv6: bool,
+        infra_env_configuration: BaseInfraEnvConfig,
     ):
         self.kube_api_test(
             kube_api_context,
             prepare_nodes_network,
             cluster_configuration,
             prepared_controller_configuration,
+            infra_env_configuration,
             proxy_server if cluster_configuration.is_ipv6 else None,
         )
 
     @JunitTestSuite()
     @pytest.mark.kube_api
     @pytest.mark.override_controller_configuration(highly_available_controller_configuration.__name__)
-    def test_capi_provider(self, cluster_configuration, kube_api_context, prepare_nodes_network):
-        self.capi_test(kube_api_context, prepare_nodes_network, cluster_configuration)
+    def test_capi_provider(
+        self, cluster_configuration, kube_api_context, prepare_nodes_network, infra_env_configuration
+    ):
+        self.capi_test(
+            kube_api_context, prepare_nodes_network, cluster_configuration, infra_env_configuration.is_static_ip
+        )
 
     @JunitTestCase()
     def kube_api_test(
@@ -74,6 +80,7 @@ class TestKubeAPI(BaseKubeAPI):
         nodes: Nodes,
         cluster_config: ClusterConfig,
         prepared_controller_configuration: BaseNodeConfig,
+        infra_env_configuration: BaseInfraEnvConfig,
         proxy_server: Optional[Callable] = None,
         *,
         is_disconnected: bool = False,
@@ -94,8 +101,23 @@ class TestKubeAPI(BaseKubeAPI):
 
         cluster_deployment = ClusterDeployment(api_client, cluster_name, spoke_namespace)
         cluster_deployment.create(agent_cluster_install_ref=agent_cluster_install.ref, secret=secret)
-
         proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
+
+        if is_disconnected:
+            log.info("getting ignition and install config override for disconnected install")
+            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
+            self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
+            ignition_config_override = self.get_ignition_config_override(ca_bundle)
+        else:
+            ignition_config_override = None
+
+        infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
+        infraenv = infra_env.create(
+            cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
+        )
+        cluster_config.iso_download_path = utils.get_iso_download_path(infraenv.get("metadata", {}).get("name"))
+        nodes.prepare_nodes()
+
         agent_cluster_install.create(
             cluster_deployment_ref=cluster_deployment.ref,
             image_set_ref=self.deploy_image_set(cluster_name, api_client),
@@ -111,23 +133,10 @@ class TestKubeAPI(BaseKubeAPI):
 
         agent_cluster_install.wait_to_be_ready(ready=False)
 
-        if cluster_config.is_static_ip:
+        if infra_env_configuration.is_static_ip:
             self.apply_static_network_config(kube_api_context, nodes, cluster_name)
 
-        if is_disconnected:
-            log.info("getting ignition and install config override for disconnected install")
-            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
-            self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
-            ignition_config_override = self.get_ignition_config_override(ca_bundle)
-        else:
-            ignition_config_override = None
-
-        infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
-        infra_env.create(
-            cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
-        )
-
-        agents = self.start_nodes(nodes, infra_env, cluster_config)
+        agents = self.start_nodes(nodes, infra_env, cluster_config, infra_env_configuration.is_static_ip)
 
         if len(nodes) == 1:
             # for single node set the cidr and take the actual ip from the host
@@ -157,6 +166,7 @@ class TestKubeAPI(BaseKubeAPI):
         kube_api_context: KubeAPIContext,
         nodes: Nodes,
         cluster_config: ClusterConfig,
+        is_static_ip: bool,
         proxy_server: Optional[Callable] = None,
         *,
         is_disconnected: bool = False,
@@ -164,6 +174,8 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_name = cluster_config.cluster_name.get()
         api_client = kube_api_context.api_client
         spoke_namespace = kube_api_context.spoke_namespace
+        cluster_config.iso_download_path = utils.get_iso_download_path(cluster_name)
+        nodes.prepare_nodes()
 
         secret = Secret(api_client, f"{cluster_name}-secret", spoke_namespace)
         secret.create(pull_secret=cluster_config.pull_secret)
@@ -185,7 +197,7 @@ class TestKubeAPI(BaseKubeAPI):
             proxy=proxy,
             ssh_pub_key=cluster_config.ssh_public_key,
         )
-        self.start_nodes(nodes, infra_env, cluster_config)
+        self.start_nodes(nodes, infra_env, cluster_config, is_static_ip)
         hypershift = HyperShift(name=cluster_name, kube_api_client=api_client)
 
         with utils.pull_secret_file() as ps:
@@ -489,8 +501,10 @@ class TestLateBinding(BaseKubeAPI):
     ):
         api_client = kube_api_context.api_client
         spoke_namespace = kube_api_context.spoke_namespace
-
         infraenv_name = infraenv_config.entity_name.get()
+        infraenv_config.iso_download_path = utils.get_iso_download_path(infraenv_name)
+        nodes.prepare_nodes()
+
         spoke_namespace = spoke_namespace
         secret = Secret(api_client, f"{infraenv_name}-secret", spoke_namespace)
         secret.create(pull_secret=infraenv_config.pull_secret)
@@ -506,7 +520,7 @@ class TestLateBinding(BaseKubeAPI):
             ssh_pub_key=infraenv_config.ssh_public_key,
         )
 
-        agents = self.start_nodes(nodes, infra_env, infraenv_config)
+        agents = self.start_nodes(nodes, infra_env, infraenv_config, infraenv_config.is_static_ip)
 
         log.info("Waiting for agent status verification")
         Agent.wait_for_agents_to_be_ready_for_install(agents)

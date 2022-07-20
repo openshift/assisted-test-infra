@@ -141,7 +141,9 @@ class BaseKubeAPI(BaseTest):
         assert os.path.isfile(iso_download_path)
 
     @classmethod
-    def start_nodes(cls, nodes: Nodes, infra_env: InfraEnv, entity_config: BaseEntityConfig) -> List[Agent]:
+    def start_nodes(
+        cls, nodes: Nodes, infra_env: InfraEnv, entity_config: BaseEntityConfig, is_static_ip: bool
+    ) -> List[Agent]:
         infra_env.status()  # wait until install-env will have status (i.e until resource will be processed).
         cls.download_iso_from_infra_env(infra_env, entity_config.iso_download_path)
 
@@ -149,7 +151,7 @@ class BaseKubeAPI(BaseTest):
         nodes.controller.log_configuration()
         log.info(f"Entity configuration {entity_config}")
 
-        nodes.start_all(check_ips=not (entity_config.is_static_ip and entity_config.is_ipv6))
+        nodes.start_all(check_ips=not (is_static_ip and entity_config.is_ipv6))
 
         log.info("waiting for host agent")
         agents = infra_env.wait_for_agents(len(nodes))
