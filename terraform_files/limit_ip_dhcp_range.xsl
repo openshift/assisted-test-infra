@@ -12,11 +12,11 @@
   <xsl:template match="/network/ip[@family='ipv4']/dhcp/range">
     <!-- Change any IPv4 network with the following mutation -->
     <xsl:copy>
-      <xsl:attribute name="end">
-        <!-- Transform end range of e.g. "192.168.122.254" to "192.168.122.90" -->
-        <xsl:value-of select="concat(substring-before(@end,'.254'),'.90')" />
+      <xsl:attribute name="start">
+        <!-- Transform start range of e.g. "192.168.122.2" to "192.168.122.128" -->
+        <xsl:value-of select="concat(substring-before(@end,'.2'),'.128')" />
       </xsl:attribute>
-      <xsl:apply-templates select="@*[not(local-name()='end')]|node()"/>
+      <xsl:apply-templates select="@*[not(local-name()='start')]|node()"/>
     </xsl:copy>
   </xsl:template>
 

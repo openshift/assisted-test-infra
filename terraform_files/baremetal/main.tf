@@ -62,7 +62,7 @@ resource "libvirt_network" "net" {
     # Please change the code when the following issue is done:
     # https://github.com/dmacvicar/terraform-provider-libvirt/issues/794
 
-    xslt = file("limit_ip_dhcp_range.xsl")
+    xslt = file("../limit_ip_dhcp_range.xsl")
   }
 }
 

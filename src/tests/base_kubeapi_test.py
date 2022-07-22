@@ -113,8 +113,7 @@ class BaseKubeAPI(BaseTest):
         # Arbitrarily choose 100 and 101 (e.g. 192.168.128.100 and 192.168.128.101) for the VIPs
         # Terraform/libvirt allocates IPs in the 2-90 range so these should be safe to use.
         # The configuration applied to the Terraform networks is stored in the following files
-        # * terraform_files/baremetal/limit_ip_dhcp_range.xsl
-        # * terraform_files/baremetal_infra_env/limit_ip_dhcp_range.xsl
+        # * terraform_files/limit_ip_dhcp_range.xsl
         api_vip = str(IPNetwork(main_cidr).ip + 100)
         ingress_vip = str(IPNetwork(main_cidr).ip + 101)
 
