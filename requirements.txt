@@ -2,7 +2,7 @@ boto3==1.24.31
 debugpy==1.6.2
 dnspython==2.2.1
 filelock==3.7.1
-frozendict==2.3.2
+frozendict==2.3.4
 ipdb==0.13.9
 ipython==8.4.0
 jedi==0.18.1
