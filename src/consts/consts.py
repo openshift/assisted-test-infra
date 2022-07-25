@@ -125,7 +125,6 @@ MASTER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
 WORKER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
 NUMBER_OF_MASTERS = 3
 NAMESPACE_POOL_SIZE = 15
-PODMAN_FLAGS = "--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file"
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
 REDHAT_DNS_DOMAIN = "redhat.com"
 DEFAULT_NAMESPACE = "assisted-installer"

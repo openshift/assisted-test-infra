@@ -34,8 +34,5 @@ class TangController(ContainerizedController):
         return filename
 
     def set_thumbprint(self):
-        exec_command = (
-            f"podman --cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file "
-            f"exec -it {self._name} tang-show-keys {self._port}"
-        )
+        exec_command = f"podman-remote exec -it {self._name} tang-show-keys {self._port}"
         self.thumbprint, _, _ = utils.run_command(exec_command, shell=True)

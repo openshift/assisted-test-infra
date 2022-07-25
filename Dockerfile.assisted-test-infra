@@ -2,6 +2,11 @@ FROM quay.io/edge-infrastructure/assisted-service:latest AS service
 
 FROM quay.io/centos/centos:stream9
 
+# A directory in the path with write permission even for non-root users
+ENV TOOLS=/tools/
+ENV PATH="$TOOLS:$PATH"
+RUN mkdir $TOOLS --mode g+xw
+
 # CRB repo is required for libvirt-devel
 RUN dnf -y install --enablerepo=crb \
   make \
@@ -10,7 +15,6 @@ RUN dnf -y install --enablerepo=crb \
   wget \
   curl-minimal \
   git \
-  podman \
   httpd-tools \
   jq \
   nss_wrapper \
@@ -25,6 +29,14 @@ RUN dnf -y install --enablerepo=crb \
 RUN curl --retry 5 -Lo packer.zip https://releases.hashicorp.com/packer/1.8.0/packer_1.8.0_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
 RUN curl --retry 5 -Lo terraform.zip https://releases.hashicorp.com/terraform/1.2.2/terraform_1.2.2_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
 RUN curl --retry 5 -Lo - "https://github.com/vmware/govmomi/releases/latest/download/govc_$(uname -s)_$(uname -m).tar.gz" | tar -C /usr/local/bin -xvzf - govc
+RUN curl --retry 5 -L https://github.com/containers/podman/releases/download/v3.4.4/podman-remote-static.tar.gz -o "/tmp/podman-remote3.tar.gz" && \
+    tar -zxvf /tmp/podman-remote3.tar.gz && \
+    mv podman-remote-static /tools/podman-remote3 && \
+    rm -f /tmp/podman-remote3.tar.gz &&\
+    curl --retry 5 -L https://github.com/containers/podman/releases/download/v4.1.1/podman-remote-static.tar.gz -o "/tmp/podman-remote4.tar.gz" && \
+    tar -zxvf /tmp/podman-remote4.tar.gz && \
+    mv podman-remote-static /tools/podman-remote4 && \
+    rm -f /tmp/podman-remote4.tar.gz
 
 WORKDIR /home/assisted-test-infra
 
