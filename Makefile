@@ -3,7 +3,18 @@
 #############
 
 SHELL=/bin/sh
-CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
+CONTAINER_COMMAND := $(shell scripts/utils.sh get_container_runtime_command)
+
+ifneq (,$(findstring podman,$(CONTAINER_COMMAND)))
+    PULL_PARAM = --pull-always
+else
+    PULL_PARAM = --pull
+endif
+
+# Selecting the right podman-remote version since podman-remote4 cannot work against podman-server3 and vice versa.
+# It must be occurred before any other container related task.
+# Makefile syntax force us to assign the shell result to a variable - please ignore it.
+PODMAN_CLIENT_SELECTION_IGNORE_ME := $(shell scripts/utils.sh select_podman_client)
 
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 PYTHONPATH := ${PYTHONPATH}:${ROOT_DIR}/src

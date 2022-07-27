@@ -32,7 +32,7 @@ class IPXEController(ContainerizedController):
     def _build_server_image(self):
         log.info(f"Creating Image for iPXE Server {self._name}")
         build_flags = f"--build-arg SERVER_IP={self._ip} --build-arg SERVER_PORT={self._port}"
-        utils.run_command(f"podman {consts.PODMAN_FLAGS} build {self._dir}/server -t {self._name} {build_flags}")
+        utils.run_command(f"podman-remote build {self._dir}/server -t {self._name} {build_flags}")
 
     def _download_ipxe_script(self, infra_env_id: str, cluster_name: str):
         log.info(f"Downloading iPXE script to {self._ipxe_scripts_folder}")

@@ -115,7 +115,7 @@ class TestBootstrapInPlace(BaseTest):
         embedded_image = os.path.join(BUILD_DIR, embed_image_name)
         os.remove(embedded_image) if os.path.exists(embedded_image) else None
 
-        flags = shlex.split("--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v .:/data -w /data")
+        flags = shlex.split(f"--privileged --rm -v /dev:/dev -v /run/udev:/run/udev -v {os.getcwd()}:/data -w /data")
         # retry to avoid occassional quay hiccups
         self.retrying_run_container(
             "coreos-installer",

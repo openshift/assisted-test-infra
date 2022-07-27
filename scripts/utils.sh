@@ -51,6 +51,7 @@ function spawn_port_forwarding_command() {
           port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${namespace} -o=jsonpath="{.spec.ports[?(@.port==$port)].nodePort}")
         fi
     fi
+    mkdir -p ./build
     cat <<EOF >build/xinetd-$filename
 service ${xinet_service_name}
 {
@@ -183,6 +184,51 @@ function configure_none_platform_iptables_rules() {
     ip=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
     iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT --source $network --to-source $ip
     iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -j SNAT --source $sec_network --to-source $ip
+}
+
+function running_from_skipper() {
+   # The SKIPPER_UID environment variable is an indication that we are running on a skipper container.
+   [ -n "${SKIPPER_UID+x}" ]
+}
+
+function get_container_runtime_command() {
+  # if CONTAINER_TOOL is defined skipping
+  if [ -z "${CONTAINER_TOOL+x}" ]; then
+    if running_from_skipper; then
+      if [ -z ${CONTAINER_RUNTIME_COMMAND+x} ]; then
+        echo "CONTAINER_RUNTIME_COMMAND doesn't set on old skipper version -> default to docker. Upgrade your skipper to the latest version" > /dev/stderr;
+      fi
+
+      if [ "${CONTAINER_RUNTIME_COMMAND:-docker}" = "docker" ]; then
+        CONTAINER_TOOL="docker"
+      else
+        CONTAINER_TOOL=$( command -v podman &> /dev/null && echo "podman" || echo "podman-remote")
+      fi
+    else
+      CONTAINER_TOOL=$( command -v podman &> /dev/null && echo "podman" || echo "docker")
+    fi
+  fi
+
+  echo $CONTAINER_TOOL
+}
+
+# podman-remote4 cannot run against podman server 3 so the skipper image contains them both
+# here we select the right podman-remote version
+function select_podman_client() {
+  # already linked
+  if command -v podman-remote &> /dev/null; then
+    exit
+  fi
+
+  if [ "$(get_container_runtime_command)" = "podman-remote" ]; then
+    if podman-remote4 info 2>&1 | grep "server API version is too old" &> /dev/null; then
+      echo "using podman-remote version 3"
+      ln $(which podman-remote3) /tools/podman-remote
+    else
+      echo "using podman-remote version 4"
+      ln $(which podman-remote4) /tools/podman-remote
+    fi
+  fi
 }
 
 "$@"
