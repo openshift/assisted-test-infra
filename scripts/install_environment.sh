@@ -179,22 +179,22 @@ function install_runtime_container() {
         return
     fi
 
-    if [ ! -x "$(command -v podman)" ]; then
-        install_podman
-        current_version="$(head -n1 <(podman version) | awk '{print $2}')"
-    else
-        current_version="$(head -n1 <(podman version) | awk '{print $2}')"
+    # getting podman version and allowing it to fail if podman is not installed
+    current_podman_version="$(podman info --format={{.Version.Version}} || true)"
 
-        if (! version_is_greater $current_version $PODMAN_MINIMUM_VERSION || ! systemctl is-active --quiet podman.socket ); then
-            install_podman
-            current_version="$(head -n1 <(podman version) | awk '{print $2}')"
-        else
-            echo "podman is already installed"
-        fi
+    if [ -n "${current_podman_version}" ] && \
+            version_is_greater "${current_podman_version}" "${PODMAN_MINIMUM_VERSION}" && \
+            systemctl is-active --quiet podman.socket; then
+        echo "podman is already installed and version is greater than ${PODMAN_MINIMUM_VERSION}"
+        return
     fi
 
-    if ! version_is_greater "$current_version" "$PODMAN_MINIMUM_VERSION"; then
-        echo "podman version ($current_version) is too old and might not work as expected"
+    install_podman
+
+    # recalculating the version again to see if it got upgraded
+    current_podman_version="$(podman info --format={{.Version.Version}})"
+    if ! version_is_greater "${current_podman_version}" "${PODMAN_MINIMUM_VERSION}"; then
+        echo "podman version ($current_podman_version) is older than ($PODMAN_MINIMUM_VERSION) and might not work as expected"
     fi
 }
 
