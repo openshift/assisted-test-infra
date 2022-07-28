@@ -55,8 +55,15 @@ function install_libvirt() {
         make
 
     echo "Install swtpm v0.7.1 from source"
-    git clone --depth 1 --branch v0.7.1 https://github.com/stefanberger/swtpm.git
-    pushd swtpm
+    swtpm_dir=$(mktemp -d -t swtpm-dir-XXXXXX)
+    function cleanup {
+        echo "deleting ${swtpm_dir}..."
+        rm -rf "${swtpm_dir}"
+    }
+    trap cleanup EXIT
+
+    git clone --depth 1 --branch v0.7.1 https://github.com/stefanberger/swtpm.git ${swtpm_dir}
+    pushd ${swtpm_dir}
     ./autogen.sh --with-openssl --prefix=/usr
     make -j4
     make install
