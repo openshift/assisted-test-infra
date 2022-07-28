@@ -14,7 +14,6 @@ function version_is_greater() {
 }
 
 function install_libvirt() {
-    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
 
     echo "Installing libvirt-related packages..."
     sudo dnf install -y \
@@ -27,8 +26,17 @@ function install_libvirt() {
     # TODO: get swtpm RPMs from EPEL as soon as 0.7.1 or later lands there.
     # based on: https://github.com/stefanberger/swtpm/wiki#compile-and-install-on-linux
 
-    echo "Enable EPEL"
-    sudo dnf install -y  epel-release
+    echo "Enable EPEL for swtpm and swtpm-tools packages"
+    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+
+    case "${PRETTY_NAME}" in
+    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        ;;
+    *)
+        sudo dnf install -y epel-release
+    esac
 
     echo "Install swtpm dependencies"
     sudo dnf install -y \
