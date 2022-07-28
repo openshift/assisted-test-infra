@@ -166,7 +166,7 @@ function install_podman(){
 }
 
 function install_runtime_container() {
-    echo "Installing container runtime package"
+    echo "Container runtime package"
     if [ -x "$(command -v docker)" ]; then
         echo "docker is already installed"
         return
@@ -178,7 +178,7 @@ function install_runtime_container() {
     else
         current_version="$(head -n1 <(podman version) | awk '{print $2}')"
 
-        if [! version_is_greater "$current_version" "$PODMAN_MINIMUM_VERSION" || ! systemctl is-active --quiet service ]; then
+        if (! version_is_greater $current_version $PODMAN_MINIMUM_VERSION || ! systemctl is-active --quiet podman.socket ); then
             install_podman
             current_version="$(head -n1 <(podman version) | awk '{print $2}')"
         else

@@ -196,16 +196,19 @@ function get_container_runtime_command() {
   if [ -z "${CONTAINER_TOOL+x}" ]; then
     if running_from_skipper; then
       if [ -z ${CONTAINER_RUNTIME_COMMAND+x} ]; then
-        echo "CONTAINER_RUNTIME_COMMAND doesn't set on old skipper version -> default to docker. Upgrade your skipper to the latest version" > /dev/stderr;
+        echo "CONTAINER_RUNTIME_COMMAND doesn't set on old skipper version -> default to podman. Upgrade your skipper to the latest version" 1>&2;
       fi
 
-      if [ "${CONTAINER_RUNTIME_COMMAND:-docker}" = "docker" ]; then
+      if [ "${CONTAINER_RUNTIME_COMMAND:-podman}" = "docker" ]; then
         CONTAINER_TOOL="docker"
       else
         CONTAINER_TOOL=$( command -v podman &> /dev/null && echo "podman" || echo "podman-remote")
       fi
     else
-      CONTAINER_TOOL=$( command -v podman &> /dev/null && echo "podman" || echo "docker")
+      # The Docker command could be an alias for podman, so check first for podman
+      # Fallback to Docker if podman is not available
+      # In the absence of a container tool installed on the system, default to podman as we will install it during setup.
+      CONTAINER_TOOL=$( command -v podman &> /dev/null && echo "podman" || (command -v docker &> /dev/null && echo "docker" || echo "podman"))
     fi
   fi
 
