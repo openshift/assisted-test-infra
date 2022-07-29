@@ -134,7 +134,8 @@ def download_logs(
     recreate_folder(os.path.join(output_folder, "cluster_files"))
 
     try:
-        write_metadata_file(client, cluster, os.path.join(output_folder, "metadata.json"))
+        infra_env_ids = set(host["infra_env_id"] for host in cluster["hosts"])
+        write_metadata_file(client, cluster, infra_env_ids, os.path.join(output_folder, "metadata.json"))
 
         with SuppressAndLog(requests.exceptions.RequestException, ConnectionError, KeyboardInterrupt):
             client.download_metrics(os.path.join(output_folder, "metrics.txt"))
@@ -153,14 +154,15 @@ def download_logs(
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             download_manifests(client, cluster["id"], output_folder)
 
-        infra_env_list = set()
-        for host_id, infra_env_id in map(lambda host: (host["id"], host["infra_env_id"]), cluster["hosts"]):
+        for host in cluster["hosts"]:
             with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-                client.download_host_ignition(infra_env_id, host_id, os.path.join(output_folder, "cluster_files"))
-            if infra_env_id not in infra_env_list:
-                infra_env_list.add(infra_env_id)
-                with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-                    client.download_infraenv_events(infra_env_id, get_infraenv_events_path(infra_env_id, output_folder))
+                client.download_host_ignition(
+                    host["infra_env_id"], host["id"], os.path.join(output_folder, "cluster_files")
+                )
+
+        for infra_env_id in infra_env_ids:
+            with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
+                client.download_infraenv_events(infra_env_id, get_infraenv_events_path(infra_env_id, output_folder))
 
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             client.download_cluster_events(cluster["id"], get_cluster_events_path(cluster, output_folder))
@@ -300,9 +302,11 @@ def get_logs_output_folder(dest: str, cluster: dict):
 
 
 @JunitTestCase()
-def write_metadata_file(client: InventoryClient, cluster: dict, file_name: str):
+def write_metadata_file(client: InventoryClient, cluster: dict, infra_env_ids: set, file_name: str):
     d = {"cluster": cluster}
     d.update(client.get_versions())
+
+    d["infraenvs"] = [client.get_infra_env(infra_env_id=infra_env_id).to_dict() for infra_env_id in infra_env_ids]
 
     with suppress(KeyError):
         d["link"] = f"{get_ui_url_from_api_url(client.inventory_url)}/clusters/{cluster['id']}"
