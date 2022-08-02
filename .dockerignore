@@ -1,3 +1,4 @@
 storage_pool
 **/*.iso
+**/minikube*
 

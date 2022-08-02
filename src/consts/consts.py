@@ -294,6 +294,16 @@ class Platforms:
     VSPHERE = "vsphere"
 
 
+class PlatformType:
+    """
+    Platform types as defined in kube-api (AgentClusterInstall)
+    """
+
+    BARE_METAL = "BareMetal"
+    NONE = "None"
+    VSPHERE = "VSphere"
+
+
 class HighAvailabilityMode:
     FULL = "Full"
     NONE = "None"

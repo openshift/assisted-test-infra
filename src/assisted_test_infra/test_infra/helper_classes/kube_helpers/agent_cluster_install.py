@@ -148,6 +148,9 @@ class AgentClusterInstall(BaseCustomResource):
         if "machine_cidr" in kwargs:
             spec["networking"]["machineNetwork"] = [{"cidr": kwargs.pop("machine_cidr")}]
 
+        if "platform_type" in kwargs:
+            spec["platformType"] = kwargs.pop("platform_type")
+
         if "hyperthreading" in kwargs:
             self._set_hyperthreading(spec=spec, mode=kwargs.pop("hyperthreading"))
 

@@ -150,6 +150,7 @@ class BaseKubeAPI(BaseTest):
         nodes.controller.log_configuration()
         log.info(f"Entity configuration {entity_config}")
 
+        nodes.notify_iso_ready()
         nodes.start_all(check_ips=not (is_static_ip and entity_config.is_ipv6))
 
         log.info("waiting for host agent")
@@ -169,8 +170,6 @@ class BaseKubeAPI(BaseTest):
         The setting of the hostname is required for IPv6 only, because the nodes are booted with
         hostname equal to localhost which is neither unique not legal name for AI host
         """
-        if is_ipv4:
-            return
 
         def find_matching_node_and_return_name():
             inventory = agent.status().get("inventory", {})
@@ -188,13 +187,6 @@ class BaseKubeAPI(BaseTest):
         )
         log.info(f"patching agent {agent.ref} with hostname {hostname}")
         agent.patch(hostname=hostname)
-
-    @classmethod
-    def set_agent_hostname(cls, node: Node, agent: Agent, is_ipv4: bool) -> None:
-        if is_ipv4:
-            return
-        log.info("patching agent hostname=%s", node)
-        agent.patch(hostname=node.name)
 
     @classmethod
     def set_single_node_ip(cls, cluster_deployment: ClusterDeployment, nodes: Nodes):

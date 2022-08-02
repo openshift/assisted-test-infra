@@ -27,7 +27,7 @@ class TerraformUtils:
 
     def select_defined_variables(self, **kwargs):
         supported_variables = self.get_variable_list()
-        return {k: v for k, v in kwargs.items() if v and k in supported_variables}
+        return {k: v for k, v in kwargs.items() if v is not None and k in supported_variables}
 
     def get_variable_list(self):
         results = list()
