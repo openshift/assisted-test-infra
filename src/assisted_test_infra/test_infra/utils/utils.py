@@ -459,8 +459,8 @@ def get_default_openshift_version(client=None) -> str:
 
     log.info(f"Default openshift version found {versions}")
 
-    assert len(versions) == 1, f"There should be exactly one default version {versions}"
-    return versions[0]
+    assert len(versions) <= 1, f"There should be no more than one default version - {versions}"
+    return versions[0] if versions else None
 
 
 def get_openshift_version(allow_default=True, client=None) -> str:
