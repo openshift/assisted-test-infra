@@ -13,8 +13,28 @@ function version_is_greater() {
     false
 }
 
-function install_libvirt() {
+function config_additional_modules() {
+    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
 
+    case "${PRETTY_NAME}" in
+    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
+        echo "Enable EPEL for swtpm packages when on RHEL/CentOS based distributions"
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+        echo "Enable podman 4.0 stream for newer podman versions"
+        sudo dnf module reset -y container-tools
+        sudo dnf module enable -y container-tools:4.0
+        sudo dnf module install -y container-tools:4.0
+        ;;
+
+    *)
+        echo "Enable EPEL for swtpm packages"
+        sudo dnf install -y epel-release
+    esac
+}
+
+function install_libvirt() {
     echo "Installing libvirt-related packages..."
     sudo dnf install -y \
         libvirt \
@@ -25,18 +45,6 @@ function install_libvirt() {
 
     # TODO: get swtpm RPMs from EPEL as soon as 0.7.1 or later lands there.
     # based on: https://github.com/stefanberger/swtpm/wiki#compile-and-install-on-linux
-
-    echo "Enable EPEL for swtpm and swtpm-tools packages"
-    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
-
-    case "${PRETTY_NAME}" in
-    "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
-        sudo dnf install -y \
-            https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-        ;;
-    *)
-        sudo dnf install -y epel-release
-    esac
 
     echo "Install swtpm dependencies"
     sudo dnf install -y \
@@ -166,7 +174,7 @@ function install_podman(){
     sudo systemctl disable --now podman.socket || true
     sudo rm -rf /run/user/${UID}/podman
     sudo rm -rf /run/podman
-    sudo dnf install podman -y
+    sudo dnf install --best podman -y
     sudo systemctl enable --now podman.socket
     systemctl --user enable --now podman.socket
     sudo loginctl enable-linger $USER
@@ -194,7 +202,7 @@ function install_runtime_container() {
     # recalculating the version again to see if it got upgraded
     current_podman_version="$(podman info --format={{.Version.Version}})"
     if ! version_is_greater "${current_podman_version}" "${PODMAN_MINIMUM_VERSION}"; then
-        echo "podman version ($current_podman_version) is older than ($PODMAN_MINIMUM_VERSION) and might not work as expected"
+        echo >&2 "podman version ($current_podman_version) is older than ($PODMAN_MINIMUM_VERSION) and might not work as expected"
     fi
 }
 
@@ -334,6 +342,7 @@ function additional_configs() {
 }
 
 if [ $# -eq 0 ]; then
+    config_additional_modules
     install_packages
     install_libvirt
     install_runtime_container
