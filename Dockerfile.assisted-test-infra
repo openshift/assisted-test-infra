@@ -22,7 +22,8 @@ RUN dnf -y install \
 
 RUN curl --retry 5 -Lo packer.zip https://releases.hashicorp.com/packer/1.8.0/packer_1.8.0_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
 RUN curl --retry 5 -Lo terraform.zip https://releases.hashicorp.com/terraform/0.14.11/terraform_0.14.11_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
-RUN curl --retry 5 -Lo - "https://github.com/vmware/govmomi/releases/latest/download/govc_$(uname -s)_$(uname -m).tar.gz" | tar -C /usr/local/bin -xvzf - govc
+
+COPY --from=quay.io/ocp-splat/govc:v0.29.0 /govc /usr/local/bin
 
 WORKDIR /home/assisted-test-infra
 
