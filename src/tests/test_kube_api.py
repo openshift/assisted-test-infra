@@ -21,7 +21,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
-from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node, get_platform_type
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
@@ -129,6 +129,7 @@ class TestKubeAPI(BaseKubeAPI):
             control_plane_agents=nodes.masters_count,
             worker_agents=nodes.workers_count,
             proxy=proxy.as_dict() if proxy else {},
+            platform_type=get_platform_type(cluster_config.platform),
         )
 
         agent_cluster_install.wait_to_be_ready(ready=False)

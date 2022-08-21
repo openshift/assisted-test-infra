@@ -44,26 +44,6 @@ def get_ip_for_single_node(cluster_deployment, is_ipv4, timeout=300):
     )
 
 
-def set_agents_hostnames(
-    cluster_deployment,
-    is_ipv4,
-    static_network_mode,
-    tf,
-    nodes_number,
-):
-    if is_ipv4 and not static_network_mode:
-        return
-
-    log.info("Updating agents hostnames")
-    nodes_details = get_nodes_details(
-        cluster_name=cluster_deployment.ref.name,
-        namespace=cluster_deployment.ref.namespace,
-        tf=tf,
-    )
-    for agent in cluster_deployment.wait_for_agents(nodes_number):
-        set_agent_hostname(agent, nodes_details)
-
-
 def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]], tf_state):
     nodes = utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
     nodes.update(utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
@@ -104,6 +84,21 @@ def get_hostname_for_agent(agent, nodes_details):
         for interface in inventory.get("interfaces", []):
             if interface["macAddress"].lower() == mac_address:
                 return node_metadata["name"]
+
+
+def get_platform_type(platform: str) -> str:
+    """
+    Return PlatformType as defined in kube-api (AgentClusterInstallStatus)
+    """
+    if platform == consts.Platforms.NONE:
+        return consts.PlatformType.NONE
+    if platform == consts.Platforms.BARE_METAL:
+        return consts.PlatformType.BARE_METAL
+    if platform == consts.Platforms.VSPHERE:
+        return consts.PlatformType.VSPHERE
+
+    # Return platform as-is (in case it was already specified in kube-api format)
+    return platform
 
 
 def suppress_not_found_error(fn):

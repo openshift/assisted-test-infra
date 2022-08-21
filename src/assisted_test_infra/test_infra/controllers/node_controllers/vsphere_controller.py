@@ -1,3 +1,4 @@
+import os
 import time
 from builtins import list
 from typing import Any, Callable, Dict, List, Tuple
@@ -25,6 +26,10 @@ class VSphereController(NodeController):
         self._tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
 
     def prepare_nodes(self):
+        if not os.path.exists(self._entity_config.iso_download_path):
+            utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
+            # if file not exist lets create dummy
+            utils.touch(self._entity_config.iso_download_path)
         config = {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
         # The ISO file isn't available now until preparing for installation
         del config["iso_download_path"]
@@ -105,6 +110,9 @@ class VSphereController(NodeController):
         self.__run_on_vm(node_name, reboot)
 
     def get_ingress_and_api_vips(self) -> dict:
+        if self._entity_config.api_vip and self._entity_config.ingress_vip:
+            return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
+        # Not used when DHCP is enabled
         return None
 
     def set_dns(self, api_ip: str, ingress_ip: str) -> None:
