@@ -64,7 +64,7 @@ OFFLINE_TOKEN := $(or $(OFFLINE_TOKEN), "")
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
-IMAGE_NAME=test-infra
+IMAGE_NAME=assisted-test-infra
 
 
 # oc deploy
@@ -132,7 +132,8 @@ create_environment: image_build bring_assisted_service start_minikube
 image_build:
 	scripts/pull_dockerfile_images.sh
 	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.assisted-test-infra | \
-	 $(CONTAINER_COMMAND) build --network=host -t $(IMAGE_NAME) -f- .
+		$(CONTAINER_COMMAND) build --network=host -t $(IMAGE_NAME) -f- .
+	$(CONTAINER_COMMAND) tag $(IMAGE_NAME) test-infra:latest  # For backwards computability
 
 clean:
 	-rm -rf build assisted-service test_infra.log
