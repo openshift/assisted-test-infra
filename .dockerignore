@@ -1,3 +1,5 @@
 storage_pool
 **/*.iso
-
+build/
+assisted-service/
+.git/

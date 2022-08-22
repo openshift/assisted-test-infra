@@ -17,3 +17,4 @@ exclude =
     src/consts/__init__.py
     src/assisted_test_infra/test_infra/utils/__init__.py
     .git
+    assisted-service/

@@ -1,5 +1,5 @@
 registry: quay.io
-build-container-image: test-infra
+build-container-image: assisted-test-infra
 build-container-tag: latest
 
 volumes:
@@ -46,4 +46,3 @@ env_file:
 
 env:
   CONTAINER_HOST: unix://run/podman/podman.sock
-
