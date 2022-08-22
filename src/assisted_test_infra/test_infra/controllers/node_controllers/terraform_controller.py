@@ -318,7 +318,6 @@ class TerraformController(LibvirtController):
 
     def prepare_nodes(self):
         log.info("Preparing nodes")
-        self.destroy_all_nodes()
         if not os.path.exists(self._entity_config.iso_download_path):
             utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
             # if file not exist lets create dummy

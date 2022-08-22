@@ -11,6 +11,8 @@ class TestDay2(BaseTest):
     @JunitTestSuite()
     def test_deploy_day2_nodes_cloud(self, cluster, day2_cluster, controller):
         if not global_variables.cluster_id:
+            cluster.nodes.destroy_all_nodes()
+            cluster.nodes.prepare_nodes()
             cluster.prepare_for_installation()
             cluster.start_install_and_wait_for_installed()
 
