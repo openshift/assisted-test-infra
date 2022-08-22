@@ -1,4 +1,3 @@
-from abc import ABC
 from dataclasses import dataclass
 
 from assisted_service_client import models
@@ -8,7 +7,7 @@ from .base_config import BaseConfig
 
 
 @dataclass
-class BaseEntityConfig(BaseConfig, ABC):
+class BaseEntityConfig(BaseConfig):
     pull_secret: str = None
     ssh_public_key: str = None
     openshift_version: str = None
