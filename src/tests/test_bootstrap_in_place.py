@@ -259,6 +259,7 @@ class TestBootstrapInPlace(BaseTest):
                 cluster_name=cluster_configuration.cluster_name.get(),
                 base_dns_domain=cluster_configuration.base_dns_domain,
                 api_vip=master_ip,
+                ingress_vip=master_ip,
             )
 
             log.info("Waiting for installation to complete...")
