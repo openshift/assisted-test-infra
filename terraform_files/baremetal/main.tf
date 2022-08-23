@@ -2,7 +2,7 @@ terraform {
   required_providers {
     libvirt = {
       source = "dmacvicar/libvirt"
-      version = "0.6.12"
+      version = "0.6.14"
     }
   }
 }
@@ -48,6 +48,18 @@ resource "libvirt_network" "net" {
       content {
         hostname = hosts.key
         ip       = hosts.value
+      }
+    }
+  }
+
+  dnsmasq_options {
+    dynamic "options" {
+      for_each = concat(
+        data.libvirt_network_dnsmasq_options_template.wildcard-ingress-cname.*.rendered,
+      )
+      content {
+        option_name  = options.value.option_name
+        option_value = options.value.option_value
       }
     }
   }
@@ -160,25 +172,29 @@ data "libvirt_network_dns_host_template" "api-int" {
   hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
 }
 
-# TODO: Move to use wildcard with dnsmasq options
+# TODO: leave only the wildcard cname entry defined and remove the other specific DNS assignments
 # Read more at: https://bugzilla.redhat.com/show_bug.cgi?id=1532856
-# terraform-libvirt-provider supports dnsmasq options since https://github.com/dmacvicar/terraform-provider-libvirt/pull/820
-# but there's still no an official release with that code.
+data "libvirt_network_dnsmasq_options_template" "wildcard-ingress-cname" {
+  count        = var.master_count == 1 ? 1 : 0
+  option_name  = "cname"
+  option_value = "*.apps.${var.cluster_name}.${var.cluster_domain},${var.ingress_vip}"
+}
+
 data "libvirt_network_dns_host_template" "oauth" {
-  count    = var.bootstrap_in_place ? 1 : 0
-  ip       = var.single_node_ip
+  count    = var.master_count == 1 ? 1 : 0
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
   hostname = "oauth-openshift.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "console" {
-  count    = var.bootstrap_in_place ? 1 : 0
-  ip       = var.single_node_ip
+  count    = var.master_count == 1 ? 1 : 0
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
   hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "canary" {
-  count    = var.bootstrap_in_place ? 1 : 0
-  ip       = var.single_node_ip
+  count    = var.master_count == 1 ? 1 : 0
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
   hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
 }
 

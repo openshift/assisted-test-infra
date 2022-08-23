@@ -69,6 +69,10 @@ class Cluster(Entity):
     def enable_image_download(self):
         return self._config.download_image
 
+    @property
+    def high_availability_mode(self):
+        return self._config.high_availability_mode
+
     def _update_existing_cluster_config(self, api_client: InventoryClient, cluster_id: str):
         existing_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
 
@@ -333,7 +337,7 @@ class Cluster(Entity):
 
         else:
             log.info("Assigning VIPs statically")
-            access_vips = controller.get_ingress_and_api_vips()
+            access_vips = controller.get_ingress_and_api_vips(is_highly_available=True)
             api_vip = access_vips["api_vip"] if access_vips else None
             ingress_vip = access_vips["ingress_vip"] if access_vips else None
             machine_networks = None

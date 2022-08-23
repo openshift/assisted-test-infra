@@ -21,7 +21,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
-from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node, get_platform_type
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_platform_type
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
@@ -139,19 +139,17 @@ class TestKubeAPI(BaseKubeAPI):
 
         agents = self.start_nodes(nodes, infra_env, cluster_config, infra_env_configuration.is_static_ip)
 
+        access_vips = nodes.controller.get_ingress_and_api_vips(is_highly_available=len(nodes) > 1)
+        api_vip = access_vips["api_vip"]
+        ingress_vip = access_vips["ingress_vip"]
+
         if len(nodes) == 1:
             # for single node set the cidr and take the actual ip from the host
             # the vips is the ip of the host
             self._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
             # wait till the ip is set for the node and read it from its inventory
             self.set_single_node_ip(cluster_deployment, nodes)
-            api_vip = ingress_vip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
         else:
-            # for multi node allocate 2 address at a safe distance from the beginning
-            # of the available address block to allow enough addresses for workers
-            access_vips = nodes.controller.get_ingress_and_api_vips()
-            api_vip = access_vips["api_vip"]
-            ingress_vip = access_vips["ingress_vip"]
             # patch the aci with the vips. The cidr will be derived from the range
             agent_cluster_install.set_api_vip(api_vip)
             agent_cluster_install.set_ingress_vip(ingress_vip)

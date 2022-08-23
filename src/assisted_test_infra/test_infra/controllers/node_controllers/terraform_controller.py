@@ -171,7 +171,7 @@ class TerraformController(LibvirtController):
         tfvars["provisioning_cidr_addresses"] = self.get_all_provisioning_addresses()
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
 
-        vips = self.get_ingress_and_api_vips()
+        vips = self.get_ingress_and_api_vips(is_highly_available=(self.params.master_count > 1))
         tfvars["api_vip"] = vips["api_vip"]
         tfvars["ingress_vip"] = vips["ingress_vip"]
         tfvars["running"] = running
@@ -219,12 +219,27 @@ class TerraformController(LibvirtController):
         log.info("Formatting disk for %s", node_name)
         self.format_disk(f"{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
-    def get_ingress_and_api_vips(self):
+    def get_ingress_and_api_vips(self, is_highly_available: bool = False) -> Dict[str, str]:
+        """Get appropriate values for setting static access endpoint IPs.
+
+        For multi-node clusters, we're using <sub-net>.100 for the API endpoint and <sub-net>.101
+        for the ingress endpoint (the IPv6 values are appropriately <sub-net>:64 and <sub-net>:65).
+
+        For single-node clusters ingress endpoint will be the same as the API endpoint (and it will
+        follow the same values as above for IPv4 and IPv6).
+
+        Args:
+            is_highly_available (bool): whether IPs should be adapted to highly available clusters or not.
+        """
         network_subnet_starting_ip = str(
             ipaddress.ip_address(ipaddress.ip_network(self.get_primary_machine_cidr()).network_address) + 100
         )
         ips = utils.create_ip_address_list(2, starting_ip_addr=str(ipaddress.ip_address(network_subnet_starting_ip)))
-        return {"api_vip": ips[0], "ingress_vip": ips[1]}
+
+        if is_highly_available:
+            return {"api_vip": ips[0], "ingress_vip": ips[1]}
+
+        return {"api_vip": ips[0], "ingress_vip": ips[0]}
 
     @utils.on_exception(message="Failed to run terraform delete", silent=True)
     def _create_address_list(self, num, starting_ip_addr):

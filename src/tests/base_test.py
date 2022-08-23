@@ -879,14 +879,14 @@ class BaseTest:
         assert "No log files" in str(ex.value)
 
     @staticmethod
-    def update_oc_config(nodes, cluster):
+    def update_oc_config(nodes: Nodes, cluster: Cluster):
         os.environ["KUBECONFIG"] = cluster.kubeconfig_path
-        if nodes.masters_count == 1:
-            main_cidr = cluster.get_primary_machine_cidr()
-            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, main_cidr)
-        else:
-            vips = nodes.controller.get_ingress_and_api_vips()
-            api_vip = vips["api_vip"]
+
+        vips = nodes.controller.get_ingress_and_api_vips(
+            is_highly_available=cluster.high_availability_mode == consts.HighAvailabilityMode.FULL,
+        )
+        api_vip = vips["api_vip"]
+
         utils.config_etc_hosts(
             cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vip=api_vip
         )
