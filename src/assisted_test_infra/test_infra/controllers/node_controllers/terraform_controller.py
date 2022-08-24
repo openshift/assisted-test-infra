@@ -219,7 +219,7 @@ class TerraformController(LibvirtController):
         log.info("Formatting disk for %s", node_name)
         self.format_disk(f"{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
-    def get_ingress_and_api_vips(self, is_highly_available: bool = False) -> Dict[str, str]:
+    def get_ingress_and_api_vips(self, is_highly_available: bool = True) -> Dict[str, str]:
         """Get appropriate values for setting static access endpoint IPs.
 
         For multi-node clusters, we're using <sub-net>.100 for the API endpoint and <sub-net>.101

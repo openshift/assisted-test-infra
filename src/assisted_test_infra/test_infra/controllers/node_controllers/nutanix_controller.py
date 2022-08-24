@@ -124,7 +124,7 @@ class NutanixController(NodeController):
         vm.power_off()
         vm.power_on()
 
-    def get_ingress_and_api_vips(self, is_highly_available: bool = False):
+    def get_ingress_and_api_vips(self, is_highly_available: bool = True):
         nutanix_subnet = next(
             s for s in NutanixSubnet.list_entities(self._nutanix_client) if s.name == self._config.nutanix_subnet
         )

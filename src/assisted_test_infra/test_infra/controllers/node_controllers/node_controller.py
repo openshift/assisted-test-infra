@@ -102,7 +102,7 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
-    def get_ingress_and_api_vips(self, is_highly_available: bool = False) -> dict:
+    def get_ingress_and_api_vips(self, is_highly_available: bool = True) -> dict:
         pass
 
     @abstractmethod

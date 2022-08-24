@@ -108,7 +108,7 @@ class VSphereController(NodeController):
 
         self.__run_on_vm(node_name, reboot)
 
-    def get_ingress_and_api_vips(self, is_highly_available: bool = False) -> dict:
+    def get_ingress_and_api_vips(self, is_highly_available: bool = True) -> dict:
         if self._entity_config.api_vip and self._entity_config.ingress_vip:
             return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
 
