@@ -4,6 +4,7 @@ from assisted_test_infra.test_infra.helper_classes.config import (
     BaseDay2ClusterConfig,
     BaseEntityConfig,
     BaseInfraEnvConfig,
+    BaseNutanixConfig,
     BaseTerraformConfig,
     BaseVSphereConfig,
 )
@@ -21,4 +22,5 @@ __all__ = [
     "BaseEntityConfig",
     "Nodes",
     "BaseVSphereConfig",
+    "BaseNutanixConfig",
 ]

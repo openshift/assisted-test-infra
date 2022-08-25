@@ -25,6 +25,7 @@ from assisted_test_infra.test_infra.controllers import (
     NatController,
     Node,
     NodeController,
+    NutanixController,
     ProxyController,
     TangController,
     TerraformController,
@@ -39,7 +40,7 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
-from tests.config.global_configs import Day2ClusterConfig, VSphereConfig
+from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, VSphereConfig
 from triggers import get_default_triggers
 from triggers.env_trigger import Trigger
 
@@ -86,6 +87,8 @@ class BaseTest:
         """
         if global_variables.platform == consts.Platforms.VSPHERE:
             config = VSphereConfig()
+        elif global_variables.platform == consts.Platforms.NUTANIX:
+            config = NutanixConfig()
         else:
             config = TerraformConfig()
 
@@ -237,6 +240,9 @@ class BaseTest:
         if cluster_configuration.platform == consts.Platforms.VSPHERE:
             return VSphereController(controller_configuration, cluster_configuration)
 
+        if cluster_configuration.platform == consts.Platforms.NUTANIX:
+            return NutanixController(controller_configuration, cluster_configuration)
+
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 
     @pytest.fixture
@@ -245,6 +251,10 @@ class BaseTest:
     ) -> NodeController:
         if infra_env_configuration.platform == consts.Platforms.VSPHERE:
             # TODO implement for Vsphere
+            raise NotImplementedError
+
+        if infra_env_configuration.platform == consts.Platforms.NUTANIX:
+            # TODO implement for Nutanix
             raise NotImplementedError
 
         return TerraformController(controller_configuration, entity_config=infra_env_configuration)
@@ -792,7 +802,7 @@ class BaseTest:
 
     def collect_test_logs(self, cluster, api_client, request, nodes: Nodes):
         log_dir_name = f"{global_variables.log_folder}/{request.node.name}"
-        with suppress(ApiException):
+        with suppress(ApiException, KeyboardInterrupt):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
             download_logs(
                 api_client,

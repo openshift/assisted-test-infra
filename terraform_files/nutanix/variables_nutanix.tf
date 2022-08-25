@@ -19,41 +19,20 @@ variable "nutanix_password" {
 
 variable "nutanix_port" {
   type        = number
-  description = "port for the Prism Elements or Prism Central instance. This can also be specified with the NUTANIX_PORT environment variable. Defaults to 9440"
+  description = "Port for the Prism Elements or Prism Central instance. This can also be specified with the NUTANIX_PORT environment variable. Defaults to 9440"
 }
 
-variable "nutanix_cluster_name" {
+variable "nutanix_cluster" {
   type        = string
-  description = ""
+  description = "Nutanix cluster name"
 }
 
 
-variable "nutanix_subnet_name" {
+variable "nutanix_subnet" {
   type        = string
-  description = ""
+  description = "Nutanix subnet name. While selected the nic Ip will be in that subnet addresses range"
 }
 
-
-variable "nutanix_parent_folder" {
-  type        = string
-  default     = "assisted-test-infra"
-  description = <<EOF
-  Grouping resources together.
-There should be a difference between CI and a manually installed cluster for better management.
-Periodically deleting long-lived CI machines (for example)
-It should be a preexisting folder
-EOF
-}
-
-variable "nutanix_folder" {
-  type        = string
-  description = <<EOF
-  This folder groups the current Openshift cluster vms.
-  Terraform creates this folder, and if it already exists, it fails.
-  Default to cluster_name.
-EOF
-  default = ""
-}
 
 ///////////
 // Test infra variables
@@ -63,7 +42,7 @@ EOF
 variable "cluster_name" {
   type = string
   description = <<EOF
-AI cluster name
+Assisted installer cluster name
 All the resources will be located under a folder with this name
 and tagged with the cluster name
 The resources should be associate with this name for easy recognition.
@@ -81,18 +60,18 @@ variable "iso_download_path" {
 ///////////
 
 variable "masters_count" {
-  type = string
+  type = number
   description = "The number of master nodes to be created."
 }
 
 variable "master_memory" {
   type = number
-  description = "The size of the master's virtual machine's memory, in MB"
+  description = "RAM in MiB allocated to masters"
 }
 
-variable "master_disk_size_gib" {
+variable "master_disk" {
   type = number
-  description = "The size of the master's disk, in GB"
+  description = "The size of the master's disk, in bytes"
 }
 
 variable "master_vcpu" {
@@ -101,7 +80,7 @@ variable "master_vcpu" {
 }
 
 variable "workers_count" {
-  type = string
+  type = number
   description = "The number of worker nodes to be created."
 }
 
@@ -110,9 +89,9 @@ variable "worker_memory" {
   description = "The size of the worker's virtual machine's memory, in MB"
 }
 
-variable "worker_disk_size_gib" {
+variable "worker_disk" {
   type = number
-  description = "The size of the worker's disk, in GB"
+  description = "The size of the worker's disk, in bytes"
 }
 
 variable "worker_vcpu" {

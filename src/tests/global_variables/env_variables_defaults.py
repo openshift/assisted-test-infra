@@ -100,6 +100,8 @@ class _EnvVariables(DataPool, ABC):
     api_vip: EnvVar = EnvVar(["API_VIP"])
     ingress_vip: EnvVar = EnvVar(["INGRESS_VIP"])
 
+    ipxe_boot: EnvVar = EnvVar(["IPXE_BOOT"], loader=lambda x: bool(strtobool(x)))
+
     vsphere_parent_folder: str = EnvVar(["VSPHERE_PARENT_FOLDER"], default=env_defaults.DEFAULT_VSHPERE_PARENT_FOLDER)
     vsphere_folder: str = EnvVar(["VSPHERE_FOLDER"])
     vsphere_cluster: EnvVar = EnvVar(["VSPHERE_CLUSTER"])
@@ -109,4 +111,10 @@ class _EnvVariables(DataPool, ABC):
     vsphere_vcenter: EnvVar = EnvVar(["VSPHERE_VCENTER"])
     vsphere_datacenter: EnvVar = EnvVar(["VSPHERE_DATACENTER"])
     vsphere_datastore: EnvVar = EnvVar(["VSPHERE_DATASTORE"])
-    ipxe_boot: EnvVar = EnvVar(["IPXE_BOOT"], loader=lambda x: bool(strtobool(x)))
+
+    nutanix_username: EnvVar = EnvVar(["NUTANIX_USERNAME"])
+    nutanix_password: EnvVar = EnvVar(["NUTANIX_PASSWORD"])
+    nutanix_endpoint: EnvVar = EnvVar(["NUTANIX_ENDPOINT"])
+    nutanix_port: EnvVar = EnvVar(["NUTANIX_PORT"], loader=int)
+    nutanix_cluster: EnvVar = EnvVar(["NUTANIX_CLUSTER_NAME"])
+    nutanix_subnet: EnvVar = EnvVar(["NUTANIX_SUBNET_NAME"])

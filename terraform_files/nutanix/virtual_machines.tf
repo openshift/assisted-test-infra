@@ -8,7 +8,7 @@ resource "nutanix_virtual_machine" "master" {
   memory_size_mib             = var.master_memory
   num_sockets                 = var.master_vcpu
 
-  boot_device_order_list      = ["CDROM", "DISK", "NETWORK"]
+  boot_device_order_list      = ["DISK", "CDROM", "NETWORK"]
   boot_type                   = "LEGACY"
 
   disk_list {
@@ -21,15 +21,14 @@ resource "nutanix_virtual_machine" "master" {
     }
   }
 
-    disk_list {
-    disk_size_bytes = var.master_disk_size_gib * 1024 * 1024 * 1024
+  disk_list {
+    disk_size_bytes = var.master_disk
     device_properties {
       device_type = "DISK"
       disk_address = {
         device_index = 0
         adapter_type = "SATA"
       }
-
     }
   }
 
@@ -47,7 +46,7 @@ resource "nutanix_virtual_machine" "worker" {
   memory_size_mib             = var.worker_memory
   num_sockets                 = var.worker_vcpu
 
-  boot_device_order_list      = ["CDROM", "DISK", "NETWORK"]
+  boot_device_order_list      = ["DISK", "CDROM", "NETWORK"]
   boot_type                   = "LEGACY"
 
   disk_list {
@@ -60,8 +59,8 @@ resource "nutanix_virtual_machine" "worker" {
     }
   }
 
-    disk_list {
-    disk_size_bytes = var.worker_disk_size_gib * 1024 * 1024 * 1024
+  disk_list {
+    disk_size_bytes = var.worker_disk
     device_properties {
       device_type = "DISK"
       disk_address = {

@@ -2,13 +2,9 @@ terraform {
   required_providers {
     nutanix = {
       source = "nutanix/nutanix"
-      version = "1.6.1"
+      version = "1.7.0"
     }
   }
-}
-
-locals {
-  folder = var.nutanix_folder != "" ? var.nutanix_folder : var.cluster_name
 }
 
 provider "nutanix" {
@@ -22,11 +18,11 @@ provider "nutanix" {
 }
 
 data "nutanix_cluster" "cluster" {
-  name = var.nutanix_cluster_name
+  name = var.nutanix_cluster
 }
 
 data "nutanix_subnet" "subnet" {
-  subnet_name = var.nutanix_subnet_name
+  subnet_name = var.nutanix_subnet
 }
 
 resource "nutanix_image" "image" {
