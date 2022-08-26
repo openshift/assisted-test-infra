@@ -4,6 +4,7 @@ from assisted_test_infra.test_infra import (
     BaseClusterConfig,
     BaseDay2ClusterConfig,
     BaseInfraEnvConfig,
+    BaseNutanixConfig,
     BaseTerraformConfig,
     BaseVSphereConfig,
     ClusterName,
@@ -78,6 +79,14 @@ class TerraformConfig(BaseTerraformConfig):
 
 @dataclass
 class VSphereConfig(BaseVSphereConfig):
+    """A Nodes configuration with defaults that obtained from EnvConfig"""
+
+    def _get_data_pool(self):
+        return global_variables
+
+
+@dataclass
+class NutanixConfig(BaseNutanixConfig):
     """A Nodes configuration with defaults that obtained from EnvConfig"""
 
     def _get_data_pool(self):

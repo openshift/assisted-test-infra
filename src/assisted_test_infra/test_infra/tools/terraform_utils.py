@@ -11,12 +11,26 @@ from consts import consts
 from service_client import log
 
 
+class _Terraform(Terraform):
+    """python_terraform.Terraform always set the force flag (even to false) causing
+    destroy failures on some cases. This class overrides the destroy method and set the
+    force flag only if it's set to true"""
+
+    def destroy(self, dir_or_plan=None, force=False, **kwargs):
+        default = kwargs
+        if force:
+            default["force"] = force
+        options = self._generate_default_options(default)
+        args = self._generate_default_args(dir_or_plan)
+        return self.cmd("destroy", *args, **options)
+
+
 class TerraformUtils:
     def __init__(self, working_dir: str, terraform_init: bool = True):
         log.info("TF FOLDER %s ", working_dir)
         self.working_dir = working_dir
         self.var_file_path = os.path.join(working_dir, consts.TFVARS_JSON_NAME)
-        self.tf = Terraform(working_dir=working_dir, state=consts.TFSTATE_FILE, var_file=consts.TFVARS_JSON_NAME)
+        self.tf = _Terraform(working_dir=working_dir, state=consts.TFSTATE_FILE, var_file=consts.TFVARS_JSON_NAME)
 
         if terraform_init:
             self.init_tf()
@@ -70,10 +84,11 @@ class TerraformUtils:
 
     def get_resources(self, resource_type: str = None) -> List[Dict[str, Any]]:
         state = self.get_state()
-        return [resource for resource in state.resources if resource_type is None or resource["type"] == resource_type]
+        resources = [resource for resource in getattr(state, "resources", {})]
+        return [resource for resource in resources if resource_type is None or resource["type"] == resource_type]
 
     def set_new_vips(self, api_vip: str, ingress_vip: str) -> None:
         self.change_variables(variables={"api_vip": api_vip, "ingress_vip": ingress_vip}, refresh=True)
 
-    def destroy(self) -> None:
-        self.tf.destroy(force=True, input=False, auto_approve=True)
+    def destroy(self, force: bool = True) -> None:
+        self.tf.destroy(force=force, input=False, auto_approve=True)

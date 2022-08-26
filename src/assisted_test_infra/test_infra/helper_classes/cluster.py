@@ -111,10 +111,6 @@ class Cluster(Entity):
             tang_servers=self._config.tang_servers,
         )
 
-        platform = (
-            models.Platform(type=self._config.platform) if self._config.platform == consts.Platforms.VSPHERE else None
-        )
-
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
@@ -128,7 +124,7 @@ class Cluster(Entity):
             olm_operators=[{"name": name} for name in self._config.olm_operators],
             network_type=self._config.network_type,
             disk_encryption=disk_encryption,
-            platform=platform,
+            platform=models.Platform(type=self._config.platform),
         )
 
         self._config.cluster_id = cluster.id

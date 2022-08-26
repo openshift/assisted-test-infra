@@ -292,6 +292,7 @@ class Platforms:
     BARE_METAL = "baremetal"
     NONE = "none"
     VSPHERE = "vsphere"
+    NUTANIX = "nutanix"
 
 
 class PlatformType:

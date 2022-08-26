@@ -15,6 +15,3 @@ class BaseVSphereConfig(BaseNodeConfig, ABC):
     vsphere_network: str = None
     vsphere_parent_folder: str = None
     vsphere_folder: str = None
-
-    def __post_init__(self):
-        super().__post_init__()

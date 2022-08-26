@@ -1,6 +1,5 @@
 import os
 import time
-from builtins import list
 from typing import Any, Callable, Dict, List, Tuple
 
 import libvirt
