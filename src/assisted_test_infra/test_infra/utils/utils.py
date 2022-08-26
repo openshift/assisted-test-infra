@@ -511,7 +511,8 @@ def get_openshift_release_image(allow_default=True):
         release_image = [
             v.get("url")
             for v in release_images
-            if v.get("openshift_version") == ocp_version and v.get("cpu_architecture") == "x86_64"
+            if v.get("openshift_version") == ocp_version
+            and (v.get("cpu_architecture") == "x86_64" or "x86_64" in v.get("cpu_architectures"))
         ][0]
 
     return release_image
