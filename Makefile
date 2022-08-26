@@ -34,6 +34,8 @@ JOB_TYPE := $(or ${JOB_TYPE}, "")
 REPO_NAME := $(or ${REPO_NAME}, "")
 PULL_NUMBER := $(or ${PULL_NUMBER}, "")
 
+CONTAINER_RUNTIME_COMMAND := $(or ${CONTAINER_COMMAND}, ${CONTAINER_RUNTIME_COMMAND})
+
 # lint
 LINT_CODE_STYLING_DIRS := src/tests src/triggers src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup src/cli
 
