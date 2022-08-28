@@ -67,6 +67,7 @@ function install_libvirt() {
         libseccomp-devel \
         net-tools \
         iproute \
+        openvpn \
         git \
         make
 
