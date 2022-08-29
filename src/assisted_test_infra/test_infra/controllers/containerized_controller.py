@@ -1,11 +1,11 @@
-from abc import ABC
+import abc
 from typing import List, Optional
 
 from assisted_test_infra.test_infra.utils import utils
 from service_client import log
 
 
-class ContainerizedController(ABC):
+class ContainerizedController(abc.ABC):
     def __init__(self, name: str, port: int, image: str, extra_flags: Optional[List[str]] = None) -> None:
         self._name = name
         self._port = port
@@ -37,10 +37,12 @@ class ContainerizedController(ABC):
             self._on_container_removed()
             self._is_running = False
 
+    @abc.abstractmethod
     def _on_container_removed(self):
         """Can be overridden to clear configurations after the controller container was removed"""
         pass
 
+    @abc.abstractmethod
     def _on_container_start(self, **kwargs):
         """Can be overridden to run some logic before the container started"""
         pass

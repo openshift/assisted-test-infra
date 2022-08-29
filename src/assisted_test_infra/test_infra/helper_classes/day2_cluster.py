@@ -4,7 +4,6 @@ import os
 import subprocess
 import time
 import uuid
-from abc import ABC
 from typing import Any
 
 import waiting
@@ -19,7 +18,7 @@ from service_client import log
 from service_client.assisted_service_api import InventoryClient
 
 
-class Day2Cluster(ABC):
+class Day2Cluster:
     def __init__(
         self, api_client: InventoryClient, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig
     ):

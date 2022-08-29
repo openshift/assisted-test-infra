@@ -39,6 +39,9 @@ class ProxyController(ContainerizedController):
     def _on_container_removed(self):
         self._remove_config()
 
+    def _on_container_start(self, **kwargs):
+        pass
+
     def _set_server_address(self, host_ip):
         host_name = socket.gethostname()
         host_ip = host_ip or socket.gethostbyname(host_name)

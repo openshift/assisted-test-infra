@@ -1,4 +1,3 @@
-from abc import ABC
 from dataclasses import dataclass
 from distutils.util import strtobool
 from pathlib import Path
@@ -10,7 +9,7 @@ from triggers.env_trigger import DataPool
 
 
 @dataclass(frozen=True)
-class _EnvVariables(DataPool, ABC):
+class _EnvVariables(DataPool):
     ssh_public_key: EnvVar = EnvVar(["SSH_PUB_KEY"])
     remote_service_url: EnvVar = EnvVar(["REMOTE_SERVICE_URL"])
     pull_secret: EnvVar = EnvVar(["PULL_SECRET"])

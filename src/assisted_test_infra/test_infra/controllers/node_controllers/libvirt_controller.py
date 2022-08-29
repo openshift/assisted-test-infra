@@ -5,7 +5,6 @@ import secrets
 import string
 import tempfile
 import xml.dom.minidom as md
-from abc import ABC
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Callable, List, Tuple, Union
@@ -23,7 +22,7 @@ from assisted_test_infra.test_infra.helper_classes.config.controller_config impo
 from service_client import log
 
 
-class LibvirtController(NodeController, ABC):
+class LibvirtController(NodeController):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
     def __init__(self, config: BaseNodeConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):

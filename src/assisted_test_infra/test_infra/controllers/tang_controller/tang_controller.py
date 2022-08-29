@@ -36,3 +36,9 @@ class TangController(ContainerizedController):
     def set_thumbprint(self):
         exec_command = f"podman-remote exec -it {self._name} tang-show-keys {self._port}"
         self.thumbprint, _, _ = utils.run_command(exec_command, shell=True)
+
+    def _on_container_removed(self):
+        pass
+
+    def _on_container_start(self, **kwargs):
+        pass
