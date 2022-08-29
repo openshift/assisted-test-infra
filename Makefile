@@ -99,7 +99,6 @@ OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api.integration.openshift.com/)
 DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
 
-PLATFORM := $(or ${PLATFORM},baremetal)
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
 SERVICE_REPLICAS_COUNT := 3
 LSO_DISKS := $(shell echo sd{b..d})
