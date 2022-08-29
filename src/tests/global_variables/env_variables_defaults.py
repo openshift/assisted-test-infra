@@ -19,6 +19,7 @@ class _EnvVariables(DataPool, ABC):
     openshift_version: EnvVar = EnvVar(["OPENSHIFT_VERSION"], default=consts.OpenshiftVersion.DEFAULT.value)
     base_dns_domain: EnvVar = EnvVar(["BASE_DOMAIN"], default=env_defaults.DEFAULT_BASE_DNS_DOMAIN)
     cluster_name: EnvVar = EnvVar(["CLUSTER_NAME"], default="")
+    cluster_tags: EnvVar = EnvVar(["CLUSTER_TAGS"], default="")
     masters_count: EnvVar = EnvVar(
         ["MASTERS_COUNT", "NUM_MASTERS"], loader=int, default=env_defaults.DEFAULT_NUMBER_OF_MASTERS
     )
