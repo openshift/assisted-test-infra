@@ -1,5 +1,4 @@
 import warnings
-from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
@@ -10,7 +9,7 @@ from .base_config import BaseConfig
 
 
 @dataclass
-class BaseNodeConfig(BaseConfig, ABC):
+class BaseNodeConfig(BaseConfig):
     platform: str = None
     is_ipv4: bool = None
     is_ipv6: bool = None

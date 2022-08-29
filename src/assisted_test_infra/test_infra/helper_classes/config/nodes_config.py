@@ -1,4 +1,3 @@
-from abc import ABC
 from dataclasses import dataclass, field
 from typing import Dict, List
 
@@ -8,7 +7,7 @@ from .controller_config import BaseNodeConfig
 
 
 @dataclass
-class BaseTerraformConfig(BaseNodeConfig, ABC):
+class BaseTerraformConfig(BaseNodeConfig):
     """
     Define all configurations variables that are needed for Nodes during it's execution
     All arguments must have default to None with type hint
