@@ -27,6 +27,7 @@ export REGISTRY_SERVICE_NAME=registry
 export REGISTRY_SERVICE_NAMESPACE=kube-system
 export REGISTRY_SERVICE_PORT=80
 export REGISTRY_SERVICE_HOST_PORT=5000
+export ENABLE_HOST_RECLAIM=${RECLAIM_HOSTS:-false}
 
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" ]]; then

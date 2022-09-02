@@ -100,6 +100,7 @@ class _EnvVariables(DataPool, ABC):
     hold_installation: EnvVar = EnvVar(
         ["HOLD_INSTALLATION"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_HOLD_INSTALLATION
     )
+    reclaim_hosts: EnvVar = EnvVar(["RECLAIM_HOSTS"], loader=lambda x: bool(strtobool(x)), default=False)
 
     api_vip: EnvVar = EnvVar(["API_VIP"])
     ingress_vip: EnvVar = EnvVar(["INGRESS_VIP"])

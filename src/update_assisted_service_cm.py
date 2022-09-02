@@ -40,6 +40,7 @@ ENVS = [
     ("HW_VALIDATOR_MIN_CPU_CORES_SNO", ""),
     ("HW_VALIDATOR_MIN_RAM_GIB_SNO", ""),
     ("ENABLE_UPGRADE_AGENT", "true"),
+    ("ENABLE_HOST_RECLAIM", ""),
 ]
 DEFAULT_MASTER_REQUIREMENTS = {
     "cpu_cores": 4,

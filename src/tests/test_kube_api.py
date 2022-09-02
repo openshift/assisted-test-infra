@@ -21,7 +21,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
-from assisted_test_infra.test_infra.utils.kubeapi_utils import get_platform_type
+from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node, get_platform_type
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
 from tests.config import ClusterConfig, InfraEnvConfig, global_variables
@@ -410,14 +410,30 @@ class TestLateBinding(BaseKubeAPI):
     ) -> None:
         cls._bind_all(cluster_deployment, agents)
         cls._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
+        api_vip, _ = cls._get_vips(nodes)
 
         if len(nodes) == 1:
             cls.set_single_node_ip(cluster_deployment, nodes)
+            api_vip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
+
+        # Add the API VIP DNS record to the assisted-service network
+        # here so it can resolve by the time the host(s) start reclaim
+        if global_variables.reclaim_hosts:
+            nodes.controller.add_dns_host_to_network(
+                network_name="default", api_vip=api_vip, cluster_name=cluster_deployment.ref.name
+            )
 
         agent_cluster_install.wait_to_be_ready(ready=True)
         Agent.wait_for_agents_to_be_bound(agents)
         if not hold_installation:
             cls._wait_for_install(agent_cluster_install, agents, utils.get_kubeconfig_path(cluster_deployment.ref.name))
+
+    @classmethod
+    @JunitTestCase()
+    def _reclaim_agents(cls, agents: List["Agent"]):
+        cls._unbind_all(agents)
+        Agent.wait_for_agents_to_unbound(agents)
+        Agent.wait_for_agents_to_reclaim(agents)
 
     @JunitTestSuite()
     @pytest.mark.kube_api
@@ -435,6 +451,9 @@ class TestLateBinding(BaseKubeAPI):
         if global_variables.hold_installation:
             cluster_deployment.delete()
             Agent.wait_for_agents_to_unbound(agents)
+
+        if global_variables.reclaim_hosts:
+            self._reclaim_agents(agents)
 
     @JunitTestSuite()
     @pytest.mark.kube_api
