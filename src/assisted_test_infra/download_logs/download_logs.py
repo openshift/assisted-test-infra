@@ -249,7 +249,7 @@ def download_logs_kube_api(
                 # in case of hypershift
                 if namespace.startswith("clusters"):
                     log.info("Dumping hypershift files")
-                    hypershift = HyperShift(name=cluster_name)
+                    hypershift = HyperShift(name=cluster_name, kube_api_client=None)
                     hypershift.dump(os.path.join(output_folder, "dump"), management_kubeconfig)
                 else:
                     _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_install, output_folder)
