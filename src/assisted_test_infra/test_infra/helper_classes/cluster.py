@@ -111,6 +111,9 @@ class Cluster(Entity):
             tang_servers=self._config.tang_servers,
         )
 
+        platform = (
+            models.Platform(type=consts.Platforms.NONE) if self.is_sno else models.Platform(type=self._config.platform)
+        )
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
@@ -124,11 +127,15 @@ class Cluster(Entity):
             olm_operators=[{"name": name} for name in self._config.olm_operators],
             network_type=self._config.network_type,
             disk_encryption=disk_encryption,
-            platform=models.Platform(type=self._config.platform),
+            platform=platform,
         )
 
         self._config.cluster_id = cluster.id
         return cluster.id
+
+    @property
+    def is_sno(self):
+        return self.nodes.nodes_count == 1
 
     def delete(self):
         self.deregister_infraenv()
