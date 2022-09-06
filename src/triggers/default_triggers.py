@@ -28,7 +28,6 @@ _default_triggers = frozendict(
             workers_count=0,
             high_availability_mode=consts.HighAvailabilityMode.NONE,
             user_managed_networking=True,
-            platform=consts.Platforms.NONE,
             vip_dhcp_allocation=False,
             master_memory=resources.DEFAULT_MASTER_SNO_MEMORY,
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,
