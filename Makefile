@@ -369,3 +369,5 @@ cli:
 
 validate_client:
 	skipper run "python3 ${DEBUG_FLAGS} src/service_client/client_validator.py"
+
+dummy:
