@@ -83,7 +83,7 @@ function install_libvirt() {
     pushd ${swtpm_dir}
     ./autogen.sh --with-openssl --prefix=/usr
     make -j4
-    make install
+    sudo make install
     popd
 
     sudo systemctl enable libvirtd
@@ -168,7 +168,7 @@ function allow_libvirt_cross_network_traffic() {
 #!/usr/bin/env sh
 iptables-save -c | egrep -v 'LIBVIRT_FW[IO] .* REJECT' | iptables-restore || true
 EOF
-    chmod +x "${hook_filename}"
+    sudo chmod +x "${hook_filename}"
 }
 
 function install_podman(){
