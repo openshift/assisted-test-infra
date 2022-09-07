@@ -33,3 +33,4 @@ urllib3==1.26.11
 pyvmomi>=7.0.2
 waiting>=1.4.1
 prompt_toolkit==3.0.30
+pytest-error-for-skips==2.0.2
