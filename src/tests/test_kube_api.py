@@ -391,7 +391,7 @@ class TestLateBinding(BaseKubeAPI):
     @pytest.fixture
     @JunitFixtureTestCase()
     @pytest.mark.override_controller_configuration(highly_available_controller_configuration.__name__)
-    def unbound_highly_available_cluster(self, cluster_configuration, kube_api_context):
+    def unbound_highly_available_cluster(self, cluster_configuration, kube_api_context, trigger_configurations):
         yield self.prepare_late_binding_cluster(kube_api_context, cluster_configuration, num_controlplane_agents=3)
 
     @classmethod
@@ -468,6 +468,8 @@ class TestLateBinding(BaseKubeAPI):
         agent_cluster_install.set_ingress_vip(ingress_vip)
 
         self._late_binding_install(cluster_deployment, agent_cluster_install, agents, nodes)
+        if global_variables.reclaim_hosts:
+            self._reclaim_agents(agents, cluster_deployment, nodes)
 
     @JunitTestSuite()
     @pytest.mark.kube_api
