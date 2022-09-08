@@ -4,6 +4,9 @@ ignore =
     E203,
     W503,
 
+    # B024 abstract base class with no abstract methods
+    B024,
+
     # FS003 weirdly thinks things are supposed to be f-strings? Seems completely broken
     FS003,
 

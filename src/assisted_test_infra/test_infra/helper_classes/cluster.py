@@ -111,9 +111,10 @@ class Cluster(Entity):
             tang_servers=self._config.tang_servers,
         )
 
-        platform = (
-            models.Platform(type=consts.Platforms.NONE) if self.is_sno else models.Platform(type=self._config.platform)
-        )
+        platform_var = {}
+        if self._config.platform:
+            platform_var["platform"] = models.Platform(type=self._config.platform)
+
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
@@ -127,7 +128,7 @@ class Cluster(Entity):
             olm_operators=[{"name": name} for name in self._config.olm_operators],
             network_type=self._config.network_type,
             disk_encryption=disk_encryption,
-            platform=platform,
+            **platform_var,
         )
 
         self._config.cluster_id = cluster.id

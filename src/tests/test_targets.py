@@ -2,7 +2,7 @@ import pytest
 from junit_report import JunitTestSuite
 
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
-from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from service_client import InventoryClient, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, InfraEnvConfig
@@ -18,7 +18,7 @@ class TestMakefileTargets(BaseTest):
         prepared_cluster.start_install_and_wait_for_installed()
 
     @pytest.fixture
-    def download_iso_override_nodes_count(self, prepared_controller_configuration: BaseNodeConfig):
+    def download_iso_override_nodes_count(self, prepared_controller_configuration: BaseNodesConfig):
         """No need creating any nodes for creating a cluster and download its ISO
         Setting masters_count and workers_count to 0 on with overriding controller_configuration fixture return value
         before nodes creation causing Nodes object not to generate any new nodes"""

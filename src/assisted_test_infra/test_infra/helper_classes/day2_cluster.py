@@ -12,7 +12,7 @@ import waiting
 import consts
 from assisted_test_infra.test_infra import BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.controllers import NodeController
-from assisted_test_infra.test_infra.helper_classes.config.day2_cluster_config import BaseDay2ClusterConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseDay2ClusterConfig
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from service_client import log

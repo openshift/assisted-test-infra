@@ -10,7 +10,7 @@ import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 
 from assisted_test_infra.test_infra import BaseInfraEnvConfig, Nodes, utils
-from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Agent,
@@ -31,12 +31,12 @@ class TestKubeAPI(BaseKubeAPI):
     KUBEAPI_IP_OPTIONS = [(False, True), (True, False)]
 
     @pytest.fixture
-    def sno_controller_configuration(self, prepared_controller_configuration: BaseNodeConfig) -> BaseNodeConfig:
+    def sno_controller_configuration(self, prepared_controller_configuration: BaseNodesConfig) -> BaseNodesConfig:
         self._configure_single_node(prepared_controller_configuration)
         yield prepared_controller_configuration
 
     @pytest.fixture
-    def highly_available_controller_configuration(self, prepared_controller_configuration: BaseNodeConfig):
+    def highly_available_controller_configuration(self, prepared_controller_configuration: BaseNodesConfig):
         self._configure_highly_available(prepared_controller_configuration)
         yield prepared_controller_configuration
 
@@ -48,7 +48,7 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_configuration: ClusterConfig,
         kube_api_context: KubeAPIContext,
         proxy_server: Callable,
-        prepared_controller_configuration: BaseNodeConfig,
+        prepared_controller_configuration: BaseNodesConfig,
         prepare_nodes_network: Nodes,
         is_ipv4: bool,
         is_ipv6: bool,
@@ -79,7 +79,7 @@ class TestKubeAPI(BaseKubeAPI):
         kube_api_context: KubeAPIContext,
         nodes: Nodes,
         cluster_config: ClusterConfig,
-        prepared_controller_configuration: BaseNodeConfig,
+        prepared_controller_configuration: BaseNodesConfig,
         infra_env_configuration: BaseInfraEnvConfig,
         proxy_server: Optional[Callable] = None,
         *,
@@ -317,7 +317,7 @@ class TestKubeAPI(BaseKubeAPI):
 
 class TestLateBinding(BaseKubeAPI):
     @pytest.fixture
-    def highly_available_controller_configuration(self, prepared_controller_configuration: BaseNodeConfig):
+    def highly_available_controller_configuration(self, prepared_controller_configuration: BaseNodesConfig):
         self._configure_highly_available(prepared_controller_configuration)
         yield prepared_controller_configuration
 

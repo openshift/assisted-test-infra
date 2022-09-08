@@ -60,7 +60,8 @@ class _EnvVariables(DataPool, ABC):
     namespace: EnvVar = EnvVar(["NAMESPACE"], default=consts.DEFAULT_NAMESPACE)
     spoke_namespace: str = EnvVar(["SPOKE_NAMESPACE"], default=consts.DEFAULT_SPOKE_NAMESPACE)
     olm_operators: EnvVar = EnvVar(["OLM_OPERATORS"], loader=lambda operators: operators.lower().split(), default="")
-    platform: EnvVar = EnvVar(["PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
+    platform: EnvVar = EnvVar(["PLATFORM"])
+    tf_platform: EnvVar = EnvVar(["TF_PLATFORM", "PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
     user_managed_networking: EnvVar = EnvVar(
         ["USER_MANAGED_NETWORKING"], default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING
     )

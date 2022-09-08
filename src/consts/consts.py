@@ -296,7 +296,7 @@ class Platforms:
     NUTANIX = "nutanix"
 
 
-class PlatformType:
+class KubeAPIPlatforms:
     """
     Platform types as defined in kube-api (AgentClusterInstall)
     """

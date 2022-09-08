@@ -146,7 +146,7 @@ class Nodes:
 
     def run_for_given_nodes(self, nodes, func_name, *args):
         log.info("Running <%s> on nodes: %s", func_name, [node.name for node in nodes])
-        if self.controller._config.platform == consts.Platforms.NUTANIX:
+        if self.controller._config.tf_platform == consts.Platforms.NUTANIX:
             # nutanix doesn't allow concurrent requests
             res = []
             for node in nodes:

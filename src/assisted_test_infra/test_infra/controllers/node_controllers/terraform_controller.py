@@ -25,7 +25,7 @@ class TerraformController(LibvirtController):
         super().__init__(config, entity_config)
         self._entity_name = self._entity_config.entity_name
         self._suffix = self._entity_name.suffix or get_name_suffix()
-        self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.platform)
+        self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.tf_platform)
         self.network_name = config.network_name + self._suffix
         self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)

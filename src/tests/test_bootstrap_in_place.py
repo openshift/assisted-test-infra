@@ -23,7 +23,7 @@ from assisted_test_infra.download_logs import download_must_gather, gather_sosre
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.controllers.node_controllers.terraform_controller import TerraformController
-from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config import BaseNodesConfig
 from assisted_test_infra.test_infra.tools.assets import LibvirtNetworkAssets
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName
 from assisted_test_infra.test_infra.utils.oc_utils import (
@@ -173,7 +173,7 @@ class TestBootstrapInPlace(BaseTest):
         return frozendict({k: v for k, v in get_default_triggers().items() if k != "sno"})
 
     @pytest.fixture
-    def new_controller_configuration(self, request) -> BaseNodeConfig:
+    def new_controller_configuration(self, request) -> BaseNodesConfig:
         # Adjust the Terraform configuration according to whether we're
         # doing SNO or SNO + Worker
         if request.function == self.test_bootstrap_in_place_sno:
@@ -279,7 +279,7 @@ class TestBootstrapInPlace(BaseTest):
             if not skip_logs:
                 self.log_collection(master_ip)
 
-    def prepare_installation(self, controller_configuration: BaseNodeConfig, cluster_configuration: ClusterConfig):
+    def prepare_installation(self, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig):
         openshift_release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
         if not openshift_release_image:
             raise ValueError("os env OPENSHIFT_INSTALL_RELEASE_IMAGE must be provided")
@@ -296,7 +296,10 @@ class TestBootstrapInPlace(BaseTest):
 
     @JunitTestSuite()
     def test_bootstrap_in_place_sno(
-        self, controller: NodeController, controller_configuration: BaseNodeConfig, cluster_configuration: ClusterConfig
+        self,
+        controller: NodeController,
+        controller_configuration: BaseNodesConfig,
+        cluster_configuration: ClusterConfig,
     ):
         image_path = self.prepare_installation(controller_configuration, cluster_configuration)
 
@@ -416,7 +419,7 @@ class TestBootstrapInPlace(BaseTest):
     @JunitTestSuite()
     def prepare_worker_installation(
         self,
-        controller_configuration: BaseNodeConfig,
+        controller_configuration: BaseNodesConfig,
         cluster_configuration: ClusterConfig,
         master_image_path: str,
     ):
@@ -463,7 +466,7 @@ class TestBootstrapInPlace(BaseTest):
     def test_bip_add_worker(
         self,
         controller: TerraformController,
-        controller_configuration: BaseNodeConfig,
+        controller_configuration: BaseNodesConfig,
         cluster_configuration: ClusterConfig,
     ):
         master_image_path = self.prepare_installation(controller_configuration, cluster_configuration)
