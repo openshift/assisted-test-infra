@@ -69,7 +69,7 @@ class HyperShift:
         log.info(f"Dump HyperShift cluster {self.name} to {output_folder}")
         utils.run_command_with_output(
             f"KUBECONFIG={kubeconfig_path} {HYPERSHIFT_DIR}/bin/hypershift dump cluster --name {self.name} "
-            f"--artifact-dir {output_folder}"
+            f"--artifact-dir {output_folder} --dump-guest-cluster=true"
         )
 
     @property
