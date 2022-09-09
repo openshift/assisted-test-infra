@@ -61,7 +61,9 @@ class _EnvVariables(DataPool, ABC):
     spoke_namespace: str = EnvVar(["SPOKE_NAMESPACE"], default=consts.DEFAULT_SPOKE_NAMESPACE)
     olm_operators: EnvVar = EnvVar(["OLM_OPERATORS"], loader=lambda operators: operators.lower().split(), default="")
     platform: EnvVar = EnvVar(["PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
-    user_managed_networking: EnvVar = EnvVar(default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING)
+    user_managed_networking: EnvVar = EnvVar(
+        ["USER_MANAGED_NETWORKING"], default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING
+    )
     high_availability_mode: EnvVar = EnvVar(default=env_defaults.DEFAULT_HIGH_AVAILABILITY_MODE)
     download_image: EnvVar = EnvVar(
         ["DOWNLOAD_IMAGE"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_DOWNLOAD_IMAGE
