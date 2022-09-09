@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Idea is to pass os environments to assisted-service config map, to make an easy way to configure assisted-service
