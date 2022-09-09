@@ -72,7 +72,7 @@ class VSphereController(NodeController):
         return ips, macs
 
     def destroy_all_nodes(self) -> None:
-        self._tf.destroy()
+        self._tf.destroy(force=False)
 
     def start_node(self, node_name: str, check_ips: bool) -> None:
         def start(vm) -> task:
