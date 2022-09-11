@@ -33,7 +33,7 @@ from assisted_test_infra.test_infra.controllers import (
 )
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
-from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Cluster
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
@@ -79,15 +79,15 @@ class BaseTest:
                     raise AttributeError(f"No attribute name {fixture_name} in {config_type} object type")
 
     @pytest.fixture
-    def new_controller_configuration(self, request: FixtureRequest) -> BaseNodeConfig:
+    def new_controller_configuration(self, request: FixtureRequest) -> BaseNodesConfig:
         """
         Creates the controller configuration object according to the platform.
         Override this fixture in your test class to provide a custom configuration object
         :rtype: new node controller configuration
         """
-        if global_variables.platform == consts.Platforms.VSPHERE:
+        if global_variables.tf_platform == consts.Platforms.VSPHERE:
             config = VSphereConfig()
-        elif global_variables.platform == consts.Platforms.NUTANIX:
+        elif global_variables.tf_platform == consts.Platforms.NUTANIX:
             config = NutanixConfig()
         else:
             config = TerraformConfig()
@@ -104,7 +104,7 @@ class BaseTest:
         yield Day2ClusterConfig()
 
     @pytest.fixture
-    def prepared_controller_configuration(self, new_controller_configuration: BaseNodeConfig) -> BaseNodeConfig:
+    def prepared_controller_configuration(self, new_controller_configuration: BaseNodesConfig) -> BaseNodesConfig:
         if not isinstance(new_controller_configuration, TerraformConfig):
             yield new_controller_configuration
             return
@@ -123,8 +123,8 @@ class BaseTest:
 
     @pytest.fixture
     def controller_configuration(
-        self, request: pytest.FixtureRequest, prepared_controller_configuration: BaseNodeConfig
-    ) -> BaseNodeConfig:
+        self, request: pytest.FixtureRequest, prepared_controller_configuration: BaseNodesConfig
+    ) -> BaseNodesConfig:
         """
         Allows the test to modify the controller configuration by registering a custom fixture.
         To register the custom fixture you have to mark the test with "override_controller_configuration" marker.
@@ -234,7 +234,7 @@ class BaseTest:
 
     @pytest.fixture
     def controller(
-        self, cluster_configuration: ClusterConfig, controller_configuration: BaseNodeConfig, trigger_configurations
+        self, cluster_configuration: ClusterConfig, controller_configuration: BaseNodesConfig, trigger_configurations
     ) -> NodeController:
 
         if cluster_configuration.platform == consts.Platforms.VSPHERE:
@@ -247,7 +247,7 @@ class BaseTest:
 
     @pytest.fixture
     def infraenv_controller(
-        self, infra_env_configuration: InfraEnvConfig, controller_configuration: BaseNodeConfig, trigger_configurations
+        self, infra_env_configuration: InfraEnvConfig, controller_configuration: BaseNodesConfig, trigger_configurations
     ) -> NodeController:
         if infra_env_configuration.platform == consts.Platforms.VSPHERE:
             # TODO implement for Vsphere
@@ -293,7 +293,7 @@ class BaseTest:
                 utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
 
     @classmethod
-    def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
+    def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
         if global_variables.platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE):
             yield prepared_nodes
             return
@@ -306,13 +306,13 @@ class BaseTest:
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def prepare_nodes_network(self, prepare_nodes: Nodes, controller_configuration: BaseNodeConfig) -> Nodes:
+    def prepare_nodes_network(self, prepare_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
         yield from self._prepare_nodes_network(prepare_nodes, controller_configuration)
 
     @pytest.fixture
     @JunitFixtureTestCase()
     def prepare_infraenv_nodes_network(
-        self, prepare_infraenv_nodes: Nodes, controller_configuration: BaseNodeConfig
+        self, prepare_infraenv_nodes: Nodes, controller_configuration: BaseNodesConfig
     ) -> Nodes:
         yield from self._prepare_nodes_network(prepare_infraenv_nodes, controller_configuration)
 

@@ -19,14 +19,14 @@ from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk, DiskSourceType
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
-from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config import BaseNodesConfig
 from service_client import log
 
 
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, config: BaseNodeConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
+    def __init__(self, config: BaseNodesConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
         super().__init__(config, entity_config)
         self.libvirt_connection: libvirt.virConnect = libvirt.open("qemu:///system")
         self.private_ssh_key_path: Path = config.private_ssh_key_path

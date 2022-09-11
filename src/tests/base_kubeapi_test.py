@@ -11,7 +11,7 @@ from netaddr import IPNetwork
 
 from assisted_test_infra.test_infra import BaseEntityConfig, Nodes, utils
 from assisted_test_infra.test_infra.controllers import Node
-from assisted_test_infra.test_infra.helper_classes.config import BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Agent,
     AgentClusterInstall,
@@ -79,21 +79,21 @@ class BaseKubeAPI(BaseTest):
         yield cluster_configuration, controller_configuration
 
     @staticmethod
-    def _configure_single_node(terraform_config: BaseNodeConfig):
+    def _configure_single_node(terraform_config: BaseNodesConfig):
         terraform_config.masters_count = 1
         terraform_config.workers_count = 0
         terraform_config.master_vcpu = 8
         terraform_config.master_memory = 16 * MiB_UNITS
 
     @staticmethod
-    def _configure_highly_available(terraform_config: BaseNodeConfig):
+    def _configure_highly_available(terraform_config: BaseNodesConfig):
         terraform_config.masters_count = 3
         terraform_config.workers_count = 0
         terraform_config.master_vcpu = 4
         terraform_config.master_memory = 16 * MiB_UNITS
 
     @staticmethod
-    def _configure_workers(terraform_config: BaseNodeConfig):
+    def _configure_workers(terraform_config: BaseNodesConfig):
         terraform_config.masters_count = 0
         terraform_config.workers_count = 2
         terraform_config.worker_vcpu = 4

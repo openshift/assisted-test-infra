@@ -15,12 +15,16 @@ _default_triggers = frozendict(
             condition=lambda config: config.platform == consts.Platforms.NONE,
             user_managed_networking=True,
             vip_dhcp_allocation=False,
+            tf_platform=consts.Platforms.NONE,
         ),
         "vsphere_platform": Trigger(
-            condition=lambda config: config.platform == consts.Platforms.VSPHERE, user_managed_networking=False
+            condition=lambda config: config.platform == consts.Platforms.VSPHERE,
+            user_managed_networking=False,
+            tf_platform=consts.Platforms.VSPHERE,
         ),
         "nutanix_platform": Trigger(
             condition=lambda config: config.platform == consts.Platforms.NUTANIX,
+            tf_platform=consts.Platforms.NUTANIX,
             vip_dhcp_allocation=False,
         ),
         "sno": Trigger(

@@ -1,10 +1,11 @@
+from abc import ABC
 from dataclasses import dataclass
 
-from assisted_test_infra.test_infra.helper_classes.config.controller_config import BaseNodeConfig
+from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config import BaseNodesConfig
 
 
 @dataclass
-class BaseVSphereConfig(BaseNodeConfig):
+class BaseVSphereConfig(BaseNodesConfig, ABC):
     vsphere_vcenter: str = None
     vsphere_username: str = None
     vsphere_password: str = None

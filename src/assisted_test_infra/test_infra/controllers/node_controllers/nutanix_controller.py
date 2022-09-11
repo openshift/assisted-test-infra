@@ -22,7 +22,7 @@ class NutanixController(NodeController):
     def __init__(self, config: BaseNutanixConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
-        folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=cluster_config.platform)
+        folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=config.tf_platform)
         self._tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
         self._nutanix_client = None
 

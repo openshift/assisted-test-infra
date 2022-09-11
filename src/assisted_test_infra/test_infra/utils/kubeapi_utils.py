@@ -91,11 +91,11 @@ def get_platform_type(platform: str) -> str:
     Return PlatformType as defined in kube-api (AgentClusterInstallStatus)
     """
     if platform == consts.Platforms.NONE:
-        return consts.PlatformType.NONE
+        return consts.KubeAPIPlatforms.NONE
     if platform == consts.Platforms.BARE_METAL:
-        return consts.PlatformType.BARE_METAL
+        return consts.KubeAPIPlatforms.BARE_METAL
     if platform == consts.Platforms.VSPHERE:
-        return consts.PlatformType.VSPHERE
+        return consts.KubeAPIPlatforms.VSPHERE
 
     # Return platform as-is (in case it was already specified in kube-api format)
     return platform

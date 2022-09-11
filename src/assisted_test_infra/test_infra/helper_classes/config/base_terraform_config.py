@@ -1,13 +1,14 @@
+from abc import ABC
 from dataclasses import dataclass, field
 from typing import Dict, List
 
 from munch import Munch
 
-from .controller_config import BaseNodeConfig
+from .base_nodes_config import BaseNodesConfig
 
 
 @dataclass
-class BaseTerraformConfig(BaseNodeConfig):
+class BaseTerraformConfig(BaseNodesConfig, ABC):
     """
     Define all configurations variables that are needed for Nodes during it's execution
     All arguments must have default to None with type hint
@@ -26,6 +27,3 @@ class BaseTerraformConfig(BaseNodeConfig):
     network_name: str = None
     storage_pool_path: str = None
     running: bool = True
-
-    def __post_init__(self):
-        super().__post_init__()

@@ -1,4 +1,5 @@
 import warnings
+from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
@@ -9,8 +10,7 @@ from .base_config import BaseConfig
 
 
 @dataclass
-class BaseNodeConfig(BaseConfig):
-    platform: str = None
+class BaseNodesConfig(BaseConfig, ABC):
     is_ipv4: bool = None
     is_ipv6: bool = None
     bootstrap_in_place: bool = None
@@ -36,6 +36,7 @@ class BaseNodeConfig(BaseConfig):
     worker_boot_devices: List[str] = None
 
     network_mtu: int = None
+    tf_platform: str = None  # todo - make all tf dependent platforms (e.g. vsphere, nutanix) inherit from BaseTerraformConfig  # noqa E501
 
     @property
     def nodes_count(self):

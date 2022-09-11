@@ -1,3 +1,4 @@
+from abc import ABC
 from dataclasses import dataclass
 from typing import List
 
@@ -9,7 +10,7 @@ from .base_entity_config import BaseEntityConfig
 
 
 @dataclass
-class BaseClusterConfig(BaseEntityConfig):
+class BaseClusterConfig(BaseEntityConfig, ABC):
     """
     Define all configurations variables that are needed for Cluster during its execution.
     All arguments must default to None and be type annotated.
