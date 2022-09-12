@@ -32,6 +32,6 @@ tqdm==4.64.1
 urllib3==1.26.12
 pyvmomi>=7.0.2
 waiting>=1.4.1
-prompt_toolkit==3.0.30
+prompt_toolkit==3.0.31
 nutanix-api==0.0.17
 pytest-error-for-skips==2.0.2
