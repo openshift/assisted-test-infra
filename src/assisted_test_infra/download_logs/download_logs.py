@@ -331,7 +331,7 @@ def get_ui_url_from_api_url(api_url: str):
 
 
 @JunitTestCase()
-def download_must_gather(kubeconfig: str, dest_dir: str):
+def download_must_gather(kubeconfig: str, dest_dir: str, describe_cluster_operators: bool = True):
     must_gather_dir = f"{dest_dir}/must-gather-dir"
     os.mkdir(must_gather_dir)
 
@@ -345,6 +345,9 @@ def download_must_gather(kubeconfig: str, dest_dir: str):
 
     except RuntimeError as ex:
         log.warning(f"Failed to run must gather: {ex}")
+
+    if describe_cluster_operators:
+        describe_cluster_operators(kubeconfig, dest_dir)
 
     log.debug("Archiving %s...", must_gather_dir)
     with tarfile.open(f"{dest_dir}/must-gather.tar", "w:gz") as tar:
@@ -364,6 +367,15 @@ def gather_sosreport_data(output_dir: str):
         jobs=[(gather_sosreport_from_node, node, sosreport_output) for node in controller.list_nodes()],
         timeout=60 * 20,
     )
+
+
+def describe_cluster_operators(kubeconfig: str, dest_dir: str):
+    log.info(f"Describing cluster operators using kubeconfig: {kubeconfig}")
+    command = (
+        f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} describe co" f" > {dest_dir}/cluster_operators.yaml"
+    )
+    with SuppressAndLog(RuntimeError):
+        run_command(command, shell=True, raise_errors=True)
 
 
 def gather_sosreport_from_node(node: Node, destination_dir: str):
