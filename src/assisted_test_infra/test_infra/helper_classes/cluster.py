@@ -86,6 +86,7 @@ class Cluster(Entity):
                 olm_operators=existing_cluster.monitored_operators,
                 base_dns_domain=existing_cluster.base_dns_domain,
                 vip_dhcp_allocation=existing_cluster.vip_dhcp_allocation,
+                cluster_tags=existing_cluster.tags,
             )
         )
 
@@ -129,6 +130,7 @@ class Cluster(Entity):
             network_type=self._config.network_type,
             disk_encryption=disk_encryption,
             **platform_var,
+            tags=self._config.cluster_tags or None,
         )
 
         self._config.cluster_id = cluster.id
@@ -200,6 +202,16 @@ class Cluster(Entity):
         iso_download_path = iso_download_path or self._config.iso_download_path
         log.debug(f"Downloading ISO to {iso_download_path}")
         return self._infra_env.download_image(iso_download_path=iso_download_path)
+
+    def update_tags(self, tags: str):
+        log.info(f"Setting cluster tags: {tags} for cluster: {self.id}")
+        self.update_config(cluster_tags=tags)
+        self.api_client.update_cluster(self.id, {"tags": tags})
+
+    def get_tags(self) -> str:
+        tags = self.get_details().tags
+        self._config.cluster_tags = tags
+        return tags
 
     @JunitTestCase()
     def generate_and_download_infra_env(
@@ -547,7 +559,11 @@ class Cluster(Entity):
         )
 
     def wait_for_specific_host_status(
-        self, host, statuses, nodes_count: int = MINIMUM_NODES_TO_WAIT, timeout: int = consts.NODES_REGISTERED_TIMEOUT
+        self,
+        host,
+        statuses,
+        nodes_count: int = MINIMUM_NODES_TO_WAIT,
+        timeout: int = consts.NODES_REGISTERED_TIMEOUT,
     ):
         utils.waiting.wait_till_specific_host_is_in_status(
             client=self.api_client,
