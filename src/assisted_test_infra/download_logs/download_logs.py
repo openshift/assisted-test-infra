@@ -347,7 +347,7 @@ def download_must_gather(kubeconfig: str, dest_dir: str, describe_cluster_operat
         log.warning(f"Failed to run must gather: {ex}")
 
     if describe_cluster_operators:
-        describe_cluster_operators(kubeconfig, dest_dir)
+        run_oc_describe_cluster_operators(kubeconfig, dest_dir)
 
     log.debug("Archiving %s...", must_gather_dir)
     with tarfile.open(f"{dest_dir}/must-gather.tar", "w:gz") as tar:
@@ -369,7 +369,7 @@ def gather_sosreport_data(output_dir: str):
     )
 
 
-def describe_cluster_operators(kubeconfig: str, dest_dir: str):
+def run_oc_describe_cluster_operators(kubeconfig: str, dest_dir: str):
     log.info(f"Describing cluster operators using kubeconfig: {kubeconfig}")
     command = (
         f"oc --insecure-skip-tls-verify --kubeconfig={kubeconfig} describe co" f" > {dest_dir}/cluster_operators.yaml"
