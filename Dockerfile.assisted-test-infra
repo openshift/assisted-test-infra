@@ -19,6 +19,7 @@ RUN dnf -y install --enablerepo=crb \
   jq \
   nss_wrapper \
   libvirt-client \
+  guestfs-tools \
   libvirt-devel \
   libguestfs-tools \
   libxslt \
