@@ -93,28 +93,29 @@ function get_main_ip_v6() {
 }
 
 function wait_for_url_and_run() {
-    RETRIES=15
+    URL="$1"
+    FUNCTION="$2"
+    RETRIES=30
     RETRIES=$((RETRIES))
-    STATUS=1
-    url_reachable "$1" && STATUS=$? || STATUS=$?
 
-    until [ $RETRIES -eq 0 ] || [ $STATUS -eq 0 ]; do
-
+    until [ $RETRIES -eq 0 ]; do
         RETRIES=$((RETRIES - 1))
 
         echo "Running given function"
-        $2
-
-        echo "Sleeping for 30 seconds"
-        sleep 30s
+        ${FUNCTION}
 
         echo "Verifying URL and port are accessible"
-        url_reachable "$1" && STATUS=$? || STATUS=$?
+        if url_reachable "${URL}"; then
+          echo "URL ${URL} is reachable!"
+          return
+        fi
+
+        echo "Sleeping for 2 seconds"
+        sleep 2s
     done
-    if [ $RETRIES -eq 0 ]; then
-        echo "Timeout reached, URL $1 not reachable"
-        exit 1
-    fi
+
+    echo "Timeout reached, URL ${URL} is not reachable"
+    exit 1
 }
 
 function close_external_ports() {
