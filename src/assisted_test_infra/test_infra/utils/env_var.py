@@ -12,8 +12,6 @@ class EnvVar:
         __default       Default value for variable if not set
         __is_user_set   Set to true if one of the environment variables in __var_keys was set by the user
         __value         The actual calculated value of the variable (user -> default)
-        __cached        Set to True when first time setting __value, prevent reloading the value each time it's
-                        being accessed
     """
 
     def __init__(
@@ -23,10 +21,16 @@ class EnvVar:
         self.__loader = loader
         self.__default = default
         self.__is_user_set = False
-        self.__value = self.value
+        self.__init_value()
 
-    def __getattr__(self, item: str):
-        return self.__value.__getattribute__(item)
+    def __init_value(self):
+        self.__value = self.__default
+        for key in self.__var_keys:
+            env = get_env(key)
+            if env is not None:
+                self.__is_user_set = True
+                self.__value = self.__loader(env) if self.__loader else env
+                break
 
     def __add__(self, other: "EnvVar"):
         return EnvVar(default=self.get() + other.get())
@@ -35,23 +39,16 @@ class EnvVar:
         return f"{f'{self.__var_keys[0]}=' if len(self.__var_keys) > 0 else ''}{self.__value}"
 
     @property
+    def value(self):
+        return self.__value
+
+    @property
     def var_keys(self):
         return self.__var_keys
 
     @property
     def is_user_set(self):
         return self.__is_user_set
-
-    @property
-    def value(self):
-        value = self.__default
-        for key in self.__var_keys:
-            env = get_env(key)
-            if env is not None:
-                self.__is_user_set = True
-                value = self.__loader(env) if self.__loader else env
-                break
-        return value
 
     def copy(self, value=None) -> "EnvVar":
         """Get EnvVar copy, if value is different than None it will set the old EnvVar value"""
