@@ -285,11 +285,17 @@ class Cluster(Entity):
     def set_cnv(self, properties=None):
         self.set_olm_operator(consts.OperatorType.CNV, properties=properties)
 
+    def set_lvm(self, properties=None):
+        self.set_olm_operator(consts.OperatorType.LVM, properties=properties)
+
     def unset_ocs(self):
         self.unset_olm_operator(consts.OperatorType.OCS)
 
     def unset_cnv(self):
         self.unset_olm_operator(consts.OperatorType.CNV)
+
+    def unset_lvm(self):
+        self.unset_olm_operator(consts.OperatorType.LVM)
 
     def unset_olm_operator(self, operator_name):
         log.info(f"Unsetting {operator_name} for cluster: {self.id}")

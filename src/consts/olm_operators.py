@@ -6,6 +6,7 @@ class OperatorType:
     OCS = "ocs"
     ODF = "odf"
     LSO = "lso"
+    LVM = "lvm"
 
 
 class OperatorStatus:
@@ -79,6 +80,11 @@ class OperatorResource:
                 worker_count=4,
             ),
             OperatorType.LSO: cls.get_resource_dict(),
+            OperatorType.LVM: cls.get_resource_dict(
+                master_memory=1200,
+                master_vcpu=1,
+                master_disk_count=1,
+            ),
         }
 
 
@@ -102,6 +108,10 @@ class LSOOperatorFailedError(OperatorFailedError):
     pass
 
 
+class LVMOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
     if operator == OperatorType.CNV:
         return CNVOperatorFailedError
@@ -114,5 +124,8 @@ def get_exception_factory(operator: str):
 
     if operator == OperatorType.LSO:
         return LSOOperatorFailedError
+
+    if operator == OperatorType.LVM:
+        return LVMOperatorFailedError
 
     return OperatorFailedError
