@@ -1,3 +1,4 @@
+import os
 from base64 import b64decode
 from pprint import pformat
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -319,6 +320,10 @@ class AgentClusterInstall(BaseCustomResource):
             .get()
             .data["kubeconfig"]
         )
+
+        # Ensures kubeconfig directory exists
+        dirname = os.path.dirname(kubeconfig_path)
+        os.makedirs(dirname, exist_ok=True)
 
         with open(kubeconfig_path, "wt") as kubeconfig_file:
             kubeconfig_file.write(b64decode(kubeconfig_data).decode())
