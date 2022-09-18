@@ -157,7 +157,7 @@ class TestKubeAPI(BaseKubeAPI):
         nodes.controller.set_dns(api_ip=api_vip, ingress_ip=ingress_vip)
 
         log.info("Waiting for install")
-        self._wait_for_install(agent_cluster_install, agents)
+        self._wait_for_install(agent_cluster_install, agents, cluster_config.kubeconfig_path)
 
     @JunitTestCase()
     def capi_test(
@@ -413,7 +413,7 @@ class TestLateBinding(BaseKubeAPI):
         agent_cluster_install.wait_to_be_ready(ready=True)
         Agent.wait_for_agents_to_be_bound(agents)
         if not hold_installation:
-            cls._wait_for_install(agent_cluster_install, agents)
+            cls._wait_for_install(agent_cluster_install, agents, utils.get_kubeconfig_path(cluster_deployment.ref.name))
 
     @JunitTestSuite()
     @pytest.mark.kube_api
