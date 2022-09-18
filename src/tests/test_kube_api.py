@@ -100,7 +100,11 @@ class TestKubeAPI(BaseKubeAPI):
         secret.create(pull_secret=cluster_config.pull_secret)
 
         cluster_deployment = ClusterDeployment(api_client, cluster_name, spoke_namespace)
-        cluster_deployment.create(agent_cluster_install_ref=agent_cluster_install.ref, secret=secret)
+        cluster_deployment.create(
+            agent_cluster_install_ref=agent_cluster_install.ref,
+            secret=secret,
+            base_domain=global_variables.base_dns_domain,
+        )
         proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
 
         if is_disconnected:
