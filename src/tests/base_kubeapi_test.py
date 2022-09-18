@@ -120,11 +120,12 @@ class BaseKubeAPI(BaseTest):
         return api_vip, ingress_vip
 
     @classmethod
-    def _wait_for_install(cls, agent_cluster_install: AgentClusterInstall, agents: List[Agent]):
+    def _wait_for_install(cls, agent_cluster_install: AgentClusterInstall, agents: List[Agent], kubeconfig_path: str):
         agent_cluster_install.wait_to_be_ready(ready=True)
         agent_cluster_install.wait_to_be_installing()
         Agent.wait_for_agents_to_install(agents)
         agent_cluster_install.wait_to_be_installed()
+        agent_cluster_install.download_kubeconfig(kubeconfig_path)
 
     @classmethod
     def _set_agent_cluster_install_machine_cidr(cls, agent_cluster_install: AgentClusterInstall, nodes: Nodes):
