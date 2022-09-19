@@ -171,7 +171,7 @@ destroy_onprem:
 # Start load balancer if it does not already exist.
 # Map the directory $(HOME)/.test-infra/etc/nginx/conf.d to be /etc/nginx/conf.d
 # so it will be used by the python code to fill up load balancing definitions
-start_load_balancer:
+start_load_balancer: stop_load_balancer
 	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
 		id=$(shell $(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"); \
 		( test -z "$$id" && echo "Starting load balancer ..." && \
@@ -183,7 +183,7 @@ start_load_balancer:
 stop_load_balancer:
 	@id=$(shell $(CONTAINER_COMMAND) ps --all --quiet --filter "name=load_balancer"); \
 	test ! -z "$$id"  && $(CONTAINER_COMMAND) rm -f load_balancer; \
-	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/stream.d/*.conf >& /dev/null || /bin/true
+	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/*.conf >& /dev/null || /bin/true
 
 
 #############
