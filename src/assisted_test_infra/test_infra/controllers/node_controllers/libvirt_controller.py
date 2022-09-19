@@ -10,6 +10,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Callable, List, Tuple, Union
 from xml.dom import minidom
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 import libvirt
 import waiting
@@ -598,6 +599,37 @@ class LibvirtController(NodeController, ABC):
         dhcp_element.appendChild(bootp)
         self.destroy_network(network)
         self.create_network(xml.toprettyxml())
+
+    def _create_dns_host_xml(self, api_vip: str, cluster_name: str):
+        """Creates an XML object for adding a DNS host to a libvirt network"""
+        host_element = Element("host", ip=api_vip)
+        if cluster_name != "":
+            hostname = f"api.{cluster_name}.{self._entity_config.base_dns_domain}"
+            hostname_element = SubElement(host_element, "hostname")
+            hostname_element.text = hostname
+        return minidom.parseString(tostring(host_element))
+
+    def add_dns_host_to_network(self, network_name: str, api_vip: str, cluster_name: str):
+        """Adds a dns-host to an existing network"""
+        host_xml = self._create_dns_host_xml(api_vip, cluster_name)
+        network = self.get_network_by_name(network_name)
+        network.update(
+            libvirt.VIR_NETWORK_UPDATE_COMMAND_ADD_LAST,
+            libvirt.VIR_NETWORK_SECTION_DNS_HOST,
+            parentIndex=-1,
+            xml=host_xml.toprettyxml(),
+        )
+
+    def remove_dns_host_from_network(self, network_name: str, api_vip: str, cluster_name: str):
+        """Removes a dns-host from an existing network"""
+        host_xml = self._create_dns_host_xml(api_vip, cluster_name)
+        network = self.get_network_by_name(network_name)
+        network.update(
+            libvirt.VIR_NETWORK_UPDATE_COMMAND_DELETE,
+            libvirt.VIR_NETWORK_SECTION_DNS_HOST,
+            parentIndex=-1,
+            xml=host_xml.toprettyxml(),
+        )
 
     def _get_xml(self, node_name):
         dom = self.libvirt_connection.lookupByName(node_name)

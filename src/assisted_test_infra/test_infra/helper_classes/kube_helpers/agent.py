@@ -138,6 +138,25 @@ class Agent(BaseCustomResource):
         )
         log.info(f"Bound agent {self.ref} to cluster_deployment {cluster_deployment.ref}")
 
+    def unbind(self) -> None:
+        """Unbinds an agent from a cluster deployment"""
+        agent = self.get()
+        cluster_deployment = agent["spec"]["clusterDeploymentName"]
+        del agent["spec"]["clusterDeploymentName"]
+        body = {"spec": agent["spec"]}
+
+        log.info(f"Unbinding agent {self.ref} with the following update: {pformat(body)}")
+
+        self.crd_api.replace_namespaced_custom_object(
+            group=consts.CRD_API_GROUP,
+            version=consts.CRD_API_VERSION,
+            plural=self._plural,
+            name=self.ref.name,
+            namespace=self.ref.namespace,
+            body=agent,
+        )
+        log.info(f"Unbound agent {self.ref.name} from cluster deployment {cluster_deployment}")
+
     @classmethod
     def wait_for_agents_to_be_bound(
         cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_READY_FOR_INSTALL_TIMEOUT
@@ -187,6 +206,21 @@ class Agent(BaseCustomResource):
             timeout=timeout,
         )
 
+    @classmethod
+    def wait_for_agents_to_reclaim(
+        cls,
+        agents: List["Agent"],
+        expected_state: str = "known-unbound",
+        timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATUS_TIMEOUT,
+        interval: int = 10,
+    ) -> None:
+        waiting.wait(
+            lambda: cls._are_agents_in_state(agents, expected_state),
+            timeout_seconds=timeout,
+            sleep_seconds=interval,
+            waiting_for=f"Agents to be in state {expected_state}",
+        )
+
     @staticmethod
     def are_agents_in_status(
         agents: List["Agent"],
@@ -225,3 +259,9 @@ class Agent(BaseCustomResource):
             sleep_seconds=interval,
             waiting_for=f"Agents to have {status_type} status",
         )
+
+    @classmethod
+    def _are_agents_in_state(cls, agents: List["Agent"], expected_state: str) -> bool:
+        agent_states = {agent.ref.name: agent.get()["status"]["debugInfo"]["state"] for agent in agents}
+        log.info(f"Waiting for agents to have the state '{expected_state}' and currently agent state is {agent_states}")
+        return all(agent_state == expected_state for agent_state in agent_states.values())
