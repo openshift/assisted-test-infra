@@ -73,7 +73,8 @@ function download_capi_logs() {
   NAMESPACE=$(get_pod_namespace "capi-provider|cluster-api-provider-agent")
   mkdir ${LOGS_DEST}/${NAMESPACE}
   ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/${NAMESPACE}/logs_{}_${DEPLOY_TARGET}.log" || true
-  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get pods -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/logs_{}_${DEPLOY_TARGET}.yaml" || true
+  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get pods -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/pods_{}_${DEPLOY_TARGET}.yaml" || true
+  ${KUBECTL} get cm -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get cm -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/cm_{}_${DEPLOY_TARGET}.yaml" || true
   skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
 }
 
