@@ -277,7 +277,7 @@ class BaseTest:
                 log.info("--- TEARDOWN --- node controller\n")
                 nodes.destroy_all_nodes()
                 log.info(f"--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n")
-                utils.run_command(f"rm -f {cluster_configuration.iso_download_path}", shell=True)
+                Path(cluster_configuration.iso_download_path).unlink(missing_ok=True)
                 self.delete_dnsmasq_conf_file(cluster_name=cluster_configuration.cluster_name)
 
     @pytest.fixture
@@ -290,7 +290,7 @@ class BaseTest:
                 log.info("--- TEARDOWN --- node controller\n")
                 infraenv_nodes.destroy_all_nodes()
                 log.info(f"--- TEARDOWN --- deleting iso file from: {infra_env_configuration.iso_download_path}\n")
-                utils.run_command(f"rm -f {infra_env_configuration.iso_download_path}", shell=True)
+                Path(infra_env_configuration.iso_download_path).unlink(missing_ok=True)
 
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
@@ -477,7 +477,7 @@ class BaseTest:
                 log.info("--- TEARDOWN --- node controller\n")
                 _nodes.destroy_all_nodes()
                 log.info(f"--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n")
-                utils.run_command(f"rm -f {_cluster_config.iso_download_path}", shell=True)
+                Path(_cluster_config.iso_download_path).unlink(missing_ok=True)
                 self.teardown_nat(_nat)
                 self.delete_dnsmasq_conf_file(cluster_name=_cluster_config.cluster_name)
 
@@ -525,7 +525,7 @@ class BaseTest:
                 log.info("--- TEARDOWN --- node controller\n")
                 _nodes.destroy_all_nodes()
                 log.info(f"--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n")
-                utils.run_command(f"rm -f {_infraenv_config.iso_download_path}", shell=True)
+                Path(_infraenv_config.iso_download_path).unlink(missing_ok=True)
                 self.teardown_nat(_nat)
 
         finally:

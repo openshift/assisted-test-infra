@@ -35,9 +35,9 @@ make bring_assisted_service
 make image_build
 echo "Done creating image"
 
-echo "Installing minikube and oc"
-scripts/install_minikube.sh
-echo "Done installing minikube and oc"
+echo "Installing several binaries"
+scripts/install_binaries.sh
+echo "Done installing binaries"
 
 if [ -z "${NO_MINIKUBE}" ]; then
     echo "Install and start minikube"
