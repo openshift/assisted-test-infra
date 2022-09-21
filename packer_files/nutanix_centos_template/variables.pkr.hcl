@@ -44,13 +44,13 @@ variable "image_name" {
 variable "disk_size" {
   type = number
   default = 240000
-  description = "The VM disk size in MB. default 80G"
+  description = "The VM disk size in MB. default 240G"
 }
 
 variable "memory_size" {
   type = string
   default = "16984"
-  description = "The VM RAM size in MB. TODO: Adjust this variable to the right size"
+  description = "The VM RAM size in MB"
 }
 
 variable "vcpus" {
