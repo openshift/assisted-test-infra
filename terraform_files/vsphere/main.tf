@@ -91,6 +91,7 @@ resource "vsphere_virtual_machine" "master" {
   guest_id                    = "coreos64Guest"
   folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
   enable_disk_uuid            = "true"
+  hardware_version            = 15
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
   wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
@@ -131,6 +132,7 @@ resource "vsphere_virtual_machine" "worker" {
   guest_id                    = "coreos64Guest"
   folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
   enable_disk_uuid            = "true"
+  hardware_version            = 15
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
   wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
