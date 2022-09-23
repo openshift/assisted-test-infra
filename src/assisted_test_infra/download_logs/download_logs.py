@@ -41,7 +41,7 @@ from tests.config import ClusterConfig, TerraformConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
 
-TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
+TIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
 MAX_RETRIES = 3
 MUST_GATHER_MAX_RETRIES = 15
 RETRY_INTERVAL = 60 * 5
