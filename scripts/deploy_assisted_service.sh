@@ -38,6 +38,9 @@ if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" ]]; the
     if [ -z "${RELEASE_IMAGES:-}" ]; then
         export RELEASE_IMAGES='[]'
     fi
+    # The kube-api flow sets all infra env image types to the ISO image type configured
+    # when the service is deployed
+    export ISO_IMAGE_TYPE=${ISO_IMAGE_TYPE:-minimal-iso}
 fi
 
 mkdir -p build
