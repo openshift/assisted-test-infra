@@ -166,7 +166,12 @@ function allow_libvirt_cross_network_traffic() {
     sudo mkdir -p "${hook_dir}"
     sudo tee "${hook_filename}" << EOF
 #!/usr/bin/env sh
-iptables-save -c | egrep -v 'LIBVIRT_FW[IO] .* REJECT' | iptables-restore || true
+(
+    flock 3
+    iptables-save -c | egrep -v 'LIBVIRT_FW[IO] .* REJECT' >/tmp/iptables.txt
+    iptables-restore </tmp/iptables.txt
+    rm /tmp/iptables.txt
+) 3>/tmp/iptables.lock
 EOF
     sudo chmod +x "${hook_filename}"
 }
