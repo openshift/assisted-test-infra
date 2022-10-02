@@ -1,6 +1,7 @@
 from typing import Dict
 
 from frozendict import frozendict
+from packaging import version
 
 from consts import consts, resources
 from triggers.env_trigger import Trigger
@@ -32,7 +33,12 @@ _default_triggers = frozendict(
             vip_dhcp_allocation=False,
             master_memory=resources.DEFAULT_MASTER_SNO_MEMORY,
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,
-            network_type=consts.NetworkType.OVNKubernetes,
+            network_type=None,
+        ),
+        "let_service_choose_network_type": Trigger(
+            condition=lambda config: version.parse(config.openshift_version) >= version.parse("4.12"),
+            vip_dhcp_allocation=False,
+            network_type=None,
         ),
         "ipv4": Trigger(
             condition=lambda config: config.is_ipv4 is True and config.is_ipv6 is False,
