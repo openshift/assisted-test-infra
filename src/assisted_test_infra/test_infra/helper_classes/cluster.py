@@ -243,6 +243,16 @@ class Cluster(Entity):
         )
 
     @JunitTestCase()
+    def wait_until_hosts_are_insufficient(self, nodes_count: int = None):
+        statuses = [consts.NodesStatus.INSUFFICIENT]
+        wait_till_all_hosts_are_in_status(
+            client=self.api_client,
+            cluster_id=self.id,
+            nodes_count=nodes_count or self.nodes.nodes_count,
+            statuses=statuses,
+        )
+
+    @JunitTestCase()
     def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
