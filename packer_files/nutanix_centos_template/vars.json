@@ -1,0 +1,11 @@
+{
+    "nutanix_username": "placeholder",
+    "nutanix_password": "placeholder",
+    "nutanix_insecure": "true",
+    "nutanix_endpoint": "placeholder",
+    "nutanix_port": "placeholder",
+    "nutanix_cluster": "placeholder",
+    "nutanix_subnet": "placeholder",
+    "centos_iso_image_name": "placeholder",
+    "image_name": "assisted-test-infra-machine"
+}
