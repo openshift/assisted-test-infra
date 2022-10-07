@@ -81,8 +81,8 @@ class OperatorResource:
             ),
             OperatorType.LSO: cls.get_resource_dict(),
             OperatorType.LVM: cls.get_resource_dict(
-                master_memory=1200,
-                master_vcpu=1,
+                master_memory=17200,
+                master_vcpu=9,
                 master_disk_count=1,
             ),
         }
