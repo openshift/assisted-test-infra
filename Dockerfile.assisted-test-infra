@@ -23,6 +23,7 @@ RUN dnf -y install --enablerepo=crb \
   libvirt-devel \
   libguestfs-tools \
   libxslt \
+  xorriso \
    && dnf clean all
 
 # Install latest available python version - For more information see https://github.com/eliorerz/tools/tree/master/python_builder
