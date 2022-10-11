@@ -1,3 +1,4 @@
+from typing import Optional
 from consts import GB
 
 
@@ -26,21 +27,23 @@ class OperatorResource:
     WORKER_DISK_KEY: str = "worker_disk"
     MASTER_DISK_COUNT_KEY: str = "master_disk_count"
     WORKER_DISK_COUNT_KEY: str = "worker_disk_count"
+    MASTER_COUNT_KEY: str = "masters_count"
     WORKER_COUNT_KEY: str = "workers_count"
 
     @classmethod
     def get_resource_dict(
         cls,
-        master_memory: int = 0,
-        worker_memory: int = 0,
-        master_vcpu: int = 0,
-        worker_vcpu: int = 0,
-        master_disk: int = 0,
-        worker_disk: int = 0,
-        master_disk_count: int = 0,
-        worker_disk_count: int = 0,
-        worker_count: int = 0,
-    ):
+        master_memory: Optional[int] = None,
+        worker_memory: Optional[int] = None,
+        master_vcpu: Optional[int] = None,
+        worker_vcpu: Optional[int] = None,
+        master_disk: Optional[int] = None,
+        worker_disk: Optional[int] = None,
+        master_disk_count: Optional[int] = None,
+        worker_disk_count: Optional[int] = None,
+        master_count: Optional[int] = None,
+        worker_count: Optional[int] = None,
+    ) -> dict[str, Optional[int]]:
         return {
             cls.MASTER_MEMORY_KEY: master_memory,
             cls.WORKER_MEMORY_KEY: worker_memory,
@@ -50,13 +53,14 @@ class OperatorResource:
             cls.WORKER_DISK_KEY: worker_disk,
             cls.MASTER_DISK_COUNT_KEY: master_disk_count,
             cls.WORKER_DISK_COUNT_KEY: worker_disk_count,
+            cls.MASTER_COUNT_KEY: master_count,
             cls.WORKER_COUNT_KEY: worker_count,
         }
 
     @classmethod
-    def values(cls) -> dict:
+    def values(cls) -> dict[str, dict[str, Optional[int]]]:
         return {
-            OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
+            OperatorType.CNV: cls.get_resource_dict(master_vcpu=8, worker_vcpu=4),
             OperatorType.OCS: cls.get_resource_dict(
                 master_memory=24000,
                 worker_memory=24000,
@@ -64,8 +68,8 @@ class OperatorResource:
                 worker_vcpu=12,
                 master_disk=10 * GB,
                 worker_disk=25 * GB,
-                master_disk_count=1,
-                worker_disk_count=1,
+                master_disk_count=2,
+                worker_disk_count=2,
                 worker_count=4,
             ),
             OperatorType.ODF: cls.get_resource_dict(
@@ -75,15 +79,16 @@ class OperatorResource:
                 worker_vcpu=12,
                 master_disk=10 * GB,
                 worker_disk=25 * GB,
-                master_disk_count=1,
-                worker_disk_count=1,
+                master_disk_count=2,
+                worker_disk_count=2,
                 worker_count=4,
             ),
             OperatorType.LSO: cls.get_resource_dict(),
             OperatorType.LVM: cls.get_resource_dict(
-                master_memory=17200,
+                master_count=1,
+                master_memory=17600,
                 master_vcpu=9,
-                master_disk_count=1,
+                master_disk_count=2,
             ),
         }
 
@@ -112,7 +117,7 @@ class LVMOperatorFailedError(OperatorFailedError):
     pass
 
 
-def get_exception_factory(operator: str):
+def get_exception_factory(operator: str) -> OperatorFailedError:
     if operator == OperatorType.CNV:
         return CNVOperatorFailedError
 
