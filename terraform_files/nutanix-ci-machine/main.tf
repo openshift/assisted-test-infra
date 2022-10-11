@@ -39,6 +39,8 @@ resource "nutanix_virtual_machine" "vm" {
   boot_device_order_list      = ["DISK"]
   boot_type                   = "LEGACY"
 
+  enable_cpu_passthrough      = true
+
   disk_list {
     data_source_reference = {
       kind = "image"
