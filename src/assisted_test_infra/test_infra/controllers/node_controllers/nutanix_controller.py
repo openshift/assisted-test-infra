@@ -125,6 +125,13 @@ class NutanixController(NodeController):
         vm.power_on()
 
     def get_ingress_and_api_vips(self, is_highly_available: bool = True):
+        if not self._entity_config.vip_dhcp_allocation:
+            if not self._entity_config.api_vip:
+                raise ValueError("API VIP is not set")
+            if not self._entity_config.ingress_vip:
+                raise ValueError("Ingress VIP is not set")
+            return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
+
         nutanix_subnet = next(
             s for s in NutanixSubnet.list_entities(self._nutanix_client) if s.name == self._config.nutanix_subnet
         )
