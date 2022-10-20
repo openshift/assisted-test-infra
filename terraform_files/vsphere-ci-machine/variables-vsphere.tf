@@ -59,7 +59,7 @@ variable "vcpu" {
 
 variable "memory" {
   type = number
-  default = 16984
+  default = 24576
   description = "The size of the virtual machine's memory, in MB"
 }
 
