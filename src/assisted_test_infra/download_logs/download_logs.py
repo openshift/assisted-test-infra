@@ -3,12 +3,14 @@
 import filecmp
 import json
 import os
+import re
 import shutil
 import tarfile
 import tempfile
 import time
 from contextlib import suppress
 from datetime import datetime
+from pathlib import Path
 
 import assisted_service_client
 import requests
@@ -144,12 +146,19 @@ def download_logs(
             "bootstrap.ign",
             "master.ign",
             "worker.ign",
-            "install-config.yaml",
         ):
             with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
                 client.download_and_save_file(
                     cluster["id"], cluster_file, os.path.join(output_folder, "cluster_files", cluster_file)
                 )
+
+        with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
+            install_config = Path(output_folder) / "cluster_files" / "install-config.yaml"
+            client.download_and_save_file(cluster["id"], "install-config.yaml", str(install_config))
+            censored_content = re.sub(
+                r"(pullSecret:\s+)'(.*)'", r"\g<1>*** PULL_SECRET ***", install_config.read_text()
+            )
+            install_config.write_text(censored_content)
 
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             download_manifests(client, cluster["id"], output_folder)
