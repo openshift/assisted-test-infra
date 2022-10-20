@@ -183,7 +183,9 @@ start_load_balancer: stop_load_balancer
 stop_load_balancer:
 	@id=$(shell $(CONTAINER_COMMAND) ps --all --quiet --filter "name=load_balancer"); \
 	test ! -z "$$id"  && $(CONTAINER_COMMAND) rm -f load_balancer; \
-	rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/*.conf >& /dev/null || /bin/true
+	if [ "$(TEST_TEARDOWN)" != "false" ]; then \
+		rm -f  $(HOME)/.test-infra/etc/nginx/conf.d/*.conf >& /dev/null || /bin/true; \
+	fi
 
 
 #############

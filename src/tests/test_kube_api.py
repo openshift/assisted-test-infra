@@ -426,7 +426,7 @@ class TestLateBinding(BaseKubeAPI):
         agent_cluster_install.wait_to_be_ready(ready=True)
         Agent.wait_for_agents_to_be_bound(agents)
         if not hold_installation:
-            cls._wait_for_install(agent_cluster_install, agents, utils.get_kubeconfig_path(cluster_deployment.ref.name))
+            cls._wait_for_install(agent_cluster_install, agents)
 
     @classmethod
     @JunitTestCase()
