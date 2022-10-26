@@ -22,7 +22,9 @@ PATH := ${PATH}:/usr/local/bin
 
 
 REPORTS = $(ROOT_DIR)/reports
-PYTEST_JUNIT_FILE=$(shell mktemp -u "$(REPORTS)/unittest_XXXXXXXXX.xml")
+TEST_SESSION_ID=$(shell mktemp -u "XXXXXXXXX")
+PYTEST_JUNIT_FILE="${REPORTS}/unittest_${TEST_SESSION_ID}.xml"
+
 SKIPPER_PARAMS ?= -i
 
 
@@ -44,6 +46,10 @@ SERVICE := $(or $(SERVICE), quay.io/edge-infrastructure/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:latest)
 REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
+
+# terraform
+TF_LOG_PATH=$(REPORTS)/terraform_$(TEST_SESSION_ID).log
+TF_LOG=trace
 
 # ui service
 UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),assisted-installer-ui)

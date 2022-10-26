@@ -30,7 +30,12 @@ class TerraformUtils:
         log.info("TF FOLDER %s ", working_dir)
         self.working_dir = working_dir
         self.var_file_path = os.path.join(working_dir, consts.TFVARS_JSON_NAME)
-        self.tf = _Terraform(working_dir=working_dir, state=consts.TFSTATE_FILE, var_file=consts.TFVARS_JSON_NAME)
+        self.tf = _Terraform(
+            working_dir=working_dir,
+            state=consts.TFSTATE_FILE,
+            var_file=consts.TFVARS_JSON_NAME,
+            is_env_vars_included=True,
+        )
 
         if terraform_init:
             self.init_tf()
