@@ -156,7 +156,7 @@ def download_logs(
             install_config = Path(output_folder) / "cluster_files" / "install-config.yaml"
             client.download_and_save_file(cluster["id"], "install-config.yaml", str(install_config))
             censored_content = re.sub(
-                r"(pullSecret:\s+)'(.*)'", r"\g<1>*** PULL_SECRET ***", install_config.read_text()
+                r"(pullSecret:\s+)'(.*)'", r"\g<1>xxxx_PULL_SECRET_REDACTED_xxxx", install_config.read_text()
             )
             install_config.write_text(censored_content)
 
