@@ -27,7 +27,7 @@ RUN dnf -y install --enablerepo=crb \
    && dnf clean all
 
 # Install latest available python version - For more information see https://github.com/eliorerz/tools/tree/master/python_builder
-COPY --from=quay.io/eerez/python-builder:stream9-3.10.7 /python /python-installation
+COPY --from=quay.io/eerez/python-builder:stream9-3.11.0 /python /python-installation
 RUN cd /python-installation && make install && dnf -y install python3-devel && dnf clean all
 
 RUN curl --retry 5 -Lo packer.zip https://releases.hashicorp.com/packer/1.8.0/packer_1.8.0_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
