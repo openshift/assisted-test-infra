@@ -115,7 +115,6 @@ class _EnvVariables(DataPool, ABC):
     vsphere_network: EnvVar = EnvVar(["VSPHERE_NETWORK"])
     vsphere_server: EnvVar = EnvVar(["VSPHERE_VCENTER"])
     vsphere_datacenter: EnvVar = EnvVar(["VSPHERE_DATACENTER"])
-    vsphere_datastore: EnvVar = EnvVar(["VSPHERE_DATASTORE"])
 
     nutanix_username: EnvVar = EnvVar(["NUTANIX_USERNAME"])
     nutanix_password: EnvVar = EnvVar(["NUTANIX_PASSWORD"])

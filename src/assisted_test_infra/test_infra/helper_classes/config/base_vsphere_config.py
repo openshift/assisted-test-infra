@@ -11,7 +11,7 @@ class BaseVSphereConfig(BaseNodesConfig, ABC):
     vsphere_password: str = None
     vsphere_cluster: str = None
     vsphere_datacenter: str = None
-    vsphere_datastore: str = None
+    vsphere_datastore: str = "iscsi-vsanDatastore"
     vsphere_network: str = None
     vsphere_parent_folder: str = None
     vsphere_folder: str = None
