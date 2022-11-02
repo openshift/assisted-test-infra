@@ -233,7 +233,7 @@ class VSphereController(NodeController):
 
     def __new_connection(self):
         return SmartConnect(
-            host=self._config.vsphere_vcenter,
+            host=self._config.vsphere_server,
             user=self._config.vsphere_username,
             pwd=self._config.vsphere_password,
             disableSslCertValidation=True,

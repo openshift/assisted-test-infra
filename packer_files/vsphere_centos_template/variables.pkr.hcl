@@ -2,7 +2,7 @@
 // vSphere variables
 //////
 
-variable "vsphere_vcenter" {
+variable "vsphere_server" {
   type        = string
   description = "vSphere vcenter server ip address or fqdn (vCenter server name for vSphere API operations)"
 }

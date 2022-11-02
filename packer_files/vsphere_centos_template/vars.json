@@ -5,6 +5,6 @@
     "vsphere_datacenter": "placeholder",
     "vsphere_datastore": "placeholder",
     "vsphere_network": "placeholder",
-    "vsphere_vcenter": "placeholder",
+    "vsphere_server": "placeholder",
     "vm_name": "packer-test"
 }

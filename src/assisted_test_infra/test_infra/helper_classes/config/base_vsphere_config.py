@@ -6,7 +6,7 @@ from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config impo
 
 @dataclass
 class BaseVSphereConfig(BaseNodesConfig, ABC):
-    vsphere_vcenter: str = None
+    vsphere_server: str = None
     vsphere_username: str = None
     vsphere_password: str = None
     vsphere_cluster: str = None
