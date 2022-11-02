@@ -1,8 +1,8 @@
-import ipaddress
 import json
 import os
 import shutil
 import warnings
+from ipaddress import ip_address, ip_network
 from typing import Dict, List, Union
 
 from munch import Munch
@@ -150,10 +150,8 @@ class TerraformController(LibvirtController):
         tfvars["libvirt_uri"] = consts.LIBVIRT_URI
         tfvars["master_count"] = self.params.master_count
         log.info("Machine cidr is: %s", machine_cidr)
-        master_starting_ip = str(ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10)
-        worker_starting_ip = str(
-            ipaddress.ip_address(ipaddress.ip_network(machine_cidr).network_address) + 10 + tfvars["master_count"]
-        )
+        master_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10)
+        worker_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10 + tfvars["master_count"])
         tfvars["image_path"] = self._entity_config.iso_download_path
         tfvars["worker_image_path"] = self._entity_config.worker_iso_download_path or tfvars["image_path"]
         self.master_ips = tfvars["libvirt_master_ips"] = self._create_address_list(
@@ -171,7 +169,7 @@ class TerraformController(LibvirtController):
         tfvars["provisioning_cidr_addresses"] = self.get_all_provisioning_addresses()
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
 
-        vips = self.get_ingress_and_api_vips(is_highly_available=(self.params.master_count > 1))
+        vips = self.get_ingress_and_api_vips()
         tfvars["api_vip"] = vips["api_vip"]
         tfvars["ingress_vip"] = vips["ingress_vip"]
         tfvars["running"] = running
@@ -187,13 +185,9 @@ class TerraformController(LibvirtController):
 
     def _secondary_tfvars(self):
         provisioning_cidr = self.get_provisioning_cidr()
-        secondary_master_starting_ip = str(
-            ipaddress.ip_address(ipaddress.ip_network(provisioning_cidr).network_address) + 10
-        )
+        secondary_master_starting_ip = str(ip_address(ip_network(provisioning_cidr).network_address) + 10)
         secondary_worker_starting_ip = str(
-            ipaddress.ip_address(ipaddress.ip_network(provisioning_cidr).network_address)
-            + 10
-            + int(self.params.master_count)
+            ip_address(ip_network(provisioning_cidr).network_address) + 10 + int(self.params.master_count)
         )
         return {
             "libvirt_secondary_worker_ips": self._create_address_list(
@@ -219,27 +213,17 @@ class TerraformController(LibvirtController):
         log.info("Formatting disk for %s", node_name)
         self.format_disk(f"{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
-    def get_ingress_and_api_vips(self, is_highly_available: bool = True) -> Dict[str, str]:
-        """Get appropriate values for setting static access endpoint IPs.
+    def get_ingress_and_api_vips(self) -> Dict[str, str]:
+        """Pick two IPs for setting static access endpoint IPs.
 
-        For multi-node clusters, we're using <sub-net>.100 for the API endpoint and <sub-net>.101
-        for the ingress endpoint (the IPv6 values are appropriately <sub-net>:64 and <sub-net>:65).
+        Using <sub-net>.100 for the API endpoint and <sub-net>.101 for the ingress endpoint
+        (the IPv6 values are appropriately <sub-net>:64 and <sub-net>:65).
 
-        For single-node clusters ingress endpoint will be the same as the API endpoint (and it will
-        follow the same values as above for IPv4 and IPv6).
-
-        Args:
-            is_highly_available (bool): whether IPs should be adapted to highly available clusters or not.
+        This method is not applicable for SNO clusters, where access IPs should be the node's IP.
         """
-        network_subnet_starting_ip = str(
-            ipaddress.ip_address(ipaddress.ip_network(self.get_primary_machine_cidr()).network_address) + 100
-        )
-        ips = utils.create_ip_address_list(2, starting_ip_addr=str(ipaddress.ip_address(network_subnet_starting_ip)))
-
-        if is_highly_available:
-            return {"api_vip": ips[0], "ingress_vip": ips[1]}
-
-        return {"api_vip": ips[0], "ingress_vip": ips[0]}
+        network_subnet_starting_ip = ip_address(ip_network(self.get_primary_machine_cidr()).network_address)
+        ips = utils.create_ip_address_list(2, starting_ip_addr=network_subnet_starting_ip + 100)
+        return {"api_vip": ips[0], "ingress_vip": ips[1]}
 
     @utils.on_exception(message="Failed to run terraform delete", silent=True)
     def _create_address_list(self, num, starting_ip_addr):

@@ -143,18 +143,25 @@ class TestKubeAPI(BaseKubeAPI):
 
         agents = self.start_nodes(nodes, infra_env, cluster_config, infra_env_configuration.is_static_ip)
 
-        access_vips = nodes.controller.get_ingress_and_api_vips(is_highly_available=len(nodes) > 1)
-        api_vip = access_vips["api_vip"]
-        ingress_vip = access_vips["ingress_vip"]
-
         if len(nodes) == 1:
             # for single node set the cidr and take the actual ip from the host
             # the vips is the ip of the host
             self._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
             # wait till the ip is set for the node and read it from its inventory
-            self.set_single_node_ip(cluster_deployment, nodes)
+            single_node_ip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
+            nodes.controller.tf.change_variables(
+                {
+                    "single_node_ip": single_node_ip,
+                    "bootstrap_in_place": True,
+                }
+            )
+            api_vip = ingress_vip = single_node_ip
         else:
             # patch the aci with the vips. The cidr will be derived from the range
+            access_vips = nodes.controller.get_ingress_and_api_vips()
+            api_vip = access_vips["api_vip"]
+            ingress_vip = access_vips["ingress_vip"]
+
             agent_cluster_install.set_api_vip(api_vip)
             agent_cluster_install.set_ingress_vip(ingress_vip)
 
@@ -413,8 +420,13 @@ class TestLateBinding(BaseKubeAPI):
         api_vip, _ = cls._get_vips(nodes)
 
         if len(nodes) == 1:
-            cls.set_single_node_ip(cluster_deployment, nodes)
-            api_vip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
+            single_node_ip = api_vip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
+            nodes.controller.tf.change_variables(
+                {
+                    "single_node_ip": single_node_ip,
+                    "bootstrap_in_place": True,
+                }
+            )
 
         # Add the API VIP DNS record to the assisted-service network
         # here so it can resolve by the time the host(s) start reclaim

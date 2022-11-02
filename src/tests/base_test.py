@@ -892,9 +892,7 @@ class BaseTest:
     def update_oc_config(nodes: Nodes, cluster: Cluster):
         os.environ["KUBECONFIG"] = cluster.kubeconfig_path
 
-        vips = nodes.controller.get_ingress_and_api_vips(
-            is_highly_available=cluster.high_availability_mode == consts.HighAvailabilityMode.FULL,
-        )
+        vips = nodes.controller.get_ingress_and_api_vips()
         api_vip = vips["api_vip"]
 
         utils.config_etc_hosts(

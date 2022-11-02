@@ -24,7 +24,6 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
 )
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
-from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
 from consts.consts import MiB_UNITS
 from service_client import ClientFactory, log
 from tests.base_test import BaseTest
@@ -196,18 +195,6 @@ class BaseKubeAPI(BaseTest):
         )
         log.info(f"patching agent {agent.ref} with hostname {hostname}")
         agent.patch(hostname=hostname)
-
-    @classmethod
-    def set_single_node_ip(cls, cluster_deployment: ClusterDeployment, nodes: Nodes):
-        log.info("waiting to have host single node ip")
-        single_node_ip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
-        nodes.controller.tf.change_variables(
-            {
-                "single_node_ip": single_node_ip,
-                "bootstrap_in_place": True,
-            }
-        )
-        log.info("single node ip=%s", single_node_ip)
 
     @classmethod
     def deploy_image_set(cls, cluster_name: str, api_client: ApiClient):
