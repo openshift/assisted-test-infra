@@ -106,15 +106,19 @@ class Cluster(Entity):
         return self._config.cluster_id
 
     def _create(self) -> str:
+        extra_vars = {}
+
         disk_encryption = models.DiskEncryption(
             enable_on=self._config.disk_encryption_roles,
             mode=self._config.disk_encryption_mode,
             tang_servers=self._config.tang_servers,
         )
 
-        platform_var = {}
         if self._config.platform:
-            platform_var["platform"] = models.Platform(type=self._config.platform)
+            extra_vars["platform"] = models.Platform(type=self._config.platform)
+
+        if self._config.vip_dhcp_allocation is not None:
+            extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation
 
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
@@ -122,15 +126,14 @@ class Cluster(Entity):
             openshift_version=self._config.openshift_version,
             pull_secret=self._config.pull_secret,
             base_dns_domain=self._config.base_dns_domain,
-            vip_dhcp_allocation=self._config.vip_dhcp_allocation,
             additional_ntp_source=self._config.additional_ntp_source,
             user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
             olm_operators=[{"name": name} for name in self._config.olm_operators],
             network_type=self._config.network_type,
             disk_encryption=disk_encryption,
-            **platform_var,
             tags=self._config.cluster_tags or None,
+            **extra_vars,
         )
 
         self._config.cluster_id = cluster.id
@@ -452,16 +455,19 @@ class Cluster(Entity):
         else:
             machine_networks = [models.MachineNetwork(cidr=cidr) for cidr in machine_networks]
 
+        extra_vars = {}
         if vip_dhcp_allocation is None:
-            vip_dhcp_allocation = self._config.vip_dhcp_allocation
+            extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation if not None else False
+        else:
+            extra_vars["vip_dhcp_allocation"] = vip_dhcp_allocation
 
         advanced_networking = {
-            "vip_dhcp_allocation": vip_dhcp_allocation,
             "cluster_networks": cluster_networks if cluster_networks is not None else self._config.cluster_networks,
             "service_networks": service_networks if service_networks is not None else self._config.service_networks,
             "machine_networks": machine_networks,
             "api_vip": api_vip if api_vip is not None else self._config.api_vip,
             "ingress_vip": ingress_vip if ingress_vip is not None else self._config.ingress_vip,
+            **extra_vars,
         }
 
         log.info(f"Updating advanced networking with {advanced_networking} for cluster: {self.id}")

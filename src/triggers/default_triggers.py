@@ -15,7 +15,6 @@ _default_triggers = frozendict(
         "none_platform": Trigger(
             condition=lambda config: config.platform == consts.Platforms.NONE,
             user_managed_networking=True,
-            vip_dhcp_allocation=False,
             tf_platform=consts.Platforms.NONE,
         ),
         "vsphere_platform": Trigger(
@@ -26,21 +25,19 @@ _default_triggers = frozendict(
         "nutanix_platform": Trigger(
             condition=lambda config: config.platform == consts.Platforms.NUTANIX,
             tf_platform=consts.Platforms.NUTANIX,
-            vip_dhcp_allocation=False,
         ),
         "sno": Trigger(
             condition=lambda config: config.masters_count == 1,
             workers_count=0,
             high_availability_mode=consts.HighAvailabilityMode.NONE,
             user_managed_networking=True,
-            vip_dhcp_allocation=False,
             master_memory=resources.DEFAULT_MASTER_SNO_MEMORY,
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,
             network_type=None,
         ),
         "let_service_choose_network_type": Trigger(
-            condition=lambda config: version.parse(config.openshift_version) >= version.parse("4.12"),
-            vip_dhcp_allocation=False,
+            condition=lambda config: version.parse(config.openshift_version)
+            >= version.parse(consts.OpenshiftVersion.VERSION_4_12.value),
             network_type=None,
         ),
         "ipv4": Trigger(
@@ -55,12 +52,10 @@ _default_triggers = frozendict(
         ),
         "ipv6_required_configurations": Trigger(
             condition=lambda config: config.is_ipv6 is True,
-            vip_dhcp_allocation=False,
             network_type=consts.NetworkType.OVNKubernetes,
         ),
         "OVNKubernetes": Trigger(
             condition=lambda config: config.network_type == consts.NetworkType.OVNKubernetes,
-            vip_dhcp_allocation=False,
         ),
         "dualstack": Trigger(
             condition=lambda config: config.is_ipv4 is True and config.is_ipv6 is True,
