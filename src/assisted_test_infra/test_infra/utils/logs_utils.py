@@ -28,7 +28,26 @@ def verify_logs_uploaded(
             assert len(tar.getnames()) >= expected_min_log_num, (
                 f"{tar.getnames()} " f"logs are less than minimum of {expected_min_log_num}"
             )
-            tar.extractall(tempdir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(tar, tempdir)
             for gz in os.listdir(tempdir):
                 if "bootstrap" in gz and verify_bootstrap_errors is True:
                     _verify_node_logs_uploaded(tempdir, gz)
@@ -68,7 +87,26 @@ def verify_logs_not_uploaded(cluster_tar_path, category):
     with TemporaryDirectory() as tempdir:
         with tarfile.open(cluster_tar_path) as tar:
             log.info(f"downloaded logs: {tar.getnames()}")
-            tar.extractall(tempdir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(tar, tempdir)
             assert category not in os.listdir(tempdir), f"{category} logs were found in uploaded logs"
 
 
@@ -121,7 +159,26 @@ def _check_entry_from_extracted_tar(component, tarpath, verify):
         log.info(f"open tar file {tarpath}")
         with tarfile.open(tarpath) as tar:
             log.info(f"verifying downloaded logs: {tar.getnames()}")
-            tar.extractall(tempdir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(tar, tempdir)
             extractedfiles = os.listdir(tempdir)
             assert any(component in logfile for logfile in extractedfiles), f"can not find {component} in logs"
             component_tars = [
