@@ -1,6 +1,8 @@
+import contextlib
 import os
 import tarfile
 import time
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import waiting
@@ -10,6 +12,25 @@ from service_client import log
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
 OC_DOWNLOAD_LOGS_TIMEOUT = 60 * 60
+
+
+@contextlib.contextmanager
+def _safe_open_tar(tar_path: Path | str, destination_path: Path | str) -> None:
+    """Return a safe-to-be-extracted tarfile object.
+
+    Handling CVE-2007-4559, which is relevant to extraction of tar files
+    that expand outside of destination directory. Basically it might attempt
+    extracting to sensitive paths such as /etc/passwd (assuming process is
+    having the proper permissions to do so) which means additional sanitization
+    is needed to be made before calling `extractall / extract`.
+    """
+    destination_path = Path(destination_path)
+    with tarfile.open(tar_path) as tar:
+        for member in tar.getmembers():
+            if not (destination_path / member.name).resolve().is_relative_to(destination_path.resolve()):
+                raise RuntimeError(f"Attempted writing into {member.name}, which is outside {destination_path}!")
+
+        yield tar
 
 
 def verify_logs_uploaded(
@@ -23,7 +44,7 @@ def verify_logs_uploaded(
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
     with TemporaryDirectory() as tempdir:
-        with tarfile.open(cluster_tar_path) as tar:
+        with _safe_open_tar(cluster_tar_path, tempdir) as tar:
             log.info(f"downloaded logs: {tar.getnames()}")
             assert len(tar.getnames()) >= expected_min_log_num, (
                 f"{tar.getnames()} " f"logs are less than minimum of {expected_min_log_num}"
@@ -66,7 +87,7 @@ def verify_logs_not_uploaded(cluster_tar_path, category):
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
     with TemporaryDirectory() as tempdir:
-        with tarfile.open(cluster_tar_path) as tar:
+        with _safe_open_tar(cluster_tar_path, tempdir) as tar:
             log.info(f"downloaded logs: {tar.getnames()}")
             tar.extractall(tempdir)
             assert category not in os.listdir(tempdir), f"{category} logs were found in uploaded logs"
@@ -119,7 +140,7 @@ def wait_for_logs_complete(client, cluster_id, timeout, interval=60, check_host_
 def _check_entry_from_extracted_tar(component, tarpath, verify):
     with TemporaryDirectory() as tempdir:
         log.info(f"open tar file {tarpath}")
-        with tarfile.open(tarpath) as tar:
+        with _safe_open_tar(tarpath, tempdir) as tar:
             log.info(f"verifying downloaded logs: {tar.getnames()}")
             tar.extractall(tempdir)
             extractedfiles = os.listdir(tempdir)
@@ -140,39 +161,36 @@ def _verify_oc_logs_uploaded(cluster_tar_path):
 
 
 def _verify_node_logs_uploaded(dir_path, file_path):
-    gz = tarfile.open(os.path.join(dir_path, file_path))
-    logs = gz.getnames()
-    for logs_type in ["agent.logs", "installer.logs", "mount.logs"]:
-        assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
-    gz.close()
+    with tarfile.open(os.path.join(dir_path, file_path)) as gz:
+        logs = gz.getnames()
+        for logs_type in ["agent.logs", "installer.logs", "mount.logs"]:
+            assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
 
 
 def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, verify_control_plane=False):
-    gz = tarfile.open(os.path.join(dir_path, file_path))
-    logs = gz.getnames()
-    assert any("bootkube.logs" in s for s in logs), f"bootkube.logs isn't found in {logs}"
-    if not installation_success:
-        for logs_type in ["dmesg.logs", "log-bundle"]:
-            assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
-        # test that installer-gather gathered logs from all masters
-        lb_path = [s for s in logs if "log-bundle" in s][0]
-        gz.extract(lb_path, dir_path)
-        lb = tarfile.open(os.path.join(dir_path, lb_path))
-        lb.extractall(dir_path)
-        cp_path = [s for s in lb.getnames() if "control-plane" in s][0]
-        # if bootstrap able to ssh to other masters, test that control-plane directory is not empty
-        if verify_control_plane:
-            cp_full_path = os.path.join(dir_path, cp_path)
-            master_dirs = os.listdir(cp_full_path)
-            assert len(master_dirs) == NUMBER_OF_MASTERS - 1, (
-                f"expecting {cp_full_path} to have " f"{NUMBER_OF_MASTERS - 1} values"
-            )
-            log.info(f"control-plane directory has sub-directory for each master: {master_dirs}")
-            for ip_dir in master_dirs:
-                log.info(f"{ip_dir} content: {os.listdir(os.path.join(cp_full_path, ip_dir))}")
-                assert len(os.listdir(os.path.join(cp_full_path, ip_dir))) > 0, f"{cp_path}/{ip_dir} is empty"
-        lb.close()
-    gz.close()
+    with _safe_open_tar(os.path.join(dir_path, file_path), dir_path) as gz:
+        logs = gz.getnames()
+        assert any("bootkube.logs" in s for s in logs), f"bootkube.logs isn't found in {logs}"
+        if not installation_success:
+            for logs_type in ["dmesg.logs", "log-bundle"]:
+                assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
+            # test that installer-gather gathered logs from all masters
+            lb_path = [s for s in logs if "log-bundle" in s][0]
+            gz.extract(lb_path, dir_path)
+            with _safe_open_tar(os.path.join(dir_path, lb_path), dir_path) as log_bundle:
+                log_bundle.extractall(dir_path)
+                cp_path = [s for s in log_bundle.getnames() if "control-plane" in s][0]
+                # if bootstrap able to ssh to other masters, test that control-plane directory is not empty
+                if verify_control_plane:
+                    cp_full_path = os.path.join(dir_path, cp_path)
+                    master_dirs = os.listdir(cp_full_path)
+                    assert len(master_dirs) == NUMBER_OF_MASTERS - 1, (
+                        f"expecting {cp_full_path} to have " f"{NUMBER_OF_MASTERS - 1} values"
+                    )
+                    log.info(f"control-plane directory has sub-directory for each master: {master_dirs}")
+                    for ip_dir in master_dirs:
+                        log.info(f"{ip_dir} content: {os.listdir(os.path.join(cp_full_path, ip_dir))}")
+                        assert len(os.listdir(os.path.join(cp_full_path, ip_dir))) > 0, f"{cp_path}/{ip_dir} is empty"
 
 
 def _are_logs_in_status(client, cluster_id, statuses, check_host_logs_only=False):
