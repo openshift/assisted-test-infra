@@ -734,7 +734,7 @@ class Cluster(Entity):
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
-            status_info=consts.HostStatusInfo.REBOOT_TIMEOUT,
+            status_info=(consts.HostStatusInfo.REBOOT_TIMEOUT, consts.HostStatusInfo.OLD_REBOOT_TIMEOUT),
             nodes_count=nodes_count,
             fall_on_error_status=fall_on_error_status,
             timeout=consts.PENDING_USER_ACTION_TIMEOUT,
