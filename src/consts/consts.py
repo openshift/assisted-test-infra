@@ -287,7 +287,8 @@ class HostEvents:
 
 class HostStatusInfo:
     WRONG_BOOT_ORDER = "Expected the host to boot from disk, but it booted the installation image"
-    REBOOT_TIMEOUT = "Host failed to reboot within timeout"
+    OLD_REBOOT_TIMEOUT = "Host failed to reboot within timeout"
+    REBOOT_TIMEOUT = "Host failed to pull ignition within timeout"
 
 
 class Platforms:
