@@ -76,6 +76,7 @@ resource "vsphere_file" "ISO_UPLOAD" {
   datastore        = var.vsphere_datastore
   source_file      = var.iso_download_path
   destination_file = "assisted-installer-isos/cluster-${var.cluster_name}/${basename(var.iso_download_path)}"
+  create_directories = true
 }
 
 # Creating the master VMs.
