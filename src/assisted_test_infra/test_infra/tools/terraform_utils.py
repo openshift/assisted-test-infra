@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import time
 from typing import Any, Dict, List
 
 import hcl2
@@ -59,6 +60,8 @@ class TerraformUtils:
         return list(map(lambda d: next(iter(d)), results))
 
     def apply(self, refresh: bool = True) -> None:
+        print("Running terraform apply")
+        time.sleep(3600)
         return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True)
         if return_value != 0:
             message = f"Terraform apply failed with return value {return_value}, output {output} , error {err}"
