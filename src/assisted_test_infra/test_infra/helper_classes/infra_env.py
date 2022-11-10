@@ -34,8 +34,7 @@ class InfraEnv(Entity):
         else:
             ignition_config_override = None
 
-        infra_env = self.api_client.create_infra_env(
-            self._config.entity_name.get(),
+        infraenv_create_params = dict(
             pull_secret=self._config.pull_secret,
             ssh_public_key=self._config.ssh_public_key,
             openshift_version=self._config.openshift_version,
@@ -44,8 +43,11 @@ class InfraEnv(Entity):
             ignition_config_override=ignition_config_override,
             proxy=self._config.proxy,
             image_type=self._config.iso_image_type,
-            discovery_kernel_arguments=self._config.discovery_kernel_arguments,
         )
+        if self._config.discovery_kernel_arguments is not None:
+            infraenv_create_params["kernel_arguments"] = self._config.discovery_kernel_arguments
+
+        infra_env = self.api_client.create_infra_env(self._config.entity_name.get(), **infraenv_create_params)
         self._config.infra_env_id = infra_env.id
         return infra_env.id
 
