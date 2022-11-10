@@ -1,3 +1,4 @@
+import json
 from abc import ABC
 from dataclasses import dataclass
 from distutils.util import strtobool
@@ -16,6 +17,7 @@ class _EnvVariables(DataPool, ABC):
     pull_secret: EnvVar = EnvVar(["PULL_SECRET"])
     deploy_target: EnvVar = EnvVar(["DEPLOY_TARGET"])
     offline_token: EnvVar = EnvVar(["OFFLINE_TOKEN"])
+    discovery_kernel_arguments: EnvVar = EnvVar(["DISCOVERY_KERNEL_ARGUMENTS"], loader=json.loads)
     openshift_version: EnvVar = EnvVar(["OPENSHIFT_VERSION"], default=consts.OpenshiftVersion.DEFAULT.value)
     base_dns_domain: EnvVar = EnvVar(["BASE_DOMAIN"], default=env_defaults.DEFAULT_BASE_DNS_DOMAIN)
     cluster_name: EnvVar = EnvVar(["CLUSTER_NAME"], default="")

@@ -126,32 +126,33 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 
 ## Installation parameters
 
-|     |     |
-| --- | --- |
-| `BASE_DOMAIN`                 | base domain, needed for DNS name, default: redhat.com |
-| `CLUSTER_ID`                  | cluster id, used for already existing cluster, e.g. after the deploy_nodes command |
-| `CLUSTER_NAME`                | cluster name, used as prefix for virsh resources, default: test-infra-cluster |
-| `HTTPS_PROXY_URL`             | A proxy URL to use for creating HTTPS connections outside the cluster |
-| `HTTP_PROXY_URL`              | A proxy URL to use for creating HTTP connections outside the cluster |
-| `ISO`                         | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix |
-| `MASTER_MEMORY`               | memory for master VM, default: 16984MB |
-| `NETWORK_CIDR`                | network CIDR to use for virsh VM network, default: "192.168.126.0/24" |
-| `NETWORK_NAME`                | virsh network name for VMs creation, default: test-infra-net |
-| `NO_PROXY_VALUES`             | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying |
-| `NUM_MASTERS`                 | number of VMs to spawn as masters, default: 3 |
-| `NUM_WORKERS`                 | number of VMs to spawn as workers, default: 0 |
-| `OPENSHIFT_VERSION`           | OpenShift version to install, default taken from the deployed assisted-service (`/v2/openshift-versions`) |
-| `HYPERTHREADING`              | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all |
-| `DISK_ENCRYPTION_MODE`        | Set disk encryption mode. Right now assisted-test-infra only supports "tpmv2", which is also the default. |
-| `DISK_ENCRYPTION_ROLES`       | Set node roles to apply disk encryption. Values are: all, none, masters, workers. default: none |
-| `PULL_SECRET`                 | pull secret to use for cluster installation command, no option to install cluster without it. |
-| `PULL_SECRET_FILE`            | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it. |
-| `REMOTE_SERVICE_URL`          | URL to remote assisted-service - run infra on existing deployment |
-| `ROUTE53_SECRET`              | Amazon Route 53 secret to use for DNS domains registration. |
-| `WORKER_MEMORY`               | memory for worker VM, default: 8892MB |
-| `SSH_PUB_KEY`                 | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub |
-| `IPXE_BOOT`                   | Boots VMs using iPXE if set to `true`, default: `false` |
-| `PLATFORM`                    | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, default: `baremetal` |
+|                              |                                                                                                                                                            |
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `BASE_DOMAIN`                | base domain, needed for DNS name, default: redhat.com                                                                                                      |
+| `CLUSTER_ID`                 | cluster id, used for already existing cluster, e.g. after the deploy_nodes command                                                                         |
+| `CLUSTER_NAME`               | cluster name, used as prefix for virsh resources, default: test-infra-cluster                                                                              |
+| `HTTPS_PROXY_URL`            | A proxy URL to use for creating HTTPS connections outside the cluster                                                                                      |
+| `HTTP_PROXY_URL`             | A proxy URL to use for creating HTTP connections outside the cluster                                                                                       |
+| `ISO`                        | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix                            |
+| `MASTER_MEMORY`              | memory for master VM, default: 16984MB                                                                                                                     |
+| `NETWORK_CIDR`               | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                                                      |
+| `NETWORK_NAME`               | virsh network name for VMs creation, default: test-infra-net                                                                                               |
+| `NO_PROXY_VALUES`            | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying                                      |
+| `NUM_MASTERS`                | number of VMs to spawn as masters, default: 3                                                                                                              |
+| `NUM_WORKERS`                | number of VMs to spawn as workers, default: 0                                                                                                              |
+| `OPENSHIFT_VERSION`          | OpenShift version to install, default taken from the deployed assisted-service (`/v2/openshift-versions`)                                                  |
+| `HYPERTHREADING`             | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all                                                                  |
+| `DISK_ENCRYPTION_MODE`       | Set disk encryption mode. Right now assisted-test-infra only supports "tpmv2", which is also the default.                                                  |
+| `DISK_ENCRYPTION_ROLES`      | Set node roles to apply disk encryption. Values are: all, none, masters, workers. default: none                                                            |
+| `PULL_SECRET`                | pull secret to use for cluster installation command, no option to install cluster without it.                                                              |
+| `PULL_SECRET_FILE`           | path and name to the file containing the pull secret to use for cluster installation command, no option to install cluster without it.                     |
+| `REMOTE_SERVICE_URL`         | URL to remote assisted-service - run infra on existing deployment                                                                                          |
+| `ROUTE53_SECRET`             | Amazon Route 53 secret to use for DNS domains registration.                                                                                                |
+| `WORKER_MEMORY`              | memory for worker VM, default: 8892MB                                                                                                                      |
+| `SSH_PUB_KEY`                | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub                                                         |
+| `IPXE_BOOT`                  | Boots VMs using iPXE if set to `true`, default: `false`                                                                                                    |
+| `PLATFORM`                   | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, default: `baremetal`                                                      |
+| `DISCOVERY_KERNEL_ARGUMENTS` | JSON formatted string containing array of dictionaries each having 2 attributes: `operation` and `value`. Currently, only `append` operation is supported. |
 
 
 ## Vsphere parameters

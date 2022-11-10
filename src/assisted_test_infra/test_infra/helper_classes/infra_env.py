@@ -44,6 +44,7 @@ class InfraEnv(Entity):
             ignition_config_override=ignition_config_override,
             proxy=self._config.proxy,
             image_type=self._config.iso_image_type,
+            discovery_kernel_arguments=self._config.discovery_kernel_arguments,
         )
         self._config.infra_env_id = infra_env.id
         return infra_env.id
