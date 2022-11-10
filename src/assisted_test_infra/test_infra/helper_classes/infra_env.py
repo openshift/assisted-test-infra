@@ -85,9 +85,15 @@ class InfraEnv(Entity):
         host_role: Optional[str] = None,
         host_name: Optional[str] = None,
         node_labels: Optional[List[dict]] = None,
+        disks_skip_formatting: Optional[List[dict]] = None,
     ):
         self.api_client.update_host(
-            infra_env_id=self.id, host_id=host_id, host_role=host_role, host_name=host_name, node_labels=node_labels
+            infra_env_id=self.id,
+            host_id=host_id,
+            host_role=host_role,
+            host_name=host_name,
+            node_labels=node_labels,
+            disks_skip_formatting=disks_skip_formatting,
         )
 
     def bind_host(self, host_id: str, cluster_id: str) -> None:
