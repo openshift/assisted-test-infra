@@ -176,8 +176,14 @@ class InventoryClient(object):
         host_role: str = None,
         host_name: str = None,
         node_labels: List[dict] = None,
+        disks_skip_formatting: list[dict] = None,
     ):
-        host_update_params = models.HostUpdateParams(host_role=host_role, host_name=host_name, node_labels=node_labels)
+        host_update_params = models.HostUpdateParams(
+            host_role=host_role,
+            host_name=host_name,
+            node_labels=node_labels,
+            disks_skip_formatting=disks_skip_formatting,
+        )
         self.client.v2_update_host(infra_env_id=infra_env_id, host_id=host_id, host_update_params=host_update_params)
 
     def select_installation_disk(self, infra_env_id: str, host_id: str, disk_paths: List[dict]) -> None:
