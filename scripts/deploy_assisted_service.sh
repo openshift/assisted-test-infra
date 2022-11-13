@@ -5,11 +5,23 @@ source scripts/utils.sh
 set -o xtrace
 
 export SERVICE_NAME=assisted-service
-export SERVICE_URL=$(get_main_ip)
+
+case ${DEPLOY_TARGET} in
+    kind)
+        export SERVICE_URL=$(hostname)
+        export SERVICE_PORT=80
+        export IMAGE_SERVICE_PORT=80
+        export EXTERNAL_PORT=no
+        ;;
+    *)
+        export SERVICE_URL=$(get_main_ip)
+        export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
+        export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
+        ;;
+esac
+
 export AUTH_TYPE=${AUTH_TYPE:-none}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
-export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
-export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
 export IMAGE_SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${IMAGE_SERVICE_PORT}"}
 export SERVICE_INTERNAL_PORT=8090
 export IMAGE_SERVICE_INTERNAL_PORT=8080
@@ -140,7 +152,8 @@ else
     fi
 
     skipper run src/update_assisted_service_cm.py
-    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
+
+    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD TARGET=$DEPLOY_TARGET DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
 
     add_firewalld_port $SERVICE_PORT
 
