@@ -26,6 +26,12 @@ _default_triggers = frozendict(
             condition=lambda config: config.platform == consts.Platforms.NUTANIX,
             tf_platform=consts.Platforms.NUTANIX,
         ),
+        "aws_platform": Trigger(
+            condition=lambda config: config.platform == consts.Platforms.AWS,
+            user_managed_networking=True,
+            ipxe_boot=True,
+            tf_platform=consts.Platforms.AWS,
+        ),
         "sno": Trigger(
             condition=lambda config: config.masters_count == 1,
             workers_count=0,

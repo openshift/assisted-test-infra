@@ -59,6 +59,10 @@ class Entity(ABC):
     def prepare_for_installation(self, is_static_ip: bool = False, **kwargs):
         self.update_config(**kwargs)
 
+        log.info(f"Set iPXE URL: {self._config.ipxe_boot}")
+        if self._config.ipxe_boot:
+            self._set_ipxe_url()
+
         log.info(
             f"Preparing for installation with {self._entity_class_name} configurations: "
             f"{self._entity_class_name}_config={self._config}"
@@ -78,15 +82,15 @@ class Entity(ABC):
 
         self.nodes.notify_iso_ready()
 
-        if self._config.ipxe_boot:
-            self._set_ipxe_url()
-
         self.nodes.start_all(check_ips=not (is_static_ip and self._config.is_ipv6))
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
 
     def _set_ipxe_url(self):
         ipxe_server_url = (
             f"http://{consts.DEFAULT_IPXE_SERVER_IP}:{consts.DEFAULT_IPXE_SERVER_PORT}/{self._config.entity_name}"
+        )
+        log.info(
+            f"Setting up iPXE URL: {ipxe_server_url} in controller {self.nodes.controller}"
         )
         self.nodes.controller.set_ipxe_url(network_name=self.nodes.get_cluster_network(), ipxe_url=ipxe_server_url)
 

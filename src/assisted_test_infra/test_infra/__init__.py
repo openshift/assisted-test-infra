@@ -7,6 +7,7 @@ from assisted_test_infra.test_infra.helper_classes.config import (
     BaseNutanixConfig,
     BaseTerraformConfig,
     BaseVSphereConfig,
+    BaseAwsConfig,
 )
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.utils.entity_name import ClusterName, InfraEnvName
@@ -23,4 +24,5 @@ __all__ = [
     "Nodes",
     "BaseVSphereConfig",
     "BaseNutanixConfig",
+    "BaseAwsConfig",
 ]

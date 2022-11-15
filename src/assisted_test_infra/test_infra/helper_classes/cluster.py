@@ -114,7 +114,7 @@ class Cluster(Entity):
             tang_servers=self._config.tang_servers,
         )
 
-        if self._config.platform:
+        if self._config.platform and self._config.platform != consts.Platforms.AWS:
             extra_vars["platform"] = models.Platform(type=self._config.platform)
 
         if self._config.vip_dhcp_allocation is not None:

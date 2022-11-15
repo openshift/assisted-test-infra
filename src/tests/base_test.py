@@ -30,6 +30,7 @@ from assisted_test_infra.test_infra.controllers import (
     TangController,
     TerraformController,
     VSphereController,
+    AwsController,
 )
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
@@ -40,7 +41,7 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
-from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, VSphereConfig
+from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, VSphereConfig, AwsConfig
 from triggers import get_default_triggers
 from triggers.env_trigger import Trigger
 
@@ -89,6 +90,8 @@ class BaseTest:
             config = VSphereConfig()
         elif global_variables.tf_platform == consts.Platforms.NUTANIX:
             config = NutanixConfig()
+        elif global_variables.tf_platform == consts.Platforms.AWS:
+            config = AwsConfig()
         else:
             config = TerraformConfig()
 
@@ -243,6 +246,9 @@ class BaseTest:
         if cluster_configuration.platform == consts.Platforms.NUTANIX:
             return NutanixController(controller_configuration, cluster_configuration)
 
+        if cluster_configuration.platform == consts.Platforms.AWS:
+            return AwsController(controller_configuration, cluster_configuration)
+
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 
     @pytest.fixture
@@ -255,6 +261,10 @@ class BaseTest:
 
         if infra_env_configuration.platform == consts.Platforms.NUTANIX:
             # TODO implement for Nutanix
+            raise NotImplementedError
+
+        if infra_env_configuration.platform == consts.Platforms.AWS:
+            # TODO implement for AWS
             raise NotImplementedError
 
         return TerraformController(controller_configuration, entity_config=infra_env_configuration)

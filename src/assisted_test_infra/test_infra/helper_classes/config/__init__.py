@@ -7,6 +7,7 @@ from .base_nodes_config import BaseNodesConfig
 from .base_nutanix_config import BaseNutanixConfig
 from .base_terraform_config import BaseTerraformConfig
 from .base_vsphere_config import BaseVSphereConfig
+from .base_aws_config import BaseAwsConfig
 
 __all__ = [
     "BaseClusterConfig",
@@ -18,4 +19,5 @@ __all__ = [
     "BaseEntityConfig",
     "BaseNodesConfig",
     "BaseConfig",
+    "BaseAwsConfig",
 ]

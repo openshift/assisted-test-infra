@@ -3,6 +3,9 @@ assisted-service
 .idea
 .vscode
 .terraform
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
 reports/
 *__pycache__*
 minikube
