@@ -10,6 +10,10 @@ ignore =
     # FS003 weirdly thinks things are supposed to be f-strings? Seems completely broken
     FS003,
 
+    # ignoring cases of methods in abstract class that are left empty (with 'pass')
+    # linter prefers having it reimplemented in inheriting classes
+    B027,
+
 max-line-length = 120
 max-complexity = 18
 format = ${cyan}%(path)s${reset}:${yellow_bold}%(row)d${reset}:${green_bold}%(col)d${reset}: ${red_bold}%(code)s${reset} %(text)s
