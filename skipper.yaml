@@ -19,7 +19,7 @@ volumes:
   # logs
   - /var/log:/var/log
   - /run/log/journal:/run/log/journal
-  - /var/ai-logs:/var/ai-logs
+  - /var/ai-logs:/var/ai-logs # using this when downloading triage logs
 
   # sockets
   - $HOME/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d

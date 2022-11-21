@@ -244,7 +244,7 @@ function config_nginx() {
   # Configure a container to be used as the load balancer.
   # Initially, it starts nginx that opens a stream includes all conf files
   # in directory /etc/nginx/conf.d. The nginx is refreshed every 60 seconds
-  podman rm -f load_balancer || /bin/true
+  podman rm -f load_balancer --ignore
   sudo mkdir -p $HOME/.test-infra/etc/nginx/conf.d/{stream,http}.d
   sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
   sudo firewall-cmd --zone=libvirt --add-port=22623/tcp

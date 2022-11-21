@@ -426,7 +426,7 @@ def run_container(container_name, image, flags=None, command=""):
 
 def remove_running_container(container_name):
     log.info(f"Removing Container {container_name}")
-    container_rm_cmd = f"podman-remote stop {container_name} && podman-remote " f" rm {container_name}"
+    container_rm_cmd = f"podman-remote stop {container_name} && podman-remote rm {container_name}"
     run_command(container_rm_cmd, shell=True)
 
 
