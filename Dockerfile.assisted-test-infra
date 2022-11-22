@@ -1,6 +1,6 @@
 FROM quay.io/edge-infrastructure/assisted-service:latest AS service
 
-FROM quay.io/centos/centos:stream9
+FROM quay.io/assisted-installer-ops/base-python:3.11.0
 
 # A directory in the path with write permission even for non-root users
 ENV TOOLS=/tools/
@@ -25,10 +25,6 @@ RUN dnf -y install --enablerepo=crb \
   libxslt \
   xorriso \
    && dnf clean all
-
-# Install latest available python version - For more information see https://github.com/eliorerz/tools/tree/master/python_builder
-COPY --from=quay.io/eerez/python-builder:stream9-3.11.0 /python /python-installation
-RUN cd /python-installation && make install && dnf -y install python3-devel && dnf clean all
 
 RUN curl --retry 5 -Lo packer.zip https://releases.hashicorp.com/packer/1.8.0/packer_1.8.0_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
 RUN curl --retry 5 -Lo terraform.zip https://releases.hashicorp.com/terraform/1.2.7/terraform_1.2.7_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
