@@ -12,7 +12,6 @@ RUN dnf -y install --enablerepo=crb \
   make \
   gcc \
   unzip \
-  wget \
   curl-minimal \
   git \
   httpd-tools \
