@@ -23,6 +23,8 @@ from scp import SCPException
 
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
+from assisted_test_infra.test_infra.controllers.node_controllers.nutanix_controller import NutanixController
+from assisted_test_infra.test_infra.controllers.node_controllers.vsphere_controller import VSphereController
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import AgentClusterInstall, ClusterDeployment
 from assisted_test_infra.test_infra.tools.concurrently import run_concurrently
@@ -382,9 +384,21 @@ def gather_sosreport_data(output_dir: str):
     sosreport_output = os.path.join(output_dir, "sosreport")
     recreate_folder(sosreport_output)
 
-    controller = LibvirtController(config=TerraformConfig(), entity_config=ClusterConfig())
+    nodes = []
+    # Find matching controller by listing nodes
+    for controller_class in [LibvirtController, VSphereController, NutanixController]:
+        log.debug(f"Looking up nodes using controller {controller_class.__name__}")
+        try:
+            controller = controller_class(TerraformConfig(), ClusterConfig())
+            nodes = controller.list_nodes()
+            if len(nodes) != 0:
+                log.debug(f"Using controller {controller_class.__name__} to fetch SOS report from {len(nodes)} nodes")
+                break
+        except Exception as e:
+            log.debug(f"Error fetching nodes using controller {controller_class.__name__}: {e}")
+
     run_concurrently(
-        jobs=[(gather_sosreport_from_node, node, sosreport_output) for node in controller.list_nodes()],
+        jobs=[(gather_sosreport_from_node, node, sosreport_output) for node in nodes],
         timeout=60 * 20,
     )
 
@@ -402,8 +416,21 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
     try:
         node.upload_file(SOSREPORT_SCRIPT, "/tmp/man_sosreport.sh")
         node.run_command("chmod a+x /tmp/man_sosreport.sh")
-        node.run_command("sudo /tmp/man_sosreport.sh")
-        node.download_file("/tmp/sosreport.tar.bz2", os.path.join(destination_dir, f"sosreport-{node.name}.tar.bz2"))
+        log.debug(f"Running SOS report collection on node {node.ips}")
+        try:
+            node.run_command("sudo /tmp/man_sosreport.sh")
+            log.debug("sosreport.sh completed")
+        except Exception as e:
+            log.debug("Exception in man_sosreport.sh: ", e)
+            raise
+        try:
+            log.debug("Fetching SOS report")
+            dest_file = os.path.join(destination_dir, f"sosreport-{node.name}.tar.xz")
+            node.download_file("/var/tmp/sosreport.tar.xz", dest_file)
+            log.debug(f"Fetched SOS report to {dest_file}")
+        except Exception as e:
+            log.debug("Exception fetching sosreport: ", e)
+            raise
 
     except (TimeoutError, RuntimeError, SSHException, SCPException):
         log.exception("Failed accessing node %s for sosreport data gathering", node)
