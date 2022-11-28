@@ -392,7 +392,7 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
         node.upload_file(SOSREPORT_SCRIPT, "/tmp/man_sosreport.sh")
         node.run_command("chmod a+x /tmp/man_sosreport.sh")
         node.run_command("sudo /tmp/man_sosreport.sh")
-        node.download_file("/tmp/sosreport.tar.bz2", os.path.join(destination_dir, f"sosreport-{node.name}.tar.bz2"))
+        node.download_file("/var/tmp/sosreport.tar.xz", os.path.join(destination_dir, f"sosreport-{node.name}.tar.xz"))
 
     except (TimeoutError, RuntimeError, SSHException, SCPException):
         log.exception("Failed accessing node %s for sosreport data gathering", node)
