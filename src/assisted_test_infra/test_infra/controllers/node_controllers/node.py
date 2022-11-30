@@ -172,7 +172,7 @@ class Node:
         self.set_ram_kib(self.original_ram_kib)
 
     def get_disks(self):
-        self.node_controller.list_disks(self.name)
+        return self.node_controller.list_disks(self.name)
 
     def attach_test_disk(self, disk_size, **kwargs):
         return self.node_controller.attach_test_disk(self.name, disk_size, **kwargs)
