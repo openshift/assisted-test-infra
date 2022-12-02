@@ -60,7 +60,7 @@ PROMETHEUS_SERVICE_NAME := $(or $(PROMETHEUS_SERVICE_NAME),prometheus-k8s)
 # network params
 NAMESPACE := $(or $(NAMESPACE),assisted-installer)
 BASE_DNS_DOMAINS := $(or $(BASE_DNS_DOMAINS), "")
-BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
+BASE_DOMAIN := $(or $(BASE_DOMAIN),metalkube.org)
 
 # secrets
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ~/.ssh/id_rsa.pub))
