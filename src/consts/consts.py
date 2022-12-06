@@ -128,10 +128,12 @@ WORKER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
 NUMBER_OF_MASTERS = 3
 NAMESPACE_POOL_SIZE = 15
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
-REDHAT_DNS_DOMAIN = "redhat.com"
+# Use the domain which is covered by openshift release's baremetalds-devscripts-proxy step
+# so that the workflow could use `gather` chain to collect more info about the cluster
+DEFAULT_BASE_DNS_DOMAIN = "metalkube.org"
 DEFAULT_NAMESPACE = "assisted-installer"
 DEFAULT_SPOKE_NAMESPACE = "assisted-spoke-cluster"
-DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{REDHAT_DNS_DOMAIN}"
+DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{DEFAULT_BASE_DNS_DOMAIN}"
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
 DEFAULT_BOOT_DEVICES = ["hd", "cdrom"]
