@@ -1,0 +1,9 @@
+- name: Check if group "{{ ipip_group }}" exists and contains exactly 2 hosts
+  ansible.builtin.fail:
+    msg: Group "{{ ipip_group }}" must exist and contain exactly 2 hosts
+  when: groups[ipip_group] is not defined or (groups[ipip_group] | length != 2)
+
+- name: Ping hosts in group "{{ ipip_group }}"
+  ansible.builtin.ping:
+  delegate_to: "{{ item }}"
+  loop: "{{ groups[ipip_group] }}"

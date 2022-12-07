@@ -7,6 +7,11 @@ ENV TOOLS=/tools/
 ENV PATH="$TOOLS:$PATH"
 RUN mkdir $TOOLS --mode g+xw
 
+# TODO: Remove once OpenShift CI supports it out of the box (see https://access.redhat.com/articles/4859371)
+RUN chmod g+w /etc/passwd && \
+    echo 'echo default:x:$(id -u):$(id -g):Default Application User:/alabama:/sbin/nologin\ >> /etc/passwd' > /usr/local/bin/fix_uid.sh && \
+    chmod g+rwx /usr/local/bin/fix_uid.sh
+
 # CRB repo is required for libvirt-devel
 RUN dnf -y install --enablerepo=crb \
   make \
@@ -53,7 +58,9 @@ ENV PATH=$PATH:/usr/local/go/bin:/go/bin
 
 COPY . .
 
-RUN chgrp -R 0 /home/assisted-test-infra && \
+# init terraform in order to cache the provider
+RUN terraform -chdir=/home/assisted-test-infra/terraform_files/equinix-ci-machine init && \
+    chgrp -R 0 /home/assisted-test-infra && \
     chmod -R g=u /home/assisted-test-infra
 
 # setting pre-commit env
