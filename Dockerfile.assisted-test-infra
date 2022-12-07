@@ -45,6 +45,7 @@ COPY --from=quay.io/ocp-splat/govc:v0.29.0 /govc /usr/local/bin
 
 WORKDIR /home/assisted-test-infra
 
+
 COPY requirements.txt requirements-dev.txt ./
 COPY --from=service /clients/assisted-service-client-*.tar.gz /build/pip/
 RUN pip3 install --upgrade pip && \
