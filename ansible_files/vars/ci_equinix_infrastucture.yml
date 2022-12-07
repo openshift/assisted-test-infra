@@ -1,0 +1,7 @@
+terraform_equinix_workdir: "{{ playbook_dir }}/terraform_files/equinix-ci-machine"
+equinix_project_id: "{{ cluster_profile_dir }}/packet-project-id"
+equinix_auth_token: "{{ lookup('file', cluster_profile_dir + '/packet-auth-token') }}"
+equinix_private_ssh_key_path: "{{ lookup('env', cluster_profile_dir + '/packet-ssh-key') }}"
+equinix_unique_id: "'ipi-{{ namespace }}-{{ job_name_hash }}-{{ build_id }}"
+equinix_tf_vars_file: "{{ shared_dir }}/tf_varfile.json"
+equinix_tf_state_file: "{{ shared_dir }}/tf_state"

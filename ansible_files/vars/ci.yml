@@ -1,0 +1,5 @@
+build_id:  "{{ lookup('env', 'BUILD_ID') }}"
+cluster_profile_dir: "{{ lookup('env', 'CLUSTER_PROFILE_DIR') }}"
+job_name_hash: "{{ lookup('env', 'JOB_NAME_HASH') }}"
+namespace: "{{ lookup('env', 'NAMESPACE') }}"
+shared_dir: "{{ lookup('env', 'SHARED_DIR') }}"

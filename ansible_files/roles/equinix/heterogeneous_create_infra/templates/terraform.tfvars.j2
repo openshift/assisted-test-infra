@@ -1,0 +1,21 @@
+global_project_id = "{{ equinix_project_id }}"
+ssh_private_key_path   = "{{ equinix_private_ssh_key_path }}"
+hostname_prefix   = "{{ equinix_unique_id }}"
+
+{# The tags are used to group the hosts in the inventory #}
+{# They need to comply with ansible naming convention for groups: #}
+{# letters, digits and _ #}
+
+{% set global_tags = ["heterogeneous"] %}
+global_tags = [ "{{ global_tags | join("\", \"") }}" ]
+
+devices = [
+  {
+    plan = "c3.small.x86"
+    tags = ["primary"]
+  },
+  {
+    plan = "c3.small.x86"
+    tags = ["secondary"]
+  }
+]

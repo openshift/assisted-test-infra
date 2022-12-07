@@ -1,0 +1,12 @@
+---
+- name: "Destroy terraform infrastructure"
+  community.general.terraform:
+    project_path: "{{ terraform_equinix_workdir }}"
+    state: absent
+    force_init: true
+    variables_files:
+      - "{{ equinix_tf_vars_file }}"
+    state_file: "{{ equinix_tf_state_file }}"
+  register: destroyed_tf
+  environment:
+    METAL_AUTH_TOKEN: "{{ equinix_auth_token }}"
