@@ -47,7 +47,9 @@ mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
     export RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
-    export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    if [ -z "${OS_IMAGES:-}" ]; then
+        export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    fi
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         (cd assisted-service; skipper make generate-configuration)
