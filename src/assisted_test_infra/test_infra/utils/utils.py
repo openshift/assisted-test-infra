@@ -229,9 +229,11 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
 
 
 def get_local_assisted_service_url(namespace, service, deploy_target):
-    if deploy_target in ["onprem"]:
+    if deploy_target == "onprem":
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
         return f"http://{assisted_hostname_or_ip}:8090"
+    elif deploy_target == "kind":
+        return f"http://{socket.gethostname()}"
     elif deploy_target == "ocp":
         res = subprocess.check_output("ip route get 1", shell=True).split()[6]
         ip = str(res, "utf-8")

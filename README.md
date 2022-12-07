@@ -92,7 +92,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `DEPLOY_MANIFEST_PATH`        | the location of a manifest file that defines image tags images to be used |
 | `DEPLOY_MANIFEST_TAG`         | the Git tag of a manifest file that defines image tags to be used |
 | `DEPLOY_TAG`                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
-| `DEPLOY_TARGET`               | Specifies where assisted-service will be deployed. Defaults to "minikube". "onprem" will deploy assisted-service in a pod on the localhost. |
+| `DEPLOY_TARGET`               | Specifies where assisted-service will be deployed. Defaults to "minikube". Other options are "onprem" for installing as a podman pod and "kind". |
 | `KUBECONFIG`                  | kubeconfig file path, default: <home>/.kube/config |
 | `SERVICE_NAME`                | assisted-service target service name, default: assisted-service |
 
@@ -389,6 +389,26 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
 make deploy_nodes_with_install IPv6=yes IPv4=no
 ```
+
+## Kind
+
+Set ``DEPLOY_TARGET=kind`` to have a full construction of assisted-installer on top
+of a kubernetes cluster which is running as one podman container:
+
+```
+# currently it's advisable to set it throughout the entire testing session because
+# tests are also using this env-var to understand the networking layout
+export DEPLOY_TARGET=kind
+
+make run deploy_nodes_with_install
+```
+
+You can also create the kind cluster just by doing:
+```
+make create_hub_cluster DEPLOY_TARGET=kind
+```
+
+On ``kind`` mode you should be able to access the UI / API via ``http://<host>/``.
 
 ## On-prem
 

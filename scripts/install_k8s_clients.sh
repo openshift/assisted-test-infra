@@ -2,16 +2,6 @@
 set -euxo pipefail
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
-
-function install_minikube() {
-    minikube_version=v1.25.2
-    curl --retry 3 -Lo minikube https://storage.googleapis.com/minikube/releases/${minikube_version}/minikube-linux-amd64
-    ${SUDO} install minikube /usr/local/bin/
-    rm -f minikube
-
-    which minikube > /dev/null
-}
-
 function install_kubectl() {
     kubectl_version=v1.23.0
     curl --retry 3 -LO https://dl.k8s.io/release/${kubectl_version}/bin/linux/amd64/kubectl
@@ -41,6 +31,5 @@ function install_oc() {
     which oc > /dev/null
 }
 
-install_minikube
 install_kubectl
 install_oc
