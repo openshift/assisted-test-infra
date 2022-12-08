@@ -14,6 +14,9 @@ case ${DEPLOY_TARGET} in
     kind)
         $__dir/kind/kind.sh create
         ;;
+    onprem)
+        echo "onprem/podman requires no special setup"
+        ;;
     *)
         echo "Unknown deploy target ${DEPLOY_TARGET}!";
         exit 1

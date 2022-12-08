@@ -110,7 +110,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _destroy_terraform create_hub_cluster delete_hub_cluster delete_kind
+.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _destroy_terraform create_hub_cluster delete_hub_cluster delete_kind delete_onprem
 
 ###########
 # General #
@@ -118,7 +118,7 @@ endif
 
 all: setup run deploy_nodes_with_install
 
-destroy: destroy_nodes delete_minikube delete_kind kill_port_forwardings destroy_onprem stop_load_balancer
+destroy: destroy_nodes delete_minikube delete_kind kill_port_forwardings delete_onprem stop_load_balancer
 
 ###############
 # Environment #
@@ -148,6 +148,9 @@ clean:
 delete_kind:
 	DEPLOY_TARGET=kind $(MAKE) delete_hub_cluster
 
+delete_onprem:
+	DEPLOY_TARGET=onprem $(MAKE) delete_hub_cluster
+
 ############
 # Minikube #
 ############
@@ -162,13 +165,6 @@ delete_minikube:
 	skipper run python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
 	DEPLOY_TARGET=minikube $(MAKE) delete_hub_cluster
 	skipper run "python3 -m virsh_cleanup"
-
-####################
-# Podman localhost #
-####################
-
-destroy_onprem:
-	ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ clean-onprem || true
 
 ####################
 # Load balancer    #
