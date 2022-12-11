@@ -77,7 +77,7 @@ function download_capi_logs() {
   ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get pods -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/pods_{}}.yaml" || true
   ${KUBECTL} get cm -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get cm -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/cm_{}.yaml" || true
   ${KUBECTL} get cm -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get secret -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/secret_{}.yaml" || true
-  ${KUBECTL} get events -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/events.yaml" || true
+  ${KUBECTL} get events -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/events.yaml || true
   skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
 }
 
