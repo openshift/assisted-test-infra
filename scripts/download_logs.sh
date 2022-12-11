@@ -68,13 +68,16 @@ function download_capi_logs() {
   # get hypershfit CRs and logs
   collect_kube_api_resources "${HYPERSHIFT_CRS[@]}"
   mkdir -p ${LOGS_DEST}/hypershift
-  ${KUBECTL} logs deployment/operator -n hypershift > ${LOGS_DEST}/hypershift/logs_operator_${DEPLOY_TARGET}.log
+  ${KUBECTL} logs deployment/operator -n hypershift > ${LOGS_DEST}/hypershift/logs_operator.log
+  ${KUBECTL} get events -n hypershift > ${LOGS_DEST}/hypershift/logs_events.log
   # The pod name is capi-provider in case it's deployed by hypershift
   NAMESPACE=$(get_pod_namespace "capi-provider|cluster-api-provider-agent")
   mkdir ${LOGS_DEST}/${NAMESPACE}
-  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/${NAMESPACE}/logs_{}_${DEPLOY_TARGET}.log" || true
-  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get pods -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/pods_{}_${DEPLOY_TARGET}.yaml" || true
-  ${KUBECTL} get cm -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get cm -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/cm_{}_${DEPLOY_TARGET}.yaml" || true
+  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} logs {} -n ${NAMESPACE} --all-containers > ${LOGS_DEST}/${NAMESPACE}/logs_{}.log" || true
+  ${KUBECTL} get pods -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get pods -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/pods_{}}.yaml" || true
+  ${KUBECTL} get cm -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get cm -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/cm_{}.yaml" || true
+  ${KUBECTL} get cm -n ${NAMESPACE} -o=custom-columns=NAME:.metadata.name --no-headers | xargs -r -I {} sh -c "${KUBECTL} get secret -o yaml {} -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/secret_{}.yaml" || true
+  ${KUBECTL} get events -n ${NAMESPACE} > ${LOGS_DEST}/${NAMESPACE}/events.yaml" || true
   skipper run ./src/junit_log_parser.py --src "${LOGS_DEST}" --dst "${JUNIT_REPORT_DIR}"
 }
 
