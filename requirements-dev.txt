@@ -1,7 +1,7 @@
 black==22.12.0
 isort==5.10.1
 flake8==4.0.1
-flake8-bugbear==22.10.27             # Flake8 plugin that help identify likely bugs and design problems
+flake8-bugbear==22.12.6             # Flake8 plugin that help identify likely bugs and design problems
 flake8_formatter_junit_xml==0.0.6   # JUnit XML Formatter for flake8.
 flake8-colors==0.1.9                # ANSI colors highlight for Flake8
 flake8-eradicate==1.4.0             # Flake8 plugin to find commented out (or so called "dead") cod
