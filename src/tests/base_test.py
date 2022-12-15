@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 from contextlib import suppress
+from copy import deepcopy
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
@@ -648,9 +649,18 @@ class BaseTest:
             log.info(f"Given node ips: {given_node_ips}")
 
             for _rule in iptables_rules:
-                _rule.add_sources(given_node_ips)
-                rules.append(_rule)
-                _rule.insert()
+                # Add rule without given sources
+                if not given_node_ips:
+                    rules.append(_rule)
+                    _rule.insert()
+                    continue
+                # iptables check does not work for chain of sources
+                for source in given_node_ips:
+                    copy_rule = deepcopy(_rule)
+                    copy_rule.add_sources([source])
+                    log.info(f"Adding rule with source: {copy_rule}")
+                    rules.append(copy_rule)
+                    copy_rule.insert()
 
         yield set_iptables_rules_for_nodes
         log.info("---TEARDOWN iptables ---")
