@@ -62,7 +62,8 @@ class IptableRule:
             utils.run_command(insert_rule, shell=True)
 
     def delete(self) -> None:
-        if self._does_rule_exist():
-            delete_rule = self._build_command_string(IpTableCommandOption.DELETE)
+        delete_rule = self._build_command_string(IpTableCommandOption.DELETE)
+        # delete duplicate rules - iptable deletes only first hit
+        while self._does_rule_exist():
             log.info(f"Removing iptable rule: {delete_rule}")
             utils.run_command(delete_rule, shell=True)

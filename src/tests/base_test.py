@@ -648,9 +648,19 @@ class BaseTest:
             log.info(f"Given node ips: {given_node_ips}")
 
             for _rule in iptables_rules:
-                _rule.add_sources(given_node_ips)
-                rules.append(_rule)
-                _rule.insert()
+                if not given_node_ips:
+                    # in case a rule without given_node_ips
+                    rules.append(_rule)
+                    _rule.insert()
+                    continue
+                for source in given_node_ips:
+                    # iptables check broken for list of sources
+                    # copy base rule and add a single source.
+                    copy_rule = deepcopy(_rule)
+                    copy_rule.add_sources([source])
+                    log.info(f"Adding rule with source: {copy_rule}")
+                    rules.append(copy_rule)
+                    copy_rule.insert()
 
         yield set_iptables_rules_for_nodes
         log.info("---TEARDOWN iptables ---")
