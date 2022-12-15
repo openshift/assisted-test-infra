@@ -99,6 +99,7 @@ class Nodes:
 
     def shutdown_all(self):
         self.run_for_all_nodes("shutdown")
+        self.drop_cache()
 
     def notify_iso_ready(self):
         self.controller.notify_iso_ready()
@@ -108,9 +109,11 @@ class Nodes:
 
     def start_given(self, nodes):
         self.run_for_given_nodes(nodes, "start")
+        self.drop_cache()
 
     def shutdown_given(self, nodes):
         self.run_for_given_nodes(nodes, "shutdown")
+        self.drop_cache()
 
     def format_all_disks(self):
         self.run_for_all_nodes("format_disk")
@@ -129,9 +132,11 @@ class Nodes:
 
     def reboot_all(self):
         self.run_for_all_nodes("restart")
+        self.drop_cache()
 
     def reboot_given(self, nodes):
         self.run_for_given_nodes(nodes, "restart")
+        self.drop_cache()
 
     def get_cluster_network(self):
         return self.controller.get_cluster_network()
