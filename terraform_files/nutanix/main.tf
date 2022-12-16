@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     nutanix = {
-      source = "nutanix/nutanix"
+      source  = "nutanix/nutanix"
       version = "1.7.1"
     }
   }
@@ -28,5 +28,5 @@ data "nutanix_subnet" "subnet" {
 resource "nutanix_image" "image" {
   name        = "${var.cluster_name}.iso"
   description = "Downloaded ISO"
-  source_path  = var.iso_download_path
+  source_path = var.iso_download_path
 }

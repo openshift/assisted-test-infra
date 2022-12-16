@@ -1,26 +1,24 @@
 terraform {
   required_providers {
     libvirt = {
-      source = "dmacvicar/libvirt"
+      source  = "dmacvicar/libvirt"
       version = "0.6.14"
     }
   }
-
-  experiments = [module_variable_optional_attrs]
 }
 
 locals {
   disk_names = [
-    for index in range(var.disk_count):
-      "${var.disk_base_name}-disk-${index}"
+    for index in range(var.disk_count) :
+    "${var.disk_base_name}-disk-${index}"
   ]
 }
 
 resource "libvirt_domain" "host" {
   name = var.name
 
-  memory = var.memory
-  vcpu   = var.vcpu
+  memory  = var.memory
+  vcpu    = var.vcpu
   running = var.running
 
   dynamic "disk" {
@@ -74,7 +72,7 @@ resource "libvirt_domain" "host" {
 }
 
 resource "libvirt_volume" "host" {
-  for_each = {for idx, obj in local.disk_names: idx => obj}
+  for_each = { for idx, obj in local.disk_names : idx => obj }
   name     = each.value
   pool     = var.pool
   size     = var.disk_size

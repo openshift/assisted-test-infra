@@ -24,13 +24,13 @@ variable "worker_disk_count" {
 }
 
 variable "machine_cidr_addresses" {
-    type = list(string)
-    description = "Addresses for machine CIDR network"
+  type        = list(string)
+  description = "Addresses for machine CIDR network"
 }
 
 variable "provisioning_cidr_addresses" {
-    type = list(string)
-    description = "Addresses for provisioning CIDR network"
+  type        = list(string)
+  description = "Addresses for provisioning CIDR network"
 }
 
 variable "libvirt_uri" {
@@ -181,44 +181,44 @@ variable "running" {
 
 variable "single_node_ip" {
   description = "IP address of single node.  Used for DNS"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "machine_cidr" {
   description = "IPv4 network from network pool for automated tests"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "machine_cidr6" {
   description = "IPv6 network from network pool for automated tests"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "provisioning_cidr" {
   description = "IPv4 provisioning network from network pool for automated tests"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "provisioning_cidr6" {
   description = "IPv6 provisioning network from network pool for automated tests"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "libvirt_dns_records" {
   type        = map(string)
   description = "DNS records to be added to the libvirt network"
-  default = {}
+  default     = {}
 }
 
 variable "infra_env_domain" {
-  type = string
+  type        = string
   description = "Domain for infra env"
-  default = "redhat.com"
+  default     = "redhat.com"
 }
 
 variable "master_vtpm2" {

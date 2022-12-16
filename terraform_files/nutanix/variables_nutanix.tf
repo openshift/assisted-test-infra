@@ -40,7 +40,7 @@ variable "nutanix_subnet" {
 
 
 variable "cluster_name" {
-  type = string
+  type        = string
   description = <<EOF
 Assisted installer cluster name
 All the resources will be located under a folder with this name
@@ -52,7 +52,7 @@ EOF
 variable "iso_download_path" {
   type        = string
   description = "Discovery ISO path (in order to add hosts to the cluster)"
-  default = ""
+  default     = ""
 }
 
 ///////////
@@ -60,49 +60,49 @@ variable "iso_download_path" {
 ///////////
 
 variable "masters_count" {
-  type = number
+  type        = number
   description = "The number of master nodes to be created."
 }
 
 variable "master_memory" {
-  type = number
+  type        = number
   description = "RAM in MiB allocated to masters"
 }
 
 variable "master_disk" {
-  type = number
+  type        = number
   description = "The size of the master's disk, in bytes"
 }
 
 variable "master_vcpu" {
-  type = number
+  type        = number
   description = "The total number of virtual processor cores to assign to the master virtual machine."
 }
 
 variable "workers_count" {
-  type = number
+  type        = number
   description = "The number of worker nodes to be created."
 }
 
 variable "worker_memory" {
-  type = number
+  type        = number
   description = "The size of the worker's virtual machine's memory, in MB"
 }
 
 variable "worker_disk" {
-  type = number
+  type        = number
   description = "The size of the worker's disk, in bytes"
 }
 
 variable "worker_vcpu" {
-  type = number
+  type        = number
   description = "The total number of virtual processor cores to assign to the master virtual machine."
 }
 
 
 variable "nutanix_control_plane_cores_per_socket" {
-  type = number
-  default = 1
+  type        = number
+  default     = 1
   description = <<EOF
 The number of cores per socket(cpu) in this virtual machine.
 The number of vCPUs on the virtual machine will be num_cpus divided by num_cores_per_socket.

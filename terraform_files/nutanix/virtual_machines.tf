@@ -1,15 +1,15 @@
 
 # Creating the master VMs.
 resource "nutanix_virtual_machine" "master" {
-  count                       = var.masters_count
-  name                        = "${var.cluster_name}-master-${count.index}"
-  cluster_uuid                = data.nutanix_cluster.cluster.id
-  num_vcpus_per_socket        = var.nutanix_control_plane_cores_per_socket
-  memory_size_mib             = var.master_memory
-  num_sockets                 = var.master_vcpu
+  count                = var.masters_count
+  name                 = "${var.cluster_name}-master-${count.index}"
+  cluster_uuid         = data.nutanix_cluster.cluster.id
+  num_vcpus_per_socket = var.nutanix_control_plane_cores_per_socket
+  memory_size_mib      = var.master_memory
+  num_sockets          = var.master_vcpu
 
-  boot_device_order_list      = ["DISK", "CDROM", "NETWORK"]
-  boot_type                   = "LEGACY"
+  boot_device_order_list = ["DISK", "CDROM", "NETWORK"]
+  boot_type              = "LEGACY"
 
   disk_list {
     data_source_reference = {
@@ -39,15 +39,15 @@ resource "nutanix_virtual_machine" "master" {
 
 # Creating the worker VMs.
 resource "nutanix_virtual_machine" "worker" {
-  count                       = var.workers_count
-  name                        = "${var.cluster_name}-worker-${count.index}"
-  cluster_uuid                = data.nutanix_cluster.cluster.id
-  num_vcpus_per_socket        = var.nutanix_control_plane_cores_per_socket
-  memory_size_mib             = var.worker_memory
-  num_sockets                 = var.worker_vcpu
+  count                = var.workers_count
+  name                 = "${var.cluster_name}-worker-${count.index}"
+  cluster_uuid         = data.nutanix_cluster.cluster.id
+  num_vcpus_per_socket = var.nutanix_control_plane_cores_per_socket
+  memory_size_mib      = var.worker_memory
+  num_sockets          = var.worker_vcpu
 
-  boot_device_order_list      = ["DISK", "CDROM", "NETWORK"]
-  boot_type                   = "LEGACY"
+  boot_device_order_list = ["DISK", "CDROM", "NETWORK"]
+  boot_type              = "LEGACY"
 
   disk_list {
     data_source_reference = {
