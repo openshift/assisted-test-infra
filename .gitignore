@@ -2,7 +2,6 @@ build
 assisted-service
 .idea
 .vscode
-.terraform
 reports/
 *__pycache__*
 minikube
@@ -11,3 +10,9 @@ minikube
 *~
 .env
 capi
+
+# terraform
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+.terraform

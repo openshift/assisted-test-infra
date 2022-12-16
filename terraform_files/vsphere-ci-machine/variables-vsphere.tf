@@ -37,8 +37,8 @@ variable "vsphere_network" {
   description = "vSphere publicly accessible network for cluster ingress and access. e.g VM Network"
 }
 
-variable template_name {
-  type = string
+variable "template_name" {
+  type        = string
   description = "The Fedora/Centos template name to clone, should exist on the vsphere"
 }
 
@@ -52,31 +52,31 @@ variable "build_id" {
 }
 
 variable "vcpu" {
-  type = number
-  default = 4
+  type        = number
+  default     = 4
   description = "The total number of virtual processor cores to assign to the virtual machine."
 }
 
 variable "memory" {
-  type = number
-  default = 24576
+  type        = number
+  default     = 24576
   description = "The size of the virtual machine's memory, in MB"
 }
 
 variable "disk_size" {
-  type = number
-  default = 240
+  type        = number
+  default     = 240
   description = "The size of the virtual machine's disk, in GB"
 }
 
 variable "guest_id" {
-  type = string
+  type        = string
   description = "The server os type. see: https://code.vmware.com/apis/358/doc/vim.vm.GuestOsDescriptor.GuestOsIdentifier.html"
-  default = "centos8_64Guest"
+  default     = "centos8_64Guest"
 }
 
 variable "domain" {
-  type = string
+  type        = string
   description = "The host domain name"
-  default = "redhat.com"
+  default     = "redhat.com"
 }

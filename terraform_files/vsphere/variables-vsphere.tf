@@ -1,4 +1,4 @@
-    //////
+//////
 // vSphere variables
 //////
 
@@ -55,7 +55,7 @@ variable "vsphere_folder" {
   Terraform creates this folder, and if it already exists, it fails.
   Default to cluster_name.
 EOF
-  default = ""
+  default     = ""
 }
 
 ///////////
@@ -64,7 +64,7 @@ EOF
 
 
 variable "cluster_name" {
-  type = string
+  type        = string
   description = <<EOF
 AI cluster name
 All the resources will be located under a folder with this name
@@ -76,7 +76,7 @@ EOF
 variable "iso_download_path" {
   type        = string
   description = "The ISO path (We have to upload this file to the vsphere)"
-  default = ""
+  default     = ""
 }
 
 ///////////
@@ -84,57 +84,57 @@ variable "iso_download_path" {
 ///////////
 
 variable "masters_count" {
-  type = string
-  default = "3"
+  type        = string
+  default     = "3"
   description = "The number of master nodes to be created."
 }
 
 variable "master_memory" {
-  type = number
-  default = 16984
+  type        = number
+  default     = 16984
   description = "The size of the master's virtual machine's memory, in MB"
 }
 
 variable "master_disk_size_gib" {
-  type = number
-  default = 120
+  type        = number
+  default     = 120
   description = "The size of the master's disk, in GB"
 }
 
 variable "master_vcpu" {
-  type = number
-  default = 4
+  type        = number
+  default     = 4
   description = "The total number of virtual processor cores to assign to the master virtual machine."
 }
 
 variable "workers_count" {
-  type = string
-  default = "2"
+  type        = string
+  default     = "2"
   description = "The number of worker nodes to be created."
 }
 
 variable "worker_memory" {
-  type = number
-  default = 16984
+  type        = number
+  default     = 16984
   description = "The size of the worker's virtual machine's memory, in MB"
 }
 
 variable "worker_disk_size_gib" {
-  type = number
-  default = 120
+  type        = number
+  default     = 120
   description = "The size of the worker's disk, in GB"
 }
 
 variable "worker_vcpu" {
-  type = number
-  default = 4
+  type        = number
+  default     = 4
   description = "The total number of virtual processor cores to assign to the master virtual machine."
 }
 
 
 variable "vsphere_control_plane_cores_per_socket" {
-  type = number
-  default = 1
+  type        = number
+  default     = 1
   description = <<EOF
 The number of cores per socket(cpu) in this virtual machine.
 The number of vCPUs on the virtual machine will be num_cpus divided by num_cores_per_socket.

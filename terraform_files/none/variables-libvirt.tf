@@ -19,13 +19,13 @@ variable "cluster_domain" {
 }
 
 variable "machine_cidr_addresses" {
-    type = list(string)
-    description = "Addresses for machine CIDR network"
+  type        = list(string)
+  description = "Addresses for machine CIDR network"
 }
 
 variable "provisioning_cidr_addresses" {
-    type = list(string)
-    description = "Addresses for provisioning CIDR network"
+  type        = list(string)
+  description = "Addresses for provisioning CIDR network"
 }
 
 variable "libvirt_uri" {
@@ -157,15 +157,15 @@ variable "running" {
 }
 
 variable "load_balancer_ip" {
-  type = string
+  type        = string
   description = "IP address for load balancer"
-  default = ""
+  default     = ""
 }
 
 variable "load_balancer_config_file" {
-  type = string
+  type        = string
   description = "Contents of load balancer configuration file"
-  default = ""
+  default     = ""
 }
 
 variable "master_vtpm2" {
