@@ -75,8 +75,14 @@ class LibvirtNetworkAssets:
     def _fill_allocated_ips_and_bridges_by_interface(self):
         for interface in netifaces.interfaces():
             self._add_allocated_net_bridge(interface)
-            for ifaddresses in netifaces.ifaddresses(interface).values():
-                for item in ifaddresses:
+            try:
+                ifaddresses = netifaces.ifaddresses(interface)
+            except ValueError:
+                log.debug(f"Interface {interface} no longer exists. It might has been removed intermediately")
+                continue
+
+            for ifaddress in ifaddresses.values():
+                for item in ifaddress:
                     try:
                         self._add_allocated_ip(IPAddress(item["addr"]))
                     except AddrFormatError:

@@ -27,9 +27,9 @@ class TerraformController(LibvirtController):
         self._suffix = self._entity_name.suffix or get_name_suffix()
         self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.tf_platform)
         self.network_name = config.network_name + self._suffix
-        self.params = self._terraform_params(**config.get_all())
         self.tf = terraform_utils.TerraformUtils(working_dir=self.tf_folder)
         self.master_ips = None
+        self._params = Munch()
 
     @property
     def entity_name(self) -> BaseName:
@@ -39,6 +39,9 @@ class TerraformController(LibvirtController):
     def cluster_name(self) -> str:
         warnings.warn("cluster_name is deprecated. Use Controller.entity_name instead.", DeprecationWarning)
         return self._entity_name.get()
+
+    def _get_params_from_config(self) -> Munch:
+        return self._terraform_params(**self._config.get_all())
 
     def _create_tf_folder(self, name: str, platform: str):
         if isinstance(self._entity_config, BaseInfraEnvConfig):
@@ -69,7 +72,7 @@ class TerraformController(LibvirtController):
 
     # TODO move all those to conftest and pass it as kwargs
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
-    def _terraform_params(self, **kwargs):
+    def _terraform_params(self, **kwargs) -> Munch:
         master_boot_devices = self._config.master_boot_devices
         worker_boot_devices = self._config.worker_boot_devices
         params = {
@@ -133,12 +136,13 @@ class TerraformController(LibvirtController):
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
         log.info("Creating tfvars")
+        self._params = self._get_params_from_config()
 
         self._fill_tfvars(running)
         log.info("Start running terraform")
         self.tf.apply()
-        if self.params.running:
-            self.wait_till_nodes_are_ready(network_name=self.params.libvirt_network_name)
+        if self._params.running:
+            self.wait_till_nodes_are_ready(network_name=self._params.libvirt_network_name)
 
     # Filling tfvars json files with terraform needed variables to spawn vms
     def _fill_tfvars(self, running=True):
@@ -148,21 +152,21 @@ class TerraformController(LibvirtController):
         machine_cidr = self.get_primary_machine_cidr()
 
         tfvars["libvirt_uri"] = consts.LIBVIRT_URI
-        tfvars["master_count"] = self.params.master_count
+        tfvars["master_count"] = self._params.master_count
         log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10)
         worker_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10 + tfvars["master_count"])
         tfvars["image_path"] = self._entity_config.iso_download_path
         tfvars["worker_image_path"] = self._entity_config.worker_iso_download_path or tfvars["image_path"]
         self.master_ips = tfvars["libvirt_master_ips"] = self._create_address_list(
-            self.params.master_count, starting_ip_addr=master_starting_ip
+            self._params.master_count, starting_ip_addr=master_starting_ip
         )
         tfvars["libvirt_worker_ips"] = self._create_address_list(
-            self.params.worker_count, starting_ip_addr=worker_starting_ip
+            self._params.worker_count, starting_ip_addr=worker_starting_ip
         )
         if self._config.ingress_dns:
             for service in ["console-openshift-console", "canary-openshift-ingress", "oauth-openshift"]:
-                self.params["libvirt_dns_records"][
+                self._params["libvirt_dns_records"][
                     ".".join([service, "apps", self._config.cluster_name, self._entity_config.base_dns_domain])
                 ] = tfvars["libvirt_worker_ips"][0][0]
         tfvars["machine_cidr_addresses"] = self.get_all_machine_addresses()
@@ -173,11 +177,11 @@ class TerraformController(LibvirtController):
         tfvars["api_vip"] = vips["api_vip"]
         tfvars["ingress_vip"] = vips["ingress_vip"]
         tfvars["running"] = running
-        tfvars["libvirt_master_macs"] = static_network.generate_macs(self.params.master_count)
-        tfvars["libvirt_worker_macs"] = static_network.generate_macs(self.params.worker_count)
-        tfvars["master_boot_devices"] = self.params.master_boot_devices
-        tfvars["worker_boot_devices"] = self.params.worker_boot_devices
-        tfvars.update(self.params)
+        tfvars["libvirt_master_macs"] = static_network.generate_macs(self._params.master_count)
+        tfvars["libvirt_worker_macs"] = static_network.generate_macs(self._params.worker_count)
+        tfvars["master_boot_devices"] = self._params.master_boot_devices
+        tfvars["worker_boot_devices"] = self._params.worker_boot_devices
+        tfvars.update(self._params)
         tfvars.update(self._secondary_tfvars())
 
         with open(os.path.join(self.tf_folder, consts.TFVARS_JSON_NAME), "w") as _file:
@@ -187,17 +191,17 @@ class TerraformController(LibvirtController):
         provisioning_cidr = self.get_provisioning_cidr()
         secondary_master_starting_ip = str(ip_address(ip_network(provisioning_cidr).network_address) + 10)
         secondary_worker_starting_ip = str(
-            ip_address(ip_network(provisioning_cidr).network_address) + 10 + int(self.params.master_count)
+            ip_address(ip_network(provisioning_cidr).network_address) + 10 + int(self._params.master_count)
         )
         return {
             "libvirt_secondary_worker_ips": self._create_address_list(
-                self.params.worker_count, starting_ip_addr=secondary_worker_starting_ip
+                self._params.worker_count, starting_ip_addr=secondary_worker_starting_ip
             ),
             "libvirt_secondary_master_ips": self._create_address_list(
-                self.params.master_count, starting_ip_addr=secondary_master_starting_ip
+                self._params.master_count, starting_ip_addr=secondary_master_starting_ip
             ),
-            "libvirt_secondary_master_macs": static_network.generate_macs(self.params.master_count),
-            "libvirt_secondary_worker_macs": static_network.generate_macs(self.params.worker_count),
+            "libvirt_secondary_master_macs": static_network.generate_macs(self._params.master_count),
+            "libvirt_secondary_worker_macs": static_network.generate_macs(self._params.worker_count),
         }
 
     def start_all_nodes(self):
@@ -211,7 +215,7 @@ class TerraformController(LibvirtController):
 
     def format_node_disk(self, node_name: str, disk_index: int = 0):
         log.info("Formatting disk for %s", node_name)
-        self.format_disk(f"{self.params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
+        self.format_disk(f"{self._params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
     def get_ingress_and_api_vips(self) -> Dict[str, str]:
         """Pick two IPs for setting static access endpoint IPs.
@@ -293,11 +297,13 @@ class TerraformController(LibvirtController):
         """
 
         log.info("Deleting all nodes")
+        self._params = self._get_params_from_config()
+
         if os.path.exists(self.tf_folder):
             self._try_to_delete_nodes()
 
         self._delete_virsh_resources(
-            self._entity_name.get(), self.params.libvirt_network_name, self.params.libvirt_secondary_network_name
+            self._entity_name.get(), self._params.libvirt_network_name, self._params.libvirt_secondary_network_name
         )
         tfstate_path = f"{self.tf_folder}/{consts.TFSTATE_FILE}"
         if os.path.exists(tfstate_path):
@@ -321,7 +327,8 @@ class TerraformController(LibvirtController):
             utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
             # if file not exist lets create dummy
             utils.touch(self._entity_config.iso_download_path)
-        self.params.running = False
+
+        self._config.running = False
         self._create_nodes()
 
     def get_cluster_network(self):

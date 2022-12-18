@@ -35,7 +35,7 @@ variable "cluster_domain" {
 }
 
 variable "networks" {
-  type        = list(object({
+  type = list(object({
     name     = string,
     hostname = optional(string),
     ips      = list(string),
@@ -75,5 +75,5 @@ variable "vtpm2" {
 variable "boot_devices" {
   type        = list(string)
   description = "the list of boot devices in the desired order of boot"
-  default = ["hd", "cdrom"]
+  default     = ["hd", "cdrom"]
 }

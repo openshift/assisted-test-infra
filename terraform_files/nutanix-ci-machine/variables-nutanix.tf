@@ -44,26 +44,26 @@ variable "build_id" {
 }
 
 variable "memory" {
-  type = number
-  default = 16984
+  type        = number
+  default     = 16984
   description = "RAM in MiB allocated to masters"
 }
 
 variable "vcpu" {
-  type = number
-  default = 4
+  type        = number
+  default     = 4
   description = "The total number of virtual processor cores to assign to the virtual machine."
 }
 
 variable "disk_size" {
-  type = number
-  default = 240
+  type        = number
+  default     = 240
   description = "The size of the virtual machine's disk, in GB"
 }
 
 variable "cores_per_socket" {
-  type = number
-  default = 1
+  type        = number
+  default     = 1
   description = <<EOF
 The number of cores per socket(cpu) in this virtual machine.
 The number of vCPUs on the virtual machine will be num_cpus divided by num_cores_per_socket.

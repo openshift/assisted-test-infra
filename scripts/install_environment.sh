@@ -41,50 +41,9 @@ function install_libvirt() {
         libvirt-devel \
         libvirt-daemon-kvm \
         qemu-kvm \
-        libgcrypt
-
-    # TODO: get swtpm RPMs from EPEL as soon as 0.7.1 or later lands there.
-    # based on: https://github.com/stefanberger/swtpm/wiki#compile-and-install-on-linux
-
-    echo "Install swtpm dependencies"
-    sudo dnf install -y \
-        libtasn1-devel \
-        expect \
-        socat \
-        python3-twisted \
-        fuse-devel \
-        glib2-devel \
-        gnutls-devel \
-        gnutls-utils \
-        gnutls \
-        json-glib-devel \
-        autoconf \
-        automake \
-        libtool \
-        openssl-devel \
-        libtpms \
-        libtpms-devel \
-        libseccomp-devel \
-        net-tools \
-        iproute \
-        openvpn \
-        git \
-        make
-
-    echo "Install swtpm v0.7.1 from source"
-    swtpm_dir=$(mktemp -d -t swtpm-dir-XXXXXX)
-    function cleanup {
-        echo "deleting ${swtpm_dir}..."
-        rm -rf "${swtpm_dir}"
-    }
-    trap cleanup EXIT
-
-    git clone --depth 1 --branch v0.7.1 https://github.com/stefanberger/swtpm.git ${swtpm_dir}
-    pushd ${swtpm_dir}
-    ./autogen.sh --with-openssl --prefix=/usr
-    make -j4
-    sudo make install
-    popd
+        libgcrypt \
+        swtpm \
+        swtpm-tools
 
     sudo systemctl enable libvirtd
 
@@ -285,7 +244,7 @@ function config_nginx() {
   # Configure a container to be used as the load balancer.
   # Initially, it starts nginx that opens a stream includes all conf files
   # in directory /etc/nginx/conf.d. The nginx is refreshed every 60 seconds
-  podman rm -f load_balancer || /bin/true
+  podman rm -f load_balancer --ignore
   sudo mkdir -p $HOME/.test-infra/etc/nginx/conf.d/{stream,http}.d
   sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
   sudo firewall-cmd --zone=libvirt --add-port=22623/tcp

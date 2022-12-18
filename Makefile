@@ -5,12 +5,6 @@
 SHELL=/bin/sh
 CONTAINER_COMMAND := $(shell scripts/utils.sh get_container_runtime_command)
 
-ifneq (,$(findstring podman,$(CONTAINER_COMMAND)))
-    PULL_PARAM = --pull-always
-else
-    PULL_PARAM = --pull
-endif
-
 # Selecting the right podman-remote version since podman-remote4 cannot work against podman-server3 and vice versa.
 # It must be occurred before any other container related task.
 # Makefile syntax force us to assign the shell result to a variable - please ignore it.
@@ -20,13 +14,11 @@ ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 PYTHONPATH := ${PYTHONPATH}:${ROOT_DIR}/src
 PATH := ${PATH}:/usr/local/bin
 
-
 REPORTS = $(ROOT_DIR)/reports
 TEST_SESSION_ID=$(shell mktemp -u "XXXXXXXXX")
 PYTEST_JUNIT_FILE="${REPORTS}/unittest_${TEST_SESSION_ID}.xml"
 
 SKIPPER_PARAMS ?= -i
-
 
 ASSISTED_SERVICE_HOST := $(or ${ASSISTED_SERVICE_HOST},$(shell hostname))
 
@@ -118,7 +110,7 @@ endif
 .EXPORT_ALL_VARIABLES:
 
 
-.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _destroy_terraform
+.PHONY: image_build run destroy start_minikube delete_minikube deploy_assisted_service deploy_assisted_operator delete_all_virsh_resources _deploy_assisted_service _destroy_terraform create_hub_cluster delete_hub_cluster delete_kind delete_onprem
 
 ###########
 # General #
@@ -126,7 +118,7 @@ endif
 
 all: setup run deploy_nodes_with_install
 
-destroy: destroy_nodes delete_minikube kill_port_forwardings destroy_onprem stop_load_balancer
+destroy: destroy_nodes delete_minikube delete_kind kill_port_forwardings delete_onprem stop_load_balancer
 
 ###############
 # Environment #
@@ -134,7 +126,7 @@ destroy: destroy_nodes delete_minikube kill_port_forwardings destroy_onprem stop
 setup:
 	./scripts/create_full_environment.sh
 
-create_environment: image_build bring_assisted_service start_minikube
+create_environment: image_build bring_assisted_service create_hub_cluster
 
 image_build:
 	scripts/pull_dockerfile_images.sh
@@ -142,33 +134,37 @@ image_build:
 		$(CONTAINER_COMMAND) build --network=host -t $(IMAGE_NAME) -f- .
 	$(CONTAINER_COMMAND) tag $(IMAGE_NAME) test-infra:latest  # For backwards computability
 
+create_hub_cluster:
+	scripts/hub-cluster/create.sh
+
+delete_hub_cluster:
+	scripts/hub-cluster/delete.sh
+
 clean:
 	-rm -rf build assisted-service test_infra.log
 	-find -name '*.pyc' -delete
 	-find -name '*pycache*' -delete
+
+delete_kind:
+	DEPLOY_TARGET=kind $(MAKE) delete_hub_cluster
+
+delete_onprem:
+	DEPLOY_TARGET=onprem $(MAKE) delete_hub_cluster
 
 ############
 # Minikube #
 ############
 
 start_minikube:
-	scripts/run_minikube.sh
-	eval $(minikube docker-env)
+	DEPLOY_TARGET=minikube $(MAKE) create_hub_cluster
 
 delete_clusters:
 	TEST=./src/tests/test_targets.py TEST_FUNC=test_delete_clusters $(MAKE) test
 
 delete_minikube:
 	skipper run python3 scripts/indexer.py --action del --namespace all $(OC_FLAG)
-	minikube delete --all
+	DEPLOY_TARGET=minikube $(MAKE) delete_hub_cluster
 	skipper run "python3 -m virsh_cleanup"
-
-####################
-# Podman localhost #
-####################
-
-destroy_onprem:
-	ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ clean-onprem || true
 
 ####################
 # Load balancer    #
@@ -220,7 +216,7 @@ run: validate_namespace deploy_assisted_service deploy_ui
 set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
-deploy_ui: start_minikube
+deploy_ui: create_hub_cluster
 	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_ui.sh
 
 deploy_prometheus_ui:
@@ -244,7 +240,7 @@ deploy_nodes_with_install: start_load_balancer
 	@if [ "$(ENABLE_KUBE_API)" = "false"  ]; then \
 		TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_install_with_deploy_nodes $(MAKE) test; \
 	else \
-	    tput setaf 1; echo "Not implemented"; exit 1; \
+	    tput setaf 1; echo "Not implemented"; tput sgr0; exit 1; \
 	fi
 
 deploy_nodes: start_load_balancer
@@ -277,7 +273,7 @@ deploy_assisted_operator: clear_operator
 # Inventory #
 #############
 
-deploy_assisted_service: start_minikube bring_assisted_service
+deploy_assisted_service: create_hub_cluster bring_assisted_service
 	mkdir -p assisted-service/build
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
@@ -363,7 +359,6 @@ _test_parallel: $(REPORTS) _test_setup
 deploy_capi_env: start_minikube
 	scripts/setup_capi_env.sh
 
-
 #########
 # Tests #
 #########
@@ -373,7 +368,6 @@ test_kube_api_parallel:
 cli:
 	$(MAKE) start_load_balancer START_LOAD_BALANCER=true
 	TEST_TEARDOWN=false JUNIT_REPORT_DIR=$(REPORTS) LOGGING_LEVEL="error" skipper run -i "python3 ${DEBUG_FLAGS} -m src.cli"
-
 
 validate_client:
 	skipper run "python3 ${DEBUG_FLAGS} src/service_client/client_validator.py"

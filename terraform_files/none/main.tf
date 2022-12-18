@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     libvirt = {
-      source = "dmacvicar/libvirt"
+      source  = "dmacvicar/libvirt"
       version = "0.6.14"
     }
   }
@@ -18,23 +18,23 @@ resource "libvirt_pool" "storage_pool" {
 }
 
 resource "libvirt_network" "net" {
-  name = var.libvirt_network_name
-  mode   = length(var.machine_cidr_addresses) == 1 && replace(var.machine_cidr_addresses[0], ":", "") != var.machine_cidr_addresses[0] ? "nat" : "route"
-  bridge = var.libvirt_network_if
-  mtu = var.libvirt_network_mtu
-  domain = "${var.cluster_name}.${var.cluster_domain}"
+  name      = var.libvirt_network_name
+  mode      = length(var.machine_cidr_addresses) == 1 && replace(var.machine_cidr_addresses[0], ":", "") != var.machine_cidr_addresses[0] ? "nat" : "route"
+  bridge    = var.libvirt_network_if
+  mtu       = var.libvirt_network_mtu
+  domain    = "${var.cluster_name}.${var.cluster_domain}"
   addresses = var.machine_cidr_addresses
   autostart = true
 
   dns {
-   local_only = true
-   dynamic "hosts" {
+    local_only = true
+    dynamic "hosts" {
       for_each = concat(
-      data.libvirt_network_dns_host_template.masters.*.rendered,
-      data.libvirt_network_dns_host_template.masters_int.*.rendered,
-      data.libvirt_network_dns_host_template.masters_console.*.rendered,
-      data.libvirt_network_dns_host_template.masters_canary.*.rendered,
-      data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
+        data.libvirt_network_dns_host_template.masters.*.rendered,
+        data.libvirt_network_dns_host_template.masters_int.*.rendered,
+        data.libvirt_network_dns_host_template.masters_console.*.rendered,
+        data.libvirt_network_dns_host_template.masters_canary.*.rendered,
+        data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -58,21 +58,21 @@ resource "libvirt_network" "net" {
 }
 
 resource "libvirt_network" "secondary_net" {
-  name = var.libvirt_secondary_network_name
-  mode   = length(var.provisioning_cidr_addresses) == 1 && replace(var.provisioning_cidr_addresses[0], ":", "") != var.provisioning_cidr_addresses[0] ? "nat" : "route"
-  bridge = var.libvirt_secondary_network_if
+  name      = var.libvirt_secondary_network_name
+  mode      = length(var.provisioning_cidr_addresses) == 1 && replace(var.provisioning_cidr_addresses[0], ":", "") != var.provisioning_cidr_addresses[0] ? "nat" : "route"
+  bridge    = var.libvirt_secondary_network_if
   addresses = var.provisioning_cidr_addresses
-  mtu = var.libvirt_network_mtu
+  mtu       = var.libvirt_network_mtu
   autostart = true
   dns {
     local_only = true
     dynamic "hosts" {
       for_each = concat(
-      data.libvirt_network_dns_host_template.masters.*.rendered,
-      data.libvirt_network_dns_host_template.masters_int.*.rendered,
-      data.libvirt_network_dns_host_template.masters_console.*.rendered,
-      data.libvirt_network_dns_host_template.masters_canary.*.rendered,
-      data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
+        data.libvirt_network_dns_host_template.masters.*.rendered,
+        data.libvirt_network_dns_host_template.masters_int.*.rendered,
+        data.libvirt_network_dns_host_template.masters_console.*.rendered,
+        data.libvirt_network_dns_host_template.masters_canary.*.rendered,
+        data.libvirt_network_dns_host_template.masters_oauth.*.rendered,
       )
       content {
         hostname = hosts.value.hostname
@@ -83,55 +83,55 @@ resource "libvirt_network" "secondary_net" {
 }
 
 module "masters" {
-  source            = "../baremetal_host"
-  count             = var.master_count
+  source = "../baremetal_host"
+  count  = var.master_count
 
-  name              = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
-  memory            = var.libvirt_master_memory
-  vcpu              = var.libvirt_master_vcpu
-  running           = var.running
-  image_path        = var.image_path
-  cluster_domain    = var.cluster_domain
-  vtpm2             = var.master_vtpm2
+  name           = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
+  memory         = var.libvirt_master_memory
+  vcpu           = var.libvirt_master_vcpu
+  running        = var.running
+  image_path     = var.image_path
+  cluster_domain = var.cluster_domain
+  vtpm2          = var.master_vtpm2
 
-  networks          = [
-                        {
-                          name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
-                          hostname = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
-                          ips      = count.index % 2 == 0 ? var.libvirt_master_ips[count.index] : var.libvirt_secondary_master_ips[count.index]
-                          mac      = var.libvirt_master_macs[count.index]
-                        }
-                      ]
+  networks = [
+    {
+      name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+      hostname = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
+      ips      = count.index % 2 == 0 ? var.libvirt_master_ips[count.index] : var.libvirt_secondary_master_ips[count.index]
+      mac      = var.libvirt_master_macs[count.index]
+    }
+  ]
 
-  pool              = libvirt_pool.storage_pool.name
-  disk_base_name    = "${var.cluster_name}-master-${count.index}"
-  disk_size         = var.libvirt_master_disk
+  pool           = libvirt_pool.storage_pool.name
+  disk_base_name = "${var.cluster_name}-master-${count.index}"
+  disk_size      = var.libvirt_master_disk
 }
 
 module "workers" {
-  source            = "../baremetal_host"
-  count             = var.worker_count
+  source = "../baremetal_host"
+  count  = var.worker_count
 
-  name              = "${var.cluster_name}-worker-${count.index}"
-  memory            = var.libvirt_worker_memory
-  vcpu              = var.libvirt_worker_vcpu
-  running           = var.running
-  image_path        = var.worker_image_path
-  cluster_domain    = var.cluster_domain
-  vtpm2             = var.worker_vtpm2
+  name           = "${var.cluster_name}-worker-${count.index}"
+  memory         = var.libvirt_worker_memory
+  vcpu           = var.libvirt_worker_vcpu
+  running        = var.running
+  image_path     = var.worker_image_path
+  cluster_domain = var.cluster_domain
+  vtpm2          = var.worker_vtpm2
 
-  networks          = [
-                        {
-                          name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
-                          hostname = "${var.cluster_name}-worker-${count.index}"
-                          ips      = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
-                          mac      = var.libvirt_worker_macs[count.index]
-                        }
-                      ]
+  networks = [
+    {
+      name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+      hostname = "${var.cluster_name}-worker-${count.index}"
+      ips      = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
+      mac      = var.libvirt_worker_macs[count.index]
+    }
+  ]
 
-  pool              = libvirt_pool.storage_pool.name
-  disk_base_name    = "${var.cluster_name}-worker-${count.index}"
-  disk_size         = var.libvirt_worker_disk
+  pool           = libvirt_pool.storage_pool.name
+  disk_base_name = "${var.cluster_name}-worker-${count.index}"
+  disk_size      = var.libvirt_worker_disk
 }
 
 data "libvirt_network_dns_host_template" "masters" {
@@ -167,5 +167,5 @@ data "libvirt_network_dns_host_template" "masters_oauth" {
 resource "local_file" "load_balancer_config" {
   count    = var.load_balancer_ip != "" && var.load_balancer_config_file != "" ? 1 : 0
   content  = var.load_balancer_config_file
-  filename = format("/etc/nginx/conf.d/stream_%s.conf", replace(var.load_balancer_ip,"/[:.]/" , "_"))
+  filename = format("/etc/nginx/conf.d/stream_%s.conf", replace(var.load_balancer_ip, "/[:.]/", "_"))
 }

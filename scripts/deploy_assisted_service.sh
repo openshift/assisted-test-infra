@@ -5,11 +5,23 @@ source scripts/utils.sh
 set -o xtrace
 
 export SERVICE_NAME=assisted-service
-export SERVICE_URL=$(get_main_ip)
+
+case ${DEPLOY_TARGET} in
+    kind)
+        export SERVICE_URL=$(hostname)
+        export SERVICE_PORT=80
+        export IMAGE_SERVICE_PORT=80
+        export EXTERNAL_PORT=no
+        ;;
+    *)
+        export SERVICE_URL=$(get_main_ip)
+        export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
+        export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
+        ;;
+esac
+
 export AUTH_TYPE=${AUTH_TYPE:-none}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
-export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
-export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
 export IMAGE_SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${IMAGE_SERVICE_PORT}"}
 export SERVICE_INTERNAL_PORT=8090
 export IMAGE_SERVICE_INTERNAL_PORT=8080
@@ -47,7 +59,9 @@ mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
     export RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
-    export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    if [ -z "${OS_IMAGES:-}" ]; then
+        export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    fi
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         (cd assisted-service; skipper make generate-configuration)
@@ -140,7 +154,8 @@ else
     fi
 
     skipper run src/update_assisted_service_cm.py
-    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
+
+    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD TARGET=$DEPLOY_TARGET DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
 
     add_firewalld_port $SERVICE_PORT
 

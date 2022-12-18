@@ -35,11 +35,19 @@ make bring_assisted_service
 make image_build
 echo "Done creating image"
 
-echo "Installing minikube and oc"
-scripts/install_minikube.sh
-echo "Done installing minikube and oc"
+echo "Installing kind"
+scripts/hub-cluster/kind/kind.sh install
+echo "Done installing kind"
 
-if [ -z "${NO_MINIKUBE}" ]; then
-    echo "Install and start minikube"
+echo "Installing minikube"
+scripts/hub-cluster/minikube.sh install
+echo "Done installing minikube"
+
+echo "Installing oc and kubectl"
+scripts/install_k8s_clients.sh
+echo "Done installing oc and kubectl"
+
+if [ "${DEPLOY_TARGET}" == "minikube" ] && [ -z "${NO_MINIKUBE}" ]; then
+    echo "Start minikube"
     make start_minikube
 fi

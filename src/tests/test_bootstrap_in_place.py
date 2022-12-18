@@ -416,7 +416,7 @@ class TestBootstrapInPlace(BaseTest):
 
             time.sleep(10)
 
-    @JunitTestSuite()
+    @JunitTestCase()
     def prepare_worker_installation(
         self,
         controller_configuration: BaseNodesConfig,
@@ -431,14 +431,14 @@ class TestBootstrapInPlace(BaseTest):
         worker_image_path = self.embed("installer-image.iso", "worker-live-iso.ign", EMBED_IMAGE_NAME_WORKER)
         cluster_configuration.worker_iso_download_path = worker_image_path
 
-    @JunitTestSuite()
+    @JunitTestCase()
     def master_installation(self, controller: TerraformController, cluster_configuration: ClusterConfig):
         log.info("Starting master node...")
         controller.start_node(node_name=f"{CLUSTER_PREFIX}-master-0")
 
         self.waiting_for_installation_completion(controller, cluster_configuration, skip_logs=True)
 
-    @JunitTestSuite()
+    @JunitTestCase()
     def worker_installation(self, controller: TerraformController, cluster_configuration: ClusterConfig):
         controller.start_node(node_name=f"{CLUSTER_PREFIX}-worker-0")
 

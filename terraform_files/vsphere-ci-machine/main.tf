@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     vsphere = {
-      source = "hashicorp/vsphere"
+      source  = "hashicorp/vsphere"
       version = "=2.1.1"
     }
   }
@@ -41,7 +41,7 @@ resource "vsphere_folder" "folder" {
 }
 
 # The VSphere template to clone
-data "vsphere_virtual_machine" template {
+data "vsphere_virtual_machine" "template" {
   name          = "/${data.vsphere_datacenter.datacenter.name}/vm/assisted-test-infra-ci/${var.template_name}"
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
@@ -61,8 +61,8 @@ resource "vsphere_virtual_machine" "vm" {
   nested_hv_enabled           = "true"
   wait_for_guest_net_routable = true
   wait_for_guest_net_timeout  = 15
-  firmware = data.vsphere_virtual_machine.template.firmware
-  scsi_type = data.vsphere_virtual_machine.template.scsi_type
+  firmware                    = data.vsphere_virtual_machine.template.firmware
+  scsi_type                   = data.vsphere_virtual_machine.template.scsi_type
 
   network_interface {
     network_id = data.vsphere_network.network.id
@@ -81,7 +81,7 @@ resource "vsphere_virtual_machine" "vm" {
     customize {
       linux_options {
         host_name = "AI-CI-build-${var.build_id}"
-        domain = var.domain
+        domain    = var.domain
       }
 
       network_interface {}
