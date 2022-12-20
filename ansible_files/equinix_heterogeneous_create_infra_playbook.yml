@@ -1,0 +1,38 @@
+- name: Create and configure the equinix infrastructure to run heterogneous cluster tests
+  hosts: localhost
+  vars_prompt:
+    - name: equinix_project_id
+      prompt: Equinix metal project ID in which the device(s) will be created
+      private: false
+    - name: equinix_auth_token
+      prompt: Equinix metal API token
+    - name: equinix_ssh_private_key_path
+      prompt: Path to an SSH private key allowed to connect on the created device(s)
+      private: false
+    - name: equinix_unique_id
+      prompt: Hostname prefix which will be used to identify the device(s)
+      private: false
+    - name: equinix_tf_vars_file
+      prompt: Place where the Terrafom variable file will be stored
+      private: false
+    - name: equinix_tf_state_file
+      prompt: Place where the Terrafom state file will be stored
+      private: false
+  vars:
+    terraform_equinix_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'equinix-ci-machine'] | path_join | realpath }}"
+  tasks:
+    # Create the required devices to test heterogeneous scenarios
+    - ansible.builtin.import_role:
+        name: equinix/heterogeneous_create_infra
+    # Export the connection details, required for the common steps in Prow
+    - ansible.builtin.import_role:
+        name: equinix/export_primary_device_connection_details
+    # Build an IPIP tunnel between both of the machines in "heterogeneous" group
+    - ansible.builtin.import_role:
+        name: common/setup_ipip_tunnel
+      vars:
+        ipip_group: heterogeneous
+    # - ansible.builtin.import_role:
+    #     name: equinix/install_libvirt
+    # - ansible.builtin.import_role:
+    #     name: equinix/expose_libvirt
