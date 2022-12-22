@@ -1,0 +1,7 @@
+- name: Install libvirtd
+  ansible.builtin.package:
+    name:
+      - libvirt-daemon-kvm
+    state: present
+  notify:
+    - Start libvirtd service
