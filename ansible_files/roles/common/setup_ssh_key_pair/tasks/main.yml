@@ -1,0 +1,28 @@
+- name: Generate an OpenSSH keypair
+  local_action:
+    module: community.crypto.openssh_keypair
+    path: /tmp/{{ cluster_ssh_private_key_path | basename }}
+  register: ssh_key_pair
+  run_once: true
+
+- name: Copy private key to remote host
+  copy:
+    src: "{{ ssh_key_pair.filename }}"
+    dest: "{{ cluster_ssh_private_key_path }}"
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+    mode: '0600'
+
+- name: Authorize key
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "{{ ssh_key_pair.public_key }}"
+
+- name: Generate SSH client configuration
+  ansible.builtin.template:
+    src: "config.j2"
+    dest: "{{ ansible_user_dir }}/.ssh/config"
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+    mode: '0600'
