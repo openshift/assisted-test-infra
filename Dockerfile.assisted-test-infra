@@ -30,6 +30,11 @@ RUN dnf -y install --enablerepo=crb \
   xorriso \
    && dnf clean all
 
+# Git checks if the user that owns the files on the filesystem match the
+# current user.  We need to disable this check because tests in Prow are
+# running with a random user.
+RUN git config --system --add safe.directory '*'
+
 RUN curl --retry 5 -Lo packer.zip https://releases.hashicorp.com/packer/1.8.0/packer_1.8.0_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
 RUN curl --retry 5 -Lo terraform.zip https://releases.hashicorp.com/terraform/1.3.6/terraform_1.3.6_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
 RUN curl --retry 5 -L https://github.com/containers/podman/releases/download/v3.4.4/podman-remote-static.tar.gz -o "/tmp/podman-remote3.tar.gz" && \
