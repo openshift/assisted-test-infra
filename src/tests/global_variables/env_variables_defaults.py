@@ -31,6 +31,15 @@ class _EnvVariables(DataPool, ABC):
     day2_workers_count: EnvVar = EnvVar(
         ["NUM_DAY2_WORKERS"], loader=int, default=env_defaults.DEFAULT_DAY2_WORKERS_COUNT
     )
+    day2_workers_arch: EnvVar = EnvVar(
+        ["DAY2_WORKERS_ARCH"]
+    )
+    day2_worker_remote_libvirt_uri: EnvVar = EnvVar(
+        ["DAY2_WORKER_REMOTE_LIBVIRT_URI"]
+    )
+    day2_worker_remote_libvirt_network_prefix: EnvVar = EnvVar(
+        ["DAY2_WORKER_REMOTE_LIBVIRT_NETWORK_PREFIX"]
+    )
     vip_dhcp_allocation: EnvVar = EnvVar(["VIP_DHCP_ALLOCATION"], loader=lambda x: bool(strtobool(x)))
 
     worker_memory: EnvVar = EnvVar(["WORKER_MEMORY"], loader=int, default=resources.DEFAULT_WORKER_MEMORY)

@@ -1,19 +1,22 @@
 import ipaddress
 import json
 import os
+from pathlib import Path
 import subprocess
 import time
+from urllib.parse import parse_qs, urlparse
 import uuid
 from abc import ABC
 from typing import Any
 
 import waiting
+from assisted_test_infra.test_infra.controllers.node_controllers.ssh import SshConnection
 
 import consts
 from assisted_test_infra.test_infra import BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.controllers import NodeController
 from assisted_test_infra.test_infra.helper_classes.config import BaseDay2ClusterConfig
-from assisted_test_infra.test_infra.tools import static_network
+from assisted_test_infra.test_infra.tools import static_network, terraform_utils
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from service_client import log
 from service_client.assisted_service_api import InventoryClient
@@ -47,10 +50,15 @@ class Day2Cluster(ABC):
 
         self.config_etc_hosts(api_vip_ip, api_vip_dnsname)
 
-        self.config.tf_folder = os.path.join(
-            utils.TerraformControllerUtil.get_folder(self.config.day1_cluster_name), consts.Platforms.BARE_METAL
-        )
-        self.configure_terraform(self.config.tf_folder, self.config.day2_workers_count, api_vip_ip)
+        # setup terraform
+        if self.config.day2_worker_remote_libvirt_uri:
+            remote_iso_download_path = os.path.join("/tmp", os.path.basename(iso_download_path))
+            self.configure_terraform_remote_libvirt(api_vip_ip, remote_iso_download_path)
+        else:
+            self.config.tf_folder = os.path.join(
+                utils.TerraformControllerUtil.get_folder(self.config.day1_cluster_name), consts.Platforms.BARE_METAL
+            )
+            self.configure_terraform(self.config.tf_folder, self.config.day2_workers_count, api_vip_ip)
 
         static_network_config = None
         if self._infra_env_config.is_static_ip:
@@ -68,14 +76,22 @@ class Day2Cluster(ABC):
             openshift_version=openshift_version,
         )
         self.config.infra_env_id = infra_env.id
+
         # Download image
         iso_download_url = infra_env.download_url
         log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
-
         utils.download_file(iso_download_url, iso_download_path, False)
 
+        if self.config.day2_worker_remote_libvirt_uri:
+            o = urlparse(self.config.day2_worker_remote_libvirt_uri)
+            private_ssh_key_path = parse_qs(o.query)["keyfile"][0]
+            ssh = SshConnection(ip=o.hostname, private_ssh_key_path=Path(private_ssh_key_path), username=o.username)
+            ssh.connect()
+            ssh.upload_file(iso_download_path, remote_iso_download_path)
+            log.info(f"Uploaded iso image on {o.hostname} in {remote_iso_download_path}")
+
     def start_install_and_wait_for_installed(self, libvirt_controller: NodeController):
-        cluster_name = self.config.day1_cluster_name
+        cluster_name = self.config.tf_folder.split(os.path.sep)[-2]
         # Running twice as a workaround for an issue with terraform not spawning a new node on first apply.
         for _ in range(2):
             with utils.file_lock_context():
@@ -163,6 +179,45 @@ class Day2Cluster(ABC):
             hosts_lines.append(api_vip_ip + " " + api_vip_dnsname + "\n")
         with open("/etc/hosts", "w") as f:
             f.writelines(hosts_lines)
+
+    def configure_terraform_remote_libvirt(self, api_vip_ip: str, iso_download_path: str) -> None:
+        # use day1 variables as a base to build the day2 workers
+        day1_tf_folder = os.path.join(
+            utils.TerraformControllerUtil.get_folder(self.config.day1_cluster_name), consts.Platforms.BARE_METAL
+        )
+        tfvars = utils.get_tfvars(day1_tf_folder)
+
+        # general settings
+        tfvars["libvirt_uri"] = self.config.day2_worker_remote_libvirt_uri
+        tfvars["master_count"] = 0
+        tfvars["worker_count"] = self.config.day2_workers_count
+        tfvars["api_vip"] = api_vip_ip
+        tfvars["worker_image_path"] = iso_download_path
+
+        # libvirt networks
+        network_prefix = ipaddress.ip_network(self.config.day2_worker_remote_libvirt_network_prefix)
+        available_subnets = network_prefix.subnets(new_prefix=24)
+        machine_cidr_addresses = next(available_subnets)
+        provisioning_cidr_addresses = next(available_subnets)
+        tfvars["machine_cidr_addresses"] = [str(machine_cidr_addresses)]
+        tfvars["provisioning_cidr_addresses"] = [str(provisioning_cidr_addresses)]
+
+        # host ips
+        available_libvirt_worker_ips = machine_cidr_addresses.hosts()
+        next(available_libvirt_worker_ips)  # first address is taken by libvirt network
+        tfvars["libvirt_worker_ips"] = [
+            [str(next(available_libvirt_worker_ips))] for _ in range(self.config.day2_workers_count)
+        ]
+
+        # host macs
+        tfvars["libvirt_worker_macs"] = static_network.generate_macs(self.config.day2_workers_count)
+        tfvars["libvirt_secondary_worker_macs"] = static_network.generate_macs(self.config.day2_workers_count)
+
+        self.config.tf_folder = utils.TerraformControllerUtil.create_folder(
+            f"{self.config.day1_cluster_name}-day2", consts.Platforms.BARE_METAL
+        )
+        terraform_utils.TerraformUtils(working_dir=self.config.tf_folder)  # perform terraform init
+        utils.set_tfvars(self.config.tf_folder, tfvars)
 
     def configure_terraform(self, tf_folder: str, num_worker_nodes: int, api_vip_ip: str):
         tfvars = utils.get_tfvars(tf_folder)

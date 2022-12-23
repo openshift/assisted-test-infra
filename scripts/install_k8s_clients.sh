@@ -23,7 +23,7 @@ function install_oc() {
 
     echo "Installing oc..."
     for i in {1..4}; do
-        curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.8/openshift-client-linux.tar.gz | tar -xz -C /usr/local/bin && break
+        curl --retry 3 -SL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.11/openshift-client-linux.tar.gz | tar -xz -C /usr/local/bin && break
         echo "oc installation failed. Retrying again in 5 seconds..."
         sleep 5
     done

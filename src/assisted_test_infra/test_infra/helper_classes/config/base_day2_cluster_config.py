@@ -11,3 +11,6 @@ class BaseDay2ClusterConfig(BaseClusterConfig, ABC):
     day2_workers_count: int = None
     infra_env_id: str = None
     tf_folder: str = None
+    day2_workers_arch: str = None
+    day2_worker_remote_libvirt_uri: str = None
+    day2_worker_remote_libvirt_network_prefix: str = None
