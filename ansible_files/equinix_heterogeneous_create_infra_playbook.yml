@@ -64,3 +64,13 @@
         ipip_remote_ipv4: "{{ hostvars[groups['primary'][0]].access_private_ipv4 }}"
         ipip_tunnel_ipv4: "{{ secondary_ipip_tunnel_ipv4 }}"
         ipip_route_to_network: "{{ primary_internal_network_prefix }}"
+
+- name: Share a unique SSH key pair among the created devices
+  hosts: heterogeneous
+  roles:
+    - name: common/setup_ssh_key_pair
+
+- name: Setup libvirtd on secondary machine
+  hosts: secondary[0]
+  roles:
+    - name: common/setup_libvirtd
