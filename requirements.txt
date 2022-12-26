@@ -14,7 +14,7 @@ netaddr==0.8.0
 netifaces==0.11.0
 openshift-client==1.0.18
 paramiko==2.12.0
-pre-commit==2.20.0
+pre-commit==2.21.0
 pycharm_remote_debugger==0.1.16
 pytest-xdist==3.1.0
 pytest==7.2.0
