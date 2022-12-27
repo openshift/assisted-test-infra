@@ -89,6 +89,12 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
     if not os.path.isdir(output_folder):
         return True
 
+    # if the logs info in the cluster metadata isn't set to final status we should update
+    cluster_md = get_cluster_metadata(output_folder)
+    if cluster_md.get("cluster", {}).get("logs_info", "") not in ("timeout", "completed", ""):
+        log.info(f"update needed, missing must-gather logs")
+        return True
+
     if not update_on_events_update:
         return False
 
@@ -293,6 +299,11 @@ def _must_gather_kube_api(cluster_name, cluster_deployment, agent_cluster_instal
 
 def get_cluster_events_path(cluster, output_folder):
     return os.path.join(output_folder, f"cluster_{cluster['id']}_events.json")
+
+
+def get_cluster_metadata(output_folder):
+    with open(os.path.join(output_folder, "metadata.json"), "rt") as f:
+        return json.load(f)
 
 
 def get_infraenv_events_path(infra_env_id, output_folder):
