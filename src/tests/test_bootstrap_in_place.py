@@ -265,7 +265,7 @@ class TestBootstrapInPlace(BaseTest):
             waiting.wait(
                 self.all_operators_available,
                 sleep_seconds=20,
-                timeout_seconds=60 * 60,
+                timeout_seconds=70 * 60,
                 waiting_for="all operators to get up",
             )
             log.info("Installation completed successfully!")
