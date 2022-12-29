@@ -67,7 +67,7 @@ resource "libvirt_domain" "host" {
   }
 
   xml {
-    xslt = file("consolemodel.xsl")
+    xslt = file("../baremetal_host/consolemodel.xsl")
   }
 }
 
