@@ -107,9 +107,14 @@ ifeq ($(ENABLE_KUBE_API),true)
 	SERVICE_REPLICAS_COUNT=1
 	AUTH_TYPE=local
 endif
+
+ifdef ADDITIONAL_MANIFEST_DIR
+	INSTALL_MANIFESTS_DIR=$(ROOT_DIR)/sno-additional-manifests
+endif
+
 ifdef BIP_BUTANE_CONFIG
 	BOOTSTRAP_INJECT_DIR=$(ROOT_DIR)/sno-bootstrap-manifests/
-	BOOTSTRAP_INJECT_MANIFEST=$(BOOTSTRAP_INJECT_DIR}/$(notdir ${BIP_BUTANE_CONFIG})
+	BOOTSTRAP_INJECT_MANIFEST=$(BOOTSTRAP_INJECT_DIR}/$(notdir ${BIP_BUTANE_CONFIG}))
 endif
 
 .EXPORT_ALL_VARIABLES:
@@ -256,6 +261,10 @@ deploy_static_network_config_nodes:
 
 .PHONY: deploy_ibip
 deploy_ibip:
+ifdef ADDITIONAL_MANIFEST_DIR
+	rm -rf ${INSTALL_MANIFEST_DIR}; mkdir ${INSTALL_MANIFESTS_DIR}
+	mv ${ADDITIONAL_MANIFEST_DIR}/* ${INSTALL_MANIFESTS_DIR}/
+endif
 	# To deploy with a worker node, set TEST_FUNC=test_bip_add_worker
 ifdef BIP_BUTANE_CONFIG
 	rm -rf ${BOOTSTRAP_INJECT_DIR}; mkdir ${BOOTSTRAP_INJECT_DIR}
