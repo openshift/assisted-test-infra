@@ -279,6 +279,19 @@ class TestBootstrapInPlace(BaseTest):
             if not skip_logs:
                 self.log_collection(master_ip)
 
+    def inject_bootstrap(self, ignition_filename: str, butane_config: str):
+        expected_ignition_name = "bootstrap_initial.ign"
+        shutil.move(ignition_filename, expected_ignition_name)
+        flags = shlex.split(f"--rm -v {os.getcwd()}:/data -w /data")
+        # retry to avoid occassional quay hiccups
+        self.retrying_run_container(
+            "butane",
+            "quay.io/coreos/butane:release",
+            flags,
+            butane_config,
+            f"-o {ignition_filename}",
+        )
+
     def prepare_installation(self, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig):
         openshift_release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
         if not openshift_release_image:
@@ -289,10 +302,14 @@ class TestBootstrapInPlace(BaseTest):
         extract_installer(openshift_release_image, BUILD_DIR)
         self.installer_generate(openshift_release_image)
 
+        ignition_filename = "bootstrap-in-place-for-live-iso.ign"
+        if cluster_configuration.bip_butane_config:
+            self.inject_bootstrap(ignition_filename, cluster_configuration.bip_butane_config)
+
         self.download_live_image(
             f"{BUILD_DIR}/installer-image.iso", extract_rhcos_url_from_ocp_installer(INSTALLER_BINARY)
         )
-        return self.embed("installer-image.iso", "bootstrap-in-place-for-live-iso.ign", EMBED_IMAGE_NAME)
+        return self.embed("installer-image.iso", ignition_filename, EMBED_IMAGE_NAME)
 
     @JunitTestSuite()
     def test_bootstrap_in_place_sno(

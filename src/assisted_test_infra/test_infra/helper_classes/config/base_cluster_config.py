@@ -31,3 +31,4 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     disk_encryption_mode: str = None
     disk_encryption_roles: str = None
     tang_servers: str = None
+    bip_butane_config: str = None
