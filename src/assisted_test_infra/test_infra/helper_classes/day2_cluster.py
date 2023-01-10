@@ -122,8 +122,7 @@ class Day2Cluster(BaseCluster):
         utils.set_tfvars(self.nodes.controller.tf_folder, tfvars)
 
     def configure_terraform_workers_nodes(self, tfvars: Any, num_worker_nodes: int):
-        num_workers = num_worker_nodes
-        tfvars["worker_count"] = num_workers
+        tfvars["worker_count"] = tfvars["worker_count"] + num_worker_nodes
         self.set_workers_addresses_by_type(
             tfvars, num_worker_nodes, "libvirt_master_ips", "libvirt_worker_ips", "libvirt_worker_macs"
         )
