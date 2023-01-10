@@ -14,7 +14,7 @@ from assisted_test_infra.test_infra import BaseInfraEnvConfig, ClusterName, util
 from assisted_test_infra.test_infra.helper_classes.base_cluster import BaseCluster
 from assisted_test_infra.test_infra.controllers import NodeController
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
-from assisted_test_infra.test_infra.helper_classes.config.day2_cluster_config import BaseDay2ClusterConfig
+from assisted_test_infra.test_infra.helper_classes.config.base_day2_cluster_config import BaseDay2ClusterConfig
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from service_client import log
