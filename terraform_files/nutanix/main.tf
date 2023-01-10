@@ -28,5 +28,5 @@ data "nutanix_subnet" "subnet" {
 resource "nutanix_image" "image" {
   name        = "${var.cluster_name}.iso"
   description = "Downloaded ISO"
-  source_path = var.iso_download_path
+  source_uri = var.iso_download_path
 }

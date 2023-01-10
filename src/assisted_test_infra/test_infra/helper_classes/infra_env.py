@@ -66,7 +66,9 @@ class InfraEnv(Entity):
         self._update_static_network()
 
         log.info(f"Downloading image {iso_download_url} to {iso_download_path}")
-        return utils.download_file(iso_download_url, iso_download_path, self._config.verify_download_iso_ssl)
+        file_path = utils.download_file(iso_download_url, iso_download_path, self._config.verify_download_iso_ssl)
+        self.iso_download_path = iso_download_url
+        return iso_download_url
 
     @JunitTestCase()
     def wait_until_hosts_are_discovered(self, nodes_count: int, allow_insufficient=False):
