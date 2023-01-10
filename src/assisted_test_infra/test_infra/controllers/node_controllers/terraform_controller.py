@@ -339,9 +339,7 @@ class TerraformController(LibvirtController):
         self.tf.change_variables({"single_node_ip": ip})
 
     def get_day2_static_network_data(self):
-        if self._entity_config.is_static_ip:
-            return static_network.generate_day2_static_network_data_from_tf(self.tf_folder, self._config.workers_count)
-        return None
+        return static_network.generate_day2_static_network_data_from_tf(self.tf_folder, self._config.workers_count)
 
     def wait_till_nodes_are_ready(self, network_name: str = None):
         return super().wait_till_nodes_are_ready(network_name or self.network_name)

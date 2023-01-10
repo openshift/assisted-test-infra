@@ -81,9 +81,14 @@ class Day2Cluster(BaseCluster):
         )
         self.configure_terraform(self._config.day2_workers_count, self._api_vip_ip)
         self._day1_cluster.download_image()
+
+        static_network_config = None
+        if self._day1_cluster._infra_env_config.is_static_ip:
+            static_network_config = self.nodes.controller.get_day2_static_network_data()
+
         self.download_image(
             iso_download_path=self._day1_cluster.iso_download_path,
-            static_network_config=self.nodes.controller.get_day2_static_network_data(),
+            static_network_config=static_network_config,
         )
 
     def set_cluster_proxy(self, cluster_id: str):
@@ -176,7 +181,7 @@ class Day2Cluster(BaseCluster):
         )
 
     def set_nodes_hostnames_if_needed(self):
-        if self._config.is_ipv6 or self._config.is_static_ip:
+        if self._config.is_ipv6 or self._day1_cluster._infra_env_config.is_static_ip:
             tf_state = self.nodes.controller.tf.get_state()
             network_name = self.nodes.controller.network_name
             libvirt_nodes = utils.extract_nodes_from_tf_state(tf_state, network_name, consts.NodeRoles.WORKER)
