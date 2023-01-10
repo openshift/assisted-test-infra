@@ -101,3 +101,6 @@ class BaseCluster(Entity, ABC):
         log.info(f"Setting pull secret:{pull_secret} for cluster: {self.id}")
         self.update_config(pull_secret=pull_secret)
         self.api_client.update_cluster(cluster_id or self.id, {"pull_secret": pull_secret})
+
+    def get_iso_download_path(self, iso_download_path: str = None):
+        return iso_download_path or self._infra_env_config.iso_download_path
