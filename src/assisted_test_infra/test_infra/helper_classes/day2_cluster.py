@@ -119,6 +119,7 @@ class Day2Cluster(BaseCluster):
         tfvars = utils.get_tfvars(self.nodes.controller.tf_folder)
         self.configure_terraform_workers_nodes(tfvars, num_worker_nodes)
         tfvars["api_vip"] = api_vip_ip
+        tfvars["running"] = True
         utils.set_tfvars(self.nodes.controller.tf_folder, tfvars)
 
     def configure_terraform_workers_nodes(self, tfvars: Any, num_worker_nodes: int):
