@@ -287,7 +287,7 @@ class Day2Cluster(BaseCluster):
 
         for host in hosts:
             if host["status"] == "known":
-                self.api_client.install_day2_host(self._day1_cluster._infra_env_config.infra_env_id, host["id"])
+                self.api_client.install_day2_host(self._infra_env_config.infra_env_id, host["id"])
 
         log.info(
             f"Waiting until all nodes of cluster {self.id} have been installed (reached " "added-to-existing-cluster)",
