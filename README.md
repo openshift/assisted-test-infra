@@ -10,6 +10,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 
 **Table of contents**
 
+- [!! Warning !!](#-warning-)
 - [Test-Infra](#test-infra)
   - [Prerequisites](#prerequisites)
   - [Installation Guide](#installation-guide)
@@ -18,26 +19,24 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
     - [Deployment config](#deployment-config)
     - [Cluster configmap](#cluster-configmap)
   - [Installation parameters](#installation-parameters)
+  - [Vsphere parameters](#vsphere-parameters)
   - [Instructions](#instructions)
     - [Host preparation](#host-preparation)
   - [Usage](#usage)
-  - [Adding a new e2e flow](#new-e2e-flow)
+  - [Adding a new e2e flow](#adding-a-new-e2e-flow)
   - [Full flow cases](#full-flow-cases)
     - [Run full flow with install](#run-full-flow-with-install)
     - [Run full flow without install](#run-full-flow-without-install)
     - [Run full flow with ipv6](#run-full-flow-with-ipv6)
-    - [Run only deploy nodes (without pre deploy of all assisted service)](#run-only-deploy-nodes-without-pre-deploy-of-all-assisted-service)
     - [Redeploy nodes](#redeploy-nodes)
-    - [Redeploy with assisted services](#redeploy-with-assisted-services)
     - [Cleaning](#cleaning)
       - [Clean all include minikube](#clean-all-include-minikube)
       - [Clean nodes only](#clean-nodes-only)
       - [Delete all virsh resources](#delete-all-virsh-resources)
-    - [Install cluster](#install-cluster)
     - [Create cluster and download ISO](#create-cluster-and-download-iso)
     - [Deploy Assisted Service and Monitoring stack](#deploy-assisted-service-and-monitoring-stack)
     - [`deploy_assisted_service` and Create cluster and download ISO](#deploy_assisted_service-and-create-cluster-and-download-iso)
-    - [start_minikube and Deploy UI and open port forwarding on port 6008, allows to connect to it from browser](#start_minikube-and-deploy-ui-and-open-port-forwarding-on-port-6008-allows-to-connect-to-it-from-browser)
+    - [start\_minikube and Deploy UI and open port forwarding on port 6008, allows to connect to it from browser](#start_minikube-and-deploy-ui-and-open-port-forwarding-on-port-6008-allows-to-connect-to-it-from-browser)
     - [Kill all open port forwarding commands, will be part of destroy target](#kill-all-open-port-forwarding-commands-will-be-part-of-destroy-target)
   - [Test `assisted-service` image](#test-assisted-service-image)
     - [Test agent image](#test-agent-image)
@@ -48,9 +47,10 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Test with RHSSO Authentication](#test-with-rhsso-authentication)
   - [Single Node - Bootstrap in place with Assisted Service](#single-node---bootstrap-in-place-with-assisted-service)
   - [Single Node - Bootstrap in place with Assisted Service and IPv6](#single-node---bootstrap-in-place-with-assisted-service-and-ipv6)
+  - [Kind](#kind)
   - [On-prem](#on-prem)
   - [Run operator](#run-operator)
-  - [Cluster-API-provider-agent](#Cluster-API-provider-agent)
+  - [Cluster-API-provider-agent](#cluster-api-provider-agent)
   - [Test iPXE boot flow](#test-ipxe-boot-flow)
 
 ## Prerequisites
@@ -378,6 +378,8 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE=<relevant release image if needed>
 export NUM_MASTERS=1
 make deploy_nodes_with_install
 ```
+
+Set BIP_BUTANE_CONFIG env var to the path with butane config to be merged with bootstrap. Might be useful for promtail logging / other debug tasks
 
 ## Single Node - Bootstrap in place with Assisted Service and IPv6
 

@@ -305,8 +305,9 @@ class TestBootstrapInPlace(BaseTest):
         self.installer_generate(openshift_release_image)
 
         ignition_filename = "bootstrap-in-place-for-live-iso.ign"
-        if cluster_configuration.bip_butane_config:
-            self.inject_bootstrap(ignition_filename, cluster_configuration.bip_butane_config)
+        bip_butane_config = os.environ.get("BOOTSTRAP_INJECT_MANIFEST")
+        if bip_butane_config:
+            self.inject_bootstrap(ignition_filename, bip_butane_config)
 
         self.download_live_image(
             f"{BUILD_DIR}/installer-image.iso", extract_rhcos_url_from_ocp_installer(INSTALLER_BINARY)
