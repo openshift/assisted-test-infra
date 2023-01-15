@@ -29,7 +29,7 @@ function _init_minikube() {
     for i in {1..5}
     do
         minikube delete
-        minikube start --driver=kvm2 --memory="${MINIKUBE_RAM_MB}" --cpus=4 --force --wait-timeout=15m0s --disk-size="${MINIKUBE_DISK_SIZE}" --addons=registry || true
+        minikube start --driver=kvm2 --memory="${MINIKUBE_RAM_MB}" --cpus=4 --force --wait-timeout=15m0s --disk-size="${MINIKUBE_DISK_SIZE}" || true
 
         if minikube status ; then
             break
@@ -40,6 +40,7 @@ function _init_minikube() {
     done
 
     minikube status
+    minikube addons enable registry --images="Registry=quay.io/libpod/registry:2.8"
     minikube update-context
     minikube tunnel --cleanup &> /dev/null &
 }
