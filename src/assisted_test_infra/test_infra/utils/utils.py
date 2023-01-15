@@ -23,6 +23,7 @@ from typing import List, Tuple, Union
 
 import filelock
 import requests
+import semver
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -465,6 +466,20 @@ def get_default_openshift_version(client=None) -> str:
     return versions[0] if versions else None
 
 
+def extract_version(release_image) -> semver.VersionInfo:
+    """
+    Extracts the version number from the release image.
+
+    Args:
+        release_image: The release image to extract the version from.
+    """
+    with pull_secret_file() as pull_secret:
+        stdout, _, _ = run_command(f"oc adm release info --registry-config '{pull_secret}' '{release_image}' -ojson")
+
+    ocp_full_version = json.loads(stdout).get("metadata", {}).get("version", "")
+    return semver.VersionInfo.parse(ocp_full_version)
+
+
 def get_openshift_version(allow_default=True, client=None) -> str:
     """
     Return the openshift version that needs to be handled
@@ -485,14 +500,8 @@ def get_openshift_version(allow_default=True, client=None) -> str:
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if release_image:
-        log.info(f"Using release image to get default openshift version, release_image={release_image}")
-        with pull_secret_file() as pull_secret:
-            stdout, _, _ = run_command(
-                f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"
-                f" jq -r '.metadata.version' | grep -oP '\\d\\.\\d+'",
-                shell=True,
-            )
-        return stdout
+        version = extract_version(release_image)
+        return f"{version.major}.{version.minor}"
 
     if allow_default:
         return get_default_openshift_version(client)

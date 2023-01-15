@@ -29,6 +29,7 @@ export SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${SERVICE_POR
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
+export OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS:-}
 export ENABLE_KUBE_API=${ENABLE_KUBE_API:-false}
 export ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=${ENABLE_KUBE_API}"
 export DEBUG_SERVICE_NAME=assisted-service-debug
@@ -58,15 +59,16 @@ fi
 mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
-    export RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
-    if [ -z "${OS_IMAGES:-}" ]; then
-        export OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
-    fi
+    RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
+    export RELEASE_IMAGES
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         (cd assisted-service; skipper make generate-configuration)
     fi
 fi
+
+OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+export OS_IMAGES
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "${INSTALLER_IMAGE:-}" ]; then

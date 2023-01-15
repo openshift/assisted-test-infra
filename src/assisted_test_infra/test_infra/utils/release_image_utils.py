@@ -1,8 +1,6 @@
 import json
 import logging
 
-import semver
-
 from assisted_test_infra.test_infra import utils
 
 
@@ -20,26 +18,6 @@ def extract_installer(release_image: str, dest: str):
             f"oc adm release extract --registry-config '{pull_secret}'"
             f" --command=openshift-install --to={dest} {release_image}"
         )
-
-
-def extract_version(release_image):
-    """
-    Extracts the version number from the release image.
-
-    Args:
-        release_image: The release image to extract the version from.
-    """
-    logging.info(f"Extracting version number from {release_image}")
-    with utils.pull_secret_file() as pull_secret:
-        stdout, _, _ = utils.run_command(
-            f"oc adm release info --registry-config '{pull_secret}' '{release_image}' -ojson"
-        )
-
-    ocp_full_version = json.loads(stdout).get("metadata", {}).get("version", "")
-    ocp_semver = semver.VersionInfo.parse(ocp_full_version)
-    ocp_version = f"{ocp_semver.major}.{ocp_semver.minor}"
-
-    return ocp_version
 
 
 def extract_rhcos_url_from_ocp_installer(installer_binary_path: str):

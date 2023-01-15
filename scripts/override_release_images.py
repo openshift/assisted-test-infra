@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-import shlex
-import subprocess
 import tempfile
 from argparse import ArgumentParser
 from contextlib import contextmanager
 
 import semver
+
+from assisted_test_infra.test_infra import utils
 
 
 @contextmanager
@@ -26,36 +26,6 @@ def pull_secret_file():
         yield f.name
 
 
-def run_command(command, shell=False, raise_errors=True, env=None):
-    command = command if shell else shlex.split(command)
-    process = subprocess.run(
-        command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True
-    )
-
-    def _io_buffer_to_str(buf):
-        if hasattr(buf, "read"):
-            buf = buf.read().decode()
-        return buf
-
-    out = _io_buffer_to_str(process.stdout).strip()
-    err = _io_buffer_to_str(process.stderr).strip()
-
-    if raise_errors and process.returncode != 0:
-        raise RuntimeError(f"command: {command} exited with an error: {err} " f"code: {process.returncode}")
-
-    return out, err, process.returncode
-
-
-def get_full_openshift_version_from_release(release_image: str) -> str:
-    with pull_secret_file() as pull_secret:
-        stdout, _, _ = run_command(
-            f"oc adm release info '{release_image}' --registry-config '{pull_secret}' -o json |"
-            f" jq -r '.metadata.version'",
-            shell=True,
-        )
-    return stdout
-
-
 def get_release_image(release_images, ocp_version, cpu_architecture="x86_64"):
     archs_images = [v for v in release_images if v.get("cpu_architecture") == cpu_architecture]
     release_image = [v for v in archs_images if v.get("openshift_version") == ocp_version]
@@ -65,12 +35,14 @@ def get_release_image(release_images, ocp_version, cpu_architecture="x86_64"):
     return {"cpu_architecture": cpu_architecture}
 
 
-def set_release_image(release_image: dict, release_images: list, ocp_version, ocp_full_version):
+def set_release_image(
+    release_image: dict, release_images: list, ocp_version: str, ocp_full_version: semver.VersionInfo
+):
     release_image_index = -1 if "openshift_version" not in release_image else release_images.index(release_image)
 
     release_image["openshift_version"] = ocp_version
     release_image["url"] = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
-    release_image["version"] = ocp_full_version
+    release_image["version"] = str(ocp_full_version)
     if release_image_index != -1:
         release_images[release_image_index] = release_image
     else:
@@ -83,9 +55,8 @@ def main():
         release_images: list = json.load(f)
 
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
-    ocp_full_version = get_full_openshift_version_from_release(release_image)
-    ocp_semver = semver.VersionInfo.parse(ocp_full_version)
-    ocp_version = f"{ocp_semver.major}.{ocp_semver.minor}"
+    ocp_full_version = utils.extract_version(release_image)
+    ocp_version = f"{ocp_full_version.major}.{ocp_full_version.minor}"
 
     # Find relevant release image
     release_image = get_release_image(release_images, ocp_version)
