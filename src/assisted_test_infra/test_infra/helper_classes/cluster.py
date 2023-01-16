@@ -1182,7 +1182,3 @@ class Cluster(Entity):
         # Kill installer to simulate host error
         selected_node = self.nodes.get_node_from_cluster_host(host)
         selected_node.kill_installer()
-
-    @property
-    def bip_butane_config(self):
-        return self._config.bip_butane_config

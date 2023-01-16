@@ -107,8 +107,6 @@ class _EnvVariables(DataPool, ABC):
 
     ipxe_boot: EnvVar = EnvVar(["IPXE_BOOT"], loader=lambda x: bool(strtobool(x)))
 
-    bip_butane_config: EnvVar = EnvVar(["BIP_BUTANE_CONFIG"])
-
     vsphere_parent_folder: str = EnvVar(["VSPHERE_PARENT_FOLDER"], default=env_defaults.DEFAULT_VSHPERE_PARENT_FOLDER)
     vsphere_folder: str = EnvVar(["VSPHERE_FOLDER"])
     vsphere_cluster: EnvVar = EnvVar(["VSPHERE_CLUSTER"])

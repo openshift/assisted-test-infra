@@ -280,16 +280,18 @@ class TestBootstrapInPlace(BaseTest):
                 self.log_collection(master_ip)
 
     def inject_bootstrap(self, ignition_filename: str, butane_config: str):
-        expected_ignition_name = "bootstrap_initial.ign"
-        shutil.move(ignition_filename, expected_ignition_name)
+        # Backup bip ignition file to bootstrap_initial.ign
+        initial_ignition = os.path.join(IBIP_DIR, ignition_filename)
+        backup_ignition = os.path.join(IBIP_DIR, "bootstrap_initial.ign")
+        shutil.move(initial_ignition, backup_ignition)
         flags = shlex.split(f"--rm -v {os.getcwd()}:/data -w /data")
-        # retry to avoid occassional quay hiccups
+        # Patch ignition with additional files and services
         self.retrying_run_container(
             "butane",
             "quay.io/coreos/butane:release",
             flags,
-            butane_config,
-            f"-o {ignition_filename}",
+            f"/data/{IBIP_DIR}/{butane_config}",
+            f"-o /data/{initial_ignition}",
         )
 
     def prepare_installation(self, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig):
@@ -303,8 +305,9 @@ class TestBootstrapInPlace(BaseTest):
         self.installer_generate(openshift_release_image)
 
         ignition_filename = "bootstrap-in-place-for-live-iso.ign"
-        if cluster_configuration.bip_butane_config:
-            self.inject_bootstrap(ignition_filename, cluster_configuration.bip_butane_config)
+        bip_butane_config = os.environ.get("BOOTSTRAP_INJECT_MANIFEST")
+        if bip_butane_config:
+            self.inject_bootstrap(ignition_filename, bip_butane_config)
 
         self.download_live_image(
             f"{BUILD_DIR}/installer-image.iso", extract_rhcos_url_from_ocp_installer(INSTALLER_BINARY)
