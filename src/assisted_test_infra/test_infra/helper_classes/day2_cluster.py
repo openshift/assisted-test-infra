@@ -24,11 +24,11 @@ from service_client.assisted_service_api import InventoryClient
 class Day2Cluster(BaseCluster):
     _config: BaseDay2ClusterConfig
 
-    def __init__(self, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig, cluster: Cluster):
-        self._day1_cluster: Cluster = cluster
+    def __init__(self, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig, day1_cluster: Cluster):
+        self._day1_cluster: Cluster = day1_cluster
         self._api_vip_ip = None
 
-        super().__init__(cluster.api_client, config, infra_env_config, cluster.nodes)
+        super().__init__(day1_cluster.api_client, config, infra_env_config, day1_cluster.nodes)
 
     def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
@@ -43,7 +43,7 @@ class Day2Cluster(BaseCluster):
         )
 
     def _create(self) -> str:
-        if not self._day1_cluster.was_existed:
+        if not self._day1_cluster.is_installed:
             self._day1_cluster.prepare_for_installation()
             self._day1_cluster.start_install_and_wait_for_installed()
 

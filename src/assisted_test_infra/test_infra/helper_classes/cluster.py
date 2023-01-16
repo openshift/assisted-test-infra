@@ -37,7 +37,7 @@ class Cluster(BaseCluster):
         infra_env_config: BaseInfraEnvConfig,
         nodes: Optional[Nodes] = None,
     ):
-        self._was_existed = False
+        self._is_installed = False
 
         super().__init__(api_client, config, infra_env_config, nodes)
 
@@ -53,8 +53,9 @@ class Cluster(BaseCluster):
         return self._config.iso_download_path
 
     @property
-    def was_existed(self) -> bool:
-        return self._was_existed
+    def is_installed(self) -> bool:
+        """Returns true when this cluster is installed."""
+        return self._is_installed
 
     @property
     def enable_image_download(self):
@@ -90,7 +91,7 @@ class Cluster(BaseCluster):
             self._infra_env_config.infra_env_id = infra_env.get("id")
             self._infra_env = InfraEnv(self.api_client, self._infra_env_config, self.nodes)
             log.info(f"Found infra-env {self._infra_env.id} for cluster {self.id}")
-            self._was_existed = True
+            self._is_installed = True
             break
         else:
             log.warning(f"Could not find any infra-env object for cluster ID {self.id}")
@@ -618,6 +619,8 @@ class Cluster(BaseCluster):
             self.wait_for_install()
         if download_kubeconfig:
             self.download_kubeconfig()
+
+        self._is_installed = True
 
     def disable_worker_hosts(self):
         hosts = self.get_hosts_by_role(consts.NodeRoles.WORKER)
