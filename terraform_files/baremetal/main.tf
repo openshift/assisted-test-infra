@@ -84,6 +84,9 @@ resource "libvirt_network" "secondary_net" {
   bridge    = var.libvirt_secondary_network_if
   addresses = var.provisioning_cidr_addresses
   autostart = true
+  dns {
+    enabled = false
+  }
 }
 
 module "masters" {
