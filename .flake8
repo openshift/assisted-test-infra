@@ -14,6 +14,9 @@ ignore =
     # linter prefers having it reimplemented in inheriting classes
     B027,
 
+    # ignoring suggestion of {str!r} instead of '{str}'
+    B028,
+
 max-line-length = 120
 max-complexity = 18
 format = ${cyan}%(path)s${reset}:${yellow_bold}%(row)d${reset}:${green_bold}%(col)d${reset}: ${red_bold}%(code)s${reset} %(text)s
