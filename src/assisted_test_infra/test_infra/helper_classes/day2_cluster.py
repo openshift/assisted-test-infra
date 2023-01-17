@@ -26,7 +26,7 @@ class Day2Cluster(BaseCluster):
 
     def __init__(self, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig, day1_cluster: Cluster):
         self._day1_cluster: Cluster = day1_cluster
-        self._api_vip_ip = None
+        self._api_vip = None
 
         super().__init__(day1_cluster.api_client, config, infra_env_config, day1_cluster.nodes)
 
@@ -50,7 +50,7 @@ class Day2Cluster(BaseCluster):
         openshift_cluster_id = str(uuid.uuid4())
         day1_cluster = self._day1_cluster.get_details()
 
-        self._api_vip_ip = day1_cluster.api_vip
+        self._api_vip = day1_cluster.api_vip
         api_vip_dnsname = "api." + self._day1_cluster.name + "." + day1_cluster.base_dns_domain
         self._config.day1_cluster_name = day1_cluster.name
         params = {"openshift_version": self._config.openshift_version, "api_vip_dnsname": api_vip_dnsname}
@@ -74,12 +74,12 @@ class Day2Cluster(BaseCluster):
         self._config.cluster_id = day2_cluster.id
         self._day1_cluster.set_pull_secret(self._config.pull_secret, cluster_id=day2_cluster.id)
         self.set_cluster_proxy(day2_cluster.id)
-        self.config_etc_hosts(self._api_vip_ip, day2_cluster.api_vip_dns_name)
+        self.config_etc_hosts(self._api_vip, day2_cluster.api_vip_dns_name)
 
         self.nodes.controller.tf_folder = os.path.join(
             utils.TerraformControllerUtil.get_folder(self._day1_cluster.name), consts.Platforms.BARE_METAL
         )
-        self.configure_terraform(self._config.day2_workers_count, self._api_vip_ip)
+        self.configure_terraform()
         self._day1_cluster.download_image()
 
         static_network_config = None
@@ -103,26 +103,28 @@ class Day2Cluster(BaseCluster):
             self.api_client.set_cluster_proxy(cluster_id, http_proxy, https_proxy, no_proxy)
 
     @classmethod
-    def config_etc_hosts(cls, api_vip_ip: str, api_vip_dnsname: str):
+    def config_etc_hosts(cls, api_vip: str, api_vip_dnsname: str):
         with open("/etc/hosts", "r") as f:
             hosts_lines = f.readlines()
         for i, line in enumerate(hosts_lines):
             if api_vip_dnsname in line:
-                hosts_lines[i] = api_vip_ip + " " + api_vip_dnsname + "\n"
+                hosts_lines[i] = api_vip + " " + api_vip_dnsname + "\n"
                 break
         else:
-            hosts_lines.append(api_vip_ip + " " + api_vip_dnsname + "\n")
+            hosts_lines.append(api_vip + " " + api_vip_dnsname + "\n")
         with open("/etc/hosts", "w") as f:
             f.writelines(hosts_lines)
 
-    def configure_terraform(self, num_worker_nodes: int, api_vip_ip: str):
+    def configure_terraform(self):
+        """Use same terraform as the one used to spawn the day1 cluster, update the variables accordingly in order to spawn the day2 worker nodes"""
         tfvars = utils.get_tfvars(self.nodes.controller.tf_folder)
-        self.configure_terraform_workers_nodes(tfvars, num_worker_nodes)
-        tfvars["api_vip"] = api_vip_ip
+        self.configure_terraform_workers_nodes(tfvars)
+        tfvars["api_vip"] = self._api_vip
         tfvars["running"] = True
         utils.set_tfvars(self.nodes.controller.tf_folder, tfvars)
 
-    def configure_terraform_workers_nodes(self, tfvars: Any, num_worker_nodes: int):
+    def configure_terraform_workers_nodes(self, tfvars: Any):
+        num_worker_nodes = self._config.day2_workers_count
         tfvars["worker_count"] = tfvars["worker_count"] + num_worker_nodes
         self.set_workers_addresses_by_type(
             tfvars, num_worker_nodes, "libvirt_master_ips", "libvirt_worker_ips", "libvirt_worker_macs"
