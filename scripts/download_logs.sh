@@ -25,7 +25,7 @@ function download_service_logs() {
     podman ps -a || true
 
     for service in "assisted-installer-db" "assisted-installer-image-service" "assisted-installer-service" "assisted-installer-ui"; do
-      podman logs ${service} >${LOGS_DEST}/logs_${service}_${DEPLOY_TARGET}.log || true
+      podman logs ${service} >${LOGS_DEST}/logs_${service}_${DEPLOY_TARGET}.log 2>&1 || true
     done
   else
     CRS=node,pod,svc,deployment,pv,pvc
