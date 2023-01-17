@@ -24,7 +24,7 @@ function download_service_logs() {
   if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
     podman ps -a || true
 
-    for service in "assisted-service" "assisted-image-service" "assisted-installer-ui" "postgres"; do
+    for service in "assisted-installer-db" "assisted-installer-image-service" "assisted-installer-service" "assisted-installer-ui"; do
       podman logs ${service} >${LOGS_DEST}/logs_${service}_${DEPLOY_TARGET}.log || true
     done
   else
