@@ -173,7 +173,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 
 On the bare metal host:
 
-**Note**: don't do it from /root folder - it will breaks build image mounts and fail to run
+**Note**: don't do it from /root folder - it will break build image mounts and fail to run
 
 ```bash
 dnf install -y git make

@@ -68,6 +68,10 @@ DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
 IMAGE_NAME=assisted-test-infra
 
+# validate folder
+ifeq ($(CURDIR), /root/assisted-test-infra)
+    $(error "assisted-test-infra cannot be run directly from /root - it will break the build image mounts and fail to run")
+endif
 
 # oc deploy
 ifneq ($(or $(OC_MODE),),)
