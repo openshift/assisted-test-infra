@@ -24,11 +24,11 @@ from service_client.assisted_service_api import InventoryClient
 class Day2Cluster(BaseCluster):
     _config: BaseDay2ClusterConfig
 
-    def __init__(self, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig, day1_cluster: Cluster):
-        self._day1_cluster: Cluster = day1_cluster
+    def __init__(self, config: BaseDay2ClusterConfig, infra_env_config: BaseInfraEnvConfig, cluster: Cluster):
+        self._day1_cluster: Cluster = cluster
         self._api_vip = None
 
-        super().__init__(day1_cluster.api_client, config, infra_env_config, day1_cluster.nodes)
+        super().__init__(self._day1_cluster.api_client, config, infra_env_config, self._day1_cluster.nodes)
 
     def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
@@ -234,7 +234,10 @@ class Day2Cluster(BaseCluster):
 
         num_nodes_to_wait = self._config.day2_workers_count
         installed_status = consts.NodesStatus.DAY2_INSTALLED
-        self.nodes.wait_till_nodes_are_ready()
+
+        # make sure we use the same network as defined in the terraform stack
+        tfvars = utils.get_tfvars(self.nodes.controller.tf_folder)
+        self.nodes.wait_till_nodes_are_ready(network_name=tfvars["libvirt_network_name"])
 
         self.wait_for_day2_nodes()
         self.set_nodes_hostnames_if_needed()
