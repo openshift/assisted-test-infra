@@ -86,8 +86,9 @@ class Day2Cluster(BaseCluster):
         if self._day1_cluster._infra_env_config.is_static_ip:
             static_network_config = self.nodes.controller.get_day2_static_network_data()
 
+        tfvars = utils.get_tfvars(self.nodes.controller.tf_folder)
         self.download_image(
-            iso_download_path=self._day1_cluster.iso_download_path,
+            iso_download_path=tfvars["worker_image_path"],
             static_network_config=static_network_config,
         )
 
