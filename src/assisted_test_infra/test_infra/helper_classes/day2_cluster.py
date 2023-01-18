@@ -308,7 +308,8 @@ class Day2Cluster(BaseCluster):
         )
 
     def get_ocp_cluster_ready_nodes_num(self) -> int:
-        nodes = self.get_ocp_cluster_nodes(self._day1_cluster.kubeconfig_path)
+        kubeconfig = utils.get_kubeconfig_path(self._config.day1_cluster_name)
+        nodes = self.get_ocp_cluster_nodes(kubeconfig)
         return len([node for node in nodes if self.is_ocp_node_ready(node["status"])])
 
     @classmethod
