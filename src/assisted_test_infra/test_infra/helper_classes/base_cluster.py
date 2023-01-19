@@ -8,7 +8,6 @@ from junit_report import JunitTestCase
 from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, Nodes
 from assisted_test_infra.test_infra.helper_classes.entity import Entity
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
-from assisted_test_infra.test_infra.tools import static_network
 from service_client import InventoryClient, log
 
 

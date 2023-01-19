@@ -12,7 +12,6 @@ from junit_report import JunitTestCase
 import consts
 from assisted_test_infra.test_infra import BaseInfraEnvConfig, ClusterName, utils
 from assisted_test_infra.test_infra.helper_classes.base_cluster import BaseCluster
-from assisted_test_infra.test_infra.controllers import NodeController
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config.base_day2_cluster_config import BaseDay2ClusterConfig
 from assisted_test_infra.test_infra.tools import static_network
@@ -117,7 +116,10 @@ class Day2Cluster(BaseCluster):
             f.writelines(hosts_lines)
 
     def configure_terraform(self):
-        """Use same terraform as the one used to spawn the day1 cluster, update the variables accordingly in order to spawn the day2 worker nodes"""
+        """
+        Use same terraform as the one used to spawn the day1 cluster,
+        update the variables accordingly in order to spawn the day2 worker nodes.
+        """
         tfvars = utils.get_tfvars(self.nodes.controller.tf_folder)
         self.configure_terraform_workers_nodes(tfvars)
         tfvars["api_vip"] = self._api_vip
