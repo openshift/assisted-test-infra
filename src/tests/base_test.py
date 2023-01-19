@@ -349,6 +349,8 @@ class BaseTest:
             nodes=prepare_nodes_network,
         )
 
+        assert api_client.get_cluster_supported_platforms(cluster.id) == [consts.Platforms.NONE]
+
         if self._does_need_proxy_server(prepare_nodes_network):
             self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
