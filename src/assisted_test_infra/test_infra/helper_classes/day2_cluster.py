@@ -29,6 +29,8 @@ class Day2Cluster(BaseCluster):
 
         super().__init__(self._day1_cluster.api_client, config, infra_env_config, self._day1_cluster.nodes)
 
+        self._kubeconfig_path = utils.get_kubeconfig_path(self._config.day1_cluster_name)
+
     def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
         statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
         if allow_insufficient:
@@ -273,12 +275,12 @@ class Day2Cluster(BaseCluster):
         log.info(f"{self._config.day2_workers_count} worker nodes were successfully added to OCP cluster")
 
     def approve_workers_on_ocp_cluster(self):
-        csrs = self.get_ocp_cluster_csrs(self._day1_cluster.kubeconfig_path)
+        csrs = self.get_ocp_cluster_csrs(self._kubeconfig_path)
         for csr in csrs:
             if not csr["status"]:
                 csr_name = csr["metadata"]["name"]
                 subprocess.check_output(
-                    f"oc --kubeconfig={self._day1_cluster.kubeconfig_path} adm certificate approve {csr_name}",
+                    f"oc --kubeconfig={self._kubeconfig_path} adm certificate approve {csr_name}",
                     shell=True,
                 )
                 log.info("CSR %s for node %s has been approved", csr_name, csr["spec"]["username"])
@@ -310,8 +312,7 @@ class Day2Cluster(BaseCluster):
         )
 
     def get_ocp_cluster_ready_nodes_num(self) -> int:
-        kubeconfig = utils.get_kubeconfig_path(self._config.day1_cluster_name)
-        nodes = self.get_ocp_cluster_nodes(kubeconfig)
+        nodes = self.get_ocp_cluster_nodes(self._kubeconfig_path)
         return len([node for node in nodes if self.is_ocp_node_ready(node["status"])])
 
     @classmethod
