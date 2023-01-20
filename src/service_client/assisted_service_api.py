@@ -553,3 +553,6 @@ class InventoryClient(object):
     def get_vips_from_cluster(self, cluster_id: str) -> Dict[str, str]:
         cluster_info = self.cluster_get(cluster_id)
         return dict(api_vip=cluster_info.api_vip, ingress_vip=cluster_info.ingress_vip)
+
+    def get_cluster_supported_platforms(self, cluster_id: str) -> List[str]:
+        return self.client.get_cluster_supported_platforms(cluster_id)

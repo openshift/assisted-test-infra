@@ -892,6 +892,7 @@ class Cluster(Entity):
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):
         super(Cluster, self).prepare_for_installation(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
+        assert self.get_details().platform.type in self.api_client.get_cluster_supported_platforms(self.id)
 
         self.nodes.wait_for_networking()
         self._set_hostnames_and_roles()
