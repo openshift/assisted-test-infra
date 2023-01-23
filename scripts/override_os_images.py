@@ -18,6 +18,9 @@ def get_os_image(os_images, ocp_version, cpu_architecture="x86_64"):
 
 
 def extract_version(release_image: str) -> str:
+    if not release_image:
+        return ""
+
     full_ocp_version = utils.extract_version(release_image)
     return f"{full_ocp_version.major}.{full_ocp_version.minor}"
 
