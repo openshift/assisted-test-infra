@@ -174,8 +174,11 @@ class TerraformController(LibvirtController):
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
 
         vips = self.get_ingress_and_api_vips()
-        tfvars["api_vip"] = vips["api_vip"]
-        tfvars["ingress_vip"] = vips["ingress_vip"]
+        tfvars["api_vip"] = self._config.api_vip or vips["api_vip"]
+        tfvars["ingress_vip"] = self._config.ingress_vip or vips["ingress_vip"]
+        if self._config.base_cluster_domain:
+            tfvars["base_cluster_domain"] = self._config.base_cluster_domain
+
         tfvars["running"] = running
         tfvars["libvirt_master_macs"] = static_network.generate_macs(self._params.master_count)
         tfvars["libvirt_worker_macs"] = static_network.generate_macs(self._params.worker_count)
@@ -289,7 +292,7 @@ class TerraformController(LibvirtController):
 
     def _try_to_delete_nodes(self):
         log.info("Start running terraform delete")
-        self.tf.destroy()
+        self.tf.destroy(force=False)
 
     def destroy_all_nodes(self, delete_tf_folder=False):
         """Runs terraform destroy and then cleans it with virsh cleanup to delete

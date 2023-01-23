@@ -2,7 +2,7 @@ import warnings
 from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import consts
 
@@ -34,6 +34,10 @@ class BaseNodesConfig(BaseConfig, ABC):
     worker_disk_size_gib: str = None  # disk size in GB.
     worker_disk_count: int = None
     worker_boot_devices: List[str] = None
+
+    api_vip: Optional[str] = None
+    ingress_vip: Optional[str] = None
+    base_cluster_domain: Optional[str] = None
 
     network_mtu: int = None
     tf_platform: str = None  # todo - make all tf dependent platforms (e.g. vsphere, nutanix) inherit from BaseTerraformConfig  # noqa E501
