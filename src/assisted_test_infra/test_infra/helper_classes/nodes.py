@@ -225,3 +225,6 @@ class Nodes:
 
     def _are_nodes_network_prepared(self):
         return all(node.macs and node.ips for node in self.nodes)
+
+    def wait_till_nodes_are_ready(self, network_name: str = None):
+        self.controller.wait_till_nodes_are_ready(network_name)

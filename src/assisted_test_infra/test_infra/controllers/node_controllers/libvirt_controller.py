@@ -180,7 +180,8 @@ class LibvirtController(NodeController, ABC):
         except IndexError:
             return []
 
-    def wait_till_nodes_are_ready(self, network_name):
+    def wait_till_nodes_are_ready(self, network_name: str = None):
+        assert network_name is not None
         log.info("Wait till %s nodes will be ready and have ips", self._config.nodes_count)
         try:
             waiting.wait(
@@ -647,3 +648,6 @@ class LibvirtController(NodeController, ABC):
 
     def set_single_node_ip(self, ip):
         raise NotImplementedError
+
+    def get_day2_static_network_data(self):
+        pass

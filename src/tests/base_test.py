@@ -395,21 +395,13 @@ class BaseTest:
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def day2_cluster(
-        self,
-        api_client: InventoryClient,
-        request: FixtureRequest,
-        day2_cluster_configuration: Day2ClusterConfig,
-        infra_env_configuration: InfraEnvConfig,
-    ):
+    def day2_cluster(self, request: FixtureRequest, cluster: Cluster, day2_cluster_configuration: Day2ClusterConfig):
         log.debug(f"--- SETUP --- Creating Day2 cluster for test: {request.node.name}\n")
-        cluster = Day2Cluster(
-            api_client=api_client,
-            config=day2_cluster_configuration,
-            infra_env_config=infra_env_configuration,
+        day2_cluster = Day2Cluster(
+            config=day2_cluster_configuration, cluster=cluster, infra_env_config=InfraEnvConfig()
         )
 
-        yield cluster
+        yield day2_cluster
 
     @pytest.fixture
     @JunitFixtureTestCase()
