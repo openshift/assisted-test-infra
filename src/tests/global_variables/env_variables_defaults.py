@@ -89,7 +89,7 @@ class _EnvVariables(DataPool, ABC):
     master_cpu_mode: EnvVar = EnvVar(["MASTER_CPU_MODE"], default=env_defaults.DEFAULT_TF_CPU_MODE)
     iso_download_path: EnvVar = EnvVar(["ISO_DOWNLOAD_PATH", "ISO"])  # todo replace ISO env var->ISO_DOWNLOAD_PATH
     hyperthreading: EnvVar = EnvVar(["HYPERTHREADING"])
-    network_type: EnvVar = EnvVar(["NETWORK_TYPE"], default=env_defaults.DEFAULT_NETWORK_TYPE)
+    network_type: EnvVar = EnvVar(["NETWORK_TYPE"])
     disk_encryption_mode: EnvVar = EnvVar(["DISK_ENCRYPTION_MODE"], default=env_defaults.DEFAULT_DISK_ENCRYPTION_MODE)
     disk_encryption_roles: EnvVar = EnvVar(
         ["DISK_ENCRYPTION_ROLES"], default=env_defaults.DEFAULT_DISK_ENCRYPTION_ROLES
