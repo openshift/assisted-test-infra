@@ -113,6 +113,9 @@ class Cluster(BaseCluster):
         if self._config.vip_dhcp_allocation is not None:
             extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation
 
+        if self._config.network_type is not None:
+            extra_vars["network_type"] = self._config.network_type
+
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
@@ -123,7 +126,6 @@ class Cluster(BaseCluster):
             user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
             olm_operators=[{"name": name} for name in self._config.olm_operators],
-            network_type=self._config.network_type,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
             **extra_vars,
