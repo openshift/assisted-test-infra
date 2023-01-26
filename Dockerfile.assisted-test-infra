@@ -12,6 +12,10 @@ RUN chmod g+w /etc/passwd && \
     echo 'echo default:x:$(id -u):$(id -g):Default Application User:/alabama:/sbin/nologin\ >> /etc/passwd' > /usr/local/bin/fix_uid.sh && \
     chmod g+rwx /usr/local/bin/fix_uid.sh
 
+# tune dnf to download more packages in parallel and from the closest mirror
+RUN echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
+    echo "max_parallel_downloads=10" >> /etc/dnf/dnf.conf
+
 # CRB repo is required for libvirt-devel
 RUN dnf -y install --enablerepo=crb \
   make \
