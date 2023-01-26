@@ -64,6 +64,17 @@ class TestBootstrapInPlace(BaseTest):
     def installer_generate(self, openshift_release_image: str):
         log.info("Installer generate ignitions")
         bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
+        install_manifests_dir = os.environ.get("INSTALL_MANIFESTS_DIR")
+        if install_manifests_dir:
+            log.info("Adding manifests from %s", install_manifests_dir)
+            if not os.path.isdir(install_manifests_dir):
+                log.warning("Directory %s not found", install_manifests_dir)
+            else:
+                utils.run_command_with_output(f"{INSTALLER_BINARY} create manifests --dir={IBIP_DIR}", env=bip_env)
+                dest_dir = os.path.join(IBIP_DIR, "openshift")
+                shutil.copytree(install_manifests_dir, dest_dir, dirs_exist_ok=True)
+                log.info("Copied manifests from %s to %s", install_manifests_dir, dest_dir)
+
         utils.run_command_with_output(
             f"{INSTALLER_BINARY} create single-node-ignition-config --dir={IBIP_DIR}", env=bip_env
         )
