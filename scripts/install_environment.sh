@@ -306,7 +306,21 @@ function additional_configs() {
     sudo firewall-cmd --zone=libvirt --add-port=7500/tcp
 }
 
+function config_dnf() {
+    echo "Tune dnf configuration"
+    local dnf_config_file="/etc/dnf/dnf.conf"
+
+    if ! grep -q "fastestmirror" "${dnf_config_file}"; then
+        echo "fastestmirror=1" | sudo tee --append "${dnf_config_file}"
+    fi
+
+    if ! grep -q "max_parallel_downloads" "${dnf_config_file}"; then
+        echo "max_parallel_downloads=10" | sudo tee --append "${dnf_config_file}"
+    fi
+}
+
 if [ $# -eq 0 ]; then
+    config_dnf
     config_additional_modules
     install_packages
     install_libvirt
