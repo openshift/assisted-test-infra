@@ -208,7 +208,9 @@ class NutanixController(NodeController):
         raise NotImplementedError
 
     def is_active(self, node_name) -> bool:
-        raise NotImplementedError
+        # TODO[vrutkovs]: use Nutanix API to determine if node is running
+        # Currently its assumed to be always on
+        return True
 
     def format_all_node_disks(self) -> None:
         raise NotImplementedError
