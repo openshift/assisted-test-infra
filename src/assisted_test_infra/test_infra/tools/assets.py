@@ -73,7 +73,7 @@ class LibvirtNetworkAssets:
 
     def _verify_asset_fields(self):
         for field in consts.REQUIRED_ASSET_FIELDS:
-            assert field in self._assets, f"missing field {field} in asset {self._assets}"
+            assert field in self._asset, f"missing field {field} in asset {self._asset}"
 
     def _fill_allocated_ips_and_bridges_by_interface(self):
         if self._libvirt_uri != DEFAULT_LIBVIRT_URI:
