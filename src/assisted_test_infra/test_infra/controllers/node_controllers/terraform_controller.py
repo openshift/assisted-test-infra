@@ -76,7 +76,6 @@ class TerraformController(LibvirtController):
         master_boot_devices = self._config.master_boot_devices
         worker_boot_devices = self._config.worker_boot_devices
         params = {
-            "libvirt_uri": kwargs.get("libvirt_uri"),
             "libvirt_worker_memory": kwargs.get("worker_memory"),
             "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
             "libvirt_worker_vcpu": kwargs.get("worker_vcpu", resources.DEFAULT_MASTER_CPU),
@@ -152,6 +151,7 @@ class TerraformController(LibvirtController):
         tfvars = dict()
         machine_cidr = self.get_primary_machine_cidr()
 
+        tfvars["libvirt_uri"] = self._config.libvirt_uri
         tfvars["master_count"] = self._params.master_count
         log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10)
