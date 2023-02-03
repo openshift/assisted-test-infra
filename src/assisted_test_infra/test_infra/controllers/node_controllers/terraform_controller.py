@@ -76,6 +76,7 @@ class TerraformController(LibvirtController):
         master_boot_devices = self._config.master_boot_devices
         worker_boot_devices = self._config.worker_boot_devices
         params = {
+            "libvirt_uri": kwargs.get("libvirt_uri"),
             "libvirt_worker_memory": kwargs.get("worker_memory"),
             "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
             "libvirt_worker_vcpu": kwargs.get("worker_vcpu", resources.DEFAULT_MASTER_CPU),
