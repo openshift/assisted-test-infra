@@ -27,9 +27,9 @@ from service_client import log
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, config: BaseNodesConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
+    def __init__(self, config: BaseNodesConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig], libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI):
         super().__init__(config, entity_config)
-        self.libvirt_connection: libvirt.virConnect = libvirt.open("qemu:///system")
+        self.libvirt_connection: libvirt.virConnect = libvirt.open(libvirt_uri)
         self.private_ssh_key_path: Path = config.private_ssh_key_path
         self._setup_timestamp: str = utils.run_command('date +"%Y-%m-%d %T"')[0]
 
@@ -39,8 +39,8 @@ class LibvirtController(NodeController, ABC):
 
     @staticmethod
     @contextmanager
-    def connection_context():
-        conn = libvirt.open("qemu:///system")
+    def connection_context(libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI):
+        conn = libvirt.open(libvirt_uri)
         try:
             yield conn
         finally:
