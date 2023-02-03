@@ -52,7 +52,7 @@ class DiskEncryptionRoles:
 WORKING_DIR = "build"
 TF_FOLDER = f"{WORKING_DIR}/terraform"
 TFVARS_JSON_NAME = "terraform.tfvars.json"
-LIBVIRT_URI = "qemu+unix:///system"
+DEFAULT_LIBVIRT_URI = "qemu:///system"
 TFSTATE_FILE = "terraform.tfstate"
 IMAGE_FOLDER = "/tmp/test_images"
 TF_MAIN_JSON_NAME = "main.tf"
@@ -136,7 +136,6 @@ DEFAULT_TEST_INFRA_DOMAIN = f".{CLUSTER_PREFIX}-{DEFAULT_NAMESPACE}.{REDHAT_DNS_
 TEST_TARGET_INTERFACE = "vnet3"
 SUFFIX_LENGTH = 8
 DEFAULT_BOOT_DEVICES = ["hd", "cdrom"]
-DEFAULT_LIBVIRT_URI = "qemu://system"
 
 IP_NETWORK_ASSET_FIELDS = (
     "machine_cidr",
