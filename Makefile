@@ -212,10 +212,14 @@ _apply_terraform:
 		cd build/terraform/$(CLUSTER_NAME)/$(PLATFORM) && \
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
-destroy_nodes:
-	skipper make $(SKIPPER_PARAMS) _destroy_terraform
-
 _destroy_terraform:
+	cd build/terraform/$(CLUSTER_NAME)/$(PLATFORM) && \
+	terraform destroy -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
+
+destroy_nodes:
+	skipper make $(SKIPPER_PARAMS) _destroy_virsh _destroy_terraform
+
+_destroy_virsh:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
 
 #######
