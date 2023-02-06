@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import netifaces
 from munch import Munch
@@ -10,6 +10,7 @@ from netaddr.core import AddrFormatError
 import consts
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from consts.consts import DEFAULT_LIBVIRT_URI
 from service_client import log
 
 
@@ -32,6 +33,8 @@ class LibvirtNetworkAssets:
         self,
         assets_file: str = consts.TF_NETWORK_POOL_PATH,
         lock_file: Optional[str] = None,
+        base_asset: dict[str, Any] = BASE_ASSET,
+        libvirt_uri: str = DEFAULT_LIBVIRT_URI,
     ):
         self._assets_file = assets_file
         self._lock_file = lock_file or os.path.join(
@@ -41,10 +44,11 @@ class LibvirtNetworkAssets:
         self._allocated_ips_objects = []
         self._allocated_bridges = []
         self._taken_assets = set([])
+        self._asset = base_asset.copy()
+        self._libvirt_uri = libvirt_uri
 
     def get(self) -> Munch:
-        asset = self.BASE_ASSET.copy()
-        self._verify_asset_fields(asset)
+        self._verify_asset_fields()
 
         with utils.file_lock_context(self._lock_file):
             assets_in_use = self._get_assets_in_use_from_assets_file()
@@ -53,26 +57,30 @@ class LibvirtNetworkAssets:
             self._fill_allocated_ips_and_bridges_by_interface()
             self._fill_virsh_allocated_ips_and_bridges()
 
-            self._override_ip_networks_values_if_not_free(asset)
-            self._override_network_bridges_values_if_not_free(asset)
+            self._override_ip_networks_values_if_not_free()
+            self._override_network_bridges_values_if_not_free()
 
-            self._taken_assets.add(str(asset))
-            assets_in_use.append(asset)
+            self._taken_assets.add(str(self._asset))
+            assets_in_use.append(self._asset)
 
             self._dump_all_assets_in_use_to_assets_file(assets_in_use)
 
         self._allocated_bridges.clear()
         self._allocated_ips_objects.clear()
 
-        log.info("Taken asset: %s", asset)
-        return Munch.fromDict(asset)
+        log.info("Taken asset: %s", self._asset)
+        return Munch.fromDict(self._asset)
 
-    @staticmethod
-    def _verify_asset_fields(asset: Dict):
+    def _verify_asset_fields(self):
         for field in consts.REQUIRED_ASSET_FIELDS:
-            assert field in asset, f"missing field {field} in asset {asset}"
+            assert field in self._asset, f"missing field {field} in asset {self._asset}"
 
     def _fill_allocated_ips_and_bridges_by_interface(self):
+        if self._libvirt_uri != DEFAULT_LIBVIRT_URI:
+            # it means we are not trying to compute networks for the local machine
+            # skip this step
+            return
+
         for interface in netifaces.interfaces():
             self._add_allocated_net_bridge(interface)
             try:
@@ -90,7 +98,7 @@ class LibvirtNetworkAssets:
 
     def _fill_allocated_ips_and_bridges_from_assets_file(self, assets_in_use: List[Dict]):
         for asset in assets_in_use:
-            self._verify_asset_fields(asset)
+            self._verify_asset_fields()
 
             for ip_network_field in consts.IP_NETWORK_ASSET_FIELDS:
                 self._add_allocated_ip(IPNetwork(asset[ip_network_field]))
@@ -99,7 +107,7 @@ class LibvirtNetworkAssets:
             self._add_allocated_net_bridge(asset["libvirt_secondary_network_if"])
 
     def _fill_virsh_allocated_ips_and_bridges(self):
-        with LibvirtController.connection_context() as conn:
+        with LibvirtController.connection_context(libvirt_uri=self._libvirt_uri) as conn:
             for net in conn.listAllNetworks():
                 for lease in net.DHCPLeases():
                     net_bridge = lease.get("iface")
@@ -110,14 +118,14 @@ class LibvirtNetworkAssets:
                     if ipaddr:
                         self._add_allocated_ip(IPAddress(ipaddr))
 
-    def _override_ip_networks_values_if_not_free(self, asset: Dict):
+    def _override_ip_networks_values_if_not_free(self):
         log.info("IPs in use: %s", self._allocated_ips_objects)
 
         for ip_network_field in consts.IP_NETWORK_ASSET_FIELDS:
-            ip_network = IPNetwork(asset[ip_network_field])
+            ip_network = IPNetwork(self._asset[ip_network_field])
             self._set_next_available_ip_network(ip_network)
             self._add_allocated_ip(ip_network)
-            asset[ip_network_field] = str(ip_network)
+            self._asset[ip_network_field] = str(ip_network)
 
     def _set_next_available_ip_network(self, ip_network: IPNetwork):
         while self._is_ip_network_allocated(ip_network):
@@ -148,16 +156,16 @@ class LibvirtNetworkAssets:
     def _add_allocated_ip(self, ip: Union[IPNetwork, IPRange, IPAddress]):
         self._allocated_ips_objects.append(ip)
 
-    def _override_network_bridges_values_if_not_free(self, asset: Dict):
+    def _override_network_bridges_values_if_not_free(self):
         log.info("Bridges in use: %s", self._allocated_bridges)
 
-        if self._is_net_bridge_allocated(asset["libvirt_network_if"]):
-            asset["libvirt_network_if"] = self._get_next_available_net_bridge()
-            self._add_allocated_net_bridge(asset["libvirt_network_if"])
+        if self._is_net_bridge_allocated(self._asset["libvirt_network_if"]):
+            self._asset["libvirt_network_if"] = self._get_next_available_net_bridge()
+            self._add_allocated_net_bridge(self._asset["libvirt_network_if"])
 
-        if self._is_net_bridge_allocated(asset["libvirt_secondary_network_if"]):
+        if self._is_net_bridge_allocated(self._asset["libvirt_secondary_network_if"]):
             net_bridge = self._get_next_available_net_bridge(prefix="stt")
-            asset["libvirt_secondary_network_if"] = net_bridge
+            self._asset["libvirt_secondary_network_if"] = net_bridge
 
     def _get_next_available_net_bridge(self, prefix: str = "tt") -> str:
         index = 0
