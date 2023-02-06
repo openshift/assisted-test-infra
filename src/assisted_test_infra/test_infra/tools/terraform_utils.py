@@ -33,7 +33,7 @@ class TerraformUtils:
         self.tf = _Terraform(
             working_dir=working_dir,
             state=consts.TFSTATE_FILE,
-            var_file=consts.TFVARS_JSON_NAME,
+            var_file=self.var_file_path,
             is_env_vars_included=True,
         )
 
