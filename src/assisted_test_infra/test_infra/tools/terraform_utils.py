@@ -65,9 +65,12 @@ class TerraformUtils:
             log.error(message)
             raise Exception(message)
 
-    def set_and_apply(self, refresh: bool = True, **kwargs) -> None:
+    def set_vars(self, **kwargs) -> None:
         defined_variables = self.select_defined_variables(**kwargs)
         self.update_variables_file(defined_variables)
+
+    def set_and_apply(self, refresh: bool = True, **kwargs) -> None:
+        self.set_vars(**kwargs)
         self.init_tf()
         self.apply(refresh=refresh)
 

@@ -40,6 +40,9 @@ class TerraformController(LibvirtController):
         warnings.warn("cluster_name is deprecated. Use Controller.entity_name instead.", DeprecationWarning)
         return self._entity_name.get()
 
+    def get_all_vars(self):
+        return {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
+
     def _get_params_from_config(self) -> Munch:
         return self._terraform_params(**self._config.get_all())
 
