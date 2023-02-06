@@ -27,7 +27,12 @@ from service_client import log
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
-    def __init__(self, config: BaseNodesConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig], libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI):
+    def __init__(
+        self,
+        config: BaseNodesConfig,
+        entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig],
+        libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI,
+    ):
         super().__init__(config, entity_config)
         self.libvirt_connection: libvirt.virConnect = libvirt.open(libvirt_uri)
         self.private_ssh_key_path: Path = config.private_ssh_key_path

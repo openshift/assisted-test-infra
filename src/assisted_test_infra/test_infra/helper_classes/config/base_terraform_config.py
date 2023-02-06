@@ -1,11 +1,13 @@
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from munch import Munch
 
-from .base_nodes_config import BaseNodesConfig
 import consts
+
+from .base_nodes_config import BaseNodesConfig
+
 
 @dataclass
 class BaseTerraformConfig(BaseNodesConfig, ABC):
