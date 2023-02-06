@@ -77,7 +77,7 @@ class LibvirtNetworkAssets:
 
     def _fill_allocated_ips_and_bridges_by_interface(self):
         if self._libvirt_uri != DEFAULT_LIBVIRT_URI:
-            # if means we are not trying to compute networks for the local machine
+            # it means we are not trying to compute networks for the local machine
             # skip this step
             return
 
