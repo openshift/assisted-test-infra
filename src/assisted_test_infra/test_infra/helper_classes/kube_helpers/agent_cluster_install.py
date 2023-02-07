@@ -259,7 +259,6 @@ class AgentClusterInstall(BaseCustomResource):
         exception_reason: Optional[str] = None,
         timeout: Union[int, float] = consts.DEFAULT_WAIT_FOR_CRD_STATE_TIMEOUT,
     ) -> None:
-
         log.info(
             "waiting for agentclusterinstall %s condition %s to be in status " "%s",
             self.ref,

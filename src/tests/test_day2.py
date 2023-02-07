@@ -4,7 +4,6 @@ from tests.base_test import BaseTest
 
 
 class TestDay2(BaseTest):
-
     # Install day1 cluster and deploy day2 nodes (cloud flow).
     # Or, deploy day2 nodes on an installed cluster if CLUSTER_ID env var is specified.
     @JunitTestSuite()

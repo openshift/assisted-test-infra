@@ -146,7 +146,6 @@ class Day2Cluster(BaseCluster):
     def set_workers_addresses_by_type(
         cls, tfvars: Any, num_worker_nodes: int, master_ip_type: str, worker_ip_type: str, worker_mac_type: str
     ):
-
         old_worker_ips_list = tfvars[worker_ip_type]
         last_master_addresses = tfvars[master_ip_type][-1]
 

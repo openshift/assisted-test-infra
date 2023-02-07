@@ -243,7 +243,6 @@ class InfraEnv(BaseCustomResource):
         ignition_config_override: Optional[str] = None,
         **kwargs,
     ) -> "InfraEnv":
-
         infra_env = InfraEnv(kube_api_client, name, namespace)
         try:
             if "filepath" in kwargs:
