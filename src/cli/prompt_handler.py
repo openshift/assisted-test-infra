@@ -27,7 +27,6 @@ class PromptHandler:
         hint: str = " Control + Q for exit  |  Control + C for clear",
         history_file=None,
     ) -> Union[str, None]:
-
         history_args = {}
         if history_file:
             history_args["history"] = FileHistory(history_file)

@@ -11,7 +11,6 @@ from service_client import log
 
 
 class NodeController(ABC):
-
     T = TypeVar("T", bound=SupportsAbs[BaseNodesConfig])
 
     def __init__(self, config: T, entity_config: BaseEntityConfig):
@@ -127,7 +126,6 @@ class NodeController(ABC):
 
     @abstractmethod
     def set_boot_order(self, node_name, cd_first=False) -> None:
-
         pass
 
     @abstractmethod

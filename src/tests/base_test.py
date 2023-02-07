@@ -224,7 +224,6 @@ class BaseTest:
         infra_env_configuration,
         triggers,
     ):
-
         if triggers_enabled:
             Trigger.trigger_configurations(
                 [cluster_configuration, controller_configuration, infra_env_configuration, day2_cluster_configuration],
@@ -236,7 +235,6 @@ class BaseTest:
     def controller(
         self, cluster_configuration: ClusterConfig, controller_configuration: BaseNodesConfig, trigger_configurations
     ) -> NodeController:
-
         if cluster_configuration.platform == consts.Platforms.VSPHERE:
             return VSphereController(controller_configuration, cluster_configuration)
 

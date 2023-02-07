@@ -31,7 +31,6 @@ class KubeAPIContext:
         clean_on_exit: Optional[bool] = True,
         spoke_namespace: Optional[str] = None,
     ):
-
         self.api_client = kube_api_client
         self._spoke_namespace = spoke_namespace
         self._clean_on_exit = clean_on_exit

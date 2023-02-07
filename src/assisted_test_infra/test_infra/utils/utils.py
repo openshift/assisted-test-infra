@@ -338,7 +338,6 @@ def extract_nodes_from_tf_state(tf_state, network_names, role):
     ]:
         for d in domains:
             for nic in d["attributes"]["network_interface"]:
-
                 if nic["network_name"] not in network_names:
                     continue
 

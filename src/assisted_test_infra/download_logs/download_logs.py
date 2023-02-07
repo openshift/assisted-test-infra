@@ -240,7 +240,6 @@ def download_logs(
 def download_logs_kube_api(
     api_client: ApiClient, cluster_name: str, namespace: str, dest: str, must_gather: bool, management_kubeconfig: str
 ):
-
     cluster_deployment = ClusterDeployment(
         kube_api_client=api_client,
         name=cluster_name,

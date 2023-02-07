@@ -22,7 +22,6 @@ description = (
 
 class Manage:
     def __init__(self, inventory_url: str, type: str, offline_token: str):
-
         self.client = ClientFactory.create_client(url=inventory_url, offline_token=offline_token)
 
         with open("src/manage/manageable_options.yaml", "r") as f:
