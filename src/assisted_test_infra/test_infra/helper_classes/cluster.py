@@ -3,7 +3,7 @@ import random
 import re
 import time
 from collections import Counter
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import List, Optional, Set
 
 import waiting
 import yaml
@@ -15,12 +15,11 @@ from netaddr import IPAddress, IPNetwork
 import consts
 from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, ClusterName, exceptions, utils
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
-from assisted_test_infra.test_infra.controllers.node_controllers import Node
 from assisted_test_infra.test_infra.helper_classes.base_cluster import BaseCluster
 from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHost
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
-from assisted_test_infra.test_infra.tools import static_network, terraform_utils
+from assisted_test_infra.test_infra.tools import terraform_utils
 from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from service_client import InventoryClient, log
@@ -138,17 +137,6 @@ class Cluster(BaseCluster):
     def is_sno(self):
         return self.nodes.nodes_count == 1
 
-    def delete(self):
-        self.deregister_infraenv()
-        if self.id:
-            self.api_client.delete_cluster(self.id)
-            self._config.cluster_id = None
-
-    def deregister_infraenv(self):
-        if self._infra_env:
-            self._infra_env.deregister()
-        self._infra_env = None
-
     def get_cluster_name(self):
         return self.get_details().name
 
@@ -206,19 +194,6 @@ class Cluster(BaseCluster):
             cluster_id=self.id,
             nodes_count=nodes_count or self.nodes.nodes_count,
             statuses=statuses,
-        )
-
-    @JunitTestCase()
-    def wait_until_hosts_are_discovered(self, allow_insufficient=False, nodes_count: int = None):
-        statuses = [consts.NodesStatus.PENDING_FOR_INPUT, consts.NodesStatus.KNOWN]
-        if allow_insufficient:
-            statuses.append(consts.NodesStatus.INSUFFICIENT)
-        wait_till_all_hosts_are_in_status(
-            client=self.api_client,
-            cluster_id=self.id,
-            nodes_count=nodes_count or self.nodes.nodes_count,
-            statuses=statuses,
-            timeout=consts.NODES_REGISTERED_TIMEOUT,
         )
 
     def _get_matching_hosts(self, host_type, count):
@@ -410,7 +385,7 @@ class Cluster(BaseCluster):
 
         extra_vars = {}
         if vip_dhcp_allocation is None:
-            extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation if not None else False
+            extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation or False
         else:
             extra_vars["vip_dhcp_allocation"] = vip_dhcp_allocation
 
@@ -644,9 +619,6 @@ class Cluster(BaseCluster):
         log.info(f"Going to delete host: {host_id} in cluster: {self.id}")
         self._infra_env.delete_host(host_id=host_id)
 
-    def cancel_install(self):
-        self.api_client.cancel_cluster_install(cluster_id=self.id)
-
     def get_bootstrap_hostname(self):
         hosts = self.get_hosts_by_role(consts.NodeRoles.MASTER)
         for host in hosts:
@@ -801,26 +773,6 @@ class Cluster(BaseCluster):
             timeout=timeout,
         )
 
-    def _set_hostnames_and_roles(self):
-        cluster_id = self.id
-        hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(cluster_id))
-        nodes = self.nodes.get_nodes(refresh=True)
-
-        for host in hosts:
-            if host.has_hostname():
-                continue
-
-            name = self.find_matching_node_name(host, nodes)
-            assert name is not None, (
-                f"Failed to find matching node for host with mac address {host.macs()}"
-                f" nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
-            )
-            if self.nodes.nodes_count == 1:
-                role = None
-            else:
-                role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
-            self._infra_env.update_host(host_id=host.get_id(), host_role=role, host_name=name)
-
     def _ha_not_none(self):
         return (
             self._high_availability_mode != consts.HighAvailabilityMode.NONE
@@ -833,7 +785,7 @@ class Cluster(BaseCluster):
         assert self.get_details().platform.type in self.api_client.get_cluster_supported_platforms(self.id)
 
         self.nodes.wait_for_networking()
-        self._set_hostnames_and_roles()
+        self.set_hostnames_and_roles()
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
@@ -1031,10 +983,6 @@ class Cluster(BaseCluster):
     def get_cluster_hosts(cluster: models.cluster.Cluster) -> List[ClusterHost]:
         return [ClusterHost(h) for h in cluster.hosts]
 
-    @staticmethod
-    def to_cluster_hosts(hosts: List[Dict[str, Any]]) -> List[ClusterHost]:
-        return [ClusterHost(models.Host(**h)) for h in hosts]
-
     def get_cluster_cidrs(self, hosts: List[ClusterHost]) -> Set[str]:
         cidrs = set()
 
@@ -1097,23 +1045,6 @@ class Cluster(BaseCluster):
             return [disk for disk in disks]
         else:
             return [disk for disk in disks if filter(disk)]
-
-    def find_matching_node_name(self, host: ClusterHost, nodes: List[Node]) -> Union[str, None]:
-        # Looking for node matches the given host by its mac address (which is unique)
-        for node in nodes:
-            for mac in node.macs:
-                if mac.lower() in host.macs():
-                    return node.name
-
-        # IPv6 static ips
-        if self._infra_env_config.is_static_ip:
-            mappings = static_network.get_name_to_mac_addresses_mapping(self.nodes.controller.tf_folder)
-            for mac in host.macs():
-                for name, macs in mappings.items():
-                    if mac in macs:
-                        return name
-
-        return None
 
     def wait_and_kill_installer(self, host):
         # Wait for specific host to be in installing in progress

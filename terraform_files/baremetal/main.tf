@@ -55,7 +55,7 @@ resource "libvirt_network" "net" {
   dnsmasq_options {
     dynamic "options" {
       for_each = concat(
-        data.libvirt_network_dnsmasq_options_template.wildcard-ingress-cname.*.rendered,
+        data.libvirt_network_dnsmasq_options_template.wildcard-apps-ingress.*.rendered,
       )
       content {
         option_name  = options.value.option_name
@@ -158,44 +158,49 @@ module "workers" {
 # Terraform doesn't have ability for conditional blocks (if cond { block }) so we're using
 # the count directive to include/exclude elements
 
+locals {
+  base_cluster_domain = var.base_cluster_domain == "" ? "${var.cluster_name}.${var.cluster_domain}" : var.base_cluster_domain
+}
+
 data "libvirt_network_dns_host_template" "api" {
   # API VIP is always present. A value is set by the installation flow that updates
   # either the single node IP or API VIP, depending on the scenario
   count    = 1
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip
-  hostname = "api.${var.cluster_name}.${var.cluster_domain}"
+  hostname = "api.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "api-int" {
   count    = 1
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip
-  hostname = "api-int.${var.cluster_name}.${var.cluster_domain}"
+  hostname = "api-int.${local.base_cluster_domain}"
 }
 
-# TODO: leave only the wildcard cname entry defined and remove the other specific DNS assignments
+# TODO: leave only the wildcard address entry defined and remove the other specific DNS assignments
 # Read more at: https://bugzilla.redhat.com/show_bug.cgi?id=1532856
-data "libvirt_network_dnsmasq_options_template" "wildcard-ingress-cname" {
-  count        = var.master_count == 1 ? 1 : 0
-  option_name  = "cname"
-  option_value = "*.apps.${var.cluster_name}.${var.cluster_domain},${var.ingress_vip}"
+data "libvirt_network_dnsmasq_options_template" "wildcard-apps-ingress" {
+  # Enable "apps" wildcard in case of SNO and when we try to add day2 worker to SNO
+  count        = var.ingress_vip == var.api_vip ? 1 : 0
+  option_name  = "address"
+  option_value = "/apps.${local.base_cluster_domain}/${var.ingress_vip}"
 }
 
 data "libvirt_network_dns_host_template" "oauth" {
   count    = var.master_count == 1 ? 1 : 0
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
-  hostname = "oauth-openshift.apps.${var.cluster_name}.${var.cluster_domain}"
+  hostname = "oauth-openshift.apps.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "console" {
   count    = var.master_count == 1 ? 1 : 0
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
-  hostname = "console-openshift-console.apps.${var.cluster_name}.${var.cluster_domain}"
+  hostname = "console-openshift-console.apps.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "canary" {
   count    = var.master_count == 1 ? 1 : 0
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
-  hostname = "canary-openshift-ingress-canary.apps.${var.cluster_name}.${var.cluster_domain}"
+  hostname = "canary-openshift-ingress-canary.apps.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "assisted_service" {
@@ -203,5 +208,5 @@ data "libvirt_network_dns_host_template" "assisted_service" {
   # either the single node IP or API VIP, depending on the scenario
   count    = 1
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
-  hostname = "assisted-service-assisted-installer.apps.${var.cluster_name}.${var.cluster_domain}"
+  hostname = "assisted-service-assisted-installer.apps.${local.base_cluster_domain}"
 }
