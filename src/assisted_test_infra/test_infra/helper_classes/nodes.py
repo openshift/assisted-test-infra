@@ -4,6 +4,7 @@ from typing import Dict, Iterator, List
 
 import waiting
 from munch import Munch
+from scp import SCPException
 
 import consts
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
@@ -228,3 +229,23 @@ class Nodes:
 
     def wait_till_nodes_are_ready(self, network_name: str = None):
         self.controller.wait_till_nodes_are_ready(network_name)
+
+    def wait_till_nodes_are_ssh_ready(self):
+        log.info("Wait till %s nodes will be ready for SSH connection", len(self.nodes))
+
+        def _all_nodes_allow_ssh_connection():
+            try:
+                for node in self.nodes:
+                    if node.ssh_connection is None:
+                        return False
+            except (TimeoutError, SCPException):
+                return False
+            return True
+
+        waiting.wait(
+            lambda: _all_nodes_allow_ssh_connection(),
+            timeout_seconds=180,
+            sleep_seconds=20,
+            waiting_for="nodes to allow ssh connection",
+        )
+        log.info("All nodes have booted, got ips, and ready for SSH")
