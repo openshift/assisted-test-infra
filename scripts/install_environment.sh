@@ -127,9 +127,7 @@ function allow_libvirt_cross_network_traffic() {
 #!/usr/bin/env sh
 (
     flock 3
-    iptables-save -c | egrep -v 'LIBVIRT_FW[IO] .* REJECT' >/tmp/iptables.txt
-    iptables-restore </tmp/iptables.txt
-    rm /tmp/iptables.txt
+    iptables -S | grep -E "LIBVIRT_FW[IO] .* REJECT" | sed 's/^-A/iptables -D/g' | sh
 ) 3>/tmp/iptables.lock
 EOF
     sudo chmod +x "${hook_filename}"
