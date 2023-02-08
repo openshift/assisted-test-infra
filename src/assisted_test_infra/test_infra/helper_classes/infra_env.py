@@ -46,6 +46,8 @@ class InfraEnv(Entity):
         )
         if self._config.discovery_kernel_arguments is not None:
             infraenv_create_params["kernel_arguments"] = self._config.discovery_kernel_arguments
+        if self._config.cpu_architecture:
+            infraenv_create_params["cpu_architecture"] = self._config.cpu_architecture
 
         infra_env = self.api_client.create_infra_env(self._config.entity_name.get(), **infraenv_create_params)
         self._config.infra_env_id = infra_env.id

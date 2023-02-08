@@ -80,6 +80,7 @@ class BaseCluster(Entity, ABC):
         ssh_key=None,
         ignition_info=None,
         proxy=None,
+        cpu_architecture: Optional[str] = None,
     ) -> Path:
         self.generate_infra_env(
             static_network_config=static_network_config,
@@ -87,16 +88,25 @@ class BaseCluster(Entity, ABC):
             ssh_key=ssh_key,
             ignition_info=ignition_info,
             proxy=proxy,
+            cpu_architecture=cpu_architecture,
         )
         return self.download_infra_env_image(iso_download_path=iso_download_path or self._config.iso_download_path)
 
     def generate_infra_env(
-        self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None, proxy=None
+        self,
+        static_network_config=None,
+        iso_image_type=None,
+        ssh_key=None,
+        ignition_info=None,
+        proxy=None,
+        cpu_architecture: Optional[str] = None,
     ) -> InfraEnv:
         if self._infra_env:
             return self._infra_env
 
-        self._infra_env = self.create_infra_env(static_network_config, iso_image_type, ssh_key, ignition_info, proxy)
+        self._infra_env = self.create_infra_env(
+            static_network_config, iso_image_type, ssh_key, ignition_info, proxy, cpu_architecture
+        )
         return self._infra_env
 
     def download_infra_env_image(self, iso_download_path=None) -> Path:
@@ -105,13 +115,20 @@ class BaseCluster(Entity, ABC):
         return self._infra_env.download_image(iso_download_path=iso_download_path)
 
     def create_infra_env(
-        self, static_network_config=None, iso_image_type=None, ssh_key=None, ignition_info=None, proxy=None
+        self,
+        static_network_config=None,
+        iso_image_type=None,
+        ssh_key=None,
+        ignition_info=None,
+        proxy=None,
+        cpu_architecture: Optional[str] = None,
     ) -> InfraEnv:
         self._infra_env_config.ssh_public_key = ssh_key or self._config.ssh_public_key
         self._infra_env_config.iso_image_type = iso_image_type or self._config.iso_image_type
         self._infra_env_config.static_network_config = static_network_config
         self._infra_env_config.ignition_config_override = ignition_info
         self._infra_env_config.proxy = proxy or self._config.proxy
+        self._infra_env_config.cpu_architecture = cpu_architecture or self._config.cpu_architecture
         infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config, nodes=self.nodes)
         return infra_env
 

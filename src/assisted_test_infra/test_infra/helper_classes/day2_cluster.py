@@ -53,6 +53,13 @@ class Day2Cluster(BaseCluster):
         self.set_cluster_proxy()
         self.config_etc_hosts(self._config.day1_cluster_details.api_vip, self._config.day1_api_vip_dnsname)
 
+        # create the infraenv with specified day2 CPU architecture
+        self.generate_and_download_infra_env(
+            iso_download_path=self._config.iso_download_path,
+            iso_image_type=self._config.iso_image_type,
+            cpu_architecture=self._config.day2_cpu_architecture,
+        )
+
         # spawn VMs
         super(Day2Cluster, self).prepare_for_installation(
             is_static_ip=self._config.day1_cluster._infra_env_config.is_static_ip
