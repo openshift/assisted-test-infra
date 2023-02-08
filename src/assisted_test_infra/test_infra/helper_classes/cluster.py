@@ -115,6 +115,9 @@ class Cluster(BaseCluster):
         if self._config.network_type is not None:
             extra_vars["network_type"] = self._config.network_type
 
+        if self._config.cpu_architecture:
+            extra_vars["cpu_architecture"] = self._config.cpu_architecture
+
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
