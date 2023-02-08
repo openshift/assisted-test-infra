@@ -153,6 +153,7 @@ Check the [Install Guide](GUIDE.md) for installation instructions.
 | `IPXE_BOOT`                  | Boots VMs using iPXE if set to `true`, default: `false`                                                                                                    |
 | `PLATFORM`                   | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, default: `baremetal`                                                      |
 | `DISCOVERY_KERNEL_ARGUMENTS` | JSON formatted string containing array of dictionaries each having 2 attributes: `operation` and `value`. Currently, only `append` operation is supported. |
+| `CPU_ARCHITECTURE`           | CPU architecture of the nodes that will be part of the cluster, one of: `x86_64`, `arm64`, `s390x`, `ppc64le`, default: `x86_64`                           |
 
 
 ## Vsphere parameters

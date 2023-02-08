@@ -225,6 +225,9 @@ class BaseTest:
                 triggers,
             )
 
+        # propagate cpu_architecture to the main configuration
+        config.cpu_architecture = config.day2_cpu_architecture
+
         if not cluster.is_installed:
             cluster.prepare_for_installation()
             cluster.start_install_and_wait_for_installed()

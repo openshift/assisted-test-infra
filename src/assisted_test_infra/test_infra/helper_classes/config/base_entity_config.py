@@ -27,3 +27,4 @@ class BaseEntityConfig(BaseConfig, ABC):
     entity_name: BaseName = None
     proxy: models.Proxy = None
     ipxe_boot: bool = None
+    cpu_architecture: Optional[str] = None

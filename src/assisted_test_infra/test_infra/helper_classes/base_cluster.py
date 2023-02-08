@@ -112,6 +112,7 @@ class BaseCluster(Entity, ABC):
         self._infra_env_config.static_network_config = static_network_config
         self._infra_env_config.ignition_config_override = ignition_info
         self._infra_env_config.proxy = proxy or self._config.proxy
+        self._infra_env_config.cpu_architecture = self._config.cpu_architecture
         infra_env = InfraEnv(api_client=self.api_client, config=self._infra_env_config, nodes=self.nodes)
         return infra_env
 
