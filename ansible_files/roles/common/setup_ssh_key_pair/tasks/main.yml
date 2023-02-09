@@ -1,14 +1,14 @@
 - name: Generate an OpenSSH keypair
-  local_action:
-    module: community.crypto.openssh_keypair
-    path: /tmp/{{ cluster_ssh_private_key_path | basename }}
+  community.crypto.openssh_keypair:
+    path: /tmp/{{ ssh_private_key_path | basename }}
+  delegate_to: localhost
   register: ssh_key_pair
   run_once: true
 
 - name: Copy private key to remote host
-  copy:
+  ansible.builtin.copy:
     src: "{{ ssh_key_pair.filename }}"
-    dest: "{{ cluster_ssh_private_key_path }}"
+    dest: "{{ ssh_private_key_path }}"
     owner: "{{ ansible_user_id }}"
     group: "{{ ansible_user_gid }}"
     mode: '0600'
@@ -26,3 +26,7 @@
     owner: "{{ ansible_user_id }}"
     group: "{{ ansible_user_gid }}"
     mode: '0600'
+
+- name: Set ssh_private_key_path as fact
+  ansible.builtin.set_fact:
+    ssh_private_key_path: "{{ ssh_private_key_path }}"

@@ -74,3 +74,27 @@
   hosts: secondary[0]
   roles:
     - name: common/setup_libvirtd
+
+- name: Create directory were boot ISO will be placed
+  hosts: heterogeneous
+  vars:
+    iso_images_shared_directory: "/tmp/test_images" # value of IMAGE_FOLDER in test-infra
+  tasks:
+    - name: Create shared directory {{ iso_images_shared_directory }}
+      ansible.builtin.file:
+        path: "{{ iso_images_shared_directory }}"
+        state: directory
+        mode: '0755'
+
+    - name: Set shared directory as fact
+      ansible.builtin.set_fact:
+        iso_images_shared_directory: "{{ iso_images_shared_directory }}"
+
+- name: Setup shared filesystem to sync boot ISO images between hosts
+  hosts: primary[0]
+  roles:
+    - name: common/setup_sftp_share
+      vars:
+        rclone_remote_name: "iso-images"
+        remote_host_ip: "{{ hostvars[groups['secondary'][0]].access_private_ipv4 }}"
+        shared_directory: "{{ iso_images_shared_directory }}"
