@@ -1,0 +1,41 @@
+- name: Install EPEL
+  ansible.builtin.dnf:
+    enablerepo: powertools
+    name:
+      - epel-release
+
+- name: Install fuse and rclone
+  ansible.builtin.dnf:
+    enablerepo: powertools
+    name:
+      - fuse
+      - rclone
+    update_cache: true # as we enabled EPEL previously
+    state: present
+
+- name: Create rclone configuration
+  ansible.builtin.command:
+    cmd: >-
+      rclone config create
+        --non-interactive
+        --config {{ rclone_config_file }}
+        {{ rclone_remote_name }}
+        {{ rclone_type_sftp }}
+        host={{ remote_host_ip }}
+        user={{ ssh_user }}
+        key_file={{ ssh_private_key_path }}
+    creates: "{{ rclone_config_file }}"
+
+- name: Create systemd service file to mount share on {{ shared_directory }}
+  ansible.builtin.template:
+    src: "rclone.service.j2"
+    dest: "/etc/systemd/system/rclone-{{ rclone_remote_name }}.service"
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+    mode: '0655'
+
+- name: Mount the share on {{ shared_directory }}
+  ansible.builtin.systemd:
+    state: restarted
+    daemon_reload: true
+    name: "rclone-{{ rclone_remote_name }}"

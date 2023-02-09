@@ -1,0 +1,19 @@
+[Unit]
+Description=rclone: Remote FUSE filesystem for cloud storage config {{ rclone_config_file }}
+Documentation=man:rclone(1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStart=rclone mount \
+            --config {{ rclone_config_file }} \
+            --allow-other \
+            --log-level INFO \
+            --stats 1m \
+            --stats-one-line \
+            {{ rclone_remote_name }}:{{ shared_directory }} {{ shared_directory }}
+ExecStop=fusermount -u {{ shared_directory }}
+
+[Install]
+WantedBy=default.target
