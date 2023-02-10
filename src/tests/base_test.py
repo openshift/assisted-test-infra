@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import shutil
@@ -137,8 +138,32 @@ class BaseTest:
     ) -> BaseNodesConfig:
         assert isinstance(new_day2_controller_configuration, TerraformConfig)
 
+        if day2_cluster_configuration.day2_libvirt_uri:
+            # set libvirt_uri in controller configuration
+            new_day2_controller_configuration.libvirt_uri = day2_cluster_configuration.day2_libvirt_uri
+
+            # define network assets used by the remote libvirt host
+            day2_base_asset = {
+                "machine_cidr": day2_cluster_configuration.day2_machine_cidr,
+                "provisioning_cidr": day2_cluster_configuration.day2_provisioning_cidr,
+                "machine_cidr6": day2_cluster_configuration.day2_machine_cidr6,
+                "provisioning_cidr6": day2_cluster_configuration.day2_provisioning_cidr6,
+                "libvirt_network_if": day2_cluster_configuration.day2_network_if,
+                "libvirt_secondary_network_if": day2_cluster_configuration.day2_secondary_network_if,
+            }
+            assert all(day2_base_asset.values())  # ensure all values are set
+
+            unique_id = hashlib.sha1(day2_cluster_configuration.day2_libvirt_uri.encode()).hexdigest()
+            assets_file = f"{LibvirtNetworkAssets.ASSETS_LOCKFILE_DEFAULT_PATH}/tf_network_pool-{unique_id}.json"
+            net_asset = LibvirtNetworkAssets(
+                assets_file=assets_file,
+                base_asset=day2_base_asset,
+                libvirt_uri=day2_cluster_configuration.day2_libvirt_uri,
+            )
+        else:
+            net_asset = LibvirtNetworkAssets()
+
         # Configuring net asset which currently supported by libvirt terraform only
-        net_asset = LibvirtNetworkAssets()
         new_day2_controller_configuration.net_asset = net_asset.get()
 
         day1_api_vip = day2_cluster_configuration.day1_cluster_details.api_vip

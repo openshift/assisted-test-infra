@@ -18,3 +18,12 @@ class BaseDay2ClusterConfig(BaseClusterConfig, ABC):
     day2_cpu_architecture: Optional[str] = None
     infra_env_id: Optional[str] = None
     tf_folder: Optional[str] = None
+
+    # day2 libvirt target and network configuration
+    day2_libvirt_uri: Optional[str] = None
+    day2_machine_cidr: Optional[str] = None
+    day2_provisioning_cidr: Optional[str] = None
+    day2_machine_cidr6: Optional[str] = None
+    day2_provisioning_cidr6: Optional[str] = None
+    day2_network_if: Optional[str] = None
+    day2_secondary_network_if: Optional[str] = None
