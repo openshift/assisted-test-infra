@@ -1,0 +1,18 @@
+export DAY2_CPU_ARCHITECTURE="{{ ansible_architecture  }}"
+
+{% set private_ips = ansible_all_ipv4_addresses | sort | ansible.utils.ipaddr('private') -%}
+{% set remote_ip = private_ips | first | default(ansible_all_ipv4_addresses[0]) -%}
+export DAY2_LIBVIRT_URI="qemu+ssh://{{ ssh_user }}@{{ remote_ip }}/system?keyfile={{ ssh_private_key_path }}"
+
+{# split prefix (e.g: /20) into /24 subnets -#}
+{% set subnet_size_ipv4 = internal_network_prefix_ipv4 | ansible.utils.ipsubnet(subnet_length_ipv4)  -%}
+export DAY2_MACHINE_CIDR="{{ internal_network_prefix_ipv4 | ansible.utils.ipsubnet(subnet_length_ipv4, 0) }}"
+export DAY2_PROVISIONING_CIDR="{{ internal_network_prefix_ipv4 | ansible.utils.ipsubnet(subnet_length_ipv4, subnet_size_ipv4|int // 2) }}"
+
+{# split prefix (e.g: /48) into /64 subnets -#}
+{% set subnet_size_ipv6 = internal_network_prefix_ipv6 | ansible.utils.ipsubnet(subnet_length_ipv6) -%}
+export DAY2_MACHINE_CIDR6="{{ internal_network_prefix_ipv6 | ansible.utils.ipsubnet(subnet_length_ipv6, 0) }}"
+export DAY2_PROVISIONING_CIDR6="{{ internal_network_prefix_ipv6 | ansible.utils.ipsubnet(subnet_length_ipv6, subnet_size_ipv6|int // 2) }}"
+
+export DAY2_NETWORK_IF="{{ network_if }}"
+export DAY2_SECONDARY_NETWORK_IF="{{ secondary_network_if }}"
