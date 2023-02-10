@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
 readonly PODMAN_MINIMUM_VERSION="3.2.0"
@@ -120,17 +122,17 @@ function allow_libvirt_cross_network_traffic() {
     # HUB cluster located in another libvirt network (e.g.: to retrieve the
     # rootfs).
     echo "Installing libvirt network hook to allow cross network traffic"
+
+    hook_src="${SCRIPT_DIR}/../ansible_files/roles/common/setup_libvirtd/files/allow-cross-network-traffic.sh"
+
     hook_dir="/etc/libvirt/hooks/network.d"
     hook_filename="${hook_dir}/allow-cross-network-traffic.sh"
     sudo mkdir -p "${hook_dir}"
-    sudo tee "${hook_filename}" << EOF
-#!/usr/bin/env sh
-(
-    flock 3
-    iptables -S | grep -E "LIBVIRT_FW[IO] .* REJECT" | sed 's/^-A/iptables -D/g' | sh
-) 3>/tmp/iptables.lock
-EOF
+
+    sudo cp "${hook_src}" "${hook_filename}"
     sudo chmod +x "${hook_filename}"
+
+    sudo tee "${hook_filename}" << EOF
 }
 
 function install_podman(){
