@@ -30,6 +30,16 @@ def main():
     with open(args.src, "r") as f:
         os_images: list = json.load(f)
 
+    # Load override images
+    if os.getenv("OS_IMAGES") is not None:
+        os_images_override: list = json.loads(os.getenv("OS_IMAGES"))
+        for image in os_images:
+            image_version = image["openshift_version"]
+            for override_image in os_images_override:
+                if override_image["openshift_version"] == image_version:
+                    image.update(override_image)
+                    break
+
     if os.getenv("RELEASE_IMAGES") is not None:
         release_images = json.loads(os.getenv("RELEASE_IMAGES"))
         latest_ocp_version = release_images[-1]["openshift_version"]
