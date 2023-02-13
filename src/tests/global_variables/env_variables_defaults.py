@@ -125,3 +125,12 @@ class _EnvVariables(DataPool, ABC):
     nutanix_port: EnvVar = EnvVar(["NUTANIX_PORT"], loader=int)
     nutanix_cluster: EnvVar = EnvVar(["NUTANIX_CLUSTER_NAME"])
     nutanix_subnet: EnvVar = EnvVar(["NUTANIX_SUBNET_NAME"])
+
+    # day2 libvirt target and VM network configuration
+    day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])
+    day2_machine_cidr: EnvVar = EnvVar(["DAY2_MACHINE_CIDR"])
+    day2_provisioning_cidr: EnvVar = EnvVar(["DAY2_PROVISIONING_CIDR"])
+    day2_machine_cidr6: EnvVar = EnvVar(["DAY2_MACHINE_CIDR6"])
+    day2_provisioning_cidr6: EnvVar = EnvVar(["DAY2_PROVISIONING_CIDR6"])
+    day2_network_if: EnvVar = EnvVar(["DAY2_NETWORK_IF"])
+    day2_secondary_network_if: EnvVar = EnvVar(["DAY2_SECONDARY_NETWORK_IF"])
