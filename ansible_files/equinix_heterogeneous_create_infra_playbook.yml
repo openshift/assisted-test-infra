@@ -39,31 +39,50 @@
 # │libvirt net  ├────────────┘
 # │192.168/16   │172.16.0.1/30
 # └─────────────┘
-- name: Setup IPIP on primary device
-  hosts: primary[0]
+- name: Configure and setup IPIP tunnel
+  hosts: heterogeneous
   vars:
-    primary_ipip_tunnel_ipv4: 172.16.0.1/30
-    secondary_internal_network_prefix: 172.16.16.0/20
-  roles:
-    - name: common/setup_ipip_tunnel
-      vars:
+    ipip_tunnel_network_prefix_ipv4: 172.16.0.0/30
+    primary_internal_network_prefix_ipv4: 192.168.0.0/16
+    secondary_internal_network_prefix_ipv4: 172.16.16.0/20
+    primary_internal_network_prefix_ipv6: 1001:db9::/120 # unconfigured as ipip doesn't support ipv6
+    secondary_internal_network_prefix_ipv6: fde0:bd0d:a8cb::/48 # unconfigured as ipip doesn't support ipv6
+  tasks:
+    - name: Set network facts on primary device
+      ansible.builtin.set_fact:
+        internal_network_prefix_ipv4: "{{ primary_internal_network_prefix_ipv4 }}"
+        internal_network_prefix_ipv6: "{{ primary_internal_network_prefix_ipv6 }}"
         ipip_local_ipv4: "{{ access_private_ipv4 }}"
         ipip_remote_ipv4: "{{ hostvars[groups['secondary'][0]].access_private_ipv4 }}"
-        ipip_tunnel_ipv4: "{{ primary_ipip_tunnel_ipv4 }}"
-        ipip_route_to_network: "{{ secondary_internal_network_prefix }}"
+        ipip_route_to_network_ipv4: "{{ secondary_internal_network_prefix_ipv4 }}"
+        ipip_route_to_network_ipv6: "{{ secondary_internal_network_prefix_ipv6 }}"
+        ipip_tunnel_ipv4: >-
+          {{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('next_usable')
+          }}/{{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('prefix')
+          }}
+      when: inventory_hostname == groups['primary'][0]
 
-- name: Setup IPIP on secondary device
-  hosts: secondary[0]
-  vars:
-    secondary_ipip_tunnel_ipv4: 172.16.0.2/30
-    primary_internal_network_prefix: 192.168.0.0/16
-  roles:
-    - name: common/setup_ipip_tunnel
-      vars:
+    - name: Set network facts on secondary device
+      ansible.builtin.set_fact:
+        internal_network_prefix_ipv4: "{{ secondary_internal_network_prefix_ipv4 }}"
+        internal_network_prefix_ipv6: "{{ secondary_internal_network_prefix_ipv6 }}"
         ipip_local_ipv4: "{{ access_private_ipv4 }}"
         ipip_remote_ipv4: "{{ hostvars[groups['primary'][0]].access_private_ipv4 }}"
-        ipip_tunnel_ipv4: "{{ secondary_ipip_tunnel_ipv4 }}"
-        ipip_route_to_network: "{{ primary_internal_network_prefix }}"
+        ipip_route_to_network_ipv4: "{{ primary_internal_network_prefix_ipv4 }}"
+        ipip_route_to_network_ipv6: "{{ primary_internal_network_prefix_ipv6 }}"
+        ipip_tunnel_ipv4: >-
+          {{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('last_usable')
+          }}/{{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('prefix')
+          }}
+      when: inventory_hostname == groups['secondary'][0]
+
+    - name: Setup IPIP between primary and secondary devices
+      ansible.builtin.import_role:
+        name: common/setup_ipip_tunnel
 
 - name: Share a unique SSH key pair among the created devices
   hosts: heterogeneous
@@ -98,3 +117,11 @@
         rclone_remote_name: "iso-images"
         remote_host_ip: "{{ hostvars[groups['secondary'][0]].access_private_ipv4 }}"
         shared_directory: "{{ iso_images_shared_directory }}"
+
+- name: Export day2 heterogeneous configuration to assisted-test-infra
+  hosts: secondary[0]
+  tasks:
+    - name: Write day2 extra configuration
+      ansible.builtin.import_role:
+        name: test-infra/export-heterogeneous-day2-configuration
+      delegate_to: localhost

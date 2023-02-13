@@ -1,1 +1,1 @@
-ssh_private_key_path: "~/.ssh/id_cluster"
+ssh_private_key_name: "id_cluster"
