@@ -467,9 +467,9 @@ class BaseTest:
 
         yield cluster
 
+        log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
+        self.collect_test_logs(cluster, api_client, request, cluster.nodes)
         if self._is_test_failed(request):
-            log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
-            self.collect_test_logs(cluster, api_client, request, cluster.nodes)
 
             if global_variables.test_teardown:
                 if cluster.is_installing() or cluster.is_finalizing():
@@ -515,6 +515,10 @@ class BaseTest:
         )
 
         yield day2_cluster
+
+        # if self._is_test_failed(request):
+        log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
+        self.collect_test_logs(day2_cluster, api_client, request, day2_cluster.nodes)
 
         if global_variables.test_teardown:
             with SuppressAndLog(ApiException):
