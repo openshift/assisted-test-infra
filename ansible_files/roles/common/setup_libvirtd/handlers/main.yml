@@ -1,4 +1,4 @@
-- name: Start libvirtd service
+- name: Restart libvirtd service
   ansible.builtin.systemd:
     name: libvirtd.service
-    state: started
+    state: restarted
