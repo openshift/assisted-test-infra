@@ -19,6 +19,7 @@ import consts
 from assisted_test_infra.download_logs.download_logs import download_logs
 from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, utils
 from assisted_test_infra.test_infra.controllers import (
+    AssistedInstallerInfraController,
     IptableRule,
     IPXEController,
     LibvirtController,
@@ -77,6 +78,29 @@ class BaseTest:
                     log.debug(f"{config_type}.{fixture_name} value updated from parameterized value to {value}")
                 else:
                     raise AttributeError(f"No attribute name {fixture_name} in {config_type} object type")
+
+    @pytest.fixture
+    def k8s_assisted_installer_infra_controller(self, request: pytest.FixtureRequest):
+        """k8 hub cluster wrapper client  object fixture passed to test function
+        This function fixture called by testcase, we initialize k8client
+        Storing configmap before test begins -> for later restoring
+        When test func done, check if configmap was changed and restore config.
+        :return:
+        """
+        log.debug(f"--- SETUP --- Creating k8s_hub cluster for test: {request.node.name}\n")
+        hub_cluster_config = AssistedInstallerInfraController(global_variables)
+        # before test begins verify all developments are ready
+        if not hub_cluster_config.verify_deployments_are_ready():
+            assert "k8 hub cluster deployments services not ready/active"
+
+        configmap_before = dict(hub_cluster_config.configmap_data["data"])
+
+        yield hub_cluster_config
+
+        log.debug(f"--- TEARDOWN --- Deleting k8 hub cluster resources for test: {request.node.name}\n")
+        configmap_after = dict(hub_cluster_config.configmap_data["data"])
+        # Detect if configmap data was changed - need to restore configuration
+        hub_cluster_config.rollout_assisted_service(configmap_before, configmap_after, request.node.name)
 
     @pytest.fixture
     def new_controller_configuration(self, request: FixtureRequest) -> BaseNodesConfig:

@@ -59,6 +59,9 @@ class _EnvVariables(DataPool, ABC):
     )
 
     namespace: EnvVar = EnvVar(["NAMESPACE"], default=consts.DEFAULT_NAMESPACE)
+    configmap: EnvVar = EnvVar(["CONFIGMAP"], default=consts.DEFAULT_CONFIGMAP)
+    ai_base_version: EnvVar = EnvVar(["AI_BASE_VERSION"], default=consts.DEFAULT_AI_BASE_VERSION)
+    deployment_service: EnvVar = EnvVar(["DEPLOYMENT_SERVICE"], default=consts.DEFAULT_DEPLOYMENT_SERVICE)
     spoke_namespace: str = EnvVar(["SPOKE_NAMESPACE"], default=consts.DEFAULT_SPOKE_NAMESPACE)
     olm_operators: EnvVar = EnvVar(["OLM_OPERATORS"], loader=lambda operators: operators.lower().split(), default="")
     platform: EnvVar = EnvVar(["PLATFORM"])
