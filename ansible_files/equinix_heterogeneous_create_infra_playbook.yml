@@ -84,6 +84,17 @@
       ansible.builtin.import_role:
         name: common/setup_ipip_tunnel
 
+- name: Check tunnel connectivity
+  hosts: all
+  tasks:
+    - name: Ping peer
+      ansible.builtin.command:
+        cmd: "ping -c 1 -w 2 {{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
+      retries: 10
+      delay: 1
+      register: result
+      until: result.rc == 0
+
 - name: Share a unique SSH key pair among the created devices
   hosts: heterogeneous
   roles:
@@ -115,7 +126,7 @@
     - name: common/setup_sftp_share
       vars:
         rclone_remote_name: "iso-images"
-        remote_host_ip: "{{ hostvars[groups['secondary'][0]].access_private_ipv4 }}"
+        remote_host_ip: "{{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
         shared_directory: "{{ iso_images_shared_directory }}"
 
 - name: Export day2 heterogeneous configuration to assisted-test-infra
@@ -126,4 +137,5 @@
         name: test-infra/export-heterogeneous-day2-configuration
       delegate_to: localhost
       vars:
-        assisted_service_url: "{{ hostvars[groups['primary'][0]].access_private_ipv4 }}"
+        assisted_service_url: "{{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
+        access_libvirt_ip: "{{ ipip_tunnel_ipv4 | ansible.utils.ipv4('address') }}"

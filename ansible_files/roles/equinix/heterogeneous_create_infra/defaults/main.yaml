@@ -3,7 +3,7 @@ secondary_device_group_name: "secondary"
 equinix_ssh_user: "root"
 equinix_plans: "{{
       {
-       primary_device_group_name : 'c3.small.x86',
-       secondary_device_group_name : 'c3.small.x86'
+       primary_device_group_name : 'c3.medium.x86',
+       secondary_device_group_name : 'c3.large.arm64'
       }
   }}"
