@@ -363,6 +363,17 @@ class BaseTest:
 
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 
+    def get_terraform_controller(
+        self, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig
+    ) -> TerraformController:
+        if cluster_configuration.platform == consts.Platforms.VSPHERE:
+            return VSphereController(controller_configuration, cluster_configuration)
+
+        if cluster_configuration.platform == consts.Platforms.NUTANIX:
+            return NutanixController(controller_configuration, cluster_configuration)
+
+        return TerraformController(controller_configuration, entity_config=cluster_configuration)
+
     @pytest.fixture
     def day2_controller(
         self, day2_cluster_configuration: Day2ClusterConfig, day2_controller_configuration: BaseNodesConfig
