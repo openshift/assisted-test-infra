@@ -3,6 +3,7 @@ set -euo pipefail
 set -o xtrace
 
 export HYPERSHIFT_IMAGE="${HYPERSHIFT_IMAGE:-quay.io/hypershift/hypershift-operator:latest}"
+export HYPERSHIFT_OPERATOR_IMAGE="${HYPERSHIFT_OPERATOR_IMAGE:-quay.io/hypershift/hypershift-operator:latest}"
 export KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 export CONTAINER_COMMAND=${CONTAINER_COMMAND:-podman}
 export BASE_DIR=build
@@ -30,10 +31,10 @@ deploy_hypershift() {
   ${CONTAINER_COMMAND} run -it --rm\
   -v $(pwd)/$HYPERSHIFT_BIN_DIR:/root/hypershift_bin:Z \
   --entrypoint cp \
-  "$HYPERSHIFT_IMAGE" \
+  "$HYPERSHIFT_OPERATOR_IMAGE" \
   /usr/bin/hypershift /root/hypershift_bin
 
-  $HYPERSHIFT_BIN_DIR/hypershift install --hypershift-image "$HYPERSHIFT_IMAGE"
+  $HYPERSHIFT_BIN_DIR/hypershift install --hypershift-image "$HYPERSHIFT_OPERATOR_IMAGE"
   waitForPodsReadyStatus hypershift
 }
 
