@@ -4,6 +4,7 @@ from typing import Dict, Iterator, List
 
 import waiting
 from munch import Munch
+from paramiko import SSHException
 from scp import SCPException
 
 import consts
@@ -238,7 +239,7 @@ class Nodes:
                 for node in self.nodes:
                     if node.ssh_connection is None:
                         return False
-            except (TimeoutError, SCPException):
+            except (TimeoutError, SCPException, SSHException):
                 return False
             return True
 
