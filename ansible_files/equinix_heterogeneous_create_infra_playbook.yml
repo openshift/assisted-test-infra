@@ -125,3 +125,5 @@
       ansible.builtin.import_role:
         name: test-infra/export-heterogeneous-day2-configuration
       delegate_to: localhost
+      vars:
+        assisted_service_url: "{{ hostvars[groups['primary'][0]].access_private_ipv4 }}"
