@@ -1,5 +1,5 @@
 source "vsphere-iso" "test-infra-template" {
-  vsphere_server =  var.vsphere_server
+  vcenter_server =  var.vsphere_server
   username =  var.vsphere_username
   password =  var.vsphere_password
   datacenter =  var.vsphere_datacenter
