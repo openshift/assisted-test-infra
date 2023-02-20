@@ -8,13 +8,13 @@ export SERVICE_NAME=assisted-service
 
 case ${DEPLOY_TARGET} in
     kind)
-        export SERVICE_URL=$(hostname)
+        export SERVICE_URL=${SERVICE_URL:-$(hostname)}
         export SERVICE_PORT=80
         export IMAGE_SERVICE_PORT=80
         export EXTERNAL_PORT=no
         ;;
     *)
-        export SERVICE_URL=$(get_main_ip)
+        export SERVICE_URL=${SERVICE_URL:-$(get_main_ip)}
         export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
         export IMAGE_SERVICE_PORT=$(( 6016 + $NAMESPACE_INDEX ))
         ;;

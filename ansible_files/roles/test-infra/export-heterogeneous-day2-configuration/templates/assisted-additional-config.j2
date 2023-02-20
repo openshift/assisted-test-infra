@@ -1,3 +1,5 @@
+export SERVICE_URL="{{ assisted_service_url }}"
+
 export DAY2_CPU_ARCHITECTURE="{{ ansible_architecture  }}"
 
 {% set private_ips = ansible_all_ipv4_addresses | sort | ansible.utils.ipaddr('private') -%}
