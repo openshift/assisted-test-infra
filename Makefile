@@ -385,12 +385,6 @@ _test_setup:
 _test_parallel: $(REPORTS) _test_setup
 	JUNIT_REPORT_DIR=$(REPORTS) python3 -m pytest $(PYTEST_FLAGS) -n $(or ${TEST_WORKERS_NUM}, '3') $(or ${TEST},src/tests) -k $(or ${TEST_FUNC},'') -m $(or ${TEST_MARKER},'') --verbose -s --junit-xml=$(PYTEST_JUNIT_FILE)
 
-########
-# Capi #
-########
-deploy_capi_env: start_minikube
-	scripts/setup_capi_env.sh
-
 #########
 # Tests #
 #########
