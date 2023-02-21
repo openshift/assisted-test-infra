@@ -42,7 +42,7 @@ from tests.config import ClusterConfig, TerraformConfig
 from triggers import get_default_triggers
 
 CLUSTER_PREFIX = "test-infra-cluster"
-INSTALLATION_DISK = "/dev/vda"
+INSTALLATION_DISK = "/dev/sda"
 BUILD_DIR = "build"
 INSTALL_CONFIG_FILE_NAME = "install-config.yaml"
 WORKER_INSTALL_SCRIPT = "sno-worker-install.sh"

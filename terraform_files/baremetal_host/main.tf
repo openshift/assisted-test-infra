@@ -27,11 +27,16 @@ resource "libvirt_domain" "host" {
     }
     content {
       volume_id = disk.value
+      scsi      = true
     }
   }
 
   disk {
     file = var.image_path
+    # Set scsi to true here for documentation purpose
+    # as cdrom drive is always set to ide (at least up to 0.7.1).
+    # The bus is actually updated through the xsl sheet.
+    scsi = true
   }
 
   console {
@@ -67,7 +72,7 @@ resource "libvirt_domain" "host" {
   }
 
   xml {
-    xslt = file("../baremetal_host/consolemodel.xsl")
+    xslt = file("../baremetal_host/libvirt_domain_custom.xsl")
   }
 }
 
