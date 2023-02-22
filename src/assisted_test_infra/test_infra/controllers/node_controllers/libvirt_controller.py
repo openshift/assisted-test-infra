@@ -282,7 +282,8 @@ class LibvirtController(NodeController, ABC):
         """
         :return: Returns `b` if, for example, the disks' target.dev is `sdb`
         """
-        return re.findall(r"^sd(.*)$", disk.target)[0]
+        regex_by = disk.target[:2]
+        return re.findall(rf"^{regex_by}(.*)$", disk.target)[0]
 
     def _get_available_scsi_identifier(self, node):
         """
