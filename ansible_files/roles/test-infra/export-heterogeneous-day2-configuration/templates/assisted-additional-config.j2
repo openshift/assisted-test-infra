@@ -1,10 +1,8 @@
 export SERVICE_URL="{{ assisted_service_url }}"
 
-export DAY2_CPU_ARCHITECTURE="{{ ansible_architecture  }}"
+export DAY2_CPU_ARCHITECTURE="{{ ansible_architecture }}"
 
-{% set private_ips = ansible_all_ipv4_addresses | sort | ansible.utils.ipaddr('private') -%}
-{% set remote_ip = private_ips | first | default(ansible_all_ipv4_addresses[0]) -%}
-export DAY2_LIBVIRT_URI="qemu+ssh://{{ ssh_user }}@{{ remote_ip }}/system?keyfile={{ ssh_private_key_path }}"
+export DAY2_LIBVIRT_URI="qemu+ssh://{{ ssh_user }}@{{ access_libvirt_ip }}/system?no_verify=1&keyfile={{ ssh_private_key_path }}"
 
 {# split prefix (e.g: /20) into /24 subnets -#}
 {% set subnet_size_ipv4 = internal_network_prefix_ipv4 | ansible.utils.ipsubnet(subnet_length_ipv4)  -%}

@@ -27,7 +27,10 @@ resource "equinix_metal_device" "ci_devices" {
 
   provisioner "remote-exec" {
     inline = [
-      "cloud-init status --wait"
+      # Wait for cloud-init to complete.
+      # Ignore any errors because some equinix machines fail in cloud-init but
+      # it is without consequenses.
+      "cloud-init status --wait || true"
     ]
   }
 }

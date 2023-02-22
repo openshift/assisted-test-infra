@@ -14,4 +14,5 @@
     ip4: "{{ ipip_tunnel_ipv4 }}"
     routes4: "{{ ipip_route_to_network_ipv4 }} {{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
     autoconnect: true
+    zone: "trusted"
     state: present
