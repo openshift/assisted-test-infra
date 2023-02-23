@@ -1,14 +1,21 @@
 #!/bin/bash
 
 SOS_TMPDIR="/var/tmp"
+PROXY_SETTING_FILE="/etc/mco/proxy.env"
+
+# setup proxy environment variables
+if [ -f "${PROXY_SETTING_FILE}" ]
+then
+  source "${PROXY_SETTING_FILE}"
+  export HTTP_PROXY
+  export HTTPS_PROXY
+  export NO_PROXY
+fi
 
 # cleanup any previous sos report
 find "${SOS_TMPDIR}" -maxdepth 1 -name "sosreport*" -type f -delete
 
-podman pull \
-  --authfile /run/user/0/containers/auth.json \
-  registry.redhat.io/rhel8/support-tools
-toolbox sos report --batch --tmp-dir "${SOS_TMPDIR}" --compression-type xz --all-logs \
+yes | toolbox sos report --batch --tmp-dir "${SOS_TMPDIR}" --compression-type xz --all-logs \
                    --plugin-timeout=300 \
                    -o processor,memory,container_log,filesys,logs,crio,podman,openshift,openshift_ovn,networking,networkmanager,rhcos \
                    -k crio.all=on -k crio.logs=on \
