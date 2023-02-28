@@ -378,6 +378,17 @@ class BaseTest:
                 log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
                 cluster.delete()
 
+    def get_terraform_controller(
+        self, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig
+    ) -> TerraformController:
+        if cluster_configuration.platform == consts.Platforms.VSPHERE:
+            return VSphereController(controller_configuration, cluster_configuration)
+
+        if cluster_configuration.platform == consts.Platforms.NUTANIX:
+            return NutanixController(controller_configuration, cluster_configuration)
+
+        return TerraformController(controller_configuration, entity_config=cluster_configuration)
+
     @classmethod
     def _start_tang_server(
         cls, tang_server: Callable, cluster_configuration: ClusterConfig, server_name: str = "tang1"

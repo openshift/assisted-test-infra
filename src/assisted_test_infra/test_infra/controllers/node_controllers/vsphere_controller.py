@@ -22,25 +22,28 @@ class VSphereController(NodeController):
         super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
         folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=config.tf_platform)
-        self._tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
+        self.tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
+
+    def get_all_vars(self):
+        return {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
 
     def prepare_nodes(self):
         if not os.path.exists(self._entity_config.iso_download_path):
             utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
             # if file not exist lets create dummy
             utils.touch(self._entity_config.iso_download_path)
-        config = {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
+        config = self.get_all_vars()
         # The ISO file isn't available now until preparing for installation
         del config["iso_download_path"]
 
         self._create_folder(self._config.vsphere_parent_folder)
-        self._tf.set_and_apply(**config)
+        self.tf.set_and_apply(**config)
         return self.list_nodes()
 
     def notify_iso_ready(self) -> None:
         self.shutdown_all_nodes()
-        config = {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
-        self._tf.set_and_apply(**config)
+        config = self.get_all_vars()
+        self.tf.set_and_apply(**config)
 
     def list_nodes(self) -> List[Node]:
         vms = self.__get_vms()
@@ -72,7 +75,7 @@ class VSphereController(NodeController):
         return ips, macs
 
     def destroy_all_nodes(self) -> None:
-        self._tf.destroy(force=False)
+        self.tf.destroy(force=False)
 
     def start_node(self, node_name: str, check_ips: bool) -> None:
         def start(vm) -> task:
@@ -192,7 +195,7 @@ class VSphereController(NodeController):
         return next((vm for vm in self.__get_vms() if vm["attributes"]["name"] == node_name), None)
 
     def __get_vms(self) -> List[Dict[str, Any]]:
-        vms_object_type = self._tf.get_resources(resource_type="vsphere_virtual_machine")
+        vms_object_type = self.tf.get_resources(resource_type="vsphere_virtual_machine")
 
         if not vms_object_type:
             return list()
