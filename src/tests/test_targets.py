@@ -43,3 +43,22 @@ class TestMakefileTargets(BaseTest):
             cluster.delete()
 
         log.info(f"Successfully deleted {len(clusters)} clusters")
+
+    @JunitTestSuite()
+    def test_destroy_terraform(
+        self, api_client: InventoryClient, prepared_controller_configuration: BaseNodesConfig, cluster_configuration
+    ):
+        """Destroy cluster via terraform"""
+
+        cluster_id = cluster_configuration.cluster_id
+        clusters = api_client.clusters_list() if not cluster_id else [{"id": cluster_id}]
+
+        for cluster_info in clusters:
+            cluster = Cluster(api_client, ClusterConfig(cluster_id=cluster_info["id"]), InfraEnvConfig())
+            controller = self.get_terraform_controller(prepared_controller_configuration, cluster._config)
+            config_vars = controller.get_all_vars()
+            controller.tf.set_vars(**config_vars)
+            controller.tf.select_defined_variables()
+            controller.destroy_all_nodes()
+
+        log.info(f"Successfully destroyed {len(clusters)} clusters")

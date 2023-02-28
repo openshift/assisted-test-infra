@@ -203,10 +203,17 @@ _apply_terraform:
 		terraform apply -auto-approve -input=false -state=terraform.tfstate -state-out=terraform.tfstate -var-file=terraform.tfvars.json
 
 destroy_nodes:
-	skipper make $(SKIPPER_PARAMS) _destroy_terraform
+	skipper make $(SKIPPER_PARAMS) _destroy_terraform destroy_terraform_controller
 
 _destroy_terraform:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
+
+destroy_terraform_controller:
+	TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test
+
+destroy_nutanix: destroy_terraform_controller
+destroy_vsphere: destroy_terraform_controller
+
 
 #######
 # Run #
