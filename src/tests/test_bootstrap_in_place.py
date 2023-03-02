@@ -301,8 +301,7 @@ class TestBootstrapInPlace(BaseTest):
             "butane",
             "quay.io/coreos/butane:release",
             flags,
-            f"/data/{IBIP_DIR}/{butane_config}",
-            f"-o /data/{initial_ignition}",
+            f"/data/{IBIP_DIR}/{butane_config} -o /data/{initial_ignition}",
         )
 
     def prepare_installation(self, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig):
