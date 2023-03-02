@@ -1,0 +1,11 @@
+{#
+    The CI expects the node that runs test-infra to be in the "primary" group
+    Other nodes are ungrouped, and will be targeted when the playbook runs on "all" nodes
+-#}
+
+{% for hostname in groups["all"] %}
+    {{- hostname }} ansible_host={{ hostvars[hostname]["ansible_host"] }} ansible_user={{ hostvars[hostname]["ansible_user"] }} ansible_ssh_private_key_file={{ hostvars[hostname]["ansible_ssh_private_key_file"] }}
+{% endfor %}
+
+[primary]
+{{ groups["primary"] | first }}
