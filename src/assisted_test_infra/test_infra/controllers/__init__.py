@@ -1,3 +1,4 @@
+from .assisted_installer_infra_controller import AssistedInstallerInfraController
 from .iptables import IpTableCommandOption, IptableRule
 from .ipxe_controller.ipxe_controller import IPXEController
 from .nat_controller import NatController
@@ -11,6 +12,7 @@ from .proxy_controller.proxy_controller import ProxyController
 from .tang_controller.tang_controller import TangController
 
 __all__ = [
+    "AssistedInstallerInfraController",
     "NodeController",
     "NatController",
     "IptableRule",
