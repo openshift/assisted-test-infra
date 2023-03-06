@@ -147,9 +147,6 @@ def download_logs(
         infra_env_ids = set(host["infra_env_id"] for host in cluster["hosts"])
         write_metadata_file(client, cluster, infra_env_ids, os.path.join(output_folder, "metadata.json"))
 
-        with SuppressAndLog(requests.exceptions.RequestException, ConnectionError, KeyboardInterrupt):
-            client.download_metrics(os.path.join(output_folder, "metrics.txt"))
-
         for cluster_file in (
             "bootstrap.ign",
             "master.ign",
