@@ -133,7 +133,7 @@ def download_logs(
     retry_interval: int = RETRY_INTERVAL,
 ):
     if "hosts" not in cluster or len(cluster["hosts"]) == 0:
-        cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"])
+        cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"], get_unregistered_clusters=True)
 
     output_folder = get_logs_output_folder(dest, cluster)
     if not is_update_needed(output_folder, update_by_events, client, cluster):

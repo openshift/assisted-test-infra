@@ -125,8 +125,8 @@ class InventoryClient(object):
         result = self.client.v2_import_cluster(new_import_cluster_params=cluster)
         return result
 
-    def get_cluster_hosts(self, cluster_id: str) -> List[Dict[str, Any]]:
-        cluster_details = self.cluster_get(cluster_id)
+    def get_cluster_hosts(self, cluster_id: str, get_unregistered_clusters: bool = False) -> List[Dict[str, Any]]:
+        cluster_details = self.cluster_get(cluster_id, get_unregistered_clusters=get_unregistered_clusters)
         return list(map(lambda host: host.to_dict(), cluster_details.hosts))
 
     def get_infra_env_hosts(self, infra_env_id: str) -> List[Dict[str, Any]]:
@@ -158,8 +158,8 @@ class InventoryClient(object):
     def get_all_clusters(self) -> List[Dict[str, Any]]:
         return self.client.v2_list_clusters(get_unregistered_clusters=True)
 
-    def cluster_get(self, cluster_id: str) -> models.cluster.Cluster:
-        return self.client.v2_get_cluster(cluster_id=cluster_id)
+    def cluster_get(self, cluster_id: str, get_unregistered_clusters: bool = False) -> models.cluster.Cluster:
+        return self.client.v2_get_cluster(cluster_id=cluster_id, get_unregistered_clusters=get_unregistered_clusters)
 
     def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[Union[models.infra_env.InfraEnv, Dict[str, Any]]]:
         infra_envs = self.infra_envs_list()
