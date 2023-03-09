@@ -20,4 +20,8 @@
       src: packet-conf.sh
       dest: "{{ shared_dir }}/packet-conf.sh"
 
+  - name: Write Ansible inventory
+    ansible.builtin.template:
+      src: inventory.j2
+      dest: "{{ shared_dir }}/inventory"
   when: shared_dir is defined
