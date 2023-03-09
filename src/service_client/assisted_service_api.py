@@ -159,7 +159,7 @@ class InventoryClient(object):
         return self.client.v2_list_clusters(get_unregistered_clusters=True)
 
     def cluster_get(self, cluster_id: str) -> models.cluster.Cluster:
-        return self.client.v2_get_cluster(cluster_id=cluster_id)
+        return self.client.v2_get_cluster(cluster_id=cluster_id, get_unregistered_clusters=True)
 
     def get_infra_env_by_cluster_id(self, cluster_id: str) -> List[Union[models.infra_env.InfraEnv, Dict[str, Any]]]:
         infra_envs = self.infra_envs_list()
