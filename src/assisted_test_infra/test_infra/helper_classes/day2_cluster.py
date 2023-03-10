@@ -104,6 +104,8 @@ class Day2Cluster(BaseCluster):
     def start_install_and_wait_for_installed(self):
         ocp_ready_nodes = self.get_ocp_cluster_ready_nodes_num()
         self._install_day2_cluster()
+        # post installation nodes day2 nodes rebooted
+        self.nodes.wait_till_nodes_are_ssh_ready()
         self.wait_nodes_to_be_in_ocp(ocp_ready_nodes)
 
     def wait_nodes_to_be_in_ocp(self, ocp_ready_nodes):
