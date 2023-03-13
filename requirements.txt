@@ -2,7 +2,7 @@ debugpy==1.6.6
 dnspython==2.3.0
 filelock==3.9.0
 frozendict==2.3.5
-ipdb==0.13.11
+ipdb==0.13.13
 ipython==8.11.0
 jedi==0.18.2
 Jinja2===3.1.2
