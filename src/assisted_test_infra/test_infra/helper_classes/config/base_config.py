@@ -57,7 +57,7 @@ class BaseConfig(Triggerable, ABC):
         setattr(self, attr, self._get_correct_value(attr, new_val))
 
     def _get_correct_value(self, attr: str, new_val):
-        """Get value in it's correct type"""
+        """Get value in its correct type"""
         annotations = self.get_annotations()
         if not hasattr(self, attr):
             raise AttributeError(f"Can't find {attr} among {annotations}")
@@ -65,7 +65,7 @@ class BaseConfig(Triggerable, ABC):
         _type = annotations[attr]
 
         if hasattr(_type, "__origin__"):
-            return _type.__origin__([new_val])
+            return _type.__origin__(new_val)
 
         # str, int, float, bool, Path, and more
         return new_val if isinstance(new_val, _type) else _type(new_val)

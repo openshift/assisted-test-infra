@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 from .base_entity_config import BaseEntityConfig
 
@@ -18,4 +18,4 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     ignition_config_override: str = None
     verify_download_iso_ssl: bool = None
     is_static_ip: bool = None
-    discovery_kernel_arguments: Optional[List[dict]] = None
+    discovery_kernel_arguments: List[dict] = None

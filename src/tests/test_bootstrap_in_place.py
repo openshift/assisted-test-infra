@@ -173,7 +173,7 @@ class TestBootstrapInPlace(BaseTest):
 
     @pytest.fixture
     def new_cluster_configuration(self, request) -> ClusterConfig:
-        return ClusterConfig(cluster_name=ClusterName(prefix=CLUSTER_PREFIX, suffix=""))
+        return ClusterConfig(entity_name=ClusterName(prefix=CLUSTER_PREFIX, suffix=""))
 
     @pytest.fixture
     def triggers(self):
