@@ -1,6 +1,6 @@
 debugpy==1.6.6
 dnspython==2.3.0
-filelock==3.9.0
+filelock==3.10.0
 frozendict==2.3.5
 ipdb==0.13.13
 ipython==8.11.0
