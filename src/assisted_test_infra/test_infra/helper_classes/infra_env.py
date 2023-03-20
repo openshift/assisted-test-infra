@@ -137,6 +137,11 @@ class InfraEnv(Entity):
         self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
         log.info(f"InfraEnv static network configuration successfully updated {self._config.static_network_config}")
 
+    def update_infra_env_kernel(self, discovery_kernel_arguments: List[dict]) -> None:
+        self.update_config(discovery_kernel_arguments=discovery_kernel_arguments)
+        infra_env_update_params = models.InfraEnvUpdateParams(kernel_arguments=discovery_kernel_arguments)
+        self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
+
     def update_static_network_config(self, static_network_config: List[dict]) -> None:
         self.update_config(static_network_config=static_network_config)
         infra_env_update_params = models.InfraEnvUpdateParams(static_network_config=static_network_config)
