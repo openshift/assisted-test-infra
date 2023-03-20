@@ -10,9 +10,11 @@ import tempfile
 import time
 from contextlib import suppress
 from datetime import datetime
+from operator import itemgetter
 from pathlib import Path
 
 import assisted_service_client
+import jinja2
 import requests
 import urllib3
 from assisted_service_client import ApiClient
@@ -106,21 +108,49 @@ def is_update_needed(output_folder: str, update_on_events_update: bool, client: 
             client.download_cluster_events(cluster["id"], latest_event_tp.name)
 
         if filecmp.cmp(destination_event_file_path, latest_event_tp.name):
-            latest_event_tp.close()
             log.info(f"no new events found for {destination_event_file_path}")
-            need_update = False
-        else:
-            log.info(f"update needed, new events found, deleting {destination_event_file_path}")
-            os.remove(destination_event_file_path)
-            latest_event_tp.close()
-            need_update = True
-    return need_update
+            return False
+
+        log.info(f"update needed, new events found, deleting {destination_event_file_path}")
+        os.remove(destination_event_file_path)
+        return True
 
 
 def download_manifests(client: InventoryClient, cluster_id: str, output_folder: str) -> None:
     manifests_path = os.path.join(output_folder, "cluster_files", "manifests")
     recreate_folder(manifests_path)
     client.download_manifests(cluster_id, manifests_path)
+
+
+def merge_events(event_paths: list[str]) -> str:
+    events = []
+
+    for event_path in event_paths:
+        with open(event_path, "rt") as event_file:
+            events.extend(json.loads(event_file.read()))
+
+    return json.dumps(sorted(events, key=itemgetter("event_time")))
+
+
+def gather_event_files(client: InventoryClient, cluster: dict, infra_env_ids: set[str], output_folder: str):
+    log.info("Gathering event files")
+    event_files = []
+    for infra_env_id in infra_env_ids:
+        with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
+            infraenv_events = get_infraenv_events_path(infra_env_id, output_folder)
+            client.download_infraenv_events(infra_env_id, infraenv_events)
+            event_files.append(infraenv_events)
+
+    with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
+        cluster_events = get_cluster_events_path(cluster, output_folder)
+        client.download_cluster_events(cluster["id"], cluster_events)
+        event_files.append(cluster_events)
+
+    log.debug("Generating events.html as a standalone file")
+    template = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=os.path.dirname(__file__))).get_template(
+        "events.html.j2"
+    )
+    template.stream(events=merge_events(event_files)).dump(os.path.join(output_folder, "events.html"))
 
 
 @JunitTestCase()
@@ -174,13 +204,7 @@ def download_logs(
                     host["infra_env_id"], host["id"], os.path.join(output_folder, "cluster_files")
                 )
 
-        for infra_env_id in infra_env_ids:
-            with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-                client.download_infraenv_events(infra_env_id, get_infraenv_events_path(infra_env_id, output_folder))
-
-        with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-            client.download_cluster_events(cluster["id"], get_cluster_events_path(cluster, output_folder))
-            shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
+        gather_event_files(client, cluster, infra_env_ids, output_folder)
 
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             are_masters_in_configuring_state = are_host_progress_in_stage(
@@ -309,7 +333,7 @@ def get_infraenv_events_path(infra_env_id, output_folder):
 
 
 @JunitTestCase()
-def get_logs_output_folder(dest: str, cluster: dict):
+def get_logs_output_folder(dest: str, cluster: dict) -> str:
     started_at = cluster["install_started_at"]
 
     if isinstance(started_at, str):
