@@ -240,12 +240,11 @@ def download_logs(
                         log.info(f"Going to retry in {retry_interval} seconds")
                         time.sleep(retry_interval)
 
-        kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
+        if must_gather:
+            with SuppressAndLog(assisted_service_client.rest.ApiException):
+                kubeconfig_path = os.path.join(output_folder, "kubeconfig-noingress")
+                client.download_kubeconfig_no_ingress(cluster["id"], kubeconfig_path)
 
-        with SuppressAndLog(assisted_service_client.rest.ApiException):
-            client.download_kubeconfig_no_ingress(cluster["id"], kubeconfig_path)
-
-            if must_gather:
                 config_etc_hosts(
                     cluster["name"],
                     cluster["base_dns_domain"],
