@@ -223,7 +223,11 @@ _destroy_virsh:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
 
 destroy_terraform_controller:
-	TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test
+	@if [ "$(ENABLE_KUBE_API)" = "true"  ]; then \
+		skipper run "cd build/terraform/$(CLUSTER_NAME)/$(PLATFORM); terraform apply -destroy -input=false -auto-approve -var-file=terraform.tfvars.json"; \
+	else \
+		TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test; \
+	fi
 
 destroy_nutanix: destroy_terraform_controller
 destroy_vsphere: destroy_terraform_controller
