@@ -86,7 +86,7 @@ class Cluster(BaseCluster):
         self._update_existing_cluster_config(self.api_client, self._config.cluster_id)
 
         # Assuming single or no infra_env - TODO need to change when adding multi-infra_env support to test_infra
-        for infra_env in self.api_client.get_infra_env_by_cluster_id(self.id):
+        for infra_env in self.api_client.get_infra_envs_by_cluster_id(self.id):
             self._infra_env_config.infra_env_id = infra_env.get("id")
             self._infra_env = InfraEnv(self.api_client, self._infra_env_config, self.nodes)
             log.info(f"Found infra-env {self._infra_env.id} for cluster {self.id}")
