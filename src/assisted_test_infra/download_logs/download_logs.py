@@ -49,7 +49,7 @@ private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAUL
 TIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
 MAX_RETRIES = 3
 MUST_GATHER_MAX_RETRIES = 15
-RETRY_INTERVAL = 60 * 5
+RETRY_INTERVAL = 5  # seconds
 SOSREPORT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "man_sosreport.sh")
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -163,7 +163,18 @@ def download_logs(
     retry_interval: int = RETRY_INTERVAL,
 ):
     if "hosts" not in cluster or len(cluster["hosts"]) == 0:
-        cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"], get_unregistered_clusters=True)
+        try:
+            cluster["hosts"] = client.get_cluster_hosts(cluster_id=cluster["id"], get_unregistered_clusters=True)
+        except assisted_service_client.rest.ApiException:
+            # if we're dealing with a deleted cluster, it might have been garbage-collected, so we're only logging it
+            if cluster["deleted_at"] is None:
+                raise
+
+            log.debug(
+                "Couldn't fetch hosts for cluster %s, which has been deleted at %s",
+                cluster["id"],
+                cluster["deleted_at"],
+            )
 
     output_folder = get_logs_output_folder(dest, cluster)
     if not is_update_needed(output_folder, update_by_events, client, cluster):
