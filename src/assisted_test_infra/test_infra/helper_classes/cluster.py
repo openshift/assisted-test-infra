@@ -223,6 +223,18 @@ class Cluster(BaseCluster):
         disk_encryption_params = models.DiskEncryption(enable_on=roles, mode=mode, tang_servers=tang_servers)
         self.api_client.update_cluster(self.id, {"disk_encryption": disk_encryption_params})
 
+    def set_ignored_validations(
+        self, host_validation_ids: list[str] = None, cluster_validation_ids: list[str] = None, **kwargs
+    ):
+        ignore_obj = models.IgnoredValidations(
+            host_validation_ids=json.dumps(host_validation_ids) if host_validation_ids else None,
+            cluster_validation_ids=json.dumps(cluster_validation_ids) if cluster_validation_ids else None,
+        )
+        self.api_client.client.v2_set_ignored_validations(self.id, ignore_obj, **kwargs)
+
+    def get_ignored_validations(self, **kwargs) -> models.IgnoredValidations:
+        return self.api_client.client.v2_get_ignored_validations(self.id, **kwargs)
+
     def set_ocs(self, properties=None):
         self.set_olm_operator(consts.OperatorType.OCS, properties=properties)
 
