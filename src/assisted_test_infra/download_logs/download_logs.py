@@ -132,13 +132,13 @@ def merge_events(event_paths: list[str]) -> str:
     return json.dumps(sorted(events, key=itemgetter("event_time")))
 
 
-def gather_event_files(client: InventoryClient, cluster: dict, infra_env_ids: set[str], output_folder: str):
+def gather_event_files(client: InventoryClient, cluster: dict, infra_envs: list[dict], output_folder: str):
     log.info("Gathering event files")
     event_files = []
-    for infra_env_id in infra_env_ids:
+    for infra_env in infra_envs:
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-            infraenv_events = get_infraenv_events_path(infra_env_id, output_folder)
-            client.download_infraenv_events(infra_env_id, infraenv_events)
+            infraenv_events = get_infraenv_events_path(infra_env["id"], output_folder)
+            client.download_infraenv_events(infra_env["id"], infraenv_events)
             event_files.append(infraenv_events)
 
     with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
@@ -185,8 +185,8 @@ def download_logs(
     recreate_folder(os.path.join(output_folder, "cluster_files"))
 
     try:
-        infra_env_ids = set(host["infra_env_id"] for host in cluster["hosts"])
-        write_metadata_file(client, cluster, infra_env_ids, os.path.join(output_folder, "metadata.json"))
+        infra_envs = client.get_infra_envs_by_cluster_id(cluster["id"])
+        write_metadata_file(client, cluster, infra_envs, os.path.join(output_folder, "metadata.json"))
 
         for cluster_file in (
             "bootstrap.ign",
@@ -215,7 +215,7 @@ def download_logs(
                     host["infra_env_id"], host["id"], os.path.join(output_folder, "cluster_files")
                 )
 
-        gather_event_files(client, cluster, infra_env_ids, output_folder)
+        gather_event_files(client, cluster, infra_envs, output_folder)
 
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             are_masters_in_configuring_state = are_host_progress_in_stage(
@@ -356,11 +356,11 @@ def get_logs_output_folder(dest: str, cluster: dict) -> str:
 
 
 @JunitTestCase()
-def write_metadata_file(client: InventoryClient, cluster: dict, infra_env_ids: set, file_name: str):
+def write_metadata_file(client: InventoryClient, cluster: dict, infra_envs: list[dict], file_name: str):
     d = {"cluster": cluster}
     d.update(client.get_versions())
 
-    d["infraenvs"] = [client.get_infra_env(infra_env_id=infra_env_id).to_dict() for infra_env_id in infra_env_ids]
+    d["infraenvs"] = infra_envs
 
     with suppress(KeyError):
         d["link"] = f"{get_ui_url_from_api_url(client.inventory_url)}/clusters/{cluster['id']}"
