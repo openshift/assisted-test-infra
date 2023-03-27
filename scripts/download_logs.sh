@@ -18,14 +18,6 @@ ENABLE_KUBE_API=${ENABLE_KUBE_API:-"false"}
 DEBUG_FLAGS=${DEBUG_FLAGS:-""}
 export LOGGER_NAME="download_logs"
 
-if [[ "${ADDITIONAL_PARAMS}" != *"--cluster-id"* ]] && [[ "${ADDITIONAL_PARAMS}" != *"--download-all"* ]]; then
-  if [ -z ${CLUSTER_ID} ]; then
-    ADDITIONAL_PARAMS="${ADDITIONAL_PARAMS} --download-all"
-  else
-    ADDITIONAL_PARAMS="${ADDITIONAL_PARAMS} --cluster-id ${CLUSTER_ID}"
-  fi
-fi
-
 function download_service_logs() {
   mkdir -p ${LOGS_DEST} || true
 
@@ -66,7 +58,7 @@ function download_cluster_logs() {
         SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
       fi
     fi
-    skipper run -e JUNIT_REPORT_DIR "python3 ${DEBUG_FLAGS} -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} ${ADDITIONAL_PARAMS}"
+    skipper run -e JUNIT_REPORT_DIR "python3 ${DEBUG_FLAGS} -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}"
   fi
 }
 
