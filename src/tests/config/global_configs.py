@@ -32,7 +32,6 @@ class ClusterConfig(BaseClusterConfig):
         super().__post_init__()
         if self.cluster_name is None or isinstance(self.cluster_name, str):
             self.cluster_name = ClusterName()  # todo rm cluster_name after removing config.cluster_name dependencies
-        self.entity_name = self.cluster_name
         if self.kubeconfig_path is None:
             self.kubeconfig_path = utils.get_kubeconfig_path(self.cluster_name.get())
 

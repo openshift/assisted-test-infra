@@ -4,8 +4,7 @@ from typing import List
 
 from assisted_service_client import models
 
-from assisted_test_infra.test_infra.utils.entity_name import ClusterName
-
+from ...utils.entity_name import BaseName, ClusterName
 from .base_entity_config import BaseEntityConfig
 
 
@@ -17,7 +16,6 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     """
 
     cluster_id: str = None
-    cluster_name: ClusterName = None
     cluster_tags: str = None
     olm_operators: List[str] = None
     vip_dhcp_allocation: bool = None
@@ -31,3 +29,16 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     disk_encryption_mode: str = None
     disk_encryption_roles: str = None
     tang_servers: str = None
+
+    @property
+    def cluster_name(self) -> BaseName:
+        return self.entity_name
+
+    @cluster_name.setter
+    def cluster_name(self, cluster_name: BaseName):
+        self.entity_name = cluster_name
+
+
+# Add cluster_name to __annotations__ dict so we will be able to set it also on get_annotations
+# under BaseConfig
+BaseClusterConfig.__annotations__["cluster_name"] = ClusterName
