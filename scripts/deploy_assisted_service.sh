@@ -142,7 +142,7 @@ else
         export SUBSYSTEM_LOCAL_REGISTRY=localhost:5000
 
         print_log "Patching assisted service image with a debuggable code "
-        (cd assisted-service/ && skipper --env-file ../skipper.env make update-local-image -e CONTAINER_COMMAND=${CONTAINER_RUNTIME_COMMAND+x} -e CONTAINER_BUILD_EXTRA_PARAMS="--cgroup-manager=cgroupfs --storage-driver=vfs --events-backend=file")
+        (cd assisted-service/ && skipper --env-file ../skipper.env make update-local-image -e CONTAINER_COMMAND=${CONTAINER_RUNTIME_COMMAND+x} )
         DEBUG_DEPLOY_AI_PARAMS="REPLICAS_COUNT=1"
         # Override the SERVICE environment variable with the local registry debug image
         export SERVICE="${SUBSYSTEM_LOCAL_REGISTRY}/assisted-service:latest"
