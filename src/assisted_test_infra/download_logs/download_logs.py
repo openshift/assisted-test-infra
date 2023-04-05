@@ -451,7 +451,7 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
             node.run_command("sudo /tmp/man_sosreport.sh")
             log.debug("sosreport.sh completed")
         except Exception as e:
-            log.debug("Exception in man_sosreport.sh: ", e)
+            log.debug(f"Exception in man_sosreport.sh: {e}")
             raise
         try:
             log.debug("Fetching SOS report")
@@ -459,7 +459,7 @@ def gather_sosreport_from_node(node: Node, destination_dir: str):
             node.download_file("/var/tmp/sosreport.tar.xz", dest_file)
             log.debug(f"Fetched SOS report to {dest_file}")
         except Exception as e:
-            log.debug("Exception fetching sosreport: ", e)
+            log.debug(f"Exception fetching sosreport: {e}")
             raise
 
     except (TimeoutError, RuntimeError, SSHException, SCPException):
