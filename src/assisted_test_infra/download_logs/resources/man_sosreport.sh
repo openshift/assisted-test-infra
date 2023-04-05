@@ -6,6 +6,7 @@ PROXY_SETTING_FILE="/etc/mco/proxy.env"
 TOOLBOX_BIN="toolbox"
 TOOLBOX_VERSION="$(rpm -q --queryformat '%{VERSION}' toolbox)"
 TOOLBOX_MIN_VERSION="0.1.0"
+TOOLBOX_RC="/root/.toolboxrc"
 
 # setup proxy environment variables
 if [ -f "${PROXY_SETTING_FILE}" ]
@@ -24,6 +25,21 @@ if ! echo -e "${TOOLBOX_MIN_VERSION}\n${TOOLBOX_VERSION}" | sort --version-sort 
   curl -o /tmp/toolbox "https://raw.githubusercontent.com/coreos/toolbox/${TOOLBOX_MIN_VERSION}/rhcos-toolbox"
   chmod +x /tmp/toolbox
   TOOLBOX_BIN="/tmp/toolbox"
+fi
+
+# By default toolbox uses the /var/lib/kubelet/config.json file to authenticate
+# to the image registry in order to pull the images it needs. But in some tests
+# this file doesn't exist because the installation may not have started yet.
+# For example, the upgrade agent test never starts the installation, so that
+# file will not exist. In those cases we can use /root/.docker/config.json
+# instead, which is always created by the discovery ignition.
+if [ ! -f "/var/lib/kubelet/config.json" ]
+then
+  # Note that if the toolbox configuration file already exists we may be adding
+  # the AUTHFILE variable multiple times. That is acceptable because that
+  # configuration file is just a script sourced by toolbox, so only the last
+  # value will be used.
+  echo "AUTHFILE=/root/.docker/config.json" >> "${TOOLBOX_RC}"
 fi
 
 # cleanup any previous sos report
