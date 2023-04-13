@@ -836,6 +836,9 @@ class Cluster(BaseCluster):
     def get_install_config(self):
         return yaml.safe_load(self.api_client.get_cluster_install_config(self.id))
 
+    def update_install_config(self, install_config_params: dict, **kwargs) -> None:
+        self.api_client.update_cluster_install_config(self.id, install_config_params, **kwargs)
+
     def get_admin_credentials(self):
         return self.api_client.get_cluster_admin_credentials(self.id)
 
