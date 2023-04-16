@@ -396,6 +396,12 @@ class InventoryClient(object):
         log.info("Getting install-config for cluster %s", cluster_id)
         return self.client.v2_get_cluster_install_config(cluster_id=cluster_id)
 
+    def update_cluster_install_config(self, cluster_id: str, install_config_params: dict, **kwargs) -> None:
+        """v2_update_cluster_install_config
+        Override values in the install config.
+        """
+        self.client.v2_update_cluster_install_config(cluster_id, json.dumps(install_config_params), **kwargs)
+
     def patch_discovery_ignition(self, infra_env_id: str, ignition_info: str) -> None:
         infra_env_update_params = models.InfraEnvUpdateParams(ignition_config_override=json.dumps(ignition_info))
         self.update_infra_env(infra_env_id=infra_env_id, infra_env_update_params=infra_env_update_params)
