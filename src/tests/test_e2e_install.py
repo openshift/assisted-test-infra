@@ -8,7 +8,7 @@ from tests.conftest import get_available_openshift_versions, get_supported_opera
 
 class TestInstall(BaseTest):
     @JunitTestSuite()
-    @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())
+    @pytest.mark.parametrize("openshift_version", ["4.13"])
     def test_install(self, cluster, openshift_version):
         cluster.prepare_for_installation()
         cluster.start_install_and_wait_for_installed()

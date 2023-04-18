@@ -449,6 +449,7 @@ class TestLateBinding(BaseKubeAPI):
 
     @JunitTestSuite()
     @pytest.mark.kube_api
+    @pytest.mark.parametrize("openshift_version", ["4.13"])
     def test_late_binding_kube_api_sno(self, unbound_single_node_cluster, unbound_single_node_infraenv):
         infra_env, nodes = unbound_single_node_infraenv
         cluster_deployment, agent_cluster_install, cluster_config = unbound_single_node_cluster
