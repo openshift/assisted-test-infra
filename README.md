@@ -69,7 +69,7 @@ export PULL_SECRET='<pull secret JSON>'
 
 ## Installation Guide
 
-Check the [Install Guide](GUIDE.md) for installation instructions.
+Check the [Installation Guide](GUIDE.md) for installation instructions.
 
 ## Deployment parameters
 
