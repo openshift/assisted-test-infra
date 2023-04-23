@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable, Optional
 
+from paramiko import SSHException
 from scp import SCPException
 
 import consts
@@ -65,7 +66,7 @@ class Node:
                 connection.connect()
                 return connection
 
-            except (TimeoutError, SCPException) as e:
+            except (TimeoutError, SCPException, SSHException) as e:
                 log.warning("Could not SSH through IP %s: %s", ip, str(e))
                 exception = e
 
