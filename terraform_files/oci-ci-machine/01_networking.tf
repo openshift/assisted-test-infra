@@ -4,15 +4,15 @@ module "vcn" {
   # insert the 5 required variables here
 
   # Required Inputs
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.parent_compartment_ocid
 
   internet_gateway_route_rules = null
   local_peering_gateways       = null
   nat_gateway_route_rules      = null
 
   # Optional Inputs
-  vcn_name      = "vcn-ci-${var.job_id}"
-  vcn_dns_label = substr("v${var.job_id}", 0, 15)
+  vcn_name      = "vcn-ci-${var.unique_id}"
+  vcn_dns_label = "v${substr(var.unique_id, -14, -1)}" # dns label is limited to 15 chacracters
   vcn_cidrs     = ["10.0.0.0/16"]
 
   create_internet_gateway = true
@@ -22,7 +22,7 @@ module "vcn" {
 resource "oci_core_security_list" "private_security_list" {
 
   # Required
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.parent_compartment_ocid
   vcn_id         = module.vcn.vcn_id
 
   # Optional
@@ -76,7 +76,7 @@ resource "oci_core_security_list" "private_security_list" {
 resource "oci_core_security_list" "public_security_list" {
 
   # Required
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.parent_compartment_ocid
   vcn_id         = module.vcn.vcn_id
 
   # Optional
@@ -130,7 +130,7 @@ resource "oci_core_security_list" "public_security_list" {
 resource "oci_core_subnet" "vcn_private_subnet" {
 
   # Required
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.parent_compartment_ocid
   vcn_id         = module.vcn.vcn_id
   cidr_block     = "10.0.1.0/24"
   dns_label      = "private"
@@ -146,7 +146,7 @@ resource "oci_core_subnet" "vcn_private_subnet" {
 resource "oci_core_subnet" "vcn_public_subnet" {
 
   # Required
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.parent_compartment_ocid
   vcn_id         = module.vcn.vcn_id
   cidr_block     = "10.0.0.0/24"
   dns_label      = "public"
