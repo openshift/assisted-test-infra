@@ -1,4 +1,5 @@
 import json
+import re
 from abc import ABC
 from dataclasses import dataclass
 from distutils.util import strtobool
@@ -63,7 +64,9 @@ class _EnvVariables(DataPool, ABC):
     ai_base_version: EnvVar = EnvVar(["AI_BASE_VERSION"], default=consts.DEFAULT_AI_BASE_VERSION)
     deployment_service: EnvVar = EnvVar(["DEPLOYMENT_SERVICE"], default=consts.DEFAULT_DEPLOYMENT_SERVICE)
     spoke_namespace: str = EnvVar(["SPOKE_NAMESPACE"], default=consts.DEFAULT_SPOKE_NAMESPACE)
-    olm_operators: EnvVar = EnvVar(["OLM_OPERATORS"], loader=lambda operators: operators.lower().split(), default="")
+    olm_operators: EnvVar = EnvVar(
+        ["OLM_OPERATORS"], loader=lambda operators: re.split(r"\s|,", operators.lower()), default=[]
+    )
     platform: EnvVar = EnvVar(["PLATFORM"])
     tf_platform: EnvVar = EnvVar(["TF_PLATFORM", "PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
     user_managed_networking: EnvVar = EnvVar(

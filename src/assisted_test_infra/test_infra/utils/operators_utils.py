@@ -15,10 +15,6 @@ def get_env(env, default=None):
     return res
 
 
-def parse_olm_operators_from_env():
-    return get_env("OLM_OPERATORS", default="").lower().split()
-
-
 def _are_operators_in_status(
     cluster_id: str,
     client: InventoryClient,
