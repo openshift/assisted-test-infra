@@ -1,7 +1,7 @@
 debugpy==1.6.7
 dnspython==2.3.0
 filelock==3.12.0
-frozendict==2.3.7
+frozendict==2.3.8
 ipdb==0.13.13
 ipython==8.13.1
 jedi==0.18.2
