@@ -276,8 +276,11 @@ deploy_static_network_config_nodes:
 .PHONY: deploy_ibip
 deploy_ibip:
 ifdef ADDITIONAL_MANIFEST_DIR
-	rm -rf ${INSTALL_MANIFEST_DIR}; mkdir ${INSTALL_MANIFESTS_DIR}
-	mv ${ADDITIONAL_MANIFEST_DIR}/* ${INSTALL_MANIFESTS_DIR}/
+	@is_empty_dir=$(shell ls -A ${ADDITIONAL_MANIFEST_DIR}); \
+	if [ -n "$$is_empty_dir" ]; then \
+		rm -rf ${INSTALL_MANIFEST_DIR}; mkdir ${INSTALL_MANIFESTS_DIR}; \
+		mv ${ADDITIONAL_MANIFEST_DIR}/* ${INSTALL_MANIFESTS_DIR}/; \
+	fi
 endif
 	# To deploy with a worker node, set TEST_FUNC=test_bip_add_worker
 ifdef BIP_BUTANE_CONFIG
