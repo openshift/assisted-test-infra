@@ -46,7 +46,7 @@ class Day2Cluster(BaseCluster):
     def update_existing(self) -> str:
         raise NotImplementedError("Creating Day2Cluster object from an existing cluster is not implemented.")
 
-    def prepare_for_installation(self):
+    def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
         """Prepare the day2 worker nodes. When this method finishes, the hosts are in 'known' status."""
 
         self.set_pull_secret(self._config.pull_secret)
@@ -61,9 +61,7 @@ class Day2Cluster(BaseCluster):
         )
 
         # spawn VMs
-        super(Day2Cluster, self).prepare_for_installation(
-            is_static_ip=self._config.day1_cluster._infra_env_config.is_static_ip
-        )
+        super(Day2Cluster, self).prepare_nodes(is_static_ip=self._config.day1_cluster._infra_env_config.is_static_ip)
         self.nodes.wait_for_networking()
         self.set_hostnames_and_roles()
 

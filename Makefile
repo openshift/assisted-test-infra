@@ -270,8 +270,11 @@ deploy_nodes_with_install: start_load_balancer
 deploy_nodes: start_load_balancer
 	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_nodes $(MAKE) test
 
+deploy_nodes_with_networking: start_load_balancer
+	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_networking_with_nodes $(MAKE) test
+
 deploy_static_network_config_nodes:
-	make deploy_nodes ADDITIONAL_PARAMS="'--with-static-network-config'"
+	make deploy_nodesdeploy_nodes_with_networking ADDITIONAL_PARAMS="'--with-static-network-config'"
 
 .PHONY: deploy_ibip
 deploy_ibip:
@@ -286,7 +289,7 @@ ifdef BIP_BUTANE_CONFIG
 endif
 	skipper make $(SKIPPER_PARAMS) _test TEST=./src/tests/test_bootstrap_in_place.py TEST_FUNC=$(or ${TEST_FUNC},'test_bootstrap_in_place_sno')
 
-redeploy_nodes: destroy_nodes deploy_nodes
+redeploy_nodes: destroy_nodes deploy_nodes_with_networking
 
 redeploy_nodes_with_install: destroy_nodes deploy_nodes_with_install
 

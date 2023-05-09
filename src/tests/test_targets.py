@@ -16,6 +16,10 @@ from tests.config import ClusterConfig, InfraEnvConfig
 class TestMakefileTargets(BaseTest):
     @JunitTestSuite()
     def test_target_deploy_nodes(self, cluster):
+        cluster.prepare_nodes()
+
+    @JunitTestSuite()
+    def test_target_deploy_networking_with_nodes(self, cluster):
         cluster.prepare_for_installation()
 
     @JunitTestSuite()
