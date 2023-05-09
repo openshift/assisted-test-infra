@@ -1,3 +1,4 @@
+import datetime
 import logging
 import time
 from enum import Enum
@@ -211,6 +212,20 @@ class AssistedInstallerInfraController:
             waiting_for=f"replicas to change successfully to {replicas_count}",
         )
 
+    @staticmethod
+    def containers_ready_inside_pod(pod: kubernetes.dynamic.Resource) -> bool:
+        logging.info(f"Checking if containers are ready inside pod {pod.metadata.name}")
+        container_statuses_exists = hasattr(pod.status, "containerStatuses")
+        if not (container_statuses_exists and pod.status.containerStatuses):
+            return False
+        containers_status = list(
+            map(
+                lambda container: hasattr(container, "ready") and str(container["ready"]).casefold() == "true",
+                pod.status.containerStatuses,
+            )
+        )
+        return all(containers_status)
+
     def wait_for_pod_change(self, name: str, replicas_count: int, timeout=180, sleep=10, recover_time_pods=20) -> None:
         """Verify pod created / deleted based on replicas numbers
         In case we create pods (replicas) need to wait for a running state
@@ -233,8 +248,10 @@ class AssistedInstallerInfraController:
             def pods_are_running():
                 # Waiter lambda verify all pods are running begins with the same name
                 pods = self._get_obj_resources_by_name(self.Resources.POD.value, name)
-                running = list(map(lambda pod: hasattr(pod.status, "phase") and pod.status.phase == "Running", pods))
-                return all(running)
+                running_pods = list(map(self.containers_ready_inside_pod, pods))
+                # make sure all pods are running , in restartAt we may have parallel creation/termination
+                logging.info(f"Check if total pods are equal to running and ready {running_pods} vs {len(pods)}")
+                return len(pods) == len(running_pods) and all(running_pods)
 
             waiting.wait(
                 lambda: pods_are_running() is True,
@@ -282,6 +299,27 @@ class AssistedInstallerInfraController:
         if restart_deployment:
             self._restart_deployment(deployment_name)
 
+    def _delete_leftovers_pods_replicas(self) -> None:
+        """Delete all replicaset with zero count or pods that not in ready status
+        Post test we must clean all resources and restore setup to last good
+        state without additional replicase (when RestartAt run there are leftovers)
+        :return:
+        """
+        logging.info("Collecting leftovers for pods or replicaset for deletion")
+        pods = self._get_obj_resources_by_name(self.Resources.POD.value, self.assisted_service_name)
+        pod_not_running = [pod for pod in pods if not self.containers_ready_inside_pod(pod)]
+        logging.info(f"Found {len(pod_not_running)} leftover pod")
+
+        replicasets = self._get_obj_resources_by_name(self.Resources.REPLICASET.value, self.assisted_service_name)
+        replica_zero = [replica for replica in replicasets if replica.status.replicas == 0]
+        logging.info(f"Found {len(replica_zero)} leftover with zero replicaset")
+        for pod in pod_not_running:
+            logging.info(f"Cleanup leftover pod  {pod.metadata.name} not in Running state")
+            self.resource_kind(self.Resources.POD.value).delete(pod.metadata.name, namespace=self.namespace)
+        for replica in replica_zero:
+            logging.info(f"Cleanup leftover replicaset  {replica.metadata.name} with zero replicas")
+            self.resource_kind(self.Resources.REPLICASET.value).delete(replica.metadata.name, namespace=self.namespace)
+
     def rollout_assisted_service(
         self, configmap_before: dict[str, Any], configmap_after: dict[str, Any], request_node_name: str
     ) -> None:
@@ -293,9 +331,43 @@ class AssistedInstallerInfraController:
         :param request_node_name: the rest_func name accepted by fixture
         :return:
         """
+        self._delete_leftovers_pods_replicas()
         if configmap_before != configmap_after:
             logging.debug(f"configmap data {self.configmap_name} changed during {request_node_name} - restoring")
             self.patch_resource(self.Resources.CONFIGMAP.value, self.configmap_name, {"data": configmap_before})
             self._restart_deployment(self.assisted_service_name, request_node_name)
         else:
             logging.info(f"configmap {self.configmap_name} was not changed during the test {request_node_name}")
+
+    def restart_deployment_now(self, total_pods: int, wait_for_pods: bool = True) -> None:
+        """Restart deployment for parallel replicas (>1)
+        RestartAt managed the replicas and pods re-creation and has leftovers
+        After restart we have additional replicaset with 0 pods for rollout probably
+        The pods are re-creating safely terminated/deleted one by one
+        Will allow us to run upgrade in parallel because we should have running pods
+        during the restart
+        :param total_pods:
+        :param wait_for_pods:
+        :return:
+        """
+        date = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        body = {
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "annotations": {
+                            "kubectl.kubernetes.io/restartedAt": date,
+                        }
+                    }
+                },
+                "replicas": total_pods,
+            }
+        }
+
+        # Need to restart deployment without downtime - kubernetes manages the order of reboot
+        self.resource_kind(self.Resources.DEPLOYMENT.value).patch(
+            namespace=self.namespace, name=self.assisted_service_name, body=body
+        )
+        if wait_for_pods:
+            logging.info(f"Waiting on restartAt deployment now expecting to {total_pods} pods to be in Running state")
+            self.wait_for_pod_change(self.assisted_service_name, total_pods)
