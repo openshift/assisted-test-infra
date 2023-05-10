@@ -238,6 +238,14 @@ make all
 To run the flow without the installation stage:
 
 ```bash
+make run deploy_nodes_with_networking
+```
+
+### Run base flow without configuring networking 
+
+Deploy the nodes without the network configuration and without the installation stage:
+
+```bash
 make run deploy_nodes
 ```
 

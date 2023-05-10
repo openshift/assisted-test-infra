@@ -794,16 +794,15 @@ class Cluster(BaseCluster):
             and self._config.platform != consts.Platforms.NONE
         )
 
-    @JunitTestCase()
-    def prepare_for_installation(self, **kwargs):
-        super(Cluster, self).prepare_for_installation(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
+    def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
+        super(Cluster, self).prepare_nodes(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
         assert self.get_details().platform.type in self.api_client.get_cluster_supported_platforms(self.id)
-
-        self.nodes.wait_for_networking()
         self.set_hostnames_and_roles()
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
+    def prepare_networking(self):
+        self.nodes.wait_for_networking()
         self.set_network_params(controller=self.nodes.controller)
 
         # in case of None platform we need to specify dns records before hosts are ready

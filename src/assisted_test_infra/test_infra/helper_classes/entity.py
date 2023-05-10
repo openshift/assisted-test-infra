@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from assisted_service_client import models
+from junit_report import JunitTestCase
 
 import consts
 from assisted_test_infra.test_infra import BaseEntityConfig
@@ -56,7 +57,8 @@ class Entity(ABC):
                 raise KeyError(f"The key {k} is not present in {self._config.__class__.__name__}")
             setattr(self._config, k, v)
 
-    def prepare_for_installation(self, is_static_ip: bool = False, **kwargs):
+    @JunitTestCase()
+    def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
         self.update_config(**kwargs)
 
         log.info(
@@ -83,6 +85,14 @@ class Entity(ABC):
 
         self.nodes.start_all(check_ips=not (is_static_ip and self._config.is_ipv6))
         self.wait_until_hosts_are_discovered(allow_insufficient=True)
+
+    def prepare_networking(self):
+        pass
+
+    @JunitTestCase()
+    def prepare_for_installation(self, **kwargs):
+        self.prepare_nodes(is_static_ip=kwargs.pop("is_static_ip", False), **kwargs)
+        self.prepare_networking()
 
     def _set_ipxe_url(self):
         ipxe_server_url = (
