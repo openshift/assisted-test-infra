@@ -1,4 +1,5 @@
 from enum import Enum
+from ipaddress import IPv4Address, IPv6Address
 from typing import List, Optional
 
 from assisted_test_infra.test_infra import utils
@@ -23,6 +24,7 @@ class IptableRule:
         dest_port: Optional[str] = "",
         sources: Optional[List] = None,
         extra_args: Optional[str] = "",
+        address_familiy=IPv4Address,
     ):
         self._chain = chain
         self._target = target
@@ -30,10 +32,23 @@ class IptableRule:
         self._dest_port = dest_port
         self._sources = sources if sources else []
         self._extra_args = extra_args
+        self.address_familiy = address_familiy
+
+    @property
+    def _iptables_bin(self):
+        return "ip6tables" if self.address_familiy is IPv6Address else "iptables"
 
     def _build_command_string(self, option: IpTableCommandOption) -> str:
         sources_string = ",".join(self._sources)
-        rule_template = ["iptables", f"--{option.value}", self._chain, "-p", self._protocol, "-j", self._target]
+        rule_template = [
+            f"{self._iptables_bin}",
+            f"--{option.value}",
+            self._chain,
+            "-p",
+            self._protocol,
+            "-j",
+            self._target,
+        ]
 
         if self._sources:
             rule_template += ["-s", sources_string]
@@ -43,8 +58,9 @@ class IptableRule:
 
         if self._extra_args:
             rule_template += [self._extra_args]
-
-        return " ".join(rule_template)
+        rule_str = " ".join(rule_template)
+        log.info(f"build iptables command: {rule_str}")
+        return rule_str
 
     def _does_rule_exist(self) -> bool:
         check_rule = self._build_command_string(IpTableCommandOption.CHECK)
@@ -58,11 +74,9 @@ class IptableRule:
     def insert(self) -> None:
         if not self._does_rule_exist():
             insert_rule = self._build_command_string(IpTableCommandOption.INSERT)
-            log.info(f"Setting iptable rule: {insert_rule}")
             utils.run_command(insert_rule, shell=True)
 
     def delete(self) -> None:
         if self._does_rule_exist():
             delete_rule = self._build_command_string(IpTableCommandOption.DELETE)
-            log.info(f"Removing iptable rule: {delete_rule}")
             utils.run_command(delete_rule, shell=True)
