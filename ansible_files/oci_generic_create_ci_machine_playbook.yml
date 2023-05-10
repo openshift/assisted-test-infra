@@ -1,0 +1,41 @@
+- name: Create and configure the CI machine on OCI
+  hosts: localhost
+  vars_prompt:
+    - name: oci_unique_id
+      prompt: Unique ID used to name the resources
+      private: false
+    - name: oci_parent_compartment_ocid
+      prompt: parent compartment OCID where the resources will be created
+      private: false
+    - name: oci_tf_state_file
+      prompt: Terrafom state file that was used to create the infrastructure
+      private: false
+    - name: oci_tf_vars_file
+      prompt: Place where the Terrafom variable file will be stored
+      private: false
+    - name: oci_tenancy_ocid
+      prompt: tenancy OCID authentication value
+      private: false
+    - name: oci_user_ocid
+      prompt: user OCID authentication value
+      private: false
+    - name: oci_fingerprint
+      prompt: key fingerprint authentication value
+      private: false
+    - name: oci_region
+      prompt: OCI region
+      private: false
+    - name: oci_private_key_path
+      prompt: private key path authentication value
+      private: false
+  vars:
+    oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
+  roles:
+    - name: common/setup_ssh_key_pair
+      vars:
+        ssh_private_key_name: id_oci_ci_machine
+    - name: oci/create_infra
+      vars:
+        private_ssh_key_path: "{{ ssh_key_pair.filename }}"
+        public_ssh_key_path: "{{ ssh_key_pair.filename }}.pub"
+    - name: oci/export_connection_details # Export connection details, required for the "common" steps in Prow

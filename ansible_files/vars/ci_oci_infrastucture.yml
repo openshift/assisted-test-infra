@@ -1,0 +1,11 @@
+# OCI related vars, built from CI vars
+oci_unique_id: "{{ build_id }}"
+oci_secret_path: "{{ lookup('env', 'OCI_SECRET_PATH') }}"
+oci_tf_state_file: "{{ shared_dir }}/{{ oci_unique_id }}.tfstate"
+oci_tf_vars_file: "{{ shared_dir }}/{{ oci_unique_id }}.tfvars"
+oci_tenancy_ocid: "{{ lookup('file', oci_secret_path + '/tenancy_ocid') | trim }}"
+oci_user_ocid: "{{ lookup('file', oci_secret_path + '/user_ocid') | trim }}"
+oci_fingerprint: "{{ lookup('file', oci_secret_path + '/fingerprint') | trim }}"
+oci_region: "{{ lookup('file', oci_secret_path + '/region') | trim }}"
+oci_private_key_path: "{{ oci_secret_path }}/private_key_path"
+oci_parent_compartment_ocid: "{{ lookup('file', oci_secret_path + '/parent_compartment_ocid') | trim }}"

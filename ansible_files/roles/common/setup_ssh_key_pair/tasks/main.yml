@@ -1,6 +1,6 @@
 - name: Generate an OpenSSH keypair
   community.crypto.openssh_keypair:
-    path: /tmp/{{ ssh_private_key_name }}
+    path: "{{ shared_dir }}/{{ ssh_private_key_name }}"
   delegate_to: localhost
   register: ssh_key_pair
   run_once: true
