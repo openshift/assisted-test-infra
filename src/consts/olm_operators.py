@@ -7,6 +7,7 @@ class OperatorType:
     ODF = "odf"
     LSO = "lso"
     LVM = "lvm"
+    MCE = "mce"
 
 
 class OperatorStatus:
@@ -54,7 +55,24 @@ class OperatorResource:
         }
 
     @classmethod
-    def values(cls) -> dict:
+    def get_mce_resource_dict(cls, is_sno: bool) -> dict:
+        if not is_sno:
+            return cls.get_resource_dict(
+                master_memory=17000,
+                worker_memory=17000,
+                master_vcpu=8,
+                worker_vcpu=6,
+                master_disk_count=1,
+            )
+        else:
+            return cls.get_resource_dict(
+                master_memory=33000,
+                master_vcpu=8,
+                master_disk_count=1,
+            )
+
+    @classmethod
+    def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
             OperatorType.OCS: cls.get_resource_dict(
@@ -85,6 +103,7 @@ class OperatorResource:
                 master_vcpu=1,
                 master_disk_count=1,
             ),
+            OperatorType.MCE: cls.get_mce_resource_dict(is_sno),
         }
 
 
@@ -112,6 +131,10 @@ class LVMOperatorFailedError(OperatorFailedError):
     pass
 
 
+class MCEOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
     if operator == OperatorType.CNV:
         return CNVOperatorFailedError
@@ -127,5 +150,8 @@ def get_exception_factory(operator: str):
 
     if operator == OperatorType.LVM:
         return LVMOperatorFailedError
+
+    if operator == OperatorType.MCE:
+        return MCEOperatorFailedError
 
     return OperatorFailedError

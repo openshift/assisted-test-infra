@@ -253,6 +253,9 @@ class Cluster(BaseCluster):
     def unset_lvm(self):
         self.unset_olm_operator(consts.OperatorType.LVM)
 
+    def unset_mce(self):
+        self.unset_olm_operator(consts.OperatorType.MCE)
+
     def unset_olm_operator(self, operator_name):
         log.info(f"Unsetting {operator_name} for cluster: {self.id}")
         cluster = self.api_client.cluster_get(self.id)

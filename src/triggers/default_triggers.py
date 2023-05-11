@@ -9,24 +9,24 @@ from triggers.olm_operators_trigger import OlmOperatorsTrigger
 _default_triggers = frozendict(
     {
         "remote_deployment": Trigger(
-            condition=lambda config: config.remote_service_url is not None, worker_disk=consts.DISK_SIZE_100GB
+            conditions=[lambda config: config.remote_service_url is not None], worker_disk=consts.DISK_SIZE_100GB
         ),
         "none_platform": Trigger(
-            condition=lambda config: config.platform == consts.Platforms.NONE,
+            conditions=[lambda config: config.platform == consts.Platforms.NONE],
             user_managed_networking=True,
             tf_platform=consts.Platforms.NONE,
         ),
         "vsphere_platform": Trigger(
-            condition=lambda config: config.platform == consts.Platforms.VSPHERE,
+            conditions=[lambda config: config.platform == consts.Platforms.VSPHERE],
             user_managed_networking=False,
             tf_platform=consts.Platforms.VSPHERE,
         ),
         "nutanix_platform": Trigger(
-            condition=lambda config: config.platform == consts.Platforms.NUTANIX,
+            conditions=[lambda config: config.platform == consts.Platforms.NUTANIX],
             tf_platform=consts.Platforms.NUTANIX,
         ),
         "sno": Trigger(
-            condition=lambda config: config.masters_count == 1,
+            conditions=[lambda config: config.masters_count == 1],
             workers_count=0,
             high_availability_mode=consts.HighAvailabilityMode.NONE,
             user_managed_networking=True,
@@ -35,34 +35,43 @@ _default_triggers = frozendict(
             network_type=None,
         ),
         "ipv4": Trigger(
-            condition=lambda config: config.is_ipv4 is True and config.is_ipv6 is False,
+            conditions=[lambda config: config.is_ipv4 is True and config.is_ipv6 is False],
             cluster_networks=consts.DEFAULT_CLUSTER_NETWORKS_IPV4,
             service_networks=consts.DEFAULT_SERVICE_NETWORKS_IPV4,
         ),
         "ipv6": Trigger(
-            condition=lambda config: config.is_ipv4 is False and config.is_ipv6 is True,
+            conditions=[lambda config: config.is_ipv4 is False and config.is_ipv6 is True],
             cluster_networks=consts.DEFAULT_CLUSTER_NETWORKS_IPV6,
             service_networks=consts.DEFAULT_SERVICE_NETWORKS_IPV6,
         ),
         "ipv6_required_configurations": Trigger(
-            condition=lambda config: config.is_ipv6 is True,
+            conditions=[lambda config: config.is_ipv6 is True],
             network_type=consts.NetworkType.OVNKubernetes,
         ),
         "OVNKubernetes": Trigger(
-            condition=lambda config: config.network_type == consts.NetworkType.OVNKubernetes,
+            conditions=[lambda config: config.network_type == consts.NetworkType.OVNKubernetes],
         ),
         "dualstack": Trigger(
-            condition=lambda config: config.is_ipv4 is True and config.is_ipv6 is True,
+            conditions=[lambda config: config.is_ipv4 is True and config.is_ipv6 is True],
             cluster_networks=consts.DEFAULT_CLUSTER_NETWORKS_IPV4V6,
             service_networks=consts.DEFAULT_SERVICE_NETWORKS_IPV4V6,
         ),
-        "ocs_operator": OlmOperatorsTrigger(condition=lambda config: "ocs" in config.olm_operators, operator="ocs"),
-        "lso_operator": OlmOperatorsTrigger(condition=lambda config: "lso" in config.olm_operators, operator="lso"),
-        "cnv_operator": OlmOperatorsTrigger(condition=lambda config: "cnv" in config.olm_operators, operator="cnv"),
-        "odf_operator": OlmOperatorsTrigger(condition=lambda config: "odf" in config.olm_operators, operator="odf"),
-        "lvm_operator": OlmOperatorsTrigger(condition=lambda config: "lvm" in config.olm_operators, operator="lvm"),
+        "ocs_operator": OlmOperatorsTrigger(conditions=[lambda config: "ocs" in config.olm_operators], operator="ocs"),
+        "lso_operator": OlmOperatorsTrigger(conditions=[lambda config: "lso" in config.olm_operators], operator="lso"),
+        "cnv_operator": OlmOperatorsTrigger(conditions=[lambda config: "cnv" in config.olm_operators], operator="cnv"),
+        "odf_operator": OlmOperatorsTrigger(conditions=[lambda config: "odf" in config.olm_operators], operator="odf"),
+        "lvm_operator": OlmOperatorsTrigger(conditions=[lambda config: "lvm" in config.olm_operators], operator="lvm"),
+        "sno_mce_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "mce" in config.olm_operators, lambda config2: config2.masters_count == 1],
+            operator="mce",
+            is_sno=True,
+        ),
+        "mce_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "mce" in config.olm_operators, lambda config2: config2.masters_count > 1],
+            operator="mce",
+        ),
         "ipxe_boot": Trigger(
-            condition=lambda config: config.ipxe_boot is True,
+            conditions=[lambda config: config.ipxe_boot is True],
             download_image=False,
             master_boot_devices=["hd", "network"],
             worker_boot_devices=["hd", "network"],

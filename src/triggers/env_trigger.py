@@ -29,7 +29,7 @@ class Triggerable(ABC):
         except AttributeError:
             return False
 
-    def handle_trigger(self, conditions_string: List[str], values: Dict[str, Any]) -> None:
+    def handle_trigger(self, conditions_string: List[List[str]], values: Dict[str, Any]) -> None:
         for k, v in values.items():
             if not hasattr(self, k):
                 continue
@@ -48,29 +48,37 @@ class Triggerable(ABC):
 class Trigger:
     """Mechanism for applying pre-known configurations if a given trigger condition was met"""
 
-    def __init__(self, *, condition: Callable[[Triggerable], bool], **kwargs):
-        self._condition = condition
+    def __init__(self, *, conditions: List[Callable[[Triggerable], bool]], **kwargs):
+        self._conditions = conditions
         self._variables_to_set = kwargs
-        self._conditions_string = re.findall(r"(lambda.*),", str(inspect.getsourcelines(condition)[0]))
+        conditions_strings = []
+        for condition in conditions:
+            conditions_strings.append(re.findall(r"(lambda.*),", str(inspect.getsourcelines(condition)[0])))
+        self._conditions_strings = conditions_strings
 
-    def is_condition_met(self, config: Triggerable):
-        try:
-            return self._condition(config)
-        except AttributeError:
-            return False
+    def is_condition_met(self, configs: List[Triggerable]):
+        met = []
+        for condition in self._conditions:
+            for config in configs:
+                try:
+                    if condition(config):
+                        met.append(True)
+                        break
+                except AttributeError:
+                    pass
+
+        return len(met) > 0 and len(met) == len(self._conditions) and all(met)
 
     def handle(self, config: Triggerable):
-        config.handle_trigger(self._conditions_string, self._variables_to_set)
+        config.handle_trigger(self._conditions_strings, self._variables_to_set)
 
     @classmethod
     def trigger_configurations(cls, configs: List[Triggerable], default_triggers: dict):
         met_triggers = {}
 
         for trigger_name, trigger in default_triggers.items():
-            for config in configs:
-                if trigger.is_condition_met(config):
-                    met_triggers[trigger_name] = trigger
-                    break
+            if trigger.is_condition_met(configs):
+                met_triggers[trigger_name] = trigger
 
         for trigger_name, trigger in met_triggers.items():
             for config in configs:
