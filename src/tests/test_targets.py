@@ -1,14 +1,9 @@
-from glob import glob
-from pathlib import Path
-
 import pytest
 from junit_report import JunitTestSuite
 
-import consts
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
-from assisted_test_infra.test_infra.tools import TerraformUtils
-from service_client import InventoryClient, SuppressAndLog, log
+from service_client import InventoryClient, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, InfraEnvConfig
 
@@ -54,12 +49,20 @@ class TestMakefileTargets(BaseTest):
         log.info(f"Successfully deleted {len(clusters)} clusters")
 
     @JunitTestSuite()
-    def test_destroy_terraform(self):
-        clusters_dirs = glob(f"{consts.TF_FOLDER}/*")
-        for cluster_dir in clusters_dirs:
-            tfvar_files = glob(f"{cluster_dir}/*/{consts.TFVARS_JSON_NAME}", recursive=True)
-            for tfvar_file in tfvar_files:
-                with SuppressAndLog(Exception):
-                    tf_folder = Path(tfvar_file).resolve().parent
-                    tf = TerraformUtils(str(tf_folder))
-                    tf.destroy(force=False)
+    def test_destroy_terraform(
+        self, api_client: InventoryClient, prepared_controller_configuration: BaseNodesConfig, cluster_configuration
+    ):
+        """Destroy cluster via terraform"""
+
+        cluster_id = cluster_configuration.cluster_id
+        clusters = api_client.clusters_list() if not cluster_id else [{"id": cluster_id}]
+
+        for cluster_info in clusters:
+            cluster = Cluster(api_client, ClusterConfig(cluster_id=cluster_info["id"]), InfraEnvConfig())
+            controller = self.get_terraform_controller(prepared_controller_configuration, cluster._config)
+            config_vars = controller.get_all_vars()
+            controller.tf.set_vars(**config_vars)
+            controller.tf.select_defined_variables()
+            controller.destroy_all_nodes()
+
+        log.info(f"Successfully destroyed {len(clusters)} clusters")
