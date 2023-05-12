@@ -89,10 +89,10 @@ def filter_operators_by_type(operators: List[MonitoredOperator], operator_types:
     return list(filter(lambda operator: operator.operator_type in operator_types, operators))
 
 
-def resource_param(base_value: int, resource_name: str, operator: str):
+def resource_param(base_value: int, resource_name: str, operator: str, is_sno: bool = False):
     try:
         value = base_value
-        resource = consts.OperatorResource.values()[operator][resource_name]
+        resource = consts.OperatorResource.values(is_sno)[operator][resource_name]
         if value <= resource:
             value = value + resource
         return value
