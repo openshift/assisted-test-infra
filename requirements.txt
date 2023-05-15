@@ -16,7 +16,7 @@ openshift-client==1.0.18
 paramiko==3.1.0
 pre-commit==3.3.1
 pycharm_remote_debugger==0.1.16
-pytest-xdist==3.2.1
+pytest-xdist==3.3.0
 pytest==7.3.1
 python-dateutil==2.8.2
 python-hcl2==4.3.1
