@@ -240,7 +240,7 @@ run: validate_namespace deploy_assisted_service deploy_ui
 set_dns:
 	scripts/assisted_deployment.sh set_dns $(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG))
 
-deploy_ui: image_build create_hub_cluster
+deploy_ui: create_hub_cluster
 	NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) scripts/deploy_ui.sh
 
 deploy_prometheus_ui:
@@ -311,7 +311,7 @@ deploy_assisted_operator: clear_operator
 # Inventory #
 #############
 
-deploy_assisted_service: image_build create_hub_cluster bring_assisted_service
+deploy_assisted_service: create_hub_cluster bring_assisted_service
 	mkdir -p assisted-service/build
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
 
