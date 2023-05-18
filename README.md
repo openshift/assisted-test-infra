@@ -134,7 +134,7 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `HTTPS_PROXY_URL`            | A proxy URL to use for creating HTTPS connections outside the cluster                                                                                      |
 | `HTTP_PROXY_URL`             | A proxy URL to use for creating HTTP connections outside the cluster                                                                                       |
 | `ISO`                        | path to ISO to spawn VM with, if set vms will be spawn with this iso without creating cluster. File must have the '.iso' suffix                            |
-| `MASTER_MEMORY`              | memory for master VM, default: 16984MB                                                                                                                     |
+| `MASTER_MEMORY`              | memory for master VM, default: 16384MB                                                                                                                     |
 | `NETWORK_CIDR`               | network CIDR to use for virsh VM network, default: "192.168.126.0/24"                                                                                      |
 | `NETWORK_NAME`               | virsh network name for VMs creation, default: test-infra-net                                                                                               |
 | `NO_PROXY_VALUES`            | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying                                      |

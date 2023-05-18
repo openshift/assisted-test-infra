@@ -91,7 +91,7 @@ variable "masters_count" {
 
 variable "master_memory" {
   type        = number
-  default     = 16984
+  default     = 16384
   description = "The size of the master's virtual machine's memory, in MB"
 }
 
@@ -115,7 +115,7 @@ variable "workers_count" {
 
 variable "worker_memory" {
   type        = number
-  default     = 16984
+  default     = 16384
   description = "The size of the worker's virtual machine's memory, in MB"
 }
 
