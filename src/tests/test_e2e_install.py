@@ -11,7 +11,7 @@ class TestInstall(BaseTest):
     @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())
     def test_install(self, cluster, openshift_version):
         cluster.prepare_for_installation()
-        cluster.start_install_and_wait_for_installed()
+        cluster.start_install_and_wait_for_installed(fall_on_pending_status=True)
 
     @JunitTestSuite()
     @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())
@@ -22,10 +22,10 @@ class TestInstall(BaseTest):
     @pytest.mark.parametrize("network_type", [consts.NetworkType.OpenShiftSDN, consts.NetworkType.OVNKubernetes])
     def test_networking(self, cluster, network_type):
         cluster.prepare_for_installation()
-        cluster.start_install_and_wait_for_installed()
+        cluster.start_install_and_wait_for_installed(fall_on_pending_status=True)
 
     @JunitTestSuite()
     @pytest.mark.parametrize("olm_operators", get_supported_operators())
     def test_olm_operator(self, cluster, olm_operators):
         cluster.prepare_for_installation()
-        cluster.start_install_and_wait_for_installed()
+        cluster.start_install_and_wait_for_installed(fall_on_pending_status=True)
