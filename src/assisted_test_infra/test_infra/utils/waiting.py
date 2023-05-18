@@ -4,7 +4,7 @@ import waiting
 
 import consts
 from assisted_test_infra.test_infra import utils
-from assisted_test_infra.test_infra.exceptions import InstallationFailedError
+from assisted_test_infra.test_infra.exceptions import InstallationFailedError, InstallationPendingActionError
 from service_client import log
 
 
@@ -12,13 +12,16 @@ def _get_cluster_hosts_with_mac(client, cluster_id, macs):
     return [client.get_host_by_mac(cluster_id, mac) for mac in macs]
 
 
-def _are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_error_status=True):
+def _are_hosts_in_status(
+    hosts, nodes_count, statuses, status_info="", fall_on_error_status=True, fall_on_pending_status=False
+):
     hosts_in_status = [
         host for host in hosts if (host["status"] in statuses and host["status_info"].startswith(status_info))
     ]
     if len(hosts_in_status) >= nodes_count:
         return True
-    elif fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
+
+    if fall_on_error_status and len([host for host in hosts if host["status"] == consts.NodesStatus.ERROR]) > 0:
         hosts_in_error = [
             (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
             for i, host in enumerate(hosts, start=1)
@@ -26,6 +29,15 @@ def _are_hosts_in_status(hosts, nodes_count, statuses, status_info="", fall_on_e
         ]
         log.error("Some of the hosts are in insufficient or error status. Hosts in error %s", hosts_in_error)
         raise InstallationFailedError()
+
+    if fall_on_pending_status and len([host for host in hosts if "pending" in host["status"]]) > 0:
+        hosts_in_pending = [
+            (i, host["id"], host["requested_hostname"], host["role"], host["status"], host["status_info"])
+            for i, host in enumerate(hosts, start=1)
+            if "pending" in host["status"]
+        ]
+        log.error("Some of the hosts are in pending user action. Hosts pending %s", hosts_in_pending)
+        raise InstallationPendingActionError()
 
     log.info(
         "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
@@ -75,6 +87,7 @@ def wait_till_all_hosts_are_in_status(
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
+    fall_on_pending_status=False,
 ):
     log.info("Wait till %s nodes are in one of the statuses %s", nodes_count, statuses)
 
@@ -85,6 +98,7 @@ def wait_till_all_hosts_are_in_status(
             statuses=statuses,
             status_info=status_info,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,

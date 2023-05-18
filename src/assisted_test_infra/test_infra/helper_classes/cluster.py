@@ -601,10 +601,11 @@ class Cluster(BaseCluster):
         wait_for_operators=True,
         wait_for_cluster_install=True,
         download_kubeconfig=True,
+        fall_on_pending_status=False,
     ):
         self.start_install()
         if wait_for_hosts:
-            self.wait_for_hosts_to_install()
+            self.wait_for_hosts_to_install(fall_on_pending_status=fall_on_pending_status)
         if wait_for_operators:
             self.wait_for_operators_to_finish()
         if wait_for_cluster_install:
@@ -735,7 +736,11 @@ class Cluster(BaseCluster):
         )
 
     def wait_for_hosts_to_install(
-        self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True, nodes_count: int = None
+        self,
+        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        fall_on_error_status=True,
+        nodes_count: int = None,
+        fall_on_pending_status: bool = False,
     ):
         wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -744,6 +749,7 @@ class Cluster(BaseCluster):
             nodes_count=nodes_count or self.nodes.nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
         )
 
     def wait_for_operators_to_finish(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True):
