@@ -58,7 +58,7 @@ variable "disk_size" {
 
 variable "memory_size" {
   type = string
-  default = "16984"
+  default = "16384"
   description = "The VM RAM size in MB. TODO: Adjust this variable to the right size"
 }
 

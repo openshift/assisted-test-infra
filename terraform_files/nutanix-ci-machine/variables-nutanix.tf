@@ -45,7 +45,7 @@ variable "build_id" {
 
 variable "memory" {
   type        = number
-  default     = 16984
+  default     = 16384
   description = "RAM in MiB allocated to masters"
 }
 
