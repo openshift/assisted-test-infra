@@ -62,7 +62,6 @@ class OperatorResource:
                 worker_memory=17000,
                 master_vcpu=8,
                 worker_vcpu=6,
-                master_disk_count=1,
             )
         else:
             return cls.get_resource_dict(
