@@ -67,7 +67,6 @@ class OperatorResource:
             return cls.get_resource_dict(
                 master_memory=33000,
                 master_vcpu=8,
-                master_disk_count=1,
             )
 
     @classmethod
