@@ -616,6 +616,7 @@ class Cluster(BaseCluster):
         if download_kubeconfig:
             self.download_kubeconfig()
 
+        log.info(f"{self.get_details()}")
         self._is_installed = True
 
     def disable_worker_hosts(self):
