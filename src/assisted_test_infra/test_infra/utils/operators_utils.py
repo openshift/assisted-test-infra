@@ -86,6 +86,7 @@ def wait_till_all_operators_are_in_status(
 
 
 def filter_operators_by_type(operators: List[MonitoredOperator], operator_types: List[str]) -> List[MonitoredOperator]:
+    log.info(f"Attempting to filter operators by {operator_types} types, available operates {operators}")
     return list(filter(lambda operator: operator.operator_type in operator_types, operators))
 
 
