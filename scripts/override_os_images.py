@@ -40,7 +40,7 @@ def main():
                     image.update(override_image)
                     break
 
-    if os.getenv("RELEASE_IMAGES") is not None:
+    if os.getenv("RELEASE_IMAGES") is not None and json.loads(os.getenv("RELEASE_IMAGES")):
         release_images = json.loads(os.getenv("RELEASE_IMAGES"))
         latest_ocp_version = release_images[-1]["openshift_version"]
 

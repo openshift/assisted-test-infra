@@ -1,9 +1,16 @@
+import json
+from glob import glob
+from pathlib import Path
+
 import pytest
+from assisted_service_client import PlatformType
 from junit_report import JunitTestSuite
 
+from assisted_test_infra.test_infra import ClusterName
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
-from service_client import InventoryClient, log
+from consts import consts
+from service_client import InventoryClient, SuppressAndLog, log
 from tests.base_test import BaseTest
 from tests.config import ClusterConfig, InfraEnvConfig
 
@@ -62,3 +69,38 @@ class TestMakefileTargets(BaseTest):
             controller.destroy_all_nodes()
 
         log.info(f"Successfully destroyed {len(clusters)} clusters")
+
+    @JunitTestSuite()
+    def test_destroy_available_terraform(
+        self, prepared_controller_configuration: BaseNodesConfig, cluster_configuration
+    ):
+        clusters_tf_folders = glob(f"{consts.TF_FOLDER}/*")
+        destroyed_clusters = 0
+
+        for cluster_dir in clusters_tf_folders:
+            tfvar_files = glob(f"{cluster_dir}/*/{consts.TFVARS_JSON_NAME}", recursive=True)
+            for tfvar_file in tfvar_files:
+                with SuppressAndLog(Exception):
+                    with open(tfvar_file) as f:
+                        tfvars = json.load(f)
+
+                    for key, value in tfvars.items():
+                        if key == "cluster_name":
+                            value = ClusterName(value)
+                        if hasattr(cluster_configuration, key):
+                            setattr(cluster_configuration, key, value)
+                        if hasattr(prepared_controller_configuration, key):
+                            setattr(prepared_controller_configuration, key, value)
+
+                    platform = cluster_configuration.platform or PlatformType.BAREMETAL
+                    if platform != Path(tfvar_file).resolve().parent.stem:
+                        continue
+
+                    controller = self.get_terraform_controller(prepared_controller_configuration, cluster_configuration)
+                    config_vars = controller.get_all_vars()
+                    controller.tf.set_vars(**config_vars)
+                    controller.tf.select_defined_variables()
+                    controller.destroy_all_nodes()
+                    destroyed_clusters += 1
+
+        log.info(f"Successfully destroyed {destroyed_clusters} clusters")
