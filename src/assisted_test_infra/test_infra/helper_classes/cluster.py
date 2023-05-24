@@ -588,13 +588,14 @@ class Cluster(BaseCluster):
             nodes_count=num_masters - 1,
         )
 
-    def wait_for_hosts_stage(self, stage: str, inclusive: bool = True):
+    def wait_for_hosts_stage(self, stage: str, inclusive: bool = True, **kwargs):
         index = consts.all_host_stages.index(stage)
         utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
             stages=consts.all_host_stages[index:] if inclusive else consts.all_host_stages[index + 1 :],
             nodes_count=self.nodes.nodes_count,
+            **kwargs,
         )
 
     @JunitTestCase()
