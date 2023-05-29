@@ -41,7 +41,8 @@ class TerraformController(LibvirtController):
         return self._entity_name.get()
 
     def get_all_vars(self):
-        return {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self._entity_name.get()}
+        cluster_name = self._entity_config.entity_name.get()
+        return {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": cluster_name}
 
     def _get_params_from_config(self) -> Munch:
         return self._terraform_params(**self._config.get_all())
