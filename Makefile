@@ -223,10 +223,17 @@ _destroy_virsh:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
 
 destroy_terraform_controller:
-	TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test
+	@if [ "$(ENABLE_KUBE_API)" = "false"  ]; then \
+		TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test; \
+	else \
+	    TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_available_terraform $(MAKE) test; \
+	fi
 
-destroy_nutanix: destroy_terraform_controller
-destroy_vsphere: destroy_terraform_controller
+destroy_nutanix:
+	PLATFORM=nutanix make destroy_terraform_controller
+
+destroy_vsphere:
+	PLATFORM=vsphere make destroy_terraform_controller
 
 #######
 # Run #
@@ -307,7 +314,7 @@ deploy_assisted_operator: clear_operator
 
 deploy_assisted_service: create_hub_cluster bring_assisted_service
 	mkdir -p assisted-service/build
-	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) scripts/deploy_assisted_service.sh
+	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) DEBUG_FLAGS="${DEBUG_FLAGS}" scripts/deploy_assisted_service.sh
 
 bring_assisted_service:
 	./scripts/bring_assisted_service.sh
