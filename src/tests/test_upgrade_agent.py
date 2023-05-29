@@ -27,7 +27,7 @@ class TestUpgradeAgent(BaseTest):
     @classmethod
     def _get_previous_agent_image(cls) -> str:
         """Returns the reference to the previous agent image."""
-        return os.environ.get("PREVIOUS_AGENT_IMAGE", "quay.io/edge-infrastructure/assisted-installer-agent:v2.9.0")
+        return os.environ.get("PREVIOUS_AGENT_IMAGE", "quay.io/edge-infrastructure/assisted-installer-agent:v2.20.1")
 
     @classmethod
     def _get_broken_agent_image(cls) -> str:
