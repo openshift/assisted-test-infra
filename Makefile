@@ -210,10 +210,17 @@ _destroy_terraform:
 
 destroy_terraform_controller:
 	TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test
+	@if [ "$(ENABLE_KUBE_API)" = "false"  ]; then \
+		TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test; \
+	else \
+	    TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_available_terraform $(MAKE) test; \
+	fi
 
-destroy_nutanix: destroy_terraform_controller
-destroy_vsphere: destroy_terraform_controller
+destroy_nutanix:
+	PLATFORM=nutanix make destroy_terraform_controller
 
+destroy_vsphere:
+	PLATFORM=vsphere make destroy_terraform_controller
 
 #######
 # Run #
