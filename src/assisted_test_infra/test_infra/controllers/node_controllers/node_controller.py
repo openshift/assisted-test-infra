@@ -124,7 +124,6 @@ class NodeController(ABC):
     def is_active(self, node_name) -> bool:
         pass
 
-    @abstractmethod
     def set_boot_order(self, node_name, cd_first=False) -> None:
         pass
 
