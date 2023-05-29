@@ -138,6 +138,7 @@ def wait_till_at_least_one_host_is_in_status(
     nodes_count=1,
     timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
+    fall_on_pending_status=False,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
 ):
     log.info("Wait till 1 node is in one of the statuses %s", statuses)
@@ -149,6 +150,7 @@ def wait_till_at_least_one_host_is_in_status(
             statuses=statuses,
             status_info=status_info,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
         ),
         timeout_seconds=timeout,
         sleep_seconds=interval,
