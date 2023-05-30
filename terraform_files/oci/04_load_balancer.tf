@@ -3,16 +3,19 @@
 # fail
 
 resource "oci_network_load_balancer_network_load_balancer" "nlb" {
-  compartment_id = var.parent_compartment_ocid
-  subnet_id      = local.public_subnet_id
+  compartment_id = var.oci_compartment_id
+  subnet_id      = var.oci_public_subnet_id
 
   display_name                   = "nlb-${var.cluster_name}"
   is_preserve_source_destination = false
   is_private                     = false
-  network_security_group_ids = [
-    local.nsg_load_balancer_id,
-    local.nsg_cluster_access_id # allow access to cluster (forwarded traffic)
-  ]
+  network_security_group_ids = concat(
+    [
+      oci_core_network_security_group.nsg_load_balancer.id,
+      oci_core_network_security_group.nsg_cluster_access.id # allow access to cluster (forwarded traffic)
+    ],
+    var.oci_extra_load_balancer_nsg_ids # e.g.: allow access to ci-machine to reach the API endpoint
+  )
 }
 
 locals {

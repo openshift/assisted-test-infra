@@ -1,4 +1,4 @@
-variable "parent_compartment_ocid" {
+variable "oci_compartment_id" {
   type        = string
   description = "Parent compartment where the resources will be created"
 }

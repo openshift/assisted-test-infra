@@ -1,10 +1,10 @@
 data "oci_objectstorage_namespace" "ns" {
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
 }
 
 resource "oci_objectstorage_bucket" "discovery_bucket" {
   #Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
   name           = "discovery-${var.cluster_name}"
   namespace      = data.oci_objectstorage_namespace.ns.namespace
 
@@ -22,7 +22,7 @@ resource "oci_objectstorage_object" "discovery_object" {
 
 resource "oci_core_image" "discovery_image" {
   #Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
 
   #Optional
   display_name = oci_objectstorage_object.discovery_object.object

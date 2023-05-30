@@ -1,10 +1,10 @@
 data "oci_identity_availability_domains" "ads" {
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
 }
 
 data "oci_core_images" "os_images" {
   #Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
 
   operating_system         = "CentOS"
   operating_system_version = "8 Stream"
@@ -16,7 +16,7 @@ data "oci_core_images" "os_images" {
 resource "oci_core_instance" "ci_instance" {
   # Required
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.parent_compartment_ocid
+  compartment_id      = var.oci_compartment_id
   shape               = "VM.Standard.E4.Flex"
 
   shape_config {
@@ -40,8 +40,8 @@ resource "oci_core_instance" "ci_instance" {
     subnet_id                 = oci_core_subnet.vcn_public_subnet.id
     nsg_ids = [
       oci_core_network_security_group.nsg_ci_machine.id,
-      oci_core_network_security_group.nsg_load_balancer_access.id, # allow access to load balancer
-      oci_core_network_security_group.nsg_cluster_access.id        # allow access to cluster (SSH)
+      oci_core_network_security_group.nsg_load_balancer_ci_access.id, # allow access to load balancer
+      oci_core_network_security_group.nsg_cluster_ci_access.id        # allow access to cluster (SSH)
     ]
   }
   metadata = {

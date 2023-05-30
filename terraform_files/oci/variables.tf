@@ -1,9 +1,3 @@
-variable "unique_id" {
-  type        = string
-  description = "Identifier used to tag all and suffix all the ressource names related to the current job"
-  default     = "12345678901234567890"
-}
-
 variable "cluster_name" {
   type        = string
   description = <<EOF
@@ -12,20 +6,18 @@ All the resources will be located under a folder with this name
 and tagged with the cluster name
 The resources should be associate with this name for easy recognition.
 EOF
-  default     = "toto-cluster"
 }
 
 variable "discovery_image_path" {
   type        = string
   description = "Path to the discovery ISO"
-  default     = "/home/agentil/Downloads/oci-cluster-9.iso"
 }
 
 ///////////
 // OCI variables
 ///////////
 
-variable "parent_compartment_ocid" {
+variable "oci_compartment_id" {
   type        = string
   description = "Parent compartment where the resources will be created"
   default     = "ocid1.compartment.oc1..aaaaaaaai7vtinyn742rxezzwu5ush25eycupetff6li2hy2zmi74zbleeka"
@@ -35,6 +27,33 @@ variable "oci_dns_zone_name" {
   type        = string
   description = "DNS zone name where the records for the cluster will be created"
   default     = "assisted-ci.oci-rhelcert.edge-sro.rhecoeng.com"
+}
+
+variable "oci_vcn_id" {
+  type        = string
+  description = "VCN ID where the cluster will be created"
+}
+
+variable "oci_private_subnet_id" {
+  type        = string
+  description = "Subnet ID of the private subnet"
+}
+
+variable "oci_public_subnet_id" {
+  type        = string
+  description = "Subnet ID of the public subnet"
+}
+
+variable "oci_extra_node_nsg_ids" {
+  type        = list(string)
+  description = "Extra network security group IDs be assigned to cluster nodes (e.g.: to allow nodes to reach assisted service or allow SSH access to nodes)"
+  default     = []
+}
+
+variable "oci_extra_load_balancer_nsg_ids" {
+  type        = list(string)
+  description = "Extra network security group IDs be assigned to load balancer (e.g.: to allow API/MCS/HTTP/HTTPS access to the cluster)"
+  default     = []
 }
 
 ///////////

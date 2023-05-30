@@ -4,7 +4,7 @@ module "vcn" {
   # insert the 5 required variables here
 
   # Required Inputs
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
 
   internet_gateway_route_rules = null
   local_peering_gateways       = null
@@ -22,7 +22,7 @@ module "vcn" {
 resource "oci_core_security_list" "private_security_list" {
 
   # Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
   vcn_id         = module.vcn.vcn_id
 
   # Optional
@@ -76,7 +76,7 @@ resource "oci_core_security_list" "private_security_list" {
 resource "oci_core_security_list" "public_security_list" {
 
   # Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
   vcn_id         = module.vcn.vcn_id
 
   # Optional
@@ -130,7 +130,7 @@ resource "oci_core_security_list" "public_security_list" {
 resource "oci_core_subnet" "vcn_private_subnet" {
 
   # Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
   vcn_id         = module.vcn.vcn_id
   cidr_block     = "10.0.1.0/24"
   dns_label      = "private"
@@ -146,7 +146,7 @@ resource "oci_core_subnet" "vcn_private_subnet" {
 resource "oci_core_subnet" "vcn_public_subnet" {
 
   # Required
-  compartment_id = var.parent_compartment_ocid
+  compartment_id = var.oci_compartment_id
   vcn_id         = module.vcn.vcn_id
   cidr_block     = "10.0.0.0/24"
   dns_label      = "public"

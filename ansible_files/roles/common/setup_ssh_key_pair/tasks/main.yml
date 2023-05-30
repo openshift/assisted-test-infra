@@ -5,6 +5,12 @@
   register: ssh_key_pair
   run_once: true
 
+- name: Ensure .ssh directory exists in user's home
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.ssh"
+    state: directory
+    mode: '0700'
+
 - name: Set ssh settings as fact
   ansible.builtin.set_fact:
     ssh_private_key_path: "{{ ansible_user_dir }}/.ssh/{{ ssh_private_key_name }}"
@@ -24,10 +30,11 @@
     state: present
     key: "{{ ssh_key_pair.public_key }}"
 
-- name: Generate SSH client configuration
-  ansible.builtin.template:
-    src: "config.j2"
-    dest: "{{ ansible_user_dir }}/.ssh/config"
+- name: Create or update SSH client configuration
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('template', 'config.j2') }}"
+    path: "{{ ansible_user_dir }}/.ssh/config"
+    create: true
     owner: "{{ ansible_user_id }}"
     group: "{{ ansible_user_gid }}"
     mode: '0600'

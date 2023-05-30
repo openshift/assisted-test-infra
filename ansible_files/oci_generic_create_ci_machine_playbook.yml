@@ -4,7 +4,7 @@
     - name: oci_unique_id
       prompt: Unique ID used to name the resources
       private: false
-    - name: oci_parent_compartment_ocid
+    - name: oci_compartment_id
       prompt: parent compartment OCID where the resources will be created
       private: false
     - name: oci_tf_state_file
