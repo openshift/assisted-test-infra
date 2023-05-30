@@ -70,7 +70,9 @@ class _EnvVariables(DataPool, ABC):
     platform: EnvVar = EnvVar(["PLATFORM"])
     tf_platform: EnvVar = EnvVar(["TF_PLATFORM", "PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
     user_managed_networking: EnvVar = EnvVar(
-        ["USER_MANAGED_NETWORKING"], default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING
+        ["USER_MANAGED_NETWORKING"],
+        loader=lambda x: bool(strtobool(x)),
+        default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING,
     )
     high_availability_mode: EnvVar = EnvVar(default=env_defaults.DEFAULT_HIGH_AVAILABILITY_MODE)
     download_image: EnvVar = EnvVar(
