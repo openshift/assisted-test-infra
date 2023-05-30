@@ -4,6 +4,7 @@ import consts
 
 DEFAULT_NUMBER_OF_MASTERS: int = consts.NUMBER_OF_MASTERS
 DEFAULT_DAY2_WORKERS_COUNT: int = 1
+DEFAULT_DAY2_MASTERS_COUNT: int = 0
 DEFAULT_WORKERS_COUNT: int = 2
 DEFAULT_STORAGE_POOL_PATH: str = str(Path.cwd().joinpath("storage_pool"))
 DEFAULT_SSH_PRIVATE_KEY_PATH: Path = Path.home() / ".ssh" / "id_rsa"

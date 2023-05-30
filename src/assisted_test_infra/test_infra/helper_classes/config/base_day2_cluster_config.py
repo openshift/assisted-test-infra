@@ -15,6 +15,7 @@ class BaseDay2ClusterConfig(BaseClusterConfig, ABC):
     day1_base_cluster_domain: Optional[str] = None
     day1_api_vip_dnsname: Optional[str] = None
     day2_workers_count: Optional[int] = None
+    day2_masters_count: Optional[int] = None
     day2_cpu_architecture: Optional[str] = None
     infra_env_id: Optional[str] = None
     tf_folder: Optional[str] = None

@@ -32,6 +32,9 @@ class _EnvVariables(DataPool, ABC):
     day2_workers_count: EnvVar = EnvVar(
         ["NUM_DAY2_WORKERS"], loader=int, default=env_defaults.DEFAULT_DAY2_WORKERS_COUNT
     )
+    day2_masters_count: EnvVar = EnvVar(
+        ["NUM_DAY2_MASTERS"], loader=int, default=env_defaults.DEFAULT_DAY2_MASTERS_COUNT
+    )
     vip_dhcp_allocation: EnvVar = EnvVar(["VIP_DHCP_ALLOCATION"], loader=lambda x: bool(strtobool(x)))
 
     worker_memory: EnvVar = EnvVar(["WORKER_MEMORY"], loader=int, default=resources.DEFAULT_WORKER_MEMORY)
