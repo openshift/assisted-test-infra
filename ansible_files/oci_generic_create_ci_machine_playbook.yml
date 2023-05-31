@@ -1,7 +1,7 @@
 - name: Create and configure the CI machine on OCI
   hosts: localhost
   vars_prompt:
-    - name: oci_unique_id
+    - name: unique_id
       prompt: Unique ID used to name the resources
       private: false
     - name: oci_compartment_id
@@ -13,10 +13,10 @@
     - name: oci_tf_vars_file
       prompt: Place where the Terrafom variable file will be stored
       private: false
-    - name: oci_tenancy_ocid
+    - name: oci_tenancy_id
       prompt: tenancy OCID authentication value
       private: false
-    - name: oci_user_ocid
+    - name: oci_user_id
       prompt: user OCID authentication value
       private: false
     - name: oci_fingerprint

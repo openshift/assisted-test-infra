@@ -22,8 +22,8 @@
 
 - name: "Add ci_machine to inventory"
   ansible.builtin.add_host:
-    name: "{{ deployed_tf.outputs.ci_machine.value.display_name }}"
-    ansible_host: "{{ deployed_tf.outputs.ci_machine.value.public_ip }}"
-    ansible_user: "{{ deployed_tf.outputs.ci_machine.value.user }}"
-    ansible_ssh_private_key_file: "{{ deployed_tf.outputs.ci_machine.value.ssh_private_key_path }}"
+    name: "{{ deployed_tf.outputs.ci_machine_inventory.value.display_name }}"
+    ansible_host: "{{ deployed_tf.outputs.ci_machine_inventory.value.public_ip }}"
+    ansible_user: "{{ deployed_tf.outputs.ci_machine_inventory.value.user }}"
+    ansible_ssh_private_key_file: "{{ deployed_tf.outputs.ci_machine_inventory.value.ssh_private_key_path }}"
     groups: "primary"
