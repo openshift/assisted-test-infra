@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import waiting
 
@@ -45,6 +45,13 @@ def _are_hosts_in_status(
         host_statuses(hosts),
     )
     return False
+
+
+def _are_hosts_using_agent_image(hosts: List[Dict[str, Any]], image: str) -> bool:
+    for host in hosts:
+        if host.get("discovery_agent_version") != image:
+            return False
+    return True
 
 
 def host_statuses(hosts) -> List[Tuple[int, str, str, str, str, str]]:
@@ -103,6 +110,26 @@ def wait_till_all_hosts_are_in_status(
         timeout_seconds=timeout,
         sleep_seconds=interval,
         waiting_for=f"Nodes to be in of the statuses {statuses}",
+    )
+
+
+def wait_till_all_hosts_use_agent_image(
+    client: Any,
+    cluster_id: str,
+    image: str,
+    timeout: int = consts.NODES_REGISTERED_TIMEOUT,
+    interval: int = consts.DEFAULT_CHECK_STATUSES_INTERVAL,
+) -> None:
+    log.info("Wait till all nodes are using agent image %s", image)
+
+    waiting.wait(
+        lambda: _are_hosts_using_agent_image(
+            hosts=client.get_cluster_hosts(cluster_id),
+            image=image,
+        ),
+        timeout_seconds=timeout,
+        sleep_seconds=interval,
+        waiting_for=f"Nodes to be using agent image {image}",
     )
 
 
