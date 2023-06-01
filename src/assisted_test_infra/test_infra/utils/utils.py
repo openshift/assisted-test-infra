@@ -453,14 +453,16 @@ def get_default_openshift_version(client=None) -> str:
         log.info("Using client to get default openshift version")
         ocp_versions_dict = client.get_openshift_versions()
         versions = [k for k, v in ocp_versions_dict.items() if v.get("default", False)]
-    else:
+    elif os.path.exists(consts.RELEASE_IMAGES_PATH):
         log.info(f"Reading {consts.RELEASE_IMAGES_PATH} to get default openshift version")
         with open(consts.RELEASE_IMAGES_PATH, "r") as f:
             release_images = json.load(f)
             versions = [v.get("openshift_version") for v in release_images if v.get("default", False)]
+    else:
+        log.warning(f"Using local Openshift Version default - {consts.OpenshiftVersion.DEFAULT.value}")
+        versions = [str(consts.OpenshiftVersion.DEFAULT.value)]
 
     log.info(f"Default openshift version found {versions}")
-
     assert len(versions) <= 1, f"There should be no more than one default version - {versions}"
     return versions[0] if versions else None
 
