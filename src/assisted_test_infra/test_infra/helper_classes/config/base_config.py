@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Any
+from types import NoneType
+from typing import Any, Union, get_args, get_origin
 
 from triggers.env_trigger import DataPool, Triggerable
 
@@ -56,13 +57,27 @@ class BaseConfig(Triggerable, ABC):
     def set_value(self, attr: str, new_val):
         setattr(self, attr, self._get_correct_value(attr, new_val))
 
+    @classmethod
+    def _get_annotations_actual_type(cls, annotations: dict, key: str) -> Any:
+        _type = annotations[key]
+
+        if get_origin(_type) is not Union:
+            return _type
+
+        # Optional is actually a Union[<type>, NoneType]
+        _args = get_args(_type)
+        if len(_args) > 1 and _args[1] is NoneType:
+            return _args[0]
+
+        raise ValueError(f"Type {_type} is not supported in {cls.__name__}")
+
     def _get_correct_value(self, attr: str, new_val):
         """Get value in its correct type"""
         annotations = self.get_annotations()
         if not hasattr(self, attr):
             raise AttributeError(f"Can't find {attr} among {annotations}")
 
-        _type = annotations[attr]
+        _type = self._get_annotations_actual_type(annotations, attr)
 
         if hasattr(_type, "__origin__"):
             return _type.__origin__(new_val)
