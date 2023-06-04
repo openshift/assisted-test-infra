@@ -118,6 +118,11 @@ class Cluster(BaseCluster):
         if self._config.cpu_architecture:
             extra_vars["cpu_architecture"] = self._config.cpu_architecture
 
+        if len(self._config.olm_operators) > 0:
+            olm_operators = self.get_olm_operators()
+            if olm_operators:
+                extra_vars["olm_operators"] = olm_operators
+
         cluster = self.api_client.create_cluster(
             self._config.cluster_name.get(),
             ssh_public_key=self._config.ssh_public_key,
@@ -127,7 +132,6 @@ class Cluster(BaseCluster):
             additional_ntp_source=self._config.additional_ntp_source,
             user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
-            olm_operators=[{"name": name} for name in self._config.olm_operators],
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
             **extra_vars,
@@ -135,6 +139,19 @@ class Cluster(BaseCluster):
 
         self._config.cluster_id = cluster.id
         return cluster.id
+
+    def get_olm_operators(self) -> List:
+        olm_operators = []
+        for operator_name in self._config.olm_operators:
+            operator_properties = consts.get_operator_properties(
+                operator_name, api_vip=self._config.api_vip, ingress_vip=self._config.ingress_vip
+            )
+            operator = {"name": operator_name}
+            if operator_properties:
+                operator["properties"] = operator_properties
+            olm_operators.append(operator)
+
+        return olm_operators
 
     @property
     def is_sno(self):
@@ -235,14 +252,25 @@ class Cluster(BaseCluster):
     def get_ignored_validations(self, **kwargs) -> models.IgnoredValidations:
         return self.api_client.client.v2_get_ignored_validations(self.id, **kwargs)
 
-    def set_ocs(self, properties=None):
-        self.set_olm_operator(consts.OperatorType.OCS, properties=properties)
+    def set_ocs(self, properties: str = None, update: bool = False):
+        self.set_olm_operator(consts.OperatorType.OCS, properties=properties, update=update)
 
-    def set_cnv(self, properties=None):
-        self.set_olm_operator(consts.OperatorType.CNV, properties=properties)
+    def set_cnv(self, properties: str = None, update: bool = False):
+        self.set_olm_operator(consts.OperatorType.CNV, properties=properties, update=update)
 
-    def set_lvm(self, properties=None):
-        self.set_olm_operator(consts.OperatorType.LVM, properties=properties)
+    def set_lvm(self, properties: str = None, update: bool = False):
+        self.set_olm_operator(consts.OperatorType.LVM, properties=properties, update=update)
+
+    def set_mce(self, properties: str = None, update: bool = False):
+        self.set_olm_operator(consts.OperatorType.MCE, properties=properties, update=update)
+
+    def set_metallb(self, properties: str = None, update: bool = False):
+        if properties is None:
+            properties = consts.get_operator_properties(
+                consts.OperatorType.METALLB, api_vip=self._config.api_vip, ingress_vip=self._config.ingress_vip
+            )
+
+        self.set_olm_operator(consts.OperatorType.METALLB, properties=properties, update=update)
 
     def unset_ocs(self):
         self.unset_olm_operator(consts.OperatorType.OCS)
@@ -256,6 +284,9 @@ class Cluster(BaseCluster):
     def unset_mce(self):
         self.unset_olm_operator(consts.OperatorType.MCE)
 
+    def unset_metallb(self):
+        self.unset_olm_operator(consts.OperatorType.METALLB)
+
     def unset_olm_operator(self, operator_name):
         log.info(f"Unsetting {operator_name} for cluster: {self.id}")
         cluster = self.api_client.cluster_get(self.id)
@@ -268,11 +299,11 @@ class Cluster(BaseCluster):
 
         self.api_client.update_cluster(self.id, {"olm_operators": olm_operators})
 
-    def set_olm_operator(self, operator_name, properties=None):
+    def set_olm_operator(self, operator_name, properties=None, update=False):
         log.info(f"Setting {operator_name} for cluster: {self.id}")
         cluster = self.api_client.cluster_get(self.id)
 
-        if operator_name in [o.name for o in cluster.monitored_operators]:
+        if not update and operator_name in [o.name for o in cluster.monitored_operators]:
             return
 
         olm_operators = []
@@ -334,6 +365,11 @@ class Cluster(BaseCluster):
             api_vip=api_vip,
             ingress_vip=ingress_vip,
         )
+
+        if consts.OperatorType.METALLB in self._config.olm_operators:
+            assert len(self._config.api_vip) > 0, "API vip is required for MetalLB operator"
+            assert len(self._config.ingress_vip) > 0, "Ingress vip is required for MetalLB operator"
+            self.set_metallb(update=True)
 
     def get_primary_machine_cidr(self):
         cidr = self.nodes.controller.get_primary_machine_cidr()

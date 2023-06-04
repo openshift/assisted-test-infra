@@ -8,6 +8,7 @@ class OperatorType:
     LSO = "lso"
     LVM = "lvm"
     MCE = "mce"
+    METALLB = "metallb"
 
 
 class OperatorStatus:
@@ -102,6 +103,7 @@ class OperatorResource:
                 master_disk_count=1,
             ),
             OperatorType.MCE: cls.get_mce_resource_dict(is_sno),
+            OperatorType.METALLB: cls.get_resource_dict(),
         }
 
 
@@ -133,6 +135,10 @@ class MCEOperatorFailedError(OperatorFailedError):
     pass
 
 
+class MetalLBOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
     if operator == OperatorType.CNV:
         return CNVOperatorFailedError
@@ -152,4 +158,15 @@ def get_exception_factory(operator: str):
     if operator == OperatorType.MCE:
         return MCEOperatorFailedError
 
+    if operator == OperatorType.METALLB:
+        return MetalLBOperatorFailedError
+
     return OperatorFailedError
+
+
+def get_operator_properties(operator: str, **kwargs) -> str:
+    if operator == OperatorType.METALLB:
+        if (api_vip := kwargs.get("api_vip")) and (ingress_vip := kwargs.get("ingress_vip")):
+            return f'{{"api_ip": "{api_vip}", "ingress_ip": "{ingress_vip}"}}'
+
+    return ""
