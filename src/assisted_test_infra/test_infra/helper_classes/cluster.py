@@ -21,7 +21,10 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import terraform_utils
 from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
-from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
+from assisted_test_infra.test_infra.utils.waiting import (
+    wait_till_all_hosts_are_in_status,
+    wait_till_all_hosts_use_agent_image,
+)
 from service_client import InventoryClient, log
 
 
@@ -187,6 +190,13 @@ class Cluster(BaseCluster):
             nodes_count=nodes_count or self.nodes.nodes_count,
             statuses=statuses,
             timeout=consts.DISCONNECTED_TIMEOUT,
+        )
+
+    def wait_until_hosts_use_agent_image(self, image: str) -> None:
+        wait_till_all_hosts_use_agent_image(
+            client=self.api_client,
+            cluster_id=self.id,
+            image=image,
         )
 
     @JunitTestCase()

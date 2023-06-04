@@ -25,14 +25,9 @@ class TestUpgradeAgent(BaseTest):
         )
 
     @classmethod
-    def _get_previous_agent_image(cls) -> str:
-        """Returns the reference to the previous agent image."""
-        return os.environ.get("PREVIOUS_AGENT_IMAGE", "quay.io/edge-infrastructure/assisted-installer-agent:v2.20.1")
-
-    @classmethod
-    def _get_broken_agent_image(cls) -> str:
-        """Returns an agent image reference that doesn't exist."""
-        return os.environ.get("BROKEN_AGENT_IMAGE", "quay.io/edge-infrastructure/assisted-installer-agent:broken")
+    def _get_other_agent_image(cls) -> str:
+        """Returns the reference to the other agent image."""
+        return os.environ.get("OTHER_AGENT_IMAGE", "quay.io/edge-infrastructure/assisted-installer-agent:v2.20.1")
 
     @classmethod
     def _get_current_agent_image(
@@ -98,33 +93,23 @@ class TestUpgradeAgent(BaseTest):
     @JunitTestSuite()
     def test_upgrade_agent(self, cluster, namespace, k8s_client):
         """
-        This test will prepare the cluster with the previous agent image. Once it is ready to install it will restart
-        the service with an agent image that doesn't exist, so that all the hosts will move to `insufficient`. Then it
-        will restart the service again with the current image, so that host will upgrade and move to `ready` again.
+        This test prepares the cluster with an image different to the current one. Once it is ready to install it
+        restarts the current image and wait till all the hosts have been upgraded to use it.
         """
         assert (current_image := self._get_current_agent_image(k8s_client, namespace))
-        assert (previous_image := self._get_previous_agent_image())
-        assert (broken_image := self._get_broken_agent_image())
-        log.info(f"Previous image is '{previous_image}'")
-        log.info(f"Broken image is '{broken_image}'")
-        log.info(f"Current image is '{current_image}'")
+        assert (other_image := self._get_other_agent_image())
+        log.info(f"Other agent image is '{other_image}'")
+        log.info(f"Current agent image is '{current_image}'")
 
         try:
-            # Prepare the cluster for installation using the previous image:
-            log.info("Waiting for cluster to move to 'ready' with previous image")
-            self._load_service_with_agent_image(k8s_client, namespace, previous_image)
+            # Prepare the cluster for installation using the other image:
+            log.info("Waiting for cluster to be ready to install with agent image '%s'", other_image)
+            self._load_service_with_agent_image(k8s_client, namespace, other_image)
             cluster.prepare_for_installation()
 
-            # Restart the service with the broken agent image, so that nodes will not be able to pull it and move to the
-            # insufficient state:
-            log.info("Waiting for hosts to move to 'insufficient' with broken image")
-            self._load_service_with_agent_image(k8s_client, namespace, broken_image)
-            cluster.wait_until_hosts_are_insufficient()
-
-            # Restart the agent with the current agent image and wait for all hosts to be ready, which means that they
-            # upgraded correctly:
-            log.info("Waiting for hosts to move to 'ready'")
+            # Restart the service with the current agent image and wait till all host are using it:
+            log.info("Waiting for hosts to use agent image '%s'", current_image)
             self._load_service_with_agent_image(k8s_client, namespace, current_image)
-            cluster.wait_for_ready_to_install()
+            cluster.wait_until_hosts_use_agent_image(current_image)
         finally:
             self._load_service_with_agent_image(k8s_client, namespace, current_image)
