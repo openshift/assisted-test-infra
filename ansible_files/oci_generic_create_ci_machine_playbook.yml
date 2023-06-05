@@ -39,3 +39,7 @@
         private_ssh_key_path: "{{ ssh_key_pair.filename }}"
         public_ssh_key_path: "{{ ssh_key_pair.filename }}.pub"
     - name: oci/export_connection_details # Export connection details, required for the "common" steps in Prow
+    - name: oci/setup_oci_credentials_on_ci_machine
+      vars:
+        ci_machine: "{{ groups['primary'][0] }}"
+        infra: "{{ deployed_tf.outputs.infra.value }}"

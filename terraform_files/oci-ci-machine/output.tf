@@ -7,7 +7,7 @@ output "ci_machine_inventory" {
   }
 }
 
-output "infrastructure" {
+output "infra" {
   value = {
     "oci_vcn_id" : module.vcn.vcn_id,
     "oci_private_subnet_id" : oci_core_subnet.vcn_private_subnet.id,
