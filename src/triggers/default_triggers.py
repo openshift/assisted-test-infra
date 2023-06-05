@@ -58,6 +58,9 @@ _default_triggers = frozendict(
         ),
         "ocs_operator": OlmOperatorsTrigger(conditions=[lambda config: "ocs" in config.olm_operators], operator="ocs"),
         "lso_operator": OlmOperatorsTrigger(conditions=[lambda config: "lso" in config.olm_operators], operator="lso"),
+        "metallb_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "metallb" in config.olm_operators], operator="metallb"
+        ),
         "cnv_operator": OlmOperatorsTrigger(conditions=[lambda config: "cnv" in config.olm_operators], operator="cnv"),
         "odf_operator": OlmOperatorsTrigger(conditions=[lambda config: "odf" in config.olm_operators], operator="odf"),
         "lvm_operator": OlmOperatorsTrigger(conditions=[lambda config: "lvm" in config.olm_operators], operator="lvm"),
