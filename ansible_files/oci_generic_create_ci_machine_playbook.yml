@@ -28,16 +28,19 @@
     - name: oci_private_key_path
       prompt: private key path authentication value
       private: false
+    - name: oci_private_ssh_key_path
+      prompt: private SSH key path used to login the CI machine
+      private: false
+    - name: oci_public_ssh_key_path
+      prompt: public SSH key path used to login the CI machine
+      private: false
   vars:
     oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
   roles:
-    - name: common/setup_ssh_key_pair
-      vars:
-        ssh_private_key_name: id_oci_ci_machine
     - name: oci/create_infra
       vars:
-        private_ssh_key_path: "{{ ssh_key_pair.filename }}"
-        public_ssh_key_path: "{{ ssh_key_pair.filename }}.pub"
+        private_ssh_key_path: "{{ oci_private_ssh_key_path }}"
+        public_ssh_key_path: "{{ oci_public_ssh_key_path }}"
     - name: oci/export_connection_details # Export connection details, required for the "common" steps in Prow
     - name: oci/setup_oci_for_test_infra
       vars:

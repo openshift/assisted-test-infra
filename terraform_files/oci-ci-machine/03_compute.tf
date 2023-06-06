@@ -13,6 +13,25 @@ data "oci_core_images" "os_images" {
   sort_order               = "DESC"
 }
 
+# Use cloud init to configure root user
+data "cloudinit_config" "config" {
+  part {
+    content_type = "text/cloud-config"
+
+    content = yamlencode({
+      "users" : [
+        {
+          "name" : "root",
+          "ssh-authorized-keys" : [
+            file(var.public_ssh_key_path)
+          ]
+        }
+      ]
+      }
+    )
+  }
+}
+
 resource "oci_core_instance" "ci_instance" {
   # Required
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -45,14 +64,14 @@ resource "oci_core_instance" "ci_instance" {
     ]
   }
   metadata = {
-    ssh_authorized_keys = file(var.public_ssh_key_path)
+    user_data = data.cloudinit_config.config.rendered
   }
   preserve_boot_volume = false
 
   # wait an ssh connection and wait for cloud-init to complete
   connection {
     type        = "ssh"
-    user        = "opc"
+    user        = "root"
     host        = self.public_ip
     timeout     = "5m"
     private_key = file(var.private_ssh_key_path)
