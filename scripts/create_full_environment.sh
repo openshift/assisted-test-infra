@@ -2,13 +2,16 @@
 
 set -o errexit
 
+export PATH=${PATH}:/usr/local/bin
+
+
 function error() {
     echo $@ 1>&2
 }
 
 # Check OS
 OS=$(awk -F= '/^ID=/ { print $2 }' /etc/os-release | tr -d '"')
-if [[ ! ${OS} =~ ^(centos)$ ]] && [[ ! ${OS} =~ ^(rhel)$ ]] && [[ ! ${OS} =~ ^(rocky)$ ]] && [[ ! ${OS} =~ ^(almalinux)$ ]]; then
+if [[ ! ${OS} =~ ^(ol)$ ]] && [[ ! ${OS} =~ ^(centos)$ ]] && [[ ! ${OS} =~ ^(rhel)$ ]] && [[ ! ${OS} =~ ^(rocky)$ ]] && [[ ! ${OS} =~ ^(almalinux)$ ]]; then
     error "\"${OS}\" is an unsupported OS. We support only CentOS, RHEL, Rocky or AlmaLinux."
     error "It's not recommended to run the code in this repo locally on your personal machine, as it makes some opinionated configuration changes to the machine it's running on"
     exit 1
