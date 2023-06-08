@@ -24,7 +24,8 @@ resource "oci_core_instance" "masters" {
   source_details {
     source_id               = oci_core_image.discovery_image.id
     source_type             = "image"
-    boot_volume_size_in_gbs = 50
+    boot_volume_size_in_gbs = 100
+    boot_volume_vpus_per_gb = 20
   }
 
   # Optional
@@ -45,6 +46,9 @@ resource "oci_core_instance" "masters" {
   }
 
   preserve_boot_volume = false
+
+  # ensure the custom image was updated before creating these instances
+  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 # Create worker instances
@@ -64,7 +68,8 @@ resource "oci_core_instance" "workers" {
   source_details {
     source_id               = oci_core_image.discovery_image.id
     source_type             = "image"
-    boot_volume_size_in_gbs = 50
+    boot_volume_size_in_gbs = 100
+    boot_volume_vpus_per_gb = 20
   }
 
   # Optional
@@ -85,5 +90,8 @@ resource "oci_core_instance" "workers" {
   }
 
   preserve_boot_volume = false
+
+  # ensure the custom image was updated before creating these instances
+  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
