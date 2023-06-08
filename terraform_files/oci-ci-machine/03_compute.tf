@@ -45,7 +45,7 @@ resource "oci_core_instance" "ci_instance" {
   source_details {
     source_id               = data.oci_core_images.os_images.images[0].id
     source_type             = "image"
-    boot_volume_size_in_gbs = 100
+    boot_volume_size_in_gbs = 300
   }
 
   # Optional
