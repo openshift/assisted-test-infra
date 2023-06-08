@@ -46,3 +46,10 @@ variable "oci_region" {
   type        = string
   description = "OCI region"
 }
+
+# List of available OSes: https://docs.oracle.com/en-us/iaas/images/oracle-linux-8x/
+variable "os_image_name" {
+  type        = string
+  description = "Name of the OS to be provisioned on the CI machine"
+  default     = "Oracle-Linux-8.7-2023.05.24-0"
+}

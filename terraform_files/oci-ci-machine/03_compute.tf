@@ -6,11 +6,10 @@ data "oci_core_images" "os_images" {
   #Required
   compartment_id = var.oci_compartment_id
 
-  operating_system         = "CentOS"
-  operating_system_version = "8 Stream"
-  state                    = "AVAILABLE"
-  sort_by                  = "TIMECREATED"
-  sort_order               = "DESC"
+  display_name = var.os_image_name
+  state        = "AVAILABLE"
+  sort_by      = "TIMECREATED"
+  sort_order   = "DESC"
 }
 
 # Use cloud init to configure root user
@@ -39,14 +38,14 @@ resource "oci_core_instance" "ci_instance" {
   shape               = "VM.Standard.E4.Flex"
 
   shape_config {
-    memory_in_gbs = 8
-    ocpus         = 2
+    memory_in_gbs = 16
+    ocpus         = 8
   }
 
   source_details {
     source_id               = data.oci_core_images.os_images.images[0].id
     source_type             = "image"
-    boot_volume_size_in_gbs = 50
+    boot_volume_size_in_gbs = 100
   }
 
   # Optional
