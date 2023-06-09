@@ -13,6 +13,7 @@ data "oci_core_images" "os_images" {
 }
 
 # Use cloud init to configure root user
+# and grow root filesystem
 data "cloudinit_config" "config" {
   part {
     content_type = "text/cloud-config"
@@ -26,11 +27,11 @@ data "cloudinit_config" "config" {
           ]
         }
       ],
-      "growpart" : {
-        "mode" : "auto",
-        "devices" : ["/"],
-        "ignore_growroot_disabled" : false
-      }
+      "runcmd" : [
+        "growpart /dev/sda 3",
+        "pvresize /dev/sda3",
+        "lvresize --extents +100%FREE --resizefs /dev/mapper/ocivolume-root"
+      ]
     })
   }
 }
@@ -42,14 +43,14 @@ resource "oci_core_instance" "ci_instance" {
   shape               = "VM.Standard.E4.Flex"
 
   shape_config {
-    memory_in_gbs = 32
-    ocpus         = 8
+    memory_in_gbs = 16
+    ocpus         = 4
   }
 
   source_details {
     source_id               = data.oci_core_images.os_images.images[0].id
     source_type             = "image"
-    boot_volume_size_in_gbs = 500
+    boot_volume_size_in_gbs = 250
   }
 
   # Optional
