@@ -1,4 +1,4 @@
-- name: Destroy equinix infrastructure
+- name: Destroy OCI infrastructure
   hosts: localhost
   vars_prompt:
     - name: oci_tf_state_file
