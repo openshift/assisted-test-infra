@@ -25,9 +25,13 @@ data "cloudinit_config" "config" {
             file(var.public_ssh_key_path)
           ]
         }
-      ]
+      ],
+      "growpart" : {
+        "mode" : "auto",
+        "devices" : ["/"],
+        "ignore_growroot_disabled" : false
       }
-    )
+    })
   }
 }
 
