@@ -38,14 +38,14 @@ resource "oci_core_instance" "ci_instance" {
   shape               = "VM.Standard.E4.Flex"
 
   shape_config {
-    memory_in_gbs = 16
+    memory_in_gbs = 32
     ocpus         = 8
   }
 
   source_details {
     source_id               = data.oci_core_images.os_images.images[0].id
     source_type             = "image"
-    boot_volume_size_in_gbs = 300
+    boot_volume_size_in_gbs = 500
   }
 
   # Optional
