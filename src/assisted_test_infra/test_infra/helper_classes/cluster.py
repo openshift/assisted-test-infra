@@ -262,8 +262,12 @@ class Cluster(BaseCluster):
     def get_ignored_validations(self, **kwargs) -> models.IgnoredValidations:
         return self.api_client.client.v2_get_ignored_validations(self.id, **kwargs)
 
+    # to be removed
     def set_ocs(self, properties: str = None, update: bool = False):
         self.set_olm_operator(consts.OperatorType.OCS, properties=properties, update=update)
+
+    def set_odf(self, properties: str = None, update: bool = False):
+        self.set_olm_operator(consts.OperatorType.ODF, properties=properties, update=update)
 
     def set_cnv(self, properties: str = None, update: bool = False):
         self.set_olm_operator(consts.OperatorType.CNV, properties=properties, update=update)
@@ -282,8 +286,12 @@ class Cluster(BaseCluster):
 
         self.set_olm_operator(consts.OperatorType.METALLB, properties=properties, update=update)
 
+    # to be removed
     def unset_ocs(self):
         self.unset_olm_operator(consts.OperatorType.OCS)
+
+    def unset_odf(self):
+        self.unset_olm_operator(consts.OperatorType.ODF)
 
     def unset_cnv(self):
         self.unset_olm_operator(consts.OperatorType.CNV)
