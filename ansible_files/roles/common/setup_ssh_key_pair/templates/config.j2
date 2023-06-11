@@ -3,7 +3,7 @@ host {{ hostvars[host].inventory_hostname }}
     {# take first private IP available, default on public IP if no private IP -#}
     {% set private_ips = hostvars[host].ansible_all_ipv4_addresses | sort | ansible.utils.ipaddr('private') -%}
     Hostname {{ private_ips | first | default(hostvars[host].ansible_all_ipv4_addresses[0]) }}
-    User {{ hostvars[host].ansible_user }}
+    User {{ hostvars[host].ansible_user_id }}
     IdentityFile {{ ssh_private_key_path }}
     StrictHostKeyChecking no
 

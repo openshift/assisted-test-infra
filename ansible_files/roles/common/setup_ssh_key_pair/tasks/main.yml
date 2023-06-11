@@ -1,9 +1,16 @@
 - name: Generate an OpenSSH keypair
   community.crypto.openssh_keypair:
-    path: /tmp/{{ ssh_private_key_name }}
+    path: "{{ shared_dir }}/{{ ssh_private_key_name }}"
+    mode: '0600'
   delegate_to: localhost
   register: ssh_key_pair
   run_once: true
+
+- name: Ensure .ssh directory exists in user's home
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.ssh"
+    state: directory
+    mode: '0700'
 
 - name: Set ssh settings as fact
   ansible.builtin.set_fact:
@@ -24,10 +31,11 @@
     state: present
     key: "{{ ssh_key_pair.public_key }}"
 
-- name: Generate SSH client configuration
-  ansible.builtin.template:
-    src: "config.j2"
-    dest: "{{ ansible_user_dir }}/.ssh/config"
+- name: Create or update SSH client configuration
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('template', 'config.j2') }}"
+    path: "{{ ansible_user_dir }}/.ssh/config"
+    create: true
     owner: "{{ ansible_user_id }}"
     group: "{{ ansible_user_gid }}"
     mode: '0600'

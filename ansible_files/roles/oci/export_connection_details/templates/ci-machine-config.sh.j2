@@ -1,0 +1,4 @@
+source "${SHARED_DIR}/fix-uid.sh"
+
+export IP="{{ hostvars[groups[primary_device_group_name][0]].ansible_host }}"
+export SSH_KEY_FILE="{{ hostvars[groups[primary_device_group_name][0]].ansible_ssh_private_key_file }}"

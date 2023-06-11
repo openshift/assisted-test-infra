@@ -1,0 +1,15 @@
+# Adapt and use this var file if you want to easily provision OCI infra outside CI environment, e.g.:
+# ansible-playbook -e "@vars/standalone_oci_sample.yml" oci_generic_create_ci_machine_playbook.yml
+shared_dir: /tmp
+unique_id: "{{ lookup('env', 'USER') }}test"
+oci_tf_state_file: "{{ shared_dir }}/{{ unique_id }}.tfstate"
+oci_tf_vars_file: "{{ shared_dir }}/{{ unique_id }}.tfvars"
+oci_tenancy_id: "{{ lookup('env', 'OCI_TENANCY_ID') }}"
+oci_user_id: "{{ lookup('env', 'OCI_USER_ID') }}"
+oci_fingerprint: "{{ lookup('env', 'OCI_FINGERPRINT') }}"
+oci_region: "{{ lookup('env', 'OCI_REGION') }}"
+oci_private_key_path: "{{ lookup('env', 'OCI_PRIVATE_KEY_PATH') }}"
+oci_compartment_id: "{{ lookup('env', 'oci_compartment_id') }}"
+oci_dns_zone: "{{ lookup('env', 'oci_dns_zone') }}"
+oci_private_ssh_key_path: "{{ lookup('env', 'USER') }}/.ssh/id_rsa"
+oci_public_ssh_key_path: "{{ lookup('env', 'USER') }}/.ssh/id_rsa.pub"
