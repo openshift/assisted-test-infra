@@ -18,4 +18,4 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     ignition_config_override: str = None
     verify_download_iso_ssl: bool = None
     is_static_ip: bool = None
-    discovery_kernel_arguments: List[dict] = None
+    kernel_arguments: List[dict[str, str]] = None
