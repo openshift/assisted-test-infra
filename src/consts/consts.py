@@ -7,9 +7,6 @@ from .durations import HOUR, MINUTE
 
 
 class OpenshiftVersion(Enum):
-    VERSION_4_6 = "4.6"
-    VERSION_4_7 = "4.7"
-    VERSION_4_8 = "4.8"
     VERSION_4_9 = "4.9"
     VERSION_4_10 = "4.10"
     VERSION_4_11 = "4.11"
