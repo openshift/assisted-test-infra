@@ -566,13 +566,20 @@ class Cluster(BaseCluster):
             nodes_count=nodes_count,
         )
 
-    def wait_for_host_status(self, statuses, fall_on_error_status=True, nodes_count: int = MINIMUM_NODES_TO_WAIT):
+    def wait_for_host_status(
+        self,
+        statuses,
+        fall_on_error_status=True,
+        nodes_count: int = MINIMUM_NODES_TO_WAIT,
+        fall_on_pending_status=False,
+    ):
         utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=statuses,
             nodes_count=nodes_count,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
         )
 
     def wait_for_specific_host_status(
@@ -716,17 +723,20 @@ class Cluster(BaseCluster):
         hosts_to_reboot = self.get_reboot_required_hosts()
         self.nodes.run_for_given_nodes_by_cluster_hosts(cluster_hosts=hosts_to_reboot, func_name="reset")
 
-    def wait_for_one_host_to_be_in_wrong_boot_order(self, fall_on_error_status=True):
+    def wait_for_one_host_to_be_in_wrong_boot_order(self, fall_on_error_status=True, fall_on_pending_status=False):
         utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
             status_info=consts.HostStatusInfo.WRONG_BOOT_ORDER,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
             timeout=consts.PENDING_USER_ACTION_TIMEOUT,
         )
 
-    def wait_for_at_least_one_host_to_be_in_reboot_timeout(self, fall_on_error_status=True, nodes_count=1):
+    def wait_for_at_least_one_host_to_be_in_reboot_timeout(
+        self, fall_on_error_status=True, nodes_count=1, fall_on_pending_status=False
+    ):
         utils.waiting.wait_till_at_least_one_host_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -734,11 +744,16 @@ class Cluster(BaseCluster):
             status_info=(consts.HostStatusInfo.REBOOT_TIMEOUT, consts.HostStatusInfo.OLD_REBOOT_TIMEOUT),
             nodes_count=nodes_count,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
             timeout=consts.PENDING_USER_ACTION_TIMEOUT,
         )
 
     def wait_for_hosts_to_be_in_wrong_boot_order(
-        self, nodes_count, timeout=consts.PENDING_USER_ACTION_TIMEOUT, fall_on_error_status=True
+        self,
+        nodes_count,
+        timeout=consts.PENDING_USER_ACTION_TIMEOUT,
+        fall_on_error_status=True,
+        fall_on_pending_status=False,
     ):
         wait_till_all_hosts_are_in_status(
             client=self.api_client,
@@ -748,6 +763,7 @@ class Cluster(BaseCluster):
             nodes_count=nodes_count,
             timeout=timeout,
             fall_on_error_status=fall_on_error_status,
+            fall_on_pending_status=fall_on_pending_status,
         )
 
     def wait_for_ready_to_install(self):
