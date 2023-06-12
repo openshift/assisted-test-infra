@@ -30,8 +30,8 @@ class EventsHandler:
                     return True
         return False
 
-    def get_events(self, host_id: str = "", cluster_id: str = "", infra_env_id: str = ""):
-        return self.api_client.get_events(cluster_id=cluster_id, host_id=host_id, infra_env_id=infra_env_id)
+    def get_events(self, host_id: str = "", cluster_id: str = "", infra_env_id: str = "", **kwargs):
+        return self.api_client.get_events(cluster_id=cluster_id, host_id=host_id, infra_env_id=infra_env_id, **kwargs)
 
     def wait_for_event(
         self,
