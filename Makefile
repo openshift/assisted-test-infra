@@ -209,7 +209,6 @@ _destroy_terraform:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
 
 destroy_terraform_controller:
-	TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test
 	@if [ "$(ENABLE_KUBE_API)" = "false"  ]; then \
 		TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test; \
 	else \
