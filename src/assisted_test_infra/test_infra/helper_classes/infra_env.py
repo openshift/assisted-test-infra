@@ -44,8 +44,8 @@ class InfraEnv(Entity):
             proxy=self._config.proxy,
             image_type=self._config.iso_image_type,
         )
-        if self._config.discovery_kernel_arguments is not None:
-            infraenv_create_params["kernel_arguments"] = self._config.discovery_kernel_arguments
+        if self._config.kernel_arguments is not None:
+            infraenv_create_params["kernel_arguments"] = self._config.kernel_arguments
         if self._config.cpu_architecture:
             infraenv_create_params["cpu_architecture"] = self._config.cpu_architecture
 
@@ -136,6 +136,11 @@ class InfraEnv(Entity):
         infra_env_update_params = models.InfraEnvUpdateParams(static_network_config=self._config.static_network_config)
         self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
         log.info(f"InfraEnv static network configuration successfully updated {self._config.static_network_config}")
+
+    def update_infra_env_kernel(self, kernel_arguments: List[dict[str, str]]) -> None:
+        self.update_config(kernel_arguments=kernel_arguments)
+        infra_env_update_params = models.InfraEnvUpdateParams(kernel_arguments=kernel_arguments)
+        self.api_client.update_infra_env(infra_env_id=self.id, infra_env_update_params=infra_env_update_params)
 
     def update_static_network_config(self, static_network_config: List[dict]) -> None:
         self.update_config(static_network_config=static_network_config)
