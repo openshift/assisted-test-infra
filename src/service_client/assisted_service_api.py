@@ -329,6 +329,7 @@ class InventoryClient(object):
         host_id: Optional[str] = "",
         infra_env_id: Optional[str] = "",
         categories=None,
+        **kwargs,
     ) -> List[Dict[str, str]]:
         if categories is None:
             categories = ["user"]
@@ -339,6 +340,7 @@ class InventoryClient(object):
             infra_env_id=infra_env_id,
             categories=categories,
             _preload_content=False,
+            **kwargs,
         )
 
         return json.loads(response.data)
