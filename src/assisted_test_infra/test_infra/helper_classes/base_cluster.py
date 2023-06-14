@@ -141,23 +141,16 @@ class BaseCluster(Entity, ABC):
         return iso_download_path or self._infra_env_config.iso_download_path
 
     def set_hostnames_and_roles(self):
-        cluster_id = self.id
-        hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(cluster_id))
+        hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(self.id))
         nodes = self.nodes.get_nodes(refresh=True)
 
         for host in hosts:
-            if host.has_hostname():
-                continue
-
             name = self.find_matching_node_name(host, nodes)
             assert name is not None, (
                 f"Failed to find matching node for host with mac address {host.macs()}"
                 f" nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
             )
-            if self.nodes.nodes_count == 1:
-                role = None
-            else:
-                role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
+            role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
             self._infra_env.update_host(host_id=host.get_id(), host_role=role, host_name=name)
 
     @staticmethod

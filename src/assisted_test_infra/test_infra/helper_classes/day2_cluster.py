@@ -69,7 +69,7 @@ class Day2Cluster(BaseCluster):
         wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self._config.cluster_id,
-            nodes_count=self._config.day2_workers_count,
+            nodes_count=self._config.day2_workers_count + self._config.day2_masters_count,
             statuses=[consts.NodesStatus.KNOWN],
             interval=30,
         )
@@ -108,20 +108,25 @@ class Day2Cluster(BaseCluster):
 
     def wait_nodes_to_be_in_ocp(self, ocp_ready_nodes):
         def wait_nodes_join_ocp_cluster(num_orig_nodes: int, num_new_nodes: int) -> bool:
-            self.approve_workers_on_ocp_cluster()
+            self.approve_nodes_on_ocp_cluster()
             return self.get_ocp_cluster_ready_nodes_num() == num_orig_nodes + num_new_nodes
 
         log.info("Waiting until installed nodes has actually been added to the OCP cluster")
         waiting.wait(
-            lambda: wait_nodes_join_ocp_cluster(ocp_ready_nodes, self._config.day2_workers_count),
+            lambda: wait_nodes_join_ocp_cluster(
+                ocp_ready_nodes, self._config.day2_workers_count + self._config.day2_masters_count
+            ),
             timeout_seconds=consts.NODES_REGISTERED_TIMEOUT,
             sleep_seconds=30,
             waiting_for="Day2 nodes to be added to OCP cluster",
             expected_exceptions=Exception,
         )
-        log.info(f"{self._config.day2_workers_count} worker nodes were successfully added to OCP cluster")
+        log.info(
+            f"{self._config.day2_workers_count} worker and"
+            f" {self._config.day2_masters_count} master nodes were successfully added to OCP cluster"
+        )
 
-    def approve_workers_on_ocp_cluster(self):
+    def approve_nodes_on_ocp_cluster(self):
         csrs = self.get_ocp_cluster_csrs(self._kubeconfig_path)
         for csr in csrs:
             if not csr["status"]:
@@ -153,7 +158,7 @@ class Day2Cluster(BaseCluster):
         wait_till_all_hosts_are_in_status(
             client=self.api_client,
             cluster_id=self.id,
-            nodes_count=self._config.day2_workers_count,
+            nodes_count=self._config.day2_workers_count + self._config.day2_masters_count,
             statuses=[consts.NodesStatus.DAY2_INSTALLED],
             interval=30,
         )

@@ -197,6 +197,7 @@ class BaseTest:
         new_day2_controller_configuration.ingress_vip = day1_ingress_vip
         new_day2_controller_configuration.masters_count = 0
         new_day2_controller_configuration.workers_count = day2_cluster_configuration.day2_workers_count
+        new_day2_controller_configuration.masters_count = day2_cluster_configuration.day2_masters_count
         new_day2_controller_configuration.base_cluster_domain = day2_cluster_configuration.day1_base_cluster_domain
 
         yield new_day2_controller_configuration
