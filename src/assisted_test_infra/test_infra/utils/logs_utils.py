@@ -1,5 +1,8 @@
 import contextlib
+import copy
+import hashlib
 import os
+import shutil
 import tarfile
 import time
 from pathlib import Path
@@ -12,6 +15,9 @@ from service_client import log
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
 OC_DOWNLOAD_LOGS_TIMEOUT = 60 * 60
+MAX_LOG_SIZE_BYTES = 1_000_000
+# based on '-- No entries --' size in file
+MIN_LOG_SIZE_BYTES = 17
 
 
 @contextlib.contextmanager
@@ -33,6 +39,47 @@ def _safe_open_tar(tar_path: Path | str, destination_path: Path | str) -> None:
         yield tar
 
 
+def _verify_duplicate_and_size_logs_file(dir_path: str) -> None:
+    """Verify logs files with different content and minimal size
+    Assuming all files under directory are file type
+    Checking:
+    Repeated names under directory
+    Repeated md5sum under directory
+    Included file name inside other files
+    Exceed limit size (1MB) under directory
+    Minimal file size (17 Bytes) when '-- No entries --'
+    :param dir_path:
+    :return: None
+    """
+    files = os.listdir(dir_path)
+    # assert if repeated md5sum means same files content or empty
+    md5_list = [_get_file_md5sum(dir_path, file) for file in files]
+    log.info(f"Checking repeated md5sum for files {str(files)}")
+    assert len(md5_list) == len(set(md5_list)), f"Repeated md5sum content file or empty logs {str(files)}"
+    # assert if one of the file larger than 1 MB
+    log.info(f"Checking file size exceed {MAX_LOG_SIZE_BYTES} bytes")
+    size_list = list(
+        map(lambda the_file, the_dir=dir_path: os.stat(os.path.join(the_dir, the_file)).st_size, os.listdir(dir_path))
+    )
+    assert not any(
+        size_file > MAX_LOG_SIZE_BYTES for size_file in size_list
+    ), f"exceed size limit {MAX_LOG_SIZE_BYTES} from {str(files)}"
+    # check if file name exists in current list names, ex "m1" in [m1.copy, m1.1]
+    for f in files:
+        copy_files = copy.deepcopy(files)
+        copy_files.remove(f)
+        for copy_file in copy_files:
+            assert not (f in copy_file), f"{f} in {copy_files}"
+
+
+def _get_file_md5sum(dir_path: str, file_path: str) -> str:
+    with open(os.path.join(dir_path, file_path), "rb") as file_to_check:
+        data = file_to_check.read()
+        md5_returned = hashlib.md5(data).hexdigest()
+        log.info(f"calculate md5sum for {os.path.join(dir_path, file_path)} is {md5_returned}")
+    return md5_returned
+
+
 def verify_logs_uploaded(
     cluster_tar_path,
     expected_min_log_num,
@@ -41,6 +88,40 @@ def verify_logs_uploaded(
     check_oc=False,
     verify_bootstrap_errors=False,
 ):
+    """Uploaded log verification
+    Tree from service installation logs:
+    -- cluster_zzzzzzz.tar
+        -- cluster_events.json
+        -- cluster_metadata.json
+        -- controller_logs.tar.gz
+            -- controller_logs
+                -- assisted-installer-controller.logs
+        -- test-cluster-master_worker-x.tar
+            -- test-cluster-master-worker-x.tar.gz
+                -- test-cluster-master-worker-x
+                    -- log_host_zzzz:
+                        -- agents.logs
+                        -- installer.logs
+                        -- mount.logs
+                        -- report.logs
+        -- test-cluster-bootstrap-master-z.tar
+            -- test-cluster-bootstrap-master-z.tar.gz
+                -- test-cluster-bootstrap-master-z
+                    -- log_host_yyyyy:
+                        -- agents.logs
+                        -- installer.logs
+                        -- mount.logs
+                        -- report.logs
+                        -- bootkube.logs
+
+    :param cluster_tar_path:
+    :param expected_min_log_num:
+    :param installation_success:
+    :param verify_control_plane:
+    :param check_oc:
+    :param verify_bootstrap_errors:
+    :return: None
+    """
     assert os.path.exists(cluster_tar_path), f"{cluster_tar_path} doesn't exist"
 
     with TemporaryDirectory() as tempdir:
@@ -49,16 +130,25 @@ def verify_logs_uploaded(
             assert len(tar.getnames()) >= expected_min_log_num, (
                 f"{tar.getnames()} " f"logs are less than minimum of {expected_min_log_num}"
             )
+            assert len(tar.getnames()) == len(set(tar.getnames())), f"Repeated tar file names {str(tar.getnames())}"
             tar.extractall(tempdir)
-            for gz in os.listdir(tempdir):
-                if "bootstrap" in gz and verify_bootstrap_errors is True:
-                    _verify_node_logs_uploaded(tempdir, gz)
-                    _verify_bootstrap_logs_uploaded(tempdir, gz, installation_success, verify_control_plane)
-                elif "master" in gz or "worker" in gz:
-                    _verify_node_logs_uploaded(tempdir, gz)
-                elif "controller" in gz:
-                    if check_oc:
-                        _verify_oc_logs_uploaded(os.path.join(tempdir, gz))
+            """Verify one level with duplication and size for extracted files, example for success installation:
+            ['test-infra-cluster-6c2d0ab7_master_test-infra-cluster-6c2d0ab7-master-2.tar',
+             'test-infra-cluster-6c2d0ab7_master_test-infra-cluster-6c2d0ab7-master-0.tar',
+             'test-infra-cluster-6c2d0ab7_bootstrap_test-infra-cluster-6c2d0ab7-master-1.tar',
+             'cluster_events.json', 'cluster_metadata.json', 'controller_logs.tar.gz']
+            """
+            _verify_duplicate_and_size_logs_file(tempdir)
+
+            # Going over each tar file and base on condition check the expected content.
+            for file in os.listdir(tempdir):
+                if verify_bootstrap_errors and "bootstrap" in file:
+                    _verify_bootstrap_logs_uploaded(tempdir, file, installation_success, verify_control_plane)
+                elif check_oc and "controller" in file:
+                    _verify_oc_logs_uploaded(os.path.join(tempdir, file))
+                elif "master" in file or "worker" in file:
+                    # check master, workers includes bootstrap(master)
+                    _verify_node_logs_uploaded(tempdir, file)
 
 
 def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path):
@@ -160,11 +250,45 @@ def _verify_oc_logs_uploaded(cluster_tar_path):
     )
 
 
-def _verify_node_logs_uploaded(dir_path, file_path):
+def _verify_node_logs_uploaded(dir_path: str, file_path: str) -> None:
+    """Directory file conatains *.tar file - filtered caller
+    Extracting tar file to tar.gz file
+    Extracting tar.gz to directory
+    Accessing files inside the directory
+    :param dir_path:
+    :param file_path:
+    :return:
+    """
     with tarfile.open(os.path.join(dir_path, file_path)) as gz:
-        logs = gz.getnames()
-        for logs_type in ["agent.logs", "installer.logs", "mount.logs"]:
-            assert any(logs_type in s for s in logs), f"{logs_type} isn't found in {logs}"
+        # Extract tar file into gz to the same directory
+        gz.extractall(path=dir_path)
+        tar_gz_file = gz.getnames()
+        assert len(tar_gz_file) == 1, f"Expecting for a single tar.gz file {tar_gz_file}"
+        tat_gz_file = tar_gz_file[0]
+
+        unpack_tar_gz_dir = os.path.join(dir_path, tat_gz_file.split(".tar.gz")[0])
+        # unpacking tar.gz into directory same name without tar.gz
+        shutil.unpack_archive(filename=os.path.join(dir_path, tat_gz_file), extract_dir=unpack_tar_gz_dir)
+        unpack_log_host_dir = os.listdir(unpack_tar_gz_dir)
+        assert len(unpack_log_host_dir) == 1, f"Expecting for a single tar.gz file {unpack_log_host_dir}"
+        unpack_log_host_dir = unpack_log_host_dir[0]
+
+        # files inside log_host directory
+        log_host_dir = os.path.join(unpack_tar_gz_dir, unpack_log_host_dir)
+        log_host_files = os.listdir(log_host_dir)
+
+        # Verify created logs files are not empty
+        for file in log_host_files:
+            file_name = os.path.join(log_host_dir, file)
+            file_size = os.stat(file_name).st_size
+            assert (
+                file_size > MIN_LOG_SIZE_BYTES
+            ), f"file {file_name} size is empty with size smaller than {MIN_LOG_SIZE_BYTES}"
+
+        # Verify all expected logs are in the directory
+        expected_log_files = ["agent.logs", "installer.logs", "mount.logs", "report.logs"]
+        expected_log_files.append("bootkube.logs") if "bootstrap" in file_path else expected_log_files
+        assert set(expected_log_files) == set(log_host_files)
 
 
 def _verify_bootstrap_logs_uploaded(dir_path, file_path, installation_success, verify_control_plane=False):
