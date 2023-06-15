@@ -17,8 +17,10 @@ class TerraformControllerUtil:
     def create_folder(cls, cluster_name: str, platform: str):
         tf_folder = cls.get_folder(cluster_name)
         log.info("Creating %s as terraform folder", tf_folder)
-        cls._copy_template_tree(tf_folder)
+        if os.path.exists(tf_folder):
+            return os.path.join(tf_folder, platform)
 
+        cls._copy_template_tree(tf_folder)
         tf_folder = os.path.join(tf_folder, platform)
         cls.create_tfvars_file(tf_folder)
         return tf_folder

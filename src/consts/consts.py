@@ -300,6 +300,7 @@ class Platforms:
     NONE = "none"
     VSPHERE = "vsphere"
     NUTANIX = "nutanix"
+    OCI = "oci"
 
 
 class KubeAPIPlatforms:

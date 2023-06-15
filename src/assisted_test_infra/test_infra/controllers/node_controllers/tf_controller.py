@@ -24,13 +24,16 @@ class TFController(NodeController, ABC):
     def terraform_vm_resource_type(self) -> str:
         pass
 
-    def _get_tf_vms(self) -> List[Dict[str, Any]]:
-        vms_object_type = self.tf.get_resources(resource_type=self.terraform_vm_resource_type)
+    def _get_tf_resource(self, resource_type: str) -> List[Dict[str, Any]]:
+        resource_object_type = self.tf.get_resources(resource_type=resource_type)
 
-        if not vms_object_type:
+        if not resource_object_type:
             return list()
 
-        return [vm_instance for vms_objects in vms_object_type for vm_instance in vms_objects["instances"]]
+        return [instance for resource_objects in resource_object_type for instance in resource_objects["instances"]]
+
+    def _get_tf_vms(self) -> List[Dict[str, Any]]:
+        return self._get_tf_resource(self.terraform_vm_resource_type)
 
     def get_all_vars(self):
         return {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": self.cluster_name}
@@ -49,9 +52,13 @@ class TFController(NodeController, ABC):
 
         return nodes
 
+    @property
+    def terraform_vm_name_key(self):
+        return "name"
+
     def _tf_vm_to_node(self, terraform_vm_state: Dict[str, Any]) -> Node:
         return Node(
-            name=terraform_vm_state["attributes"]["name"],
+            name=terraform_vm_state["attributes"][self.terraform_vm_name_key],
             private_ssh_key_path=self._config.private_ssh_key_path,
             node_controller=self,
         )
@@ -61,7 +68,9 @@ class TFController(NodeController, ABC):
         return list(map(self._tf_vm_to_node, tf_vms))
 
     def _get_vm(self, node_name: str) -> Dict[str, Any]:
-        return next((vm for vm in self._get_tf_vms() if vm["attributes"]["name"] == node_name), None)
+        return next(
+            (vm for vm in self._get_tf_vms() if vm["attributes"][self.terraform_vm_name_key] == node_name), None
+        )
 
     @abstractmethod
     def get_cpu_cores(self, node_name: str) -> int:

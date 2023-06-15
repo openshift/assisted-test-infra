@@ -28,6 +28,7 @@ from assisted_test_infra.test_infra.controllers import (
     Node,
     NodeController,
     NutanixController,
+    OciController,
     ProxyController,
     TangController,
     TerraformController,
@@ -42,7 +43,7 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
-from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, VSphereConfig
+from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, OciConfig, VSphereConfig
 from triggers import get_default_triggers
 from triggers.env_trigger import Trigger
 
@@ -114,6 +115,8 @@ class BaseTest:
             config = VSphereConfig()
         elif global_variables.tf_platform == consts.Platforms.NUTANIX:
             config = NutanixConfig()
+        elif global_variables.tf_platform == consts.Platforms.OCI:
+            config = OciConfig()
         else:
             config = TerraformConfig()
 
@@ -386,6 +389,9 @@ class BaseTest:
         if cluster_configuration.platform == consts.Platforms.NUTANIX:
             return NutanixController(controller_configuration, cluster_configuration)
 
+        if cluster_configuration.platform == consts.Platforms.OCI:
+            return OciController(controller_configuration, cluster_configuration)
+
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 
     def get_terraform_controller(
@@ -396,6 +402,9 @@ class BaseTest:
 
         if cluster_configuration.platform == consts.Platforms.NUTANIX:
             return NutanixController(controller_configuration, cluster_configuration)
+
+        if cluster_configuration.platform == consts.Platforms.OCI:
+            return OciController(controller_configuration, cluster_configuration)
 
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 

@@ -11,6 +11,7 @@ from assisted_test_infra.test_infra import (
     InfraEnvName,
     utils,
 )
+from assisted_test_infra.test_infra.helper_classes.config import BaseOciConfig
 from tests.global_variables import DefaultVariables
 
 global_variables = DefaultVariables()
@@ -86,6 +87,14 @@ class VSphereConfig(BaseVSphereConfig):
 
 @dataclass
 class NutanixConfig(BaseNutanixConfig):
+    """A Nodes configuration with defaults that obtained from EnvConfig"""
+
+    def _get_data_pool(self):
+        return global_variables
+
+
+@dataclass
+class OciConfig(BaseOciConfig):
     """A Nodes configuration with defaults that obtained from EnvConfig"""
 
     def _get_data_pool(self):
