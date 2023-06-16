@@ -1,6 +1,7 @@
 - name: Directory where OCI private key will be stored
   ansible.builtin.set_fact:
     oci_private_key_path_ci_machine: "{{ hostvars[ci_machine].ansible_user_dir }}/.oci/{{ oci_private_key_path | basename }}"
+    custom_manifests_dir: "{{ hostvars[ci_machine].ansible_user_dir }}/custom_manifests"
 
 - name: Create directory where OCI private key will be stored on CI machine
   ansible.builtin.file:
@@ -22,3 +23,8 @@
     dest: "{{ shared_dir }}/assisted-additional-config"
     mode: 0644
   when: shared_dir is defined
+
+- name: Create OCI custom manifests
+  ansible.builtin.import_tasks:
+    file: custom_manifests.yml
+  delegate_to: "{{ ci_machine }}"

@@ -1,0 +1,62 @@
+- name: Install podman
+  ansible.builtin.package:
+    name: podman
+    state: present
+
+- name : Pull butane image
+  ansible.builtin.command:
+    cmd: podman pull quay.io/coreos/butane:release
+  retries: 5
+  delay: 30
+  register: result
+  until: result.rc == 0
+
+- name: Create file custom manifests directories
+  ansible.builtin.file:
+    path: "{{ custom_manifests_dir }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - openshift
+    - manifests
+
+- name: Generate machine configs for provider ID
+  ansible.builtin.command:
+    cmd: podman run -i --rm quay.io/coreos/butane:release --pretty --strict
+  args:
+    stdin: "{{ lookup('ansible.builtin.template', 'oci-kubelet-providerid.bu.j2') }}"
+  register: mc_provider_id
+  loop:
+    - master
+    - worker
+  loop_control:
+    loop_var: machine_role
+
+- debug:
+    var: mc_provider_id
+
+- name: Write machine configs for provider ID on disk
+  ansible.builtin.copy:
+    content: "{{ item.stdout }}"
+    dest: "{{ custom_manifests_dir }}/openshift/99_openshift-machineconfig_00-{{ item.machine_role }}-kubelet-providerid.yaml"
+    mode: '0644'
+  loop: "{{ mc_provider_id.results }}"
+
+- name: Write CCM config on disk
+  ansible.builtin.template:
+    src: "oci-cloud-controller-manager-config.yaml.j2"
+    dest: "{{ custom_manifests_dir }}/manifests/ccm-00-oci-cloud-controller-manager-config.yaml"
+    mode: '0644'
+
+- name: Download CCM manifests and write them on disk
+  ansible.builtin.get_url:
+    url: "{{ item }}"
+    dest: "{{ custom_manifests_dir }}/manifests/ccm-{{ '%02d' | format(idx + 1) }}-{{ item | basename }}"
+    mode: '0644'
+  register: download
+  until: download is succeeded
+  delay: 5
+  retries: 5
+  loop: "{{ oci_ccm_manifest_uris }}"
+  loop_control:
+    index_var: idx

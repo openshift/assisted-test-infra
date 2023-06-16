@@ -1,0 +1,58 @@
+# Assembles
+# https://github.com/openshift/machine-config-operator/blob/master/templates/common/aws/files/usr-local-bin-aws-kubelet-providerid.yaml
+# https://github.com/openshift/machine-config-operator/blob/master/templates/common/aws/units/aws-kubelet-providerid.service.yaml
+variant: openshift
+version: 4.13.0
+metadata:
+  name: 00-{{ machine_role }}-oci-kubelet-providerid
+  labels:
+    machineconfiguration.openshift.io/role: {{ machine_role }}
+storage:
+  files:
+  - mode: 0755
+    path: "/usr/local/bin/oci-kubelet-providerid"
+    contents:
+      inline: |
+        #!/bin/bash
+        set -e -o pipefail
+
+        NODECONF=/etc/systemd/system/kubelet.service.d/20-oci-providerid.conf
+
+        if [ -e "${NODECONF}" ]; then
+            echo "Not replacing existing ${NODECONF}"
+            exit 0
+        fi
+        INSTANCE_ID=$(curl -H "Authorization: Bearer Oracle" -sL http://169.254.169.254/opc/v2/instance/id)
+
+        cat > "${NODECONF}" <<EOF
+        [Service]
+        Environment="KUBELET_PROVIDERID=oci://${INSTANCE_ID}"
+        EOF
+systemd:
+  units:
+  - name: oci-kubelet-providerid.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Fetch kubelet provider id from OCI Metadata
+
+      # Run afterburn service for collect info from metadata server
+      # see: https://coreos.github.io/afterburn/usage/attributes/
+      # Not required due to OCP 4.1 boot image does not contain afterburn service
+      # see: https://issues.redhat.com/browse/OCPBUGS-7559
+      Wants=afterburn.service
+      After=afterburn.service
+
+      # Wait for NetworkManager to report it's online
+      After=NetworkManager-wait-online.service
+      # Run before kubelet
+      Before=kubelet.service
+
+      [Service]
+      # Mark afterburn environment file optional, due to it is possible that afterburn service was not executed
+      EnvironmentFile=-/run/metadata/afterburn
+      ExecStart=/usr/local/bin/oci-kubelet-providerid
+      Type=oneshot
+
+      [Install]
+      WantedBy=network-online.target
