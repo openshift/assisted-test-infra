@@ -1,0 +1,4 @@
+oci_ccm_release_version: v1.25.0
+oci_ccm_manifest_uris:
+  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/{{ oci_ccm_release_version }}/oci-cloud-controller-manager-rbac.yaml
+  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/{{ oci_ccm_release_version }}/oci-cloud-controller-manager.yaml
