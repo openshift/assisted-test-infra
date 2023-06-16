@@ -17,6 +17,7 @@ volumes:
   - $HOME/.kube/:$HOME/.kube/
   - $HOME/.minikube/:$HOME/.minikube/
   - $HOME/.ssh/:$HOME/.ssh/
+  - $HOME/.oci/:$HOME/.oci/
 
   # logs
   - /var/log:/var/log

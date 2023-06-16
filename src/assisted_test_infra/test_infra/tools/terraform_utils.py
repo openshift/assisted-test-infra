@@ -58,8 +58,13 @@ class TerraformUtils:
 
         return list(map(lambda d: next(iter(d)), results))
 
-    def apply(self, refresh: bool = True) -> None:
-        return_value, output, err = self.tf.apply(no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True)
+    def apply(self, refresh: bool = True, capture_output=True) -> None:
+        if os.getenv("DEBUG_TERRAFORM") is not None:
+            capture_output = False
+
+        return_value, output, err = self.tf.apply(
+            no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True, capture_output=capture_output
+        )
         if return_value != 0:
             message = f"Terraform apply failed with return value {return_value}, output {output} , error {err}"
             log.error(message)

@@ -97,13 +97,19 @@ class TestMakefileTargets(BaseTest):
                             setattr(prepared_controller_configuration, key, value)
 
                     platform = cluster_configuration.platform or PlatformType.BAREMETAL
-                    if platform != Path(tfvar_file).resolve().parent.stem:
+                    parent_folder = Path(tfvar_file).resolve().parent
+                    if platform != parent_folder.stem:
                         continue
+
+                    # iso is not needed for destroy
+                    dummy_iso_path = Path(parent_folder).resolve() / "dummy.iso"
+                    cluster_configuration.iso_download_path = str(dummy_iso_path)
+                    cluster_configuration.worker_iso_download_path = str(dummy_iso_path)
+                    dummy_iso_path.touch(exist_ok=True)
 
                     controller = self.get_terraform_controller(prepared_controller_configuration, cluster_configuration)
                     config_vars = controller.get_all_vars()
                     controller.tf.set_vars(**config_vars)
-                    controller.tf.select_defined_variables()
                     controller.destroy_all_nodes()
                     destroyed_clusters += 1
 

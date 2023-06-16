@@ -145,3 +145,19 @@ class _EnvVariables(DataPool, ABC):
     day2_provisioning_cidr6: EnvVar = EnvVar(["DAY2_PROVISIONING_CIDR6"])
     day2_network_if: EnvVar = EnvVar(["DAY2_NETWORK_IF"])
     day2_secondary_network_if: EnvVar = EnvVar(["DAY2_SECONDARY_NETWORK_IF"])
+
+    oci_compartment_oicd: EnvVar = EnvVar(["OCI_COMPARTMENT"])
+    oci_user_oicd: EnvVar = EnvVar(["OCI_USER"])
+    oci_private_key_path: EnvVar = EnvVar(["OCI_PRIVATE_KEY_PATH"])
+    oci_key_fingerprint: EnvVar = EnvVar(["OCI_PUBLIC_KEY_FINGERPRINT"])
+    oci_tenancy_oicd: EnvVar = EnvVar(["OCI_TENANCY"])
+    oci_region: EnvVar = EnvVar(["OCI_REGION"])
+    oci_vcn_oicd: EnvVar = EnvVar(["OCI_VCN"])
+    oci_public_subnet_oicd: EnvVar = EnvVar(["OCI_PUBLIC_SUBNET"])
+    oci_private_subnet_oicd: EnvVar = EnvVar(["OCI_PRIVATE_SUBNET"])
+    oci_extra_node_nsg_oicds: EnvVar = EnvVar(
+        ["OCI_EXTRA_NODE_NSG_IDS"], default=[], loader=lambda oicd: re.split(r"\s|,", oicd)
+    )
+    oci_extra_lb_nsg_oicds: EnvVar = EnvVar(
+        ["OCI_EXTRA_LOAD_BALANCER_NSG_IDS"], default=[], loader=lambda oicd: re.split(r"\s|,", oicd)
+    )

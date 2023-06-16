@@ -223,17 +223,17 @@ _destroy_virsh:
 	python3 ${DEBUG_FLAGS} -m virsh_cleanup -f test-infra
 
 destroy_terraform_controller:
-	@if [ "$(ENABLE_KUBE_API)" = "false"  ]; then \
-		TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_terraform $(MAKE) test; \
-	else \
-	    TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_available_terraform $(MAKE) test; \
-	fi
+	TEST=./src/tests/test_targets.py TEST_FUNC=test_destroy_available_terraform $(MAKE) test;
+
 
 destroy_nutanix:
 	PLATFORM=nutanix make destroy_terraform_controller
 
 destroy_vsphere:
 	PLATFORM=vsphere make destroy_terraform_controller
+
+destroy_oci:
+	PLATFORM=oci make destroy_terraform_controller
 
 #######
 # Run #
