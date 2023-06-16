@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from assisted_test_infra.test_infra import BaseClusterConfig
 from assisted_test_infra.test_infra.controllers.node_controllers import Disk, Node
@@ -53,7 +53,7 @@ class TFController(NodeController, ABC):
         return nodes
 
     @property
-    def terraform_vm_name_key(self):
+    def terraform_vm_name_key(self) -> str:
         return "name"
 
     def _tf_vm_to_node(self, terraform_vm_state: Dict[str, Any]) -> Node:
@@ -67,7 +67,7 @@ class TFController(NodeController, ABC):
         tf_vms = self._get_tf_vms()
         return list(map(self._tf_vm_to_node, tf_vms))
 
-    def _get_vm(self, node_name: str) -> Dict[str, Any]:
+    def _get_vm(self, node_name: str) -> Optional[Dict[str, Any]]:
         return next(
             (vm for vm in self._get_tf_vms() if vm["attributes"][self.terraform_vm_name_key] == node_name), None
         )
@@ -109,7 +109,7 @@ class TFController(NodeController, ABC):
             ingress_ip=ingress_ip,
         )
 
-    def get_ingress_and_api_vips(self) -> dict:
+    def get_ingress_and_api_vips(self) -> Optional[Dict[str, str]]:
         if self._entity_config.api_vip and self._entity_config.ingress_vip:
             return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
 

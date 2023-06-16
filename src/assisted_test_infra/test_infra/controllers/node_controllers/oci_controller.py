@@ -43,6 +43,8 @@ class OciController(TFController):
         tfvars["master_memory_gib"] = self._config.master_memory / consts.MiB_UNITS
         tfvars["worker_memory_gib"] = self._config.worker_memory / consts.MiB_UNITS
         tfvars["master_disk_size_gib"] = self._config.master_disk / consts.GB
+
+        # Minimal disk size on OCI is 50GB
         if self._config.worker_disk == consts.resources.DEFAULT_WORKER_DISK:
             self._config.worker_disk = 50 * consts.GB
 
@@ -58,13 +60,13 @@ class OciController(TFController):
         return "oci_core_instance"
 
     def _get_provider_client(self) -> object:
-        oci_config = self._get_oci_config()
+        oci_config = self._config.get_provider_config()
 
         # Raise exception if failed
         oci.config.validate_config(oci_config)
         oci_client = oci.core.ComputeClient(oci_config)
         oci_client.list_instances(self._config.oci_compartment_oicd)
-        self._virtual_network_client = oci.core.VirtualNetworkClient(self._get_oci_config())
+        self._virtual_network_client = oci.core.VirtualNetworkClient(self._config.get_provider_config())
 
         return oci_client
 
@@ -85,8 +87,7 @@ class OciController(TFController):
         instance = self._get_provider_vm(node_name)
         if instance.lifecycle_state != OciInstanceState.RUNNING.value:
             log.info(f"Powering on OCI instance {node_name}")
-            request = oci.core.models.UpdateInstanceDetails(action=OciInstanceAction.START)
-            self._provider_client.update_instance(instance.id, request)
+            self._instance_action(instance, OciInstanceAction.START)
         else:
             log.warning(
                 f"Attempted to power on node {node_name}, "
@@ -97,36 +98,24 @@ class OciController(TFController):
         instance = self._get_provider_vm(node_name)
         if instance.lifecycle_state != OciInstanceState.STOPPED.value:
             log.info(f"Powering off OCI instance {node_name}")
-            request = oci.core.models.UpdateInstanceDetails(action=OciInstanceAction.STOP)
-            self._provider_client.update_instance(instance.id, request)
+            self._instance_action(instance, OciInstanceAction.STOP)
+
         else:
             log.warning(
                 f"Attempted to power off node {node_name}, "
                 f"but the instance is already off - lifecycle_state={instance.lifecycle_state}"
             )
 
+    def _instance_action(self, instance: Instance, action: OciInstanceAction):
+        response = self._provider_client.instance_action(instance_id=instance.id, action=action.value)
+        assert response.status == 200, f"Failed to {action.value.lower()} {instance.display_name} OCI instance"
+
     def restart_node(self, node_name: str) -> None:
-        instance = self._get_provider_vm(node_name)
         log.info(f"Restarting OCI instance {node_name}")
-        request = oci.core.models.UpdateInstanceDetails(action=OciInstanceAction.SOFTRESET)
-        self._provider_client.update_instance(instance.id, request)
+        instance = self._get_provider_vm(node_name)
+        self._instance_action(instance, OciInstanceAction.SOFTRESET)
 
-    def get_ingress_and_api_vips(self):
-        if self._entity_config.api_vip and self._entity_config.ingress_vip:
-            return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
-
-        return None
-
-    def _get_oci_config(self) -> dict:
-        return {
-            "user": self._config.oci_user_oicd,
-            "key_file": self._config.oci_private_key_path,
-            "fingerprint": self._config.oci_key_fingerprint,
-            "tenancy": self._config.oci_tenancy_oicd,
-            "region": self._config.oci_region,
-        }
-
-    def is_active(self, node_name) -> bool:
+    def is_active(self, node_name: str) -> bool:
         instance = self._get_provider_vm(node_name)
         return instance.lifecycle_state == OciInstanceState.RUNNING.value
 
