@@ -25,6 +25,11 @@ _default_triggers = frozendict(
             conditions=[lambda config: config.platform == consts.Platforms.NUTANIX],
             tf_platform=consts.Platforms.NUTANIX,
         ),
+        "oci_platform": Trigger(
+            conditions=[lambda config: config.platform == consts.Platforms.OCI],
+            user_managed_networking=True,
+            tf_platform=consts.Platforms.OCI,
+        ),
         "sno": Trigger(
             conditions=[lambda config: config.masters_count == 1],
             workers_count=0,

@@ -32,3 +32,7 @@
   ansible.builtin.setup:
   delegate_to: "{{ deployed_tf.outputs.ci_machine_inventory.value.display_name }}"
   delegate_facts: true
+  retries: 5
+  delay: 30
+  register: result
+  until: result is succeeded

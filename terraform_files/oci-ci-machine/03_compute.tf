@@ -40,17 +40,23 @@ resource "oci_core_instance" "ci_instance" {
   # Required
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oci_compartment_id
-  shape               = "VM.Standard.E4.Flex"
+  shape               = "VM.Standard3.Flex"
 
   shape_config {
     memory_in_gbs = 16
     ocpus         = 4
   }
 
+  platform_config {
+    type                             = "INTEL_VM"
+    are_virtual_instructions_enabled = true
+  }
+
   source_details {
     source_id               = data.oci_core_images.os_images.images[0].id
     source_type             = "image"
-    boot_volume_size_in_gbs = 250
+    boot_volume_size_in_gbs = 500
+    boot_volume_vpus_per_gb = 30
   }
 
   # Optional

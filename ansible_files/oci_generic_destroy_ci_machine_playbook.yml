@@ -1,4 +1,17 @@
-- name: Destroy OCI infrastructure
+- name: Destroy OCI instrastructure provisionned by test-infra
+  hosts: primary
+  tasks:
+    - name: Destroy OCI instrastructure provisionned by test-infra
+      ansible.builtin.shell: |
+        source /root/config.sh
+        make destroy_oci
+      args:
+        chdir: /home/assisted
+      retries: 5
+      delay: 30
+      register: result
+      until: result is succeeded
+- name: Destroy OCI infrastructure provisionned for CI machine
   hosts: localhost
   vars_prompt:
     - name: oci_tf_state_file

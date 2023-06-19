@@ -44,7 +44,8 @@ resource "oci_core_instance" "master" {
     nsg_ids = concat(
       [
         oci_core_network_security_group.nsg_cluster.id,
-        oci_core_network_security_group.nsg_load_balancer_access.id # allow access to load balancer (api-int)
+        oci_core_network_security_group.nsg_cluster_access.id, # allow access from other cluster nodes
+        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
       ],
       var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
     )
@@ -93,7 +94,8 @@ resource "oci_core_instance" "worker" {
     nsg_ids = concat(
       [
         oci_core_network_security_group.nsg_cluster.id,
-        oci_core_network_security_group.nsg_load_balancer_access.id # allow access to load balancer (api-int)
+        oci_core_network_security_group.nsg_cluster_access.id, # allow access from other cluster nodes
+        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
       ],
       var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
     )

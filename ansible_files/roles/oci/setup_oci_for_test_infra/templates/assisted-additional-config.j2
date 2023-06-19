@@ -1,3 +1,5 @@
+export PLATFORM=oci
+
 export OCI_COMPARTMENT="{{ oci_compartment_id }}"
 export OCI_USER="{{ oci_user_id }}"
 export OCI_PRIVATE_KEY_PATH="{{ oci_private_key_path_ci_machine }}"
@@ -10,9 +12,9 @@ export OCI_PRIVATE_SUBNET="{{ infra.oci_private_subnet_id }}"
 
 # CI machine to access nodes (connect on them through SSH)
 # Nodes to access CI machine (assisted-service API through HTTP/HTTPS)
-export OCI_EXTRA_NODE_NSG_IDS="['{{ infra.oci_ci_machine_access_nsg_id }}', '{{ infra.oci_cluster_ci_nsg_id }}']"
+export OCI_EXTRA_NODE_NSG_IDS="{{ infra.oci_ci_machine_access_nsg_id }},{{ infra.oci_cluster_ci_nsg_id }}"
 
 # CI machine to access load balancer (cluster access through HTTP/HTTPS/MCS/API)
-export OCI_EXTRA_LOAD_BALANCER_NSG_IDS="['{{ infra.oci_load_balancer_ci_nsg_id }}']"
+export OCI_EXTRA_LOAD_BALANCER_NSG_IDS="{{ infra.oci_load_balancer_ci_nsg_id }}"
 
 export BASE_DOMAIN="{{ oci_dns_zone }}"
