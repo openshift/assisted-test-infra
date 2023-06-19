@@ -14,11 +14,16 @@ resource "oci_core_instance" "master" {
   # Required
   availability_domain = local.availability_domains[count.index % local.availability_domains_count].name
   compartment_id      = var.oci_compartment_oicd
-  shape               = "VM.Standard.E4.Flex"
+  shape               = var.instance_shape
 
   shape_config {
     memory_in_gbs = var.master_memory_gib
     ocpus         = var.master_vcpu
+  }
+
+  platform_config {
+    type=var.instance_platform_config_type
+    are_virtual_instructions_enabled=var.instance_platform_config_virtualization_enabled
   }
 
   source_details {
@@ -58,11 +63,16 @@ resource "oci_core_instance" "worker" {
   # Required
   availability_domain = local.availability_domains[count.index % local.availability_domains_count].name
   compartment_id      = var.oci_compartment_oicd
-  shape               = "VM.Standard.E4.Flex"
+  shape               = var.instance_shape
 
   shape_config {
     memory_in_gbs = var.worker_memory_gib
     ocpus         = var.worker_vcpu
+  }
+
+  platform_config {
+    type=var.instance_platform_config_type
+    are_virtual_instructions_enabled=var.instance_platform_config_virtualization_enabled
   }
 
   source_details {
