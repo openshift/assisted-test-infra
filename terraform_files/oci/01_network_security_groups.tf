@@ -1,8 +1,9 @@
 # Create security groups for the future cluster
 # LB should be able to reach:
 #   - cluster nodes
-# cluster should be able to reach:
-#   - LB on internal API endpoint
+# cluster nodes should be able to reach:
+#   - LB (internal and external)
+#   - Other cluster nodes
 
 # load-balancer is hold by LB
 resource "oci_core_network_security_group" "nsg_load_balancer" {

@@ -2,14 +2,15 @@
   hosts: primary
   tasks:
     - name: Destroy OCI instrastructure provisionned by test-infra
-      ansible.builtin.command:
-        cmd: make destroy_oci
+      ansible.builtin.shell: |
+        source /root/config.sh
+        make destroy_oci
       args:
         chdir: /home/assisted
       retries: 5
       delay: 30
       register: result
-      until: result.rc == 0
+      until: result is succeeded
 - name: Destroy OCI infrastructure provisionned for CI machine
   hosts: localhost
   vars_prompt:
@@ -21,5 +22,9 @@
       private: false
   vars:
     oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
+  pre_tasks:
+    - name: Pause for 5 minutes to build app cache
+      ansible.builtin.pause:
+        minutes: 60
   roles:
     - name: oci/destroy_infra
