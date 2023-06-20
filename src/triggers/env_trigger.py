@@ -1,7 +1,8 @@
 import inspect
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 from assisted_test_infra.test_infra.utils import EnvVar
 from service_client import log
@@ -14,6 +15,12 @@ class DataPool(ABC):
         pass
 
 
+class VariableOrigin(Enum):
+    ENVIRONMENT = "ENVIRONMENT"
+    PARAMETERIZED = "PARAMETERIZED"
+    TRIGGER = "TRIGGER"
+
+
 class Triggerable(ABC):
     def _is_set(self, var, expected_value):
         return getattr(self._get_data_pool(), var, None) == expected_value
@@ -22,23 +29,27 @@ class Triggerable(ABC):
     def _get_data_pool(self) -> DataPool:
         pass
 
-    def is_user_set(self, item: str):
+    def get_item_origin(self, item: str) -> Optional[VariableOrigin]:
         try:
             attr = self._get_data_pool().get_env(item)
-            return attr.is_user_set
+            return VariableOrigin.ENVIRONMENT if attr.is_user_set else None
         except AttributeError:
-            return False
+            return None
 
     def handle_trigger(self, conditions_string: List[List[str]], values: Dict[str, Any]) -> None:
         for k, v in values.items():
             if not hasattr(self, k):
                 continue
 
-            if not self.is_user_set(k):
+            origin = self.get_item_origin(k)
+            # Allow re-set variable that was triggered more than once
+            if not origin or origin == VariableOrigin.TRIGGER:
                 log.debug(f"{self.__class__.__name__} - Trigger set `{k}` to `{v}`, Condition: {conditions_string}")
                 self._set(k, v)
             else:
-                log.warning(f"Skipping setting {k} to value {v} due that it already been set by the user")
+                log.warning(
+                    f"Skipping setting {k} to value {v} due that it already been set by the user ({origin.value})"
+                )
 
     @abstractmethod
     def _set(self, key: str, value: Any):
