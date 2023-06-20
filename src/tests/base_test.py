@@ -75,6 +75,8 @@ class BaseTest:
             with suppress(pytest.FixtureLookupError, AttributeError):
                 if hasattr(config, fixture_name):
                     value = request.getfixturevalue(fixture_name)
+                    # update params will skipp auto trigger for the variable
+                    global_variables.__dict__[fixture_name].user_set = True
                     config.set_value(fixture_name, value)
 
                     log.debug(f"{config_type}.{fixture_name} value updated from parameterized value to {value}")

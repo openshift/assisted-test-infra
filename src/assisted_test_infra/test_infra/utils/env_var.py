@@ -50,6 +50,10 @@ class EnvVar:
     def is_user_set(self):
         return self.__is_user_set
 
+    @is_user_set.setter
+    def user_set(self, bool_value):
+        self.__is_user_set = bool_value
+
     def copy(self, value=None) -> "EnvVar":
         """Get EnvVar copy, if value is different than None it will set the old EnvVar value"""
         env = EnvVar(self.__var_keys, loader=self.__loader, default=self.__default)
