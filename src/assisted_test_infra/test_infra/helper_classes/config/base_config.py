@@ -22,10 +22,17 @@ class BaseConfig(Triggerable, ABC):
                     setattr(self, k, self.get_default(k))
             except AttributeError:
                 setattr(self, k, None)
+        # store all keys called from update_parameterized from base_test
+        # default trigger will skip updated params from pytest.mark.parametrize
+        self.update_parameterized_keys = set()
 
     @abstractmethod
     def _get_data_pool(self) -> DataPool:
         pass
+
+    def is_user_set(self, item: str):
+        # Check if the item already set by user
+        return item in self.update_parameterized_keys
 
     @classmethod
     def get_annotations(cls):
@@ -54,8 +61,10 @@ class BaseConfig(Triggerable, ABC):
         if hasattr(self, key):
             self.__setattr__(key, value)
 
-    def set_value(self, attr: str, new_val):
+    def set_value(self, attr: str, new_val, update_parameterized=False):
         setattr(self, attr, self._get_correct_value(attr, new_val))
+        if update_parameterized:
+            self.update_parameterized_keys.add(attr)
 
     @classmethod
     def _get_annotations_actual_type(cls, annotations: dict, key: str) -> Any:

@@ -75,7 +75,7 @@ class BaseTest:
             with suppress(pytest.FixtureLookupError, AttributeError):
                 if hasattr(config, fixture_name):
                     value = request.getfixturevalue(fixture_name)
-                    config.set_value(fixture_name, value)
+                    config.set_value(fixture_name, value, update_parameterized=True)
 
                     log.debug(f"{config_type}.{fixture_name} value updated from parameterized value to {value}")
                 else:
