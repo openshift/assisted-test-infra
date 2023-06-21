@@ -45,7 +45,7 @@ from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, OciConfig, VSphereConfig
 from triggers import get_default_triggers
-from triggers.env_trigger import Trigger
+from triggers.env_trigger import Trigger, VariableOrigin
 
 
 class BaseTest:
@@ -75,7 +75,7 @@ class BaseTest:
             with suppress(pytest.FixtureLookupError, AttributeError):
                 if hasattr(config, fixture_name):
                     value = request.getfixturevalue(fixture_name)
-                    config.set_value(fixture_name, value)
+                    config.set_value(fixture_name, value, origin=VariableOrigin.PARAMETERIZED)
 
                     log.debug(f"{config_type}.{fixture_name} value updated from parameterized value to {value}")
                 else:

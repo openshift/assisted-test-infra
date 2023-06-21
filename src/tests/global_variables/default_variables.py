@@ -31,9 +31,6 @@ class DefaultVariables(_EnvVariables, Triggerable):
         self._set("openshift_version", utils.get_openshift_version(allow_default=True, client=client))
         Trigger.trigger_configurations([self], get_default_triggers())
 
-    def is_user_set(self, item: str) -> bool:
-        return self.get_env(item).is_user_set
-
     def _set(self, key: str, value: Any):
         if not hasattr(self, key):
             raise AttributeError(f"Invalid key {key}")
