@@ -19,6 +19,7 @@ class ContainerizedController(ABC):
             return
         log.info(f"Running {self.__class__.__name__} Server {self._name}")
 
+        self._is_running = True
         self._on_container_start(**kwargs)
         base_run_flags = [
             "-d",
@@ -28,14 +29,15 @@ class ContainerizedController(ABC):
         ]
 
         utils.run_container(container_name=self._name, image=self._image, flags=base_run_flags + self._extra_flags)
-        self._is_running = True
 
     def remove(self):
         if self._is_running:
-            log.info(f"Removing Proxy Server {self._name}")
+            log.info(f"Removing containerized {type(self)} Server {self._name}")
             utils.remove_running_container(container_name=self._name)
             self._on_container_removed()
             self._is_running = False
+        else:
+            log.info(f"Skipping Removing containerized {type(self)} Server {self._name}")
 
     def _on_container_removed(self):
         """Can be overridden to clear configurations after the controller container was removed"""
