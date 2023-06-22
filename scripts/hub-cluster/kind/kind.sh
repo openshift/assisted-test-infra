@@ -23,7 +23,7 @@ function install() {
 	fi
 
 	echo "Installing kind $KIND_VERSION..."
-	sudo curl -L https://kind.sigs.k8s.io/dl/v$KIND_VERSION/kind-linux-amd64 -o /usr/local/bin/kind
+	sudo curl --retry 5 --connect-timeout 30 -L https://kind.sigs.k8s.io/dl/v$KIND_VERSION/kind-linux-amd64 -o /usr/local/bin/kind
 	sudo chmod u+x /usr/local/bin/kind
 	echo "Installed successfully!"
 }
