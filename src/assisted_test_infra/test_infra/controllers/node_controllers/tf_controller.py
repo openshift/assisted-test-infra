@@ -101,7 +101,6 @@ class TFController(NodeController, ABC):
         for node in nodes:
             self.shutdown_node(node.name)
 
-    @abstractmethod
     def set_dns(self, api_ip: str, ingress_ip: str) -> None:
         utils.add_dns_record(
             cluster_name=self.cluster_name,
