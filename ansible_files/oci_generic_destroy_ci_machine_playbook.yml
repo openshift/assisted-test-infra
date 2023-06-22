@@ -11,6 +11,7 @@
       delay: 30
       register: result
       until: result is succeeded
+      ignore_errors: true
 - name: Destroy OCI infrastructure provisionned for CI machine
   hosts: localhost
   vars_prompt:
