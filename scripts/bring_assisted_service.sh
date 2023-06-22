@@ -5,6 +5,11 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/utils.sh"
+
 export SERVICE_REPO=${SERVICE_REPO:-https://github.com/openshift/assisted-service}
 export SERVICE_BRANCH=${SERVICE_BRANCH:-master}
 export SERVICE_BASE_REF=${SERVICE_BASE_REF:-master}
@@ -15,7 +20,7 @@ export PULL_BASE_REF=${PULL_BASE_REF:-master}
 
 if ! [[ -d "assisted-service" ]]; then
   echo "Can't find assisted-service source locally, cloning ${SERVICE_REPO}"
-  git clone "${SERVICE_REPO}"
+  retry -- git clone "${SERVICE_REPO}"
 fi
 
 service_active_branch=$(cd assisted-service/ && git rev-parse --abbrev-ref HEAD)
@@ -45,12 +50,12 @@ if [[ "${OPENSHIFT_CI}" == "true" && "${REPO_NAME}" == "assisted-service" && "${
 
   echo "Running in assisted-service pull request"
   cd assisted-service
-  git fetch -v origin "pull/${PULL_NUMBER}/head:${pr_branch_name}"
+  retry -- git fetch -v origin "pull/${PULL_NUMBER}/head:${pr_branch_name}"
   git checkout "${pr_branch_name}"
   git rebase -v "origin/${PULL_BASE_REF}"
 else
   cd assisted-service
-  git fetch --force origin "${SERVICE_BASE_REF}:FETCH_BASE" "${SERVICE_BRANCH}"
+  retry -- git fetch --force origin "${SERVICE_BASE_REF}:FETCH_BASE" "${SERVICE_BRANCH}"
   git reset --hard FETCH_HEAD
   git rebase FETCH_BASE
 fi
