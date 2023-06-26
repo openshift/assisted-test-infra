@@ -7,6 +7,7 @@ from pathlib import Path
 
 import consts
 from assisted_test_infra.test_infra.utils.env_var import EnvVar
+from assisted_test_infra.test_infra.utils.manifests import Manifest
 from consts import env_defaults, resources
 from triggers.env_trigger import DataPool
 
@@ -69,6 +70,11 @@ class _EnvVariables(DataPool, ABC):
     spoke_namespace: str = EnvVar(["SPOKE_NAMESPACE"], default=consts.DEFAULT_SPOKE_NAMESPACE)
     olm_operators: EnvVar = EnvVar(
         ["OLM_OPERATORS"], loader=lambda operators: re.split(r"\s|,", operators.lower()), default=[]
+    )
+    custom_manifests: EnvVar = EnvVar(
+        ["CUSTOM_MANIFESTS_FILES"],
+        loader=lambda files: [m for path in re.split(r"\s|,", files) for m in Manifest.get_manifests(Path(path))],
+        default=[],
     )
     platform: EnvVar = EnvVar(["PLATFORM"])
     tf_platform: EnvVar = EnvVar(["TF_PLATFORM", "PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)

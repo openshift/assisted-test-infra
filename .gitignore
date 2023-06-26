@@ -17,3 +17,5 @@ sno-bootstrap-manifests
 terraform.tfstate
 terraform.tfstate.backup
 .terraform
+
+custom_manifests/
