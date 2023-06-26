@@ -170,7 +170,11 @@ def get_exception_factory(operator: str):
 
 def get_operator_properties(operator: str, **kwargs) -> str:
     if operator == OperatorType.METALLB:
-        if (api_vip := kwargs.get("api_vip")) and (ingress_vip := kwargs.get("ingress_vip")):
-            return f'{{"api_ip": "{api_vip}", "ingress_ip": "{ingress_vip}"}}'
+        api_ip = kwargs.get("api_ip")
+        ingress_ip = kwargs.get("ingress_ip")
+        if api_ip and ingress_ip:
+            return f'{{"api_ip": "{api_ip}", "ingress_ip": "{ingress_ip}"}}'
+
+        raise ValueError(f"MetalLB properties are missing or invalid, got {api_ip} {ingress_ip}")
 
     return ""

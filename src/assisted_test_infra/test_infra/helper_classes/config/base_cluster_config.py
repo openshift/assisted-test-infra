@@ -26,6 +26,8 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     network_type: str = None
     api_vip: str = None
     ingress_vip: str = None
+    metallb_api_ip: str = None
+    metallb_ingress_ip: str = None
     disk_encryption_mode: str = None
     disk_encryption_roles: str = None
     tang_servers: str = None
