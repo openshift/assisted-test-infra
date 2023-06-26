@@ -5,6 +5,7 @@ from typing import List
 from assisted_service_client import models
 
 from ...utils.entity_name import BaseName, ClusterName
+from ...utils.manifests import Manifest
 from .base_entity_config import BaseEntityConfig
 
 
@@ -29,6 +30,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     disk_encryption_mode: str = None
     disk_encryption_roles: str = None
     tang_servers: str = None
+    custom_manifests: List[Manifest] = None
 
     @property
     def cluster_name(self) -> BaseName:

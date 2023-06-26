@@ -1,3 +1,4 @@
+import base64
 import json
 import random
 import re
@@ -881,6 +882,33 @@ class Cluster(BaseCluster):
         self.set_hostnames_and_roles()
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
+
+    @JunitTestCase()
+    def create_custom_manifests(self):
+        log.info(f"Adding {len(self._config.custom_manifests)} custom manifests")
+        for local_manifest in self._config.custom_manifests:
+            with open(local_manifest.local_path, "rb") as f:
+                encoded_content = base64.b64encode(f.read()).decode("utf-8", "ignore")
+
+            manifest = self.api_client.create_custom_manifest(
+                self.id, local_manifest.folder, local_manifest.file_name, encoded_content
+            )
+
+            assert manifest.file_name == local_manifest.file_name
+            assert manifest.folder == local_manifest.folder
+            log.info(f"Manifest {local_manifest.file_name} was created successfully")
+
+    def validate_params(self):
+        for manifest in self._config.custom_manifests:
+            assert manifest.local_path.exists(), f"Manifest file does not exist: {manifest.file_name}"
+            assert (
+                manifest.is_folder_allowed()
+            ), f"Invalid value for `folder` {manifest.folder} must be one of {manifest.get_allowed_folders()}"
+
+    @JunitTestCase()
+    def prepare_for_installation(self, **kwargs):
+        super().prepare_for_installation(**kwargs)
+        self.create_custom_manifests()
 
     def prepare_networking(self):
         self.nodes.wait_for_networking()

@@ -91,6 +91,7 @@ class Entity(ABC):
 
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):
+        self.validate_params()
         self.prepare_nodes(is_static_ip=kwargs.pop("is_static_ip", False), **kwargs)
         self.prepare_networking()
 
@@ -107,3 +108,10 @@ class Entity(ABC):
     @abstractmethod
     def wait_until_hosts_are_discovered(self, nodes_count: int = None, allow_insufficient=False):
         pass
+
+    def validate_params(self):
+        """
+        Validate entity configuration params given by the user, do not wait to fail the test only when use those
+        specific variable
+        :return: None
+        """
