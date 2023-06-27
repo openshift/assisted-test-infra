@@ -1,4 +1,7 @@
-oci_ccm_release_version: v1.25.0
-oci_ccm_manifest_uris:
-  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/{{ oci_ccm_release_version }}/oci-cloud-controller-manager-rbac.yaml
-  - https://github.com/oracle/oci-cloud-controller-manager/releases/download/{{ oci_ccm_release_version }}/oci-cloud-controller-manager.yaml
+oci_ccm_manifests:
+  - oci-ccm-00-namespace.yaml
+  - oci-ccm-01-service-account.yaml
+  - oci-ccm-02-cluster-role.yaml
+  - oci-ccm-03-cluster-role-binding.yaml
+  - oci-ccm-04-cloud-controller-manager-config.yaml
+  - oci-ccm-05-daemon-set.yaml

@@ -44,19 +44,7 @@
 
 - name: Write CCM config on disk
   ansible.builtin.template:
-    src: "oci-cloud-controller-manager-config.yaml.j2"
-    dest: "{{ custom_manifests_dir }}/manifests/ccm-00-oci-cloud-controller-manager-config.yaml"
+    src: "{{ item }}.j2"
+    dest: "{{ custom_manifests_dir }}/manifests/{{ item }}"
     mode: '0644'
-
-- name: Download CCM manifests and write them on disk
-  ansible.builtin.get_url:
-    url: "{{ item }}"
-    dest: "{{ custom_manifests_dir }}/manifests/ccm-{{ '%02d' | format(idx + 1) }}-{{ item | basename }}"
-    mode: '0644'
-  register: download
-  until: download is succeeded
-  delay: 5
-  retries: 5
-  loop: "{{ oci_ccm_manifest_uris }}"
-  loop_control:
-    index_var: idx
+  loop: "{{ oci_ccm_manifests }}"
