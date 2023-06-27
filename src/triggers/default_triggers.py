@@ -56,8 +56,6 @@ _default_triggers = frozendict(
             cluster_networks=consts.DEFAULT_CLUSTER_NETWORKS_IPV4V6,
             service_networks=consts.DEFAULT_SERVICE_NETWORKS_IPV4V6,
         ),
-        # to be removed
-        "ocs_operator": OlmOperatorsTrigger(conditions=[lambda config: "ocs" in config.olm_operators], operator="ocs"),
         "lso_operator": OlmOperatorsTrigger(conditions=[lambda config: "lso" in config.olm_operators], operator="lso"),
         "metallb_operator": OlmOperatorsTrigger(
             conditions=[lambda config: "metallb" in config.olm_operators], operator="metallb"
