@@ -47,7 +47,7 @@ function _init_minikube() {
 
 function install() {
     minikube_version=v1.25.2
-    curl --retry 3 -Lo minikube https://storage.googleapis.com/minikube/releases/${minikube_version}/minikube-linux-amd64
+    curl --retry 3 --connect-timeout 30 -Lo minikube https://storage.googleapis.com/minikube/releases/${minikube_version}/minikube-linux-amd64
     ${SUDO} install minikube /usr/local/bin/
     minikube version
     rm -f minikube

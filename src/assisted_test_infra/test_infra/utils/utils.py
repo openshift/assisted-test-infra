@@ -467,6 +467,7 @@ def get_default_openshift_version(client=None) -> str:
     return versions[0] if versions else None
 
 
+@retry(exceptions=RuntimeError, tries=5, delay=10, logger=log)
 def extract_version(release_image) -> semver.VersionInfo:
     """
     Extracts the version number from the release image.

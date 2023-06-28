@@ -15,6 +15,11 @@
       src: fix-uid.sh
       dest: "{{ shared_dir }}/fix-uid.sh"
 
+  - name: Write Packet common configuration file
+    ansible.builtin.copy:
+      src: packet-conf.sh
+      dest: "{{ shared_dir }}/packet-conf.sh"
+
   - name: Write Ansible inventory
     ansible.builtin.template:
       src: inventory.j2

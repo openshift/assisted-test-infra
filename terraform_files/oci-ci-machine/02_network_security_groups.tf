@@ -2,7 +2,7 @@
 # CI machine should be able to reach:
 #   - LB on public IP
 #   - cluster nodes in private subnet (SSH)
-# cluster should be able to reach:
+# cluster nodes should be able to reach:
 #   - CI machine (assisted-service/image-service)
 # Prow should be able to reach:
 #   - CI machine on SSH
@@ -105,5 +105,29 @@ resource "oci_core_network_security_group_security_rule" "rule_allow_from_nsg_lo
   direction                 = "INGRESS"
   source_type               = "NETWORK_SECURITY_GROUP"
   source                    = oci_core_network_security_group.nsg_load_balancer_ci_access.id
+  protocol                  = "all"
+}
+
+locals {
+  nat_ip = one([for attr in module.vcn.nat_gateway_all_attributes : attr.nat_ip])
+}
+
+# ci-machine reach load-balancer with its public IP
+resource "oci_core_network_security_group_security_rule" "rule_allow_from_public_ci_machine" {
+  network_security_group_id = oci_core_network_security_group.nsg_load_balancer_ci.id
+  description               = "Allow traffic from ci-machine"
+  direction                 = "INGRESS"
+  source_type               = "CIDR_BLOCK"
+  source                    = "${oci_core_instance.ci_instance.public_ip}/32"
+  protocol                  = "all"
+}
+
+# all private instances behind NAT can reach load-balancer
+resource "oci_core_network_security_group_security_rule" "rule_allow_from_public_nat_gateway" {
+  network_security_group_id = oci_core_network_security_group.nsg_load_balancer_ci.id
+  description               = "Allow traffic from NAT gateway"
+  direction                 = "INGRESS"
+  source_type               = "CIDR_BLOCK"
+  source                    = "${local.nat_ip}/32"
   protocol                  = "all"
 }

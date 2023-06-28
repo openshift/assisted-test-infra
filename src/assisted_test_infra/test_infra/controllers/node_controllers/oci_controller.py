@@ -136,3 +136,6 @@ class OciController(TFController):
         ip_addresses = [self._virtual_network_client.get_vnic(vnic.vnic_id).data.private_ip for vnic in vnics]
 
         return ip_addresses, mac_addresses
+
+    def set_dns(self, api_ip: str, ingress_ip: str) -> None:
+        return
