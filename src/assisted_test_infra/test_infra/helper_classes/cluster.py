@@ -148,7 +148,7 @@ class Cluster(BaseCluster):
         olm_operators = []
         for operator_name in self._config.olm_operators:
             operator_properties = consts.get_operator_properties(
-                operator_name, api_vip=self._config.api_vip, ingress_vip=self._config.ingress_vip
+                operator_name, api_ip=self._config.metallb_api_ip, ingress_ip=self._config.metallb_ingress_ip
             )
             operator = {"name": operator_name}
             if operator_properties:
@@ -376,11 +376,6 @@ class Cluster(BaseCluster):
             api_vip=api_vip,
             ingress_vip=ingress_vip,
         )
-
-        if consts.OperatorType.METALLB in self._config.olm_operators:
-            assert len(self._config.api_vip) > 0, "API vip is required for MetalLB operator"
-            assert len(self._config.ingress_vip) > 0, "Ingress vip is required for MetalLB operator"
-            self.set_metallb(update=True)
 
     def get_primary_machine_cidr(self):
         cidr = self.nodes.controller.get_primary_machine_cidr()

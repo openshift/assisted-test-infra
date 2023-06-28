@@ -124,6 +124,9 @@ class _EnvVariables(DataPool, ABC):
     api_vip: EnvVar = EnvVar(["API_VIP"])
     ingress_vip: EnvVar = EnvVar(["INGRESS_VIP"])
 
+    metallb_api_ip: EnvVar = EnvVar(["METALLB_API_IP"])
+    metallb_ingress_ip: EnvVar = EnvVar(["METALLB_INGRESS_IP"])
+
     ipxe_boot: EnvVar = EnvVar(["IPXE_BOOT"], loader=lambda x: bool(strtobool(x)))
 
     vsphere_parent_folder: str = EnvVar(["VSPHERE_PARENT_FOLDER"], default=env_defaults.DEFAULT_VSHPERE_PARENT_FOLDER)
