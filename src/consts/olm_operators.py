@@ -3,8 +3,6 @@ from consts import GB
 
 class OperatorType:
     CNV = "cnv"
-    # to be removed
-    OCS = "ocs"
     ODF = "odf"
     LSO = "lso"
     LVM = "lvm"
@@ -75,18 +73,6 @@ class OperatorResource:
     def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
-            # to be removed
-            OperatorType.OCS: cls.get_resource_dict(
-                master_memory=24000,
-                worker_memory=24000,
-                master_vcpu=12,
-                worker_vcpu=12,
-                master_disk=10 * GB,
-                worker_disk=25 * GB,
-                master_disk_count=1,
-                worker_disk_count=1,
-                worker_count=4,
-            ),
             OperatorType.ODF: cls.get_resource_dict(
                 master_memory=24000,
                 worker_memory=24000,
@@ -117,11 +103,6 @@ class CNVOperatorFailedError(OperatorFailedError):
     pass
 
 
-# to be removed
-class OCSOperatorFailedError(OperatorFailedError):
-    pass
-
-
 class ODFOperatorFailedError(OperatorFailedError):
     pass
 
@@ -145,10 +126,6 @@ class MetalLBOperatorFailedError(OperatorFailedError):
 def get_exception_factory(operator: str):
     if operator == OperatorType.CNV:
         return CNVOperatorFailedError
-
-    # to be removed
-    if operator == OperatorType.OCS:
-        return OCSOperatorFailedError
 
     if operator == OperatorType.ODF:
         return ODFOperatorFailedError
