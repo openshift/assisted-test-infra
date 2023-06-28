@@ -505,7 +505,7 @@ class LibvirtController(NodeController, ABC):
         )
 
     @staticmethod
-    def _clean_domain_os_boot_data(node_xml):
+    def _clean_domain_os_boot_data(node_xml: minidom.Document) -> None:
         os_element = node_xml.getElementsByTagName("os")[0]
 
         for el in os_element.getElementsByTagName("boot"):
@@ -518,6 +518,16 @@ class LibvirtController(NodeController, ABC):
         for disk in node_xml.getElementsByTagName("disk"):
             for boot in disk.getElementsByTagName("boot"):
                 disk.removeChild(boot)
+
+    @staticmethod
+    def _update_cdrom_file_path(node_xml: minidom.Document, cdrom_iso_path: str) -> None:
+        cdrom_element = []
+        for disk in node_xml.getElementsByTagName("disk"):
+            if '<disk type="file" device="cdrom">' in disk.toxml():
+                cdrom_element.append(disk)
+        assert len(cdrom_element) == 1, "Expecting for a cdrom device - not found"
+        source_file_element = cdrom_element[0].getElementsByTagName("source")[0]
+        source_file_element.setAttribute("file", cdrom_iso_path)
 
     def set_per_device_boot_order(self, node_name, key: Callable[[Disk], int]):
         log.info(f"Changing boot order for node: {node_name}")
@@ -543,7 +553,7 @@ class LibvirtController(NodeController, ABC):
         self.shutdown_node(node_name)
         self.start_node(node_name)
 
-    def set_boot_order(self, node_name, cd_first=False):
+    def set_boot_order(self, node_name: str, cd_first: bool = False, cdrom_iso_path: str = None) -> None:
         log.info(f"Going to set the following boot order: cd_first: {cd_first}, " f"for node: {node_name}")
         node = self.libvirt_connection.lookupByName(node_name)
         current_xml = node.XMLDesc(0)
@@ -557,6 +567,10 @@ class LibvirtController(NodeController, ABC):
         second = xml.createElement("boot")
         second.setAttribute("dev", "hd" if cd_first else "cdrom")
         os_element.appendChild(second)
+
+        if cdrom_iso_path:
+            self._update_cdrom_file_path(xml, cdrom_iso_path)
+
         # Apply new machine xml
         dom = self.libvirt_connection.defineXML(xml.toprettyxml())
         if dom is None:
