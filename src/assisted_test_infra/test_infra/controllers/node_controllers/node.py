@@ -136,9 +136,9 @@ class Node:
         output = self.run_command(f"sudo systemctl is-active {service}.service || true")
         return output.strip() == "active"
 
-    def set_boot_order(self, cd_first=False):
+    def set_boot_order(self, cd_first=False, cdrom_iso_path=None) -> None:
         log.info("Setting boot order with cd_first=%s on %s", cd_first, self.name)
-        self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first)
+        self.node_controller.set_boot_order(node_name=self.name, cd_first=cd_first, cdrom_iso_path=cdrom_iso_path)
 
     def set_per_device_boot_order(self, key: Callable[[Disk], int]):
         log.info("Setting boot order on %s", self.name)

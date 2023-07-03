@@ -90,12 +90,14 @@ class NutanixController(TFController):
         log.info(f"Found 2 optional VIPs: {free_ips}")
         return {"api_vip": free_ips.pop(), "ingress_vip": free_ips.pop()}
 
-    def set_boot_order(self, node_name, cd_first=False) -> None:
+    def set_boot_order(self, node_name, cd_first=False, cdrom_iso_path=None) -> None:
         vm = self._get_provider_vm(tf_vm_name=node_name)
         if cd_first:
             vm.update_boot_order(VMBootDevices.default_boot_order())
         else:
             vm.update_boot_order([VMBootDevices.DISK, VMBootDevices.CDROM, VMBootDevices.NETWORK])
+        if cdrom_iso_path:
+            raise NotImplementedError("Updating cdrom iso file path is not implemented")
 
     @property
     def terraform_vm_resource_type(self) -> str:
