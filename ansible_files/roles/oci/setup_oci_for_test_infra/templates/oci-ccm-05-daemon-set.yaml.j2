@@ -57,7 +57,13 @@ spec:
               if [[ -f /etc/kubernetes/apiserver-url.env ]]; then
                 source /etc/kubernetes/apiserver-url.env
               fi
-              exec /usr/local/bin/oci-cloud-controller-manager --cloud-config=/etc/oci/cloud-provider.yaml --cloud-provider=oci --leader-elect-resource-lock=configmapsleases --v=2
+              exec /usr/local/bin/oci-cloud-controller-manager \
+                      --cloud-config=/etc/oci/cloud-provider.yaml \
+                      --cloud-provider=oci \
+                      --leader-elect-resource-lock=configmapsleases \
+                      --leader-elect-resource-name=oci-cloud-controller-manager \
+                      --leader-elect-resource-namespace=oci-cloud-controller-manager \
+                      --v=2
           volumeMounts:
             - name: cfg
               mountPath: /etc/oci
