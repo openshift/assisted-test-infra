@@ -83,7 +83,8 @@ def wait_till_all_operators_are_in_status(
         operators = client.get_cluster_operators(cluster_id)
         invalid_operators = [o.name for o in operators if o.status != consts.OperatorStatus.AVAILABLE]
         log.error("Several cluster operators are not available. All operator statuses: %s", operators)
-        raise RuntimeError(f"Failed to deploy the following operators {invalid_operators}") from e
+        e.add_note(f"Failed to deploy the following operators {invalid_operators}")
+        raise
 
 
 def filter_operators_by_type(operators: List[MonitoredOperator], operator_types: List[str]) -> List[MonitoredOperator]:
