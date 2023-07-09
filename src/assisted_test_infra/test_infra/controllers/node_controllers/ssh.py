@@ -47,7 +47,7 @@ class SshConnection:
             timeout=timeout,
             look_for_keys=False,
             auth_timeout=timeout,
-            key_filename=str(self._key_path),
+            pkey=paramiko.RSAKey.from_private_key_file(self._key_path),
         )
         self._ssh_client.get_transport().set_keepalive(15)
 
