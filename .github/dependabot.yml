@@ -18,6 +18,12 @@ updates:
       - "ok-to-test"
       - "dependencies"
       - "python"
+    groups:  # dependabot will only open one PR to update all dependencies
+      python-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "flake8-bugbear"
 
   - package-ecosystem: "docker"
     directory: "/"
