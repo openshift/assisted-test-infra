@@ -35,4 +35,4 @@ prompt_toolkit==3.0.38
 nutanix-api==0.0.19
 pytest-error-for-skips==2.0.2
 ansible==8.0.0
-oci==2.103.0
+oci==2.105.0
