@@ -34,5 +34,5 @@ waiting>=1.4.1
 prompt_toolkit==3.0.39
 nutanix-api==0.0.19
 pytest-error-for-skips==2.0.2
-ansible==8.0.0
+ansible==8.1.0
 oci==2.103.0
