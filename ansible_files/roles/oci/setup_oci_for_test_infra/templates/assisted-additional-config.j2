@@ -18,3 +18,5 @@ export OCI_EXTRA_NODE_NSG_IDS="{{ infra.oci_ci_machine_access_nsg_id }},{{ infra
 export OCI_EXTRA_LOAD_BALANCER_NSG_IDS="{{ infra.oci_load_balancer_ci_nsg_id }}"
 
 export BASE_DOMAIN="{{ oci_dns_zone }}"
+
+export CUSTOM_MANIFESTS_FILES="{{ custom_manifests_dir }}"
