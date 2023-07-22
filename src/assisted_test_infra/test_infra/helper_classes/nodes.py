@@ -245,7 +245,7 @@ class Nodes:
 
         waiting.wait(
             lambda: _all_nodes_allow_ssh_connection(),
-            timeout_seconds=180,
+            timeout_seconds=5 * consts.MINUTE,
             sleep_seconds=20,
             waiting_for="nodes to allow ssh connection",
         )
