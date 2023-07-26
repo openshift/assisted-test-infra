@@ -17,12 +17,14 @@ class _Terraform(Terraform):
     force flag only if it's set to true"""
 
     def destroy(self, dir_or_plan=None, force=False, **kwargs):
+        capture_output = os.getenv("DEBUG_TERRAFORM") is not None
+
         default = kwargs
         if force:
             default["force"] = force
         options = self._generate_default_options(default)
         args = self._generate_default_args(dir_or_plan)
-        return self.cmd("destroy", *args, **options)
+        return self.cmd("destroy", *args, **options, capture_output=capture_output)
 
 
 class TerraformUtils:
