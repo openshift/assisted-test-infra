@@ -1,4 +1,5 @@
 import json
+import shutil
 from glob import glob
 from pathlib import Path
 
@@ -81,8 +82,12 @@ class TestMakefileTargets(BaseTest):
         clusters_tf_folders = glob(f"{consts.TF_FOLDER}/*")
         destroyed_clusters = 0
 
+        def onerror(*args):
+            log.error(f"Error while attempting to delete {args[1]}, {args[2]}")
+
         for cluster_dir in clusters_tf_folders:
             tfvar_files = glob(f"{cluster_dir}/*/{consts.TFVARS_JSON_NAME}", recursive=True)
+            resources_deleted = False
             for tfvar_file in tfvar_files:
                 with SuppressAndLog(Exception):
                     with open(tfvar_file) as f:
@@ -112,5 +117,10 @@ class TestMakefileTargets(BaseTest):
                     controller.tf.set_vars(**config_vars)
                     controller.destroy_all_nodes()
                     destroyed_clusters += 1
+                    resources_deleted = True
+
+            log.debug(f"Successfully deleted {cluster_dir} resources")
+            if resources_deleted:
+                shutil.rmtree(cluster_dir, onerror=onerror)
 
         log.info(f"Successfully destroyed {destroyed_clusters} clusters")
