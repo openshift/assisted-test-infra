@@ -257,6 +257,7 @@ class ClusterEvents:
     ERROR = "error"
     PROXY_SETTINGS_CHANGED = "Proxy settings changed"
     DAY2_INSTALLED = "added-to-existing-cluster"
+    OPERATOR_MCE_COMPLETE = "Operator mce status: available message: install strategy completed with no errors"
 
 
 class InfraEnvEvents:
