@@ -100,11 +100,15 @@ resource "vsphere_virtual_machine" "master" {
     network_id = data.vsphere_network.network.id
   }
 
-  disk {
-    label            = "master-${count.index}-disk-0"
-    size             = var.master_disk_size_gib
-    eagerly_scrub    = false
-    thin_provisioned = true
+  dynamic "disk" {
+    for_each = range(var.master_disk_count)
+    content {
+      label            = "master-${count.index}-disk-${count.index + 1}-${disk.key}"
+      size             = var.master_disk_size_gib
+      eagerly_scrub    = false
+      unit_number      = disk.key > 0 ? disk.key : 0
+      thin_provisioned = true
+    }
   }
 
   dynamic "cdrom" {
@@ -141,11 +145,16 @@ resource "vsphere_virtual_machine" "worker" {
     network_id = data.vsphere_network.network.id
   }
 
-  disk {
-    label            = "worker-${count.index}-disk-0"
-    size             = var.worker_disk_size_gib
-    eagerly_scrub    = false
-    thin_provisioned = true
+
+    dynamic "disk" {
+    for_each = range(var.worker_disk_count)
+    content {
+      label            = "worker-${count.index}-disk-${count.index + 1}-${disk.key}"
+      size             = var.worker_disk_size_gib
+      eagerly_scrub    = false
+      unit_number      = disk.key > 0 ? disk.key : 0
+      thin_provisioned = true
+    }
   }
 
   dynamic "cdrom" {
