@@ -27,6 +27,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_control
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.nutanix_controller import NutanixController
 from assisted_test_infra.test_infra.controllers.node_controllers.vsphere_controller import VSphereController
+from assisted_test_infra.test_infra.controllers.node_controllers.oci_controller import OciController
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import AgentClusterInstall, ClusterDeployment
 from assisted_test_infra.test_infra.tools.concurrently import run_concurrently
@@ -416,7 +417,7 @@ def gather_sosreport_data(output_dir: str):
 
     nodes = []
     # Find matching controller by listing nodes
-    for controller_class in [LibvirtController, VSphereController, NutanixController]:
+    for controller_class in [LibvirtController, VSphereController, NutanixController, OciController]:
         log.debug(f"Looking up nodes using controller {controller_class.__name__}")
         try:
             controller = controller_class(TerraformConfig(), ClusterConfig())
