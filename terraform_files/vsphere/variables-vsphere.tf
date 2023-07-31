@@ -89,6 +89,11 @@ variable "masters_count" {
   description = "The number of master nodes to be created."
 }
 
+variable "master_disk_count" {
+  type        = number
+  description = "Number of master disks."
+}
+
 variable "master_memory" {
   type        = number
   default     = 16384
@@ -99,6 +104,11 @@ variable "master_disk_size_gib" {
   type        = number
   default     = 120
   description = "The size of the master's disk, in GB"
+}
+
+variable "worker_disk_count" {
+  type        = number
+  description = "Number of worker disks."
 }
 
 variable "master_vcpu" {
