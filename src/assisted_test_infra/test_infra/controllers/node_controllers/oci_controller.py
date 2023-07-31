@@ -1,4 +1,5 @@
 from enum import Enum
+import functools
 from typing import List, Tuple, Union
 
 import oci
@@ -59,7 +60,8 @@ class OciController(TFController):
     def terraform_vm_resource_type(self) -> str:
         return "oci_core_instance"
 
-    def _get_provider_client(self) -> object:
+    @functools.cache
+    def _get_provider_client(self) -> oci.core.ComputeClient:
         oci_config = self._config.get_provider_config()
 
         # Raise exception if failed
@@ -73,7 +75,7 @@ class OciController(TFController):
     def _get_provider_vm(self, tf_vm_name: str) -> Union[Instance, None]:
         vm_attributes = self._get_vm(tf_vm_name)["attributes"]
 
-        oci_instances = self._provider_client.list_instances(self._config.oci_compartment_oicd).data
+        oci_instances = self._get_provider_client().list_instances(self._config.oci_compartment_oicd).data
         for instance in oci_instances:
             if instance.id == vm_attributes["id"]:
                 return instance
@@ -107,7 +109,7 @@ class OciController(TFController):
             )
 
     def _instance_action(self, instance: Instance, action: OciInstanceAction):
-        response = self._provider_client.instance_action(instance_id=instance.id, action=action.value)
+        response = self._get_provider_client().instance_action(instance_id=instance.id, action=action.value)
         assert response.status == 200, f"Failed to {action.value.lower()} {instance.display_name} OCI instance"
 
     def restart_node(self, node_name: str) -> None:
@@ -129,7 +131,7 @@ class OciController(TFController):
         vm_attributes = self._get_vm(node_name)["attributes"]
         instance_id = vm_attributes["id"]
 
-        vnics = self._provider_client.list_vnic_attachments(
+        vnics = self._get_provider_client().list_vnic_attachments(
             self._config.oci_compartment_oicd, instance_id=instance_id
         ).data
         mac_addresses = [self._virtual_network_client.get_vnic(vnic.vnic_id).data.mac_address for vnic in vnics]

@@ -1,27 +1,27 @@
-- name: Destroy OCI instrastructure provisionned by test-infra
-  hosts: primary
-  tasks:
-    - name: Destroy OCI instrastructure provisionned by test-infra
-      ansible.builtin.shell: |
-        source /root/config.sh
-        make destroy_oci
-      args:
-        chdir: /home/assisted
-      retries: 5
-      delay: 30
-      register: result
-      until: result is succeeded
-      ignore_errors: true
-- name: Destroy OCI infrastructure provisionned for CI machine
-  hosts: localhost
-  vars_prompt:
-    - name: oci_tf_state_file
-      prompt: Terrafom state file that was used to create the infrastructure
-      private: false
-    - name: oci_tf_vars_file
-      prompt: Place where the Terrafom variable file will be stored
-      private: false
-  vars:
-    oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
-  roles:
-    - name: oci/destroy_infra
+# - name: Destroy OCI instrastructure provisionned by test-infra
+#   hosts: primary
+#   tasks:
+#     - name: Destroy OCI instrastructure provisionned by test-infra
+#       ansible.builtin.shell: |
+#         source /root/config.sh
+#         make destroy_oci
+#       args:
+#         chdir: /home/assisted
+#       retries: 5
+#       delay: 30
+#       register: result
+#       until: result is succeeded
+#       ignore_errors: true
+# - name: Destroy OCI infrastructure provisionned for CI machine
+#   hosts: localhost
+#   vars_prompt:
+#     - name: oci_tf_state_file
+#       prompt: Terrafom state file that was used to create the infrastructure
+#       private: false
+#     - name: oci_tf_vars_file
+#       prompt: Place where the Terrafom variable file will be stored
+#       private: false
+#   vars:
+#     oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
+#   roles:
+#     - name: oci/destroy_infra
