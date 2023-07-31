@@ -421,7 +421,7 @@ def gather_sosreport_data(output_dir: str):
     for controller_config_classes in [(LibvirtController, TerraformConfig), (VSphereController, VSphereConfig), (NutanixController, NutanixConfig), (OciController, OciConfig)]:
         log.debug(f"Looking up nodes using controller {controller_config_classes[0].__name__}")
         try:
-            controller = controller_config_classes[0](controller_config_classes[1], ClusterConfig())
+            controller = controller_config_classes[0](controller_config_classes[1](), ClusterConfig())
             nodes = controller.list_nodes()
             if len(nodes) != 0:
                 log.debug(f"Using controller {controller_config_classes[0].__name__} to fetch SOS report from {len(nodes)} nodes")
