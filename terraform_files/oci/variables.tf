@@ -85,21 +85,21 @@ variable "oci_extra_lb_nsg_oicds" {
 }
 
 variable "instance_shape" {
-  type = string
+  type        = string
   description = "The shape of the instance. The shape determines the number of CPUs and the amount of memory allocated to the instance"
-  default = "VM.Standard3.Flex"
+  default     = "VM.Standard3.Flex"
 }
 
 variable "instance_platform_config_type" {
-  type = string
+  type        = string
   description = "The type of platform being configured. (Supported types=[INTEL_VM, AMD_MILAN_BM, AMD_ROME_BM, AMD_ROME_BM_GPU, INTEL_ICELAKE_BM, INTEL_SKYLAKE_BM])"
-  default = "INTEL_VM"
+  default     = "INTEL_VM"
 }
 
 variable "instance_platform_config_virtualization_enabled" {
-  type = bool
+  type        = bool
   description = "Whether virtualization instructions are available. For example, Secure Virtual Machine for AMD shapes or VT-x for Intel shapes."
-  default = "true"
+  default     = "true"
 }
 
 ///////////
