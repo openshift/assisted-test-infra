@@ -1,5 +1,5 @@
 export PLATFORM=oci
-export CLUSTER_NAME="{{ unique_id }}"
+export CLUSTER_NAME="{{ namespace }}-{{ unique_hash }}"
 
 export OCI_COMPARTMENT="{{ oci_compartment_id }}"
 export OCI_USER="{{ oci_user_id }}"
