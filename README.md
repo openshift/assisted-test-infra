@@ -126,6 +126,8 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 
 ## Installation parameters
 
+
+
 |                              |                                                                                                                                                            |
 |------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `BASE_DOMAIN`                | base domain, needed for DNS name, default: redhat.com                                                                                                      |
