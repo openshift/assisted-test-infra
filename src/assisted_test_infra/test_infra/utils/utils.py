@@ -315,7 +315,7 @@ def create_ip_address_nested_list(node_count, starting_ip_addr):
 
 
 def is_cidr_is_ipv4(cidr):
-    return type(cidr) == ipaddress.IPv4Interface
+    return isinstance(cidr, ipaddress.IPv4Interface)
 
 
 def create_empty_nested_list(node_count):
