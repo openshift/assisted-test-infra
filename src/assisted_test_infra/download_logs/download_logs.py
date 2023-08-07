@@ -402,7 +402,7 @@ def download_must_gather(kubeconfig: str, dest_dir: str, describe_cluster_operat
         run_oc_describe_cluster_operators(kubeconfig, dest_dir)
 
     log.debug("Archiving %s...", must_gather_dir)
-    with tarfile.open(f"{dest_dir}/must-gather.tar", "w:gz") as tar:
+    with tarfile.open(f"{dest_dir}/must-gather.tar.gz", "w:gz") as tar:
         tar.add(must_gather_dir, arcname=os.path.sep)
 
     log.debug("Removing must-gather directory %s after we archived it", must_gather_dir)
