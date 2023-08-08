@@ -19,6 +19,7 @@ import requests
 import urllib3
 from assisted_service_client import ApiClient
 from dateutil.parser import isoparse
+from assisted_test_infra.test_infra.controllers.node_controllers.oci_controller import OciController
 from junit_report import JunitTestCase, JunitTestSuite
 from paramiko.ssh_exception import SSHException
 from scp import SCPException
@@ -27,7 +28,6 @@ from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_control
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.nutanix_controller import NutanixController
 from assisted_test_infra.test_infra.controllers.node_controllers.vsphere_controller import VSphereController
-from assisted_test_infra.test_infra.controllers.node_controllers.oci_controller import OciController
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import AgentClusterInstall, ClusterDeployment
 from assisted_test_infra.test_infra.tools.concurrently import run_concurrently
@@ -44,7 +44,6 @@ from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single
 from consts import ClusterStatus, HostsProgressStages, env_defaults
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, TerraformConfig
-from tests.config.global_configs import NutanixConfig, OciConfig, VSphereConfig
 
 private_ssh_key_path_default = os.path.join(os.getcwd(), str(env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH))
 
@@ -418,16 +417,16 @@ def gather_sosreport_data(output_dir: str):
 
     nodes = []
     # Find matching controller by listing nodes
-    for controller_config_classes in [(LibvirtController, TerraformConfig), (VSphereController, VSphereConfig), (NutanixController, NutanixConfig), (OciController, OciConfig)]:
-        log.debug(f"Looking up nodes using controller {controller_config_classes[0].__name__}")
+    for controller_class in [LibvirtController, VSphereController, NutanixController, OciController]:
+        log.debug(f"Looking up nodes using controller {controller_class.__name__}")
         try:
-            controller = controller_config_classes[0](controller_config_classes[1](), ClusterConfig())
+            controller = controller_class.create_minimal()
             nodes = controller.list_nodes()
             if len(nodes) != 0:
-                log.debug(f"Using controller {controller_config_classes[0].__name__} to fetch SOS report from {len(nodes)} nodes")
+                log.debug(f"Using controller {controller_class.__name__} to fetch SOS report from {len(nodes)} nodes")
                 break
         except Exception as e:
-            log.debug(f"Error fetching nodes using controller {controller_config_classes[0].__name__}: {e}")
+            log.debug(f"Error fetching nodes using controller {controller_class.__name__}: {e}")
 
     run_concurrently(
         jobs=[(gather_sosreport_from_node, node, sosreport_output) for node in nodes],

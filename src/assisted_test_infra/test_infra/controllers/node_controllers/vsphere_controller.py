@@ -10,9 +10,15 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node import Nod
 from assisted_test_infra.test_infra.controllers.node_controllers.tf_controller import TFController
 from assisted_test_infra.test_infra.utils import utils
 from service_client import log
+from tests.config.global_configs import ClusterConfig, VSphereConfig
 
 
 class VSphereController(TFController):
+
+    @classmethod
+    def create_minimal(cls):
+        return cls(VSphereConfig(), ClusterConfig())
+
     def _get_provider_client(self) -> object:
         return None
 

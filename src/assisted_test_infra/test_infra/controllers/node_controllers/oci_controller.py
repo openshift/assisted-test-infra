@@ -12,6 +12,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.tf_controller i
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_oci_config import BaseOciConfig
 from service_client import log
+from tests.config.global_configs import ClusterConfig, OciConfig
 
 
 class OciInstanceState(Enum):
@@ -37,6 +38,10 @@ class OciController(TFController):
     def __init__(self, config: BaseNodesConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
         self._virtual_network_client: VirtualNetworkClient = None
+
+    @classmethod
+    def create_minimal(cls):
+        return cls(OciConfig(), ClusterConfig())
 
     def get_all_vars(self):
         tfvars = super(OciController, self).get_all_vars()

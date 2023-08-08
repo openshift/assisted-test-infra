@@ -9,10 +9,15 @@ from nutanix_api.nutanix_vm import PowerState, VMBootDevices
 from assisted_test_infra.test_infra.controllers.node_controllers.tf_controller import TFController
 from assisted_test_infra.test_infra.helper_classes.config.base_nutanix_config import BaseNutanixConfig
 from service_client import log
+from tests.config.global_configs import ClusterConfig, NutanixConfig
 
 
 class NutanixController(TFController):
     _config: BaseNutanixConfig
+
+    @classmethod
+    def create_minimal(cls):
+        return cls(NutanixConfig(), ClusterConfig())
 
     def _get_provider_vm(self, tf_vm_name: str) -> Union[NutanixVM, None]:
         nutanix_vms = NutanixVM.list_entities(self._provider_client)

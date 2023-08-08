@@ -13,6 +13,7 @@ from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 import libvirt
+from tests.config.global_configs import ClusterConfig, TerraformConfig
 import waiting
 
 import consts
@@ -41,6 +42,10 @@ class LibvirtController(NodeController, ABC):
     def __del__(self):
         with suppress(Exception):
             self.libvirt_connection.close()
+
+    @classmethod
+    def create_minimal(cls):
+        return cls(TerraformConfig(), ClusterConfig())
 
     @staticmethod
     @contextmanager
