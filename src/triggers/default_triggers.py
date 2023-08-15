@@ -11,30 +11,10 @@ _default_triggers = frozendict(
         "remote_deployment": Trigger(
             conditions=[lambda config: config.remote_service_url is not None], worker_disk=consts.DISK_SIZE_100GB
         ),
-        "none_platform": Trigger(
-            conditions=[lambda config: config.platform == consts.Platforms.NONE],
-            user_managed_networking=True,
-            tf_platform=consts.Platforms.NONE,
-        ),
-        "vsphere_platform": Trigger(
-            conditions=[lambda config: config.platform == consts.Platforms.VSPHERE],
-            user_managed_networking=False,
-            tf_platform=consts.Platforms.VSPHERE,
-        ),
-        "nutanix_platform": Trigger(
-            conditions=[lambda config: config.platform == consts.Platforms.NUTANIX],
-            tf_platform=consts.Platforms.NUTANIX,
-        ),
-        "oci_platform": Trigger(
-            conditions=[lambda config: config.platform == consts.Platforms.OCI],
-            user_managed_networking=True,
-            tf_platform=consts.Platforms.OCI,
-        ),
         "sno": Trigger(
             conditions=[lambda config: config.masters_count == 1],
             workers_count=0,
             high_availability_mode=consts.HighAvailabilityMode.NONE,
-            user_managed_networking=True,
             master_memory=resources.DEFAULT_MASTER_SNO_MEMORY,
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,
             network_type=None,

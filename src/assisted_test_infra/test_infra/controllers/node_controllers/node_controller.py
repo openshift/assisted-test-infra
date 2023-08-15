@@ -206,7 +206,7 @@ class NodeController(ABC):
     def set_dns(self, api_ip: str, ingress_ip: str) -> None:
         pass
 
-    def set_dns_for_user_managed_network(self) -> None:
+    def set_dns_for_none_platform(self) -> None:
         pass
 
     def set_ipxe_url(self, network_name: str, ipxe_url: str):

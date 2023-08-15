@@ -105,6 +105,22 @@ class BaseTest:
         # Detect if configmap data was changed - need to restore configuration
         hub_cluster_config.rollout_assisted_service(configmap_before, configmap_after, request.node.name)
 
+    def get_tf_platform_for_config(self, request: FixtureRequest) -> str:
+        if global_variables.get_env("tf_platform").is_user_set:
+            return global_variables.tf_platform
+
+        if global_variables.get_env("platform").is_user_set:
+            return global_variables.platform
+
+        parameterized_keys = self._get_parameterized_keys(request)
+        if "tf_platform" in parameterized_keys:
+            return request.getfixturevalue("tf_platform")
+
+        if "platform" in parameterized_keys:
+            return request.getfixturevalue("platform")
+
+        return global_variables.tf_platform
+
     @pytest.fixture
     def new_controller_configuration(self, request: FixtureRequest) -> BaseNodesConfig:
         """
@@ -112,14 +128,16 @@ class BaseTest:
         Override this fixture in your test class to provide a custom configuration object
         :rtype: new node controller configuration
         """
-        if global_variables.tf_platform == consts.Platforms.VSPHERE:
-            config = VSphereConfig()
-        elif global_variables.tf_platform == consts.Platforms.NUTANIX:
-            config = NutanixConfig()
-        elif global_variables.tf_platform == consts.Platforms.OCI:
-            config = OciConfig()
-        else:
-            config = TerraformConfig()
+        tf_platform = self.get_tf_platform_for_config(request)
+        match tf_platform:
+            case consts.Platforms.VSPHERE:
+                config = VSphereConfig(tf_platform=tf_platform)
+            case consts.Platforms.NUTANIX:
+                config = NutanixConfig(tf_platform=tf_platform)
+            case consts.Platforms.OCI:
+                config = OciConfig(tf_platform=tf_platform)
+            case _:
+                config = TerraformConfig(tf_platform=tf_platform)
 
         self.update_parameterized(request, config)
         yield config
@@ -390,20 +408,20 @@ class BaseTest:
     def get_terraform_controller(
         cls, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig
     ) -> TerraformController | TFController:
-        platform = (
-            global_variables.tf_platform
-            if global_variables.tf_platform != cluster_configuration.platform
-            else cluster_configuration.platform
-        )
+        match controller_configuration.tf_platform:
+            case consts.Platforms.VSPHERE:
+                return VSphereController(controller_configuration, cluster_configuration)
 
-        if platform == consts.Platforms.VSPHERE:
-            return VSphereController(controller_configuration, cluster_configuration)
+            case consts.Platforms.NUTANIX:
+                return NutanixController(controller_configuration, cluster_configuration)
 
-        if platform == consts.Platforms.NUTANIX:
-            return NutanixController(controller_configuration, cluster_configuration)
+            case consts.Platforms.OCI:
+                return OciController(controller_configuration, cluster_configuration)
 
-        if platform == consts.Platforms.OCI:
-            return OciController(controller_configuration, cluster_configuration)
+        assert controller_configuration.tf_platform in (
+            consts.Platforms.BARE_METAL,
+            consts.Platforms.NONE,
+        ), f"Invalid platform {controller_configuration.tf_platform}"
 
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 

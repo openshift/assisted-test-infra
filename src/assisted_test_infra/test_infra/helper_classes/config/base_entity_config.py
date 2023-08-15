@@ -14,7 +14,6 @@ class BaseEntityConfig(BaseConfig, ABC):
     ssh_public_key: str = None
     openshift_version: str = None
     additional_ntp_source: str = None
-    user_managed_networking: bool = None
     high_availability_mode: str = None
     hyperthreading: str = None
     iso_download_path: str = None  # TODO Needed only on infra env. Remove from here and move to BaseInfraEnvConfig

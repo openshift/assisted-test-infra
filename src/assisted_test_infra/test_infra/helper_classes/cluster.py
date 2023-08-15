@@ -76,7 +76,6 @@ class Cluster(BaseCluster):
                 openshift_version=existing_cluster.openshift_version,
                 cluster_name=ClusterName(existing_cluster.name),
                 additional_ntp_source=existing_cluster.additional_ntp_source,
-                user_managed_networking=existing_cluster.user_managed_networking,
                 high_availability_mode=existing_cluster.high_availability_mode,
                 olm_operators=existing_cluster.monitored_operators,
                 base_dns_domain=existing_cluster.base_dns_domain,
@@ -134,7 +133,6 @@ class Cluster(BaseCluster):
             pull_secret=self._config.pull_secret,
             base_dns_domain=self._config.base_dns_domain,
             additional_ntp_source=self._config.additional_ntp_source,
-            user_managed_networking=self._config.user_managed_networking,
             high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
@@ -909,7 +907,7 @@ class Cluster(BaseCluster):
         # in case of None platform we need to specify dns records before hosts are ready
         if self._config.platform == consts.Platforms.NONE:
             self._configure_load_balancer()
-            self.nodes.controller.set_dns_for_user_managed_network()
+            self.nodes.controller.set_dns_for_none_platform()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             main_cidr = self.get_primary_machine_cidr()
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)

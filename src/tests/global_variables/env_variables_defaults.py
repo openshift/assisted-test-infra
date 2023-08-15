@@ -76,13 +76,8 @@ class _EnvVariables(DataPool, ABC):
         loader=lambda files: [m for path in re.split(r"\s|,", files) for m in Manifest.get_manifests(Path(path))],
         default=[],
     )
-    platform: EnvVar = EnvVar(["PLATFORM"])
+    platform: EnvVar = EnvVar(["PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
     tf_platform: EnvVar = EnvVar(["TF_PLATFORM", "PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
-    user_managed_networking: EnvVar = EnvVar(
-        ["USER_MANAGED_NETWORKING"],
-        loader=lambda x: bool(strtobool(x)),
-        default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING,
-    )
     high_availability_mode: EnvVar = EnvVar(default=env_defaults.DEFAULT_HIGH_AVAILABILITY_MODE)
     download_image: EnvVar = EnvVar(
         ["DOWNLOAD_IMAGE"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_DOWNLOAD_IMAGE

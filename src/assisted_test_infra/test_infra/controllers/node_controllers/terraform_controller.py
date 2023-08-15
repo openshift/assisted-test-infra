@@ -289,7 +289,7 @@ class TerraformController(LibvirtController):
             ingress_ip=ingress_ip,
         )
 
-    def set_dns_for_user_managed_network(self) -> None:
+    def set_dns_for_none_platform(self) -> None:
         machine_cidr = self.get_primary_machine_cidr()
         nameserver_ip = str(IPNetwork(machine_cidr).ip + 1)
         self.set_dns(nameserver_ip, nameserver_ip)

@@ -106,8 +106,13 @@ class InventoryClient(object):
     def create_cluster(
         self, name: str, ssh_public_key: Optional[str] = None, **cluster_params
     ) -> models.cluster.Cluster:
-        cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params)
-        log.info("Creating cluster with params %s", cluster.__dict__)
+        cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params).to_dict()
+
+        # TODO remove after completely removing `user_managed_networking` from cluster object
+        if "user_managed_networking" in cluster:
+            del cluster["user_managed_networking"]
+
+        log.info("Creating cluster with params %s", cluster)
         result = self.client.v2_register_cluster(new_cluster_params=cluster)
         return result
 
@@ -206,6 +211,13 @@ class InventoryClient(object):
         return self.update_cluster(cluster_id=cluster_id, update_params=update_params)
 
     def update_cluster(self, cluster_id, update_params) -> models.cluster.Cluster:
+        if isinstance(update_params, models.V2ClusterUpdateParams):
+            update_params = update_params.to_dict()
+
+        # TODO remove after completely removing `user_managed_networking` from cluster object
+        if "user_managed_networking" in update_params:
+            del update_params["user_managed_networking"]
+
         log.info("Updating cluster %s with params %s", cluster_id, update_params)
         return self.client.v2_update_cluster(cluster_id=cluster_id, cluster_update_params=update_params)
 
@@ -470,11 +482,12 @@ class InventoryClient(object):
         return nodes_by_role
 
     def get_api_vip(self, cluster_info: dict, cluster_id: str = None):
-        cluster = cluster_info or self.cluster_get(cluster_id)
+        cluster = cluster_info or self.cluster_get(cluster_id).to_dict()
         api_vip = cluster.get("api_vip")
-        user_managed_networking = cluster.get("user_managed_networking")
+        platform_type = cluster.get("platform", {}).get("type")
+        is_platform_network_managed = platform_type == consts.Platforms.OCI or platform_type == consts.Platforms.NONE
 
-        if not api_vip and user_managed_networking:
+        if not api_vip and is_platform_network_managed:
             log.info("API VIP is not set, searching for api ip on masters")
             hosts = cluster.get("hosts") or cluster.to_dict()["hosts"]
             masters = self.get_hosts_by_role(cluster["id"], consts.NodeRoles.MASTER, hosts=hosts)

@@ -14,7 +14,6 @@ DEFAULT_LOG_FOLDER: Path = Path("/tmp/assisted_test_infra_logs")
 DEFAULT_IMAGE_TYPE: str = consts.ImageType.MINIMAL_ISO
 DEFAULT_TEST_TEARDOWN: bool = True
 DEFAULT_PLATFORM: str = consts.Platforms.BARE_METAL
-DEFAULT_USER_MANAGED_NETWORKING: bool = False
 DEFAULT_HIGH_AVAILABILITY_MODE: str = consts.HighAvailabilityMode.FULL
 DEFAULT_DOWNLOAD_IMAGE: bool = True
 DEFAULT_VERIFY_SSL: bool = True
