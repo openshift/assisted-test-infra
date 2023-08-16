@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import consts
@@ -36,3 +37,4 @@ DEFAULT_HOLD_INSTALLATION: bool = False
 DEFAULT_MULTI_VERSION: bool = False
 DEFAULT_BASE_DNS_DOMAIN = consts.REDHAT_DNS_DOMAIN
 DEFAULT_VSHPERE_PARENT_FOLDER: str = "assisted-test-infra"
+TF_APPLY_ATTEMPTS = int(os.getenv("TF_APPLY_ATTEMPTS", 1))

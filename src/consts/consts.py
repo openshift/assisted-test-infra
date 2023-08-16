@@ -54,6 +54,7 @@ DEFAULT_LIBVIRT_URI = "qemu:///system"
 TFSTATE_FILE = "terraform.tfstate"
 IMAGE_FOLDER = "/tmp/test_images"
 TF_MAIN_JSON_NAME = "main.tf"
+TF_APPLY_ATTEMPTS_INTERVAL = 15  # in seconds
 BASE_IMAGE_FOLDER = "/tmp/images"
 IMAGE_NAME = "installer-image.iso"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
