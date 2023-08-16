@@ -1,13 +1,14 @@
 import json
 import os
 import pathlib
+import time
 from typing import Any, Dict, List
 
 import hcl2
 from python_terraform import IsFlagged, Terraform, TerraformCommandError, Tfstate
 from retry import retry
 
-from consts import consts
+from consts import consts, env_defaults
 from service_client import log
 
 
@@ -60,17 +61,31 @@ class TerraformUtils:
 
         return list(map(lambda d: next(iter(d)), results))
 
-    def apply(self, refresh: bool = True, capture_output=True) -> None:
+    def apply(
+        self,
+        refresh: bool = True,
+        capture_output: bool = True,
+        attempts: int = env_defaults.TF_APPLY_ATTEMPTS,
+        interval: int = consts.TF_APPLY_ATTEMPTS_INTERVAL,
+    ) -> None:
         if os.getenv("DEBUG_TERRAFORM") is not None:
             capture_output = False
 
         return_value, output, err = self.tf.apply(
             no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True, capture_output=capture_output
         )
-        if return_value != 0:
-            message = f"Terraform apply failed with return value {return_value}, output {output} , error {err}"
+        if return_value == 0:
+            return
+
+        message = f"Terraform apply failed with return value {return_value}, output {output} , error {err}"
+        if attempts == 1:
             log.error(message)
             raise Exception(message)
+
+        log.warning(message)
+        log.info(f"Attempting to re-apply terraform target (left attempts: {attempts})...")
+        time.sleep(interval)
+        return self.apply(refresh, capture_output, attempts - 1, interval * 2)
 
     def set_vars(self, **kwargs) -> None:
         defined_variables = self.select_defined_variables(**kwargs)
