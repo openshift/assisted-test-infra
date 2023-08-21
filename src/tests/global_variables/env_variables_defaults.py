@@ -7,7 +7,6 @@ from pathlib import Path
 
 import consts
 from assisted_test_infra.test_infra.utils.env_var import EnvVar
-from assisted_test_infra.test_infra.utils.manifests import Manifest
 from consts import env_defaults, resources
 from triggers.env_trigger import DataPool
 
@@ -73,7 +72,7 @@ class _EnvVariables(DataPool, ABC):
     )
     custom_manifests: EnvVar = EnvVar(
         ["CUSTOM_MANIFESTS_FILES"],
-        loader=lambda files: [m for path in re.split(r"\s|,", files) for m in Manifest.get_manifests(Path(path))],
+        loader=lambda files: [path for path in re.split(r"\s|,", files)],
         default=[],
     )
     platform: EnvVar = EnvVar(["PLATFORM"])

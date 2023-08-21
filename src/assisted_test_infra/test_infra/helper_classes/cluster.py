@@ -1,9 +1,11 @@
 import base64
+import itertools
 import json
 import random
 import re
 import time
 from collections import Counter
+from pathlib import Path
 from typing import List, Optional, Set
 
 import waiting
@@ -22,6 +24,7 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import terraform_utils
 from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
+from assisted_test_infra.test_infra.utils.manifests import Manifest
 from assisted_test_infra.test_infra.utils.waiting import (
     wait_till_all_hosts_are_in_status,
     wait_till_all_hosts_use_agent_image,
@@ -877,20 +880,24 @@ class Cluster(BaseCluster):
     @JunitTestCase()
     def create_custom_manifests(self):
         log.info(f"Adding {len(self._config.custom_manifests)} custom manifests")
-        for local_manifest in self._config.custom_manifests:
+        manifest_directories = [Manifest.get_manifests(Path(p)) for p in self._config.custom_manifests]
+        manifest_objects = list(itertools.chain.from_iterable(manifest_directories))
+        for local_manifest in manifest_objects:
             with open(local_manifest.local_path, "rb") as f:
                 encoded_content = base64.b64encode(f.read()).decode("utf-8", "ignore")
 
-            manifest = self.api_client.create_custom_manifest(
-                self.id, local_manifest.folder, local_manifest.file_name, encoded_content
-            )
+                manifest = self.api_client.create_custom_manifest(
+                    self.id, local_manifest.folder, local_manifest.file_name, encoded_content
+                )
 
-            assert manifest.file_name == local_manifest.file_name
-            assert manifest.folder == local_manifest.folder
-            log.info(f"Manifest {local_manifest.file_name} was created successfully")
+                assert manifest.file_name == local_manifest.file_name
+                assert manifest.folder == local_manifest.folder
+                log.info(f"Manifest {local_manifest.file_name} was created successfully")
 
     def validate_params(self):
-        for manifest in self._config.custom_manifests:
+        manifest_directories = [Manifest.get_manifests(Path(p)) for p in self._config.custom_manifests]
+        manifest_objects = list(itertools.chain.from_iterable(manifest_directories))
+        for manifest in manifest_objects:
             assert manifest.local_path.exists(), f"Manifest file does not exist: {manifest.file_name}"
             assert (
                 manifest.is_folder_allowed()
