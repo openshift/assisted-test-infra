@@ -36,6 +36,9 @@ class NodeController(ABC):
     def is_ipv6(self):
         return self._config.is_ipv6
 
+    def init_controller(self):
+        pass
+
     @abstractmethod
     def list_nodes(self) -> List[Node]:
         pass

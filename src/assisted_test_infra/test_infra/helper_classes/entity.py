@@ -18,6 +18,7 @@ class Entity(ABC):
         self.nodes: Nodes = nodes
         self._create() if not self.id else self.update_existing()
         self._config.iso_download_path = self.get_iso_download_path()
+        nodes.init_controller()
 
     @property
     @abstractmethod
