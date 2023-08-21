@@ -40,6 +40,9 @@ class NodeController(ABC):
     def tf_platform(self):
         return self._config.tf_platform
 
+    def init_controller(self):
+        pass
+
     @abstractmethod
     def list_nodes(self) -> List[Node]:
         pass
