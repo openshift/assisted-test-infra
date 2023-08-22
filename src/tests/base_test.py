@@ -1,4 +1,3 @@
-import hashlib
 import json
 import os
 import shutil
@@ -181,10 +180,7 @@ class BaseTest:
             }
             assert all(day2_base_asset.values())  # ensure all values are set
 
-            unique_id = hashlib.sha1(day2_cluster_configuration.day2_libvirt_uri.encode()).hexdigest()
-            assets_file = f"{LibvirtNetworkAssets.ASSETS_LOCKFILE_DEFAULT_PATH}/tf_network_pool-{unique_id}.json"
             net_asset = LibvirtNetworkAssets(
-                assets_file=assets_file,
                 base_asset=day2_base_asset,
                 libvirt_uri=day2_cluster_configuration.day2_libvirt_uri,
             )
