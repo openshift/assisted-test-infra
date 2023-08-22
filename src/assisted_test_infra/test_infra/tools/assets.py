@@ -2,6 +2,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Union
 
+import libvirt
 import netifaces
 from munch import Munch
 from netaddr import IPAddress, IPNetwork, IPRange
@@ -109,14 +110,18 @@ class LibvirtNetworkAssets:
     def _fill_virsh_allocated_ips_and_bridges(self):
         with LibvirtController.connection_context(libvirt_uri=self._libvirt_uri) as conn:
             for net in conn.listAllNetworks():
-                for lease in net.DHCPLeases():
-                    net_bridge = lease.get("iface")
-                    if net_bridge:
-                        self._add_allocated_net_bridge(net_bridge)
+                # In parallel tests net object may be deleted by tests cleanup
+                try:
+                    for lease in net.DHCPLeases():
+                        net_bridge = lease.get("iface")
+                        if net_bridge:
+                            self._add_allocated_net_bridge(net_bridge)
 
-                    ipaddr = lease.get("ipaddr")
-                    if ipaddr:
-                        self._add_allocated_ip(IPAddress(ipaddr))
+                        ipaddr = lease.get("ipaddr")
+                        if ipaddr:
+                            self._add_allocated_ip(IPAddress(ipaddr))
+                except libvirt.libvirtError:
+                    log.info(f"Can not get dhcp leases from {net.name()}")
 
     def _override_ip_networks_values_if_not_free(self):
         log.info("IPs in use: %s", self._allocated_ips_objects)
