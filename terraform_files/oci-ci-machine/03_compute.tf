@@ -3,14 +3,21 @@ data "oci_identity_availability_domains" "ads" {
 }
 
 data "oci_core_images" "os_images" {
-  #Required
-  compartment_id = var.oci_compartment_id
-
-  display_name = var.os_image_name
-  state        = "AVAILABLE"
-  sort_by      = "TIMECREATED"
-  sort_order   = "DESC"
+  compartment_id           = var.oci_compartment_id
+  operating_system         = "Oracle Linux"
+  operating_system_version = "8"
+  state                    = "AVAILABLE"
+  sort_by                  = "TIMECREATED"
+  sort_order               = "DESC"
+  filter {
+    # in order to filter out specialized images (e.g.: GPU) or non-x86 images,
+    # match OS names simillar to: Oracle-Linux-8.8-2023.08.16-0
+    name   = "display_name"
+    values = ["^Oracle-Linux-\\d\\.\\d-\\d{4}\\.\\d{2}\\.\\d{2}-\\d$"]
+    regex  = true
+  }
 }
+
 
 # Use cloud init to configure root user
 # and grow root filesystem
