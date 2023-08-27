@@ -179,6 +179,8 @@ function install_packages() {
 }
 
 function install_skipper() {
+    echo "sleeping..........."
+    sleep 30m
     echo "Installing skipper and adding ~/.local/bin to PATH"
     pip3 install strato-skipper==2.0.0 --user
 
