@@ -1,6 +1,6 @@
 debugpy==1.6.7.post1
 dnspython==2.4.2
-filelock==3.12.2
+filelock==3.12.3
 frozendict==2.3.8
 ipdb==0.13.13
 ipython==8.14.0
@@ -35,4 +35,4 @@ prompt_toolkit==3.0.39
 nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==8.3.0
-oci==2.110.1
+oci==2.110.2
