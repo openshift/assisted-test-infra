@@ -881,9 +881,7 @@ class Cluster(BaseCluster):
             with open(local_manifest.local_path, "rb") as f:
                 encoded_content = base64.b64encode(f.read()).decode("utf-8", "ignore")
 
-            manifest = self.api_client.create_custom_manifest(
-                self.id, local_manifest.folder, local_manifest.file_name, encoded_content
-            )
+            manifest = self.create_custom_manifest(local_manifest.folder, local_manifest.file_name, encoded_content)
 
             assert manifest.file_name == local_manifest.file_name
             assert manifest.folder == local_manifest.folder
@@ -895,6 +893,15 @@ class Cluster(BaseCluster):
             assert (
                 manifest.is_folder_allowed()
             ), f"Invalid value for `folder` {manifest.folder} must be one of {manifest.get_allowed_folders()}"
+
+    def create_custom_manifest(self, folder: str = None, filename: str = None, base64_content: str = None):
+        return self.api_client.create_custom_manifest(self.id, folder, filename, base64_content)
+
+    def list_custom_manifests(self) -> models.ListManifests:
+        return self.api_client.list_custom_manifests(self.id)
+
+    def delete_custom_manifest(self, filename: str = None) -> None:
+        self.api_client.delete_custom_manifest(self.id, filename)
 
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):
