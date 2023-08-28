@@ -171,11 +171,23 @@ function install_runtime_container() {
 
 function install_packages() {
     echo "Installing dnf packages"
-    sudo dnf install -y make python3 python3-pip git jq bash-completion xinetd
+    sudo dnf install -y make git jq bash-completion xinetd
     sudo systemctl enable --now xinetd
 
+    if dnf list --available python3.11; then
+        echo "Installing Python 3.11"
+        sudo dnf install -y python3.11
+        alternatives --set python $(which python3.11)
+        alternatives --set python3 $(which python3.11)
+
+        python -m ensurepip --upgrade
+    else
+        echo "Python 3.11 is unavailable. Fallback to any version of Python 3 available"
+        sudo dnf install -y python3 python3-pip
+    fi
+
     echo "Installing python packages"
-    sudo pip3 install aicli
+    pip3 install aicli --user
 }
 
 function install_skipper() {
