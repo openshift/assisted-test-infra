@@ -163,12 +163,12 @@ def get_host_validation_value(cluster_info, host_id, validation_section, validat
         if host.id != host_id:
             continue
         found_status = "validation not found"
-        validations = json.loads(host.validations_info)
-        for validation in validations[validation_section]:
-            if validation["id"] == validation_id:
-                found_status = validation["status"]
-                break
-        return found_status
+        if getattr(host, "validations_info", None):
+            for validation in json.loads(host.validations_info)[validation_section]:
+                if validation["id"] == validation_id:
+                    found_status = validation["status"]
+                    break
+            return found_status
     return "host not found"
 
 
