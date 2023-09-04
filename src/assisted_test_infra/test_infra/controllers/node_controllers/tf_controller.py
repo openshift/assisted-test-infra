@@ -174,3 +174,6 @@ class TFController(NodeController, ABC):
 
     def set_single_node_ip(self, ip):
         pass
+
+    def set_cpu_fallback_model(self, node_name: str, fallback_model: str) -> None:
+        pass

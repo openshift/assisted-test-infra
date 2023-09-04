@@ -169,6 +169,9 @@ class Node:
     def set_ram_kib(self, ram_kib):
         self.node_controller.set_ram_kib(self.name, ram_kib)
 
+    def set_cpu_fallback_model(self, fallback_model: str) -> None:
+        self.node_controller.set_cpu_fallback_model(self.name, fallback_model)
+
     def reset_ram_kib(self):
         self.set_ram_kib(self.original_ram_kib)
 

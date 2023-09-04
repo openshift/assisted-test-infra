@@ -609,6 +609,31 @@ class LibvirtController(NodeController, ABC):
             raise Exception(f"Failed to set memory for node: {node_name}")
         log.info(f"Successfully set memory to {ram_kib} for node: {node_name}")
 
+    def set_cpu_fallback_model(self, node_name: str, fallback_model: str) -> None:
+        """When user set worker_cpu_mode=custom or master_cpu_mode=custom, it allows to set fallback.
+        The default is qemu64 and RHEL9 can not boot with this model.
+        BZ-2188896[RHEL9] when libvirt cpu mode=custom hit on kernel panic when trying to load the virtual machine
+
+        Current configuration fails on RHEL9 boot:
+        <cpu mode='custom' match='exact' check='none'>
+        <model fallback='forbid'>qemu64</model>
+        </cpu>
+        example fallback_model = Haswell-noTSX-IBRS
+        :param node_name:
+        :param fallback_model:
+        :return:
+        """
+        log.info(f"Going to set cpu fallback to {fallback_model} for node: {node_name}")
+        xml = self._get_xml(node_name)
+        cpu_element = xml.getElementsByTagName("cpu")[0]
+        model_element = cpu_element.getElementsByTagName("model")[0]
+        model_element.firstChild.replaceWholeText(fallback_model)
+        # Apply new machine xml
+        dom = self.libvirt_connection.defineXML(xml.toprettyxml())
+        if dom is None:
+            raise Exception(f"Failed to set fallback cpu : {fallback_model}, for node: {node_name}")
+        log.info(f"Fallback cpu set successfully: fallback to: {fallback_model}, for node: {node_name}")
+
     def set_ipxe_url(self, network_name: str, ipxe_url: str):
         """Adds a <bootp> element with the iPXE file URL to the libvirt network"""
         network = self.get_network_by_name(network_name)
