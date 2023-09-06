@@ -1,8 +1,9 @@
 # these type are cleaned up by removing their parent resource
 # we exclude them from the removal to avoid conflict type of errors
 excluded_types:
-  - oci_load_balancer_backend
-  - oci_load_balancer_listener
   - oci_core_private_ip
   - oci_core_public_ip
+  - oci_load_balancer_backend
+  - oci_load_balancer_backend_set
+  - oci_load_balancer_listener
 expired_after_hours: 6

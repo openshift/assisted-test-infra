@@ -1,6 +1,6 @@
 - name: Cleanup expired resources in OCI
   hosts: localhost
-    vars_prompt:
+  vars_prompt:
     - name: oci_compartment_id
       prompt: parent compartment OCID where the resources will be created
       private: false
@@ -22,11 +22,11 @@
   vars:
     oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
   environment:
-    OCI_COMPARTMENT: "{{ oci_compartment_id }}"
-    OCI_USER: "{{ oci_user_id }}"
-    OCI_PRIVATE_KEY_PATH: "{{ oci_private_key_path }}"
-    OCI_PUBLIC_KEY_FINGERPRINT: "{{ oci_fingerprint }}"
-    OCI_TENANCY: "{{ oci_tenancy_id }}"
-    OCI_REGION: "{{ oci_region }}"
+    TF_VAR_compartment_ocid: "{{ oci_compartment_id }}"
+    TF_VAR_user_ocid: "{{ oci_user_id }}"
+    TF_VAR_private_key_path: "{{ oci_private_key_path }}"
+    TF_VAR_fingerprint: "{{ oci_fingerprint }}"
+    TF_VAR_tenancy_ocid: "{{ oci_tenancy_id }}"
+    TF_VAR_region: "{{ oci_region }}"
   roles:
     - name: oci/cleanup_resources
