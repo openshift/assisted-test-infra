@@ -70,7 +70,7 @@ variable "vcpus" {
 
 variable "iso_url" {
   type = string
-  default = "https://vault.centos.org/8.5.2111/isos/x86_64/CentOS-8.5.2111-x86_64-boot.iso"
+  default = "http://rep-centos-il.upress.io/8-stream/isos/x86_64/CentOS-Stream-8-20230904.0-x86_64-boot.iso"
   description = "The Centos8 ISO download URL"
 }
 
