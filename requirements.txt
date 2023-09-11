@@ -1,4 +1,4 @@
-debugpy==1.6.7.post1
+debugpy==1.7.0
 dnspython==2.4.2
 filelock==3.12.3
 frozendict==2.3.8
@@ -17,7 +17,7 @@ paramiko==3.3.1
 pre-commit==3.4.0
 pycharm_remote_debugger==0.1.16
 pytest-xdist==3.3.1
-pytest==7.4.1
+pytest==7.4.2
 python-dateutil==2.8.2
 python-hcl2==4.3.2
 python-terraform==0.10.1
@@ -35,4 +35,4 @@ prompt_toolkit==3.0.39
 nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==8.3.0
-oci==2.111.0
+oci==2.112.0
