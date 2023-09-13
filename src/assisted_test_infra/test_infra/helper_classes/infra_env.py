@@ -129,7 +129,9 @@ class InfraEnv(Entity):
 
         if self._config.static_network_config is None:
             log.info("No static network configuration found, generating new network configurations")
-            static_network_config = static_network.generate_static_network_data_from_tf(self.nodes.controller.tf_folder)
+            static_network_config = static_network.generate_static_network_data_from_tf(
+                self.nodes.controller.tf_folder, self._config
+            )
             self._config.static_network_config = static_network_config
 
         log.info(f"Updating InfraEnv {self.id} static network configuration")

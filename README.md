@@ -105,6 +105,9 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `IPv4`                        | Boolean value indicating if IPv4 is enabled. Default is yes |
 | `IPv6`                        | Boolean value indicating if IPv6 is enabled. Default is no |
 | `STATIC_IPS`                  | Boolean value indicating if static networking should be enabled. Default is no |
+| `IS_BONDED`                   | Boolean value indicating if bonding should be enabled. It also implies static networking. Default is no |
+| `NUM_BONDED_SLAVES`           | Integer value indicating the number of bonded slaves per bond. It is only used if bonding support is enabled. Default is 2 |
+| `BONDING_MODE`                | Bonding mode when bonding is in use. Default is active-backup |
 | `OCM_BASE_URL`                | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/ |
 | `OCM_CLIENT_ID`               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
 | `OCM_CLIENT_SECRET`           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |

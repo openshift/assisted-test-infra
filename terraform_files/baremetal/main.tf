@@ -100,19 +100,27 @@ module "masters" {
   vtpm2          = var.master_vtpm2
   boot_devices   = var.master_boot_devices
 
-  networks = [
+  networks = flatten([for net in [
     {
-      name     = libvirt_network.net.name
-      hostname = "${var.cluster_name}-master-${count.index}"
-      ips      = var.libvirt_master_ips[count.index]
-      mac      = var.libvirt_master_macs[count.index]
+          name     = libvirt_network.net.name
+          ips      = var.libvirt_master_ips
+          macs     = var.libvirt_master_macs
+          hostname = var.slave_interfaces ? null : "${var.cluster_name}-master-${count.index}"
     },
     {
-      name = libvirt_network.secondary_net.name
-      ips  = var.libvirt_secondary_master_ips[count.index]
-      mac  = var.libvirt_secondary_master_macs[count.index]
+        name     = libvirt_network.secondary_net.name
+        ips      = var.libvirt_secondary_master_ips
+        macs     = var.libvirt_secondary_master_macs
+        hostname = null
     },
-  ]
+  ] : [for i in range(var.slave_interfaces ? var.network_interfaces_count : 1) :
+       {
+           name     = net.name
+           ips      = var.slave_interfaces ? null : net.ips[count.index]
+           mac      = var.slave_interfaces ? net.macs[count.index*var.network_interfaces_count+i] : net.macs[count.index]
+           hostname = net.hostname
+       }]])
+
 
   pool           = libvirt_pool.storage_pool.name
   disk_base_name = "${var.cluster_name}-master-${count.index}"
@@ -134,19 +142,26 @@ module "workers" {
   vtpm2          = var.worker_vtpm2
   boot_devices   = var.worker_boot_devices
 
-  networks = [
+  networks = flatten([for net in [
     {
       name     = libvirt_network.net.name
-      hostname = "${var.cluster_name}-worker-${count.index}"
-      ips      = var.libvirt_worker_ips[count.index]
-      mac      = var.libvirt_worker_macs[count.index]
+      ips      = var.libvirt_worker_ips
+      macs     = var.libvirt_worker_macs
+      hostname = var.slave_interfaces ? null : "${var.cluster_name}-worker-${count.index}"
     },
     {
-      name = libvirt_network.secondary_net.name
-      ips  = var.libvirt_secondary_worker_ips[count.index]
-      mac  = var.libvirt_secondary_worker_macs[count.index]
+      name     = libvirt_network.secondary_net.name
+      ips      = var.libvirt_secondary_worker_ips
+      macs     = var.libvirt_secondary_worker_macs
+      hostname = null
     },
-  ]
+  ] : [for i in range(var.slave_interfaces ? var.network_interfaces_count : 1) :
+  {
+    name     = net.name
+    ips      = var.slave_interfaces ? null : net.ips[count.index]
+    mac      = var.slave_interfaces ? net.macs[count.index*var.network_interfaces_count+i] : net.macs[count.index]
+    hostname = net.hostname
+  }]])
 
   pool           = libvirt_pool.storage_pool.name
   disk_base_name = "${var.cluster_name}-worker-${count.index}"

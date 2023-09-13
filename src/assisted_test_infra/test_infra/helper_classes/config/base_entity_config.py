@@ -29,3 +29,6 @@ class BaseEntityConfig(BaseConfig, ABC):
     proxy: models.Proxy = None
     ipxe_boot: bool = None
     cpu_architecture: Optional[str] = None
+    is_bonded: bool = None
+    num_bonded_slaves: int = None
+    bonding_mode: str = None

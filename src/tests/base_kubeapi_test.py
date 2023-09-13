@@ -9,7 +9,7 @@ from kubernetes.client import ApiClient, CoreV1Api
 from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 
-from assisted_test_infra.test_infra import BaseEntityConfig, Nodes, utils
+from assisted_test_infra.test_infra import BaseEntityConfig, BaseInfraEnvConfig, Nodes, utils
 from assisted_test_infra.test_infra.controllers import Node
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
@@ -207,8 +207,16 @@ class BaseKubeAPI(BaseTest):
 
     @classmethod
     @JunitTestCase()
-    def apply_static_network_config(cls, kube_api_context: KubeAPIContext, nodes: Nodes, cluster_name: str):
-        static_network_config = static_network.generate_static_network_data_from_tf(nodes.controller.tf_folder)
+    def apply_static_network_config(
+        cls,
+        kube_api_context: KubeAPIContext,
+        nodes: Nodes,
+        cluster_name: str,
+        infra_env_configuration: BaseInfraEnvConfig,
+    ):
+        static_network_config = static_network.generate_static_network_data_from_tf(
+            nodes.controller.tf_folder, infra_env_configuration
+        )
 
         mac_to_interface = static_network_config[0]["mac_interface_map"]
         interfaces = [
