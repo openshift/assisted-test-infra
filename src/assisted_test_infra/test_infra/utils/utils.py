@@ -306,6 +306,15 @@ def file_lock_context(filepath="/tmp/src.lock", timeout=300):
         lock.release()
 
 
+def lock_function_call(func):
+    @wraps(func)
+    def inner_func(*args, **kwargs):
+        with file_lock_context():
+            log.info(f"Lock function {func} during call")
+            return func(*args, **kwargs)
+    return inner_func
+
+
 def create_ip_address_list(node_count, starting_ip_addr):
     return [str(ipaddress.ip_address(starting_ip_addr) + i) for i in range(node_count)]
 

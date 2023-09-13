@@ -5,6 +5,7 @@ from paramiko import SSHException
 from scp import SCPException
 
 import consts
+from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers import ssh
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 from service_client import log
@@ -92,9 +93,11 @@ class Node:
                 output = _ssh.script(bash_command, verbose=False)
         return output
 
+    @utils.lock_function_call
     def shutdown(self):
         return self.node_controller.shutdown_node(self.name)
 
+    @utils.lock_function_call
     def start(self, check_ips=True):
         return self.node_controller.start_node(self.name, check_ips)
 
