@@ -1,5 +1,7 @@
+import ast
 import json
 import os
+import socket
 from typing import Any, Dict, List, Optional, Union
 
 import libvirt
@@ -11,6 +13,7 @@ from netaddr.core import AddrFormatError
 import consts
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
+from assisted_test_infra.test_infra.tools.ipip_tunnels import TunnelManager
 from consts.consts import DEFAULT_LIBVIRT_URI
 from service_client import log
 
@@ -47,6 +50,20 @@ class LibvirtNetworkAssets:
         self._taken_assets = set([])
         self._asset = base_asset.copy()
         self._libvirt_uri = libvirt_uri
+        self._tunnel = None
+
+    @property
+    def allocated_ips_objects(self):
+        return self._allocated_ips_objects
+
+    @property
+    def allocated_bridges(self):
+        # returns all allocated interfaces
+        return self._allocated_bridges
+
+    @property
+    def asset(self):
+        return self._asset
 
     def get(self) -> Munch:
         self._verify_asset_fields()
@@ -64,6 +81,22 @@ class LibvirtNetworkAssets:
             self._taken_assets.add(str(self._asset))
             assets_in_use.append(self._asset)
 
+            if self._libvirt_uri != DEFAULT_LIBVIRT_URI:
+                # a singleton tunnel same endpoint , updating route in the tunnel
+                self._tunnel = TunnelManager.create_tunnel(
+                    socket.gethostbyname(socket.gethostname()),
+                    utils.global_variables().remote_shell_address,
+                    consts.TunnelAsset.TUNNEL_SOURCE_IP,
+                    consts.TunnelAsset.TUNNEL_NAME,
+                    consts.TunnelAsset.TUNNEL_LOCAL_INT,
+                )
+                # Initialized once per run because only the routing should be updated to internals.
+                self._tunnel.update_tunnel_network(
+                    "add",
+                    source_internal=[consts.TunnelAsset.TUNNEL_SOURCE_IP],
+                    destination_internal=[self.asset["machine_cidr"], self.asset["provisioning_cidr"]],
+                )
+
             self._dump_all_assets_in_use_to_assets_file(assets_in_use)
 
         self._allocated_bridges.clear()
@@ -76,12 +109,33 @@ class LibvirtNetworkAssets:
         for field in consts.REQUIRED_ASSET_FIELDS:
             assert field in self._asset, f"missing field {field} in asset {self._asset}"
 
-    def _fill_allocated_ips_and_bridges_by_interface(self):
-        if self._libvirt_uri != DEFAULT_LIBVIRT_URI:
-            # it means we are not trying to compute networks for the local machine
-            # skip this step
-            return
+    def _fill_allocated_ips_and_bridges_by_interface_remote(self):
+        """looking for interfaces and addresses on remote libvirt nodes.
+        assets should detect remote network status.
+        Running it from python on remote command to get the same output as local run
+        :return:
+        """
+        remote_shell = utils.initialize_remote_shell()
+        cmd = """python3 -c 'import netifaces; print(netifaces.interfaces())' """
+        interfaces = ast.literal_eval(remote_shell.run_command(cmd)[0])
+        for interface in interfaces:
+            self._add_allocated_net_bridge(interface)
+            try:
+                cmd = f"""python3 -c 'import netifaces; print(netifaces.ifaddresses("{interface}"))' """
+                ifaddresses = ast.literal_eval(remote_shell.run_command(cmd)[0])
 
+            except SyntaxError:
+                log.debug(f"Interface {interface} no longer exists. It might has been removed intermediately")
+                continue
+
+            for ifaddress in ifaddresses.values():
+                for item in ifaddress:
+                    try:
+                        self._add_allocated_ip(IPAddress(item["addr"]))
+                    except AddrFormatError:
+                        continue
+
+    def _fill_allocated_ips_and_bridges_by_interface_local(self):
         for interface in netifaces.interfaces():
             self._add_allocated_net_bridge(interface)
             try:
@@ -96,6 +150,12 @@ class LibvirtNetworkAssets:
                         self._add_allocated_ip(IPAddress(item["addr"]))
                     except AddrFormatError:
                         continue
+
+    def _fill_allocated_ips_and_bridges_by_interface(self):
+        if self._libvirt_uri != DEFAULT_LIBVIRT_URI:
+            self._fill_allocated_ips_and_bridges_by_interface_remote()
+        else:
+            self._fill_allocated_ips_and_bridges_by_interface_local()
 
     def _fill_allocated_ips_and_bridges_from_assets_file(self, assets_in_use: List[Dict]):
         for asset in assets_in_use:
@@ -146,6 +206,13 @@ class LibvirtNetworkAssets:
 
         return False
 
+    def is_interface_name_allocated(self, interface_name: str) -> bool:
+        for interface in self._allocated_bridges:
+            if interface_name in interface:
+                return True
+
+        return False
+
     @staticmethod
     def _increment_ipv6_network_grp(ip_network: IPNetwork):
         # IPNetwork contains an IPAddress object which represents the global
@@ -189,6 +256,12 @@ class LibvirtNetworkAssets:
         with utils.file_lock_context(self._lock_file):
             assets_in_use = self._get_assets_in_use_from_assets_file()
             self._remove_taken_assets_from_all_assets_in_use(assets_in_use)
+            if self._tunnel:
+                self._tunnel.update_tunnel_network(
+                    "del",
+                    source_internal=[consts.TunnelAsset.TUNNEL_SOURCE_IP],
+                    destination_internal=[self.asset["machine_cidr"], self.asset["provisioning_cidr"]],
+                )
             self._dump_all_assets_in_use_to_assets_file(assets_in_use)
 
     def _get_assets_in_use_from_assets_file(self) -> List[Dict]:

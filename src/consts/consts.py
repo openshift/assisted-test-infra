@@ -97,6 +97,10 @@ DEFAULT_MACHINE_NETWORKS_IPV4: List[models.MachineNetwork] = [
     models.MachineNetwork(cidr="192.168.145.0/24"),
 ]
 
+DEFAULT_TUNNEL_NAME: str = "ipip1"
+DEFAULT_LOCAL_TUNNEL_interface: str = "loopback1"
+DEFAULT_TUNNEL_SOURCE_IP = "192.168.254.2"
+
 DEFAULT_CLUSTER_NETWORKS_IPV6: List[models.ClusterNetwork] = [
     models.ClusterNetwork(cidr="2002:db8::/53", host_prefix=64)
 ]
@@ -324,6 +328,12 @@ class BaseAsset:
     PROVISIONING_CIDR6 = DEFAULT_MACHINE_NETWORKS_IPV6[1].cidr
     NETWORK_IF = "tt1"
     SECONDARY_NETWORK_IF = "stt1"
+
+
+class TunnelAsset:
+    TUNNEL_NAME = DEFAULT_TUNNEL_NAME
+    TUNNEL_SOURCE_IP = DEFAULT_TUNNEL_SOURCE_IP
+    TUNNEL_LOCAL_INT = DEFAULT_LOCAL_TUNNEL_interface
 
 
 class DeployTargets:

@@ -34,6 +34,36 @@ import consts
 from assisted_test_infra.test_infra.utils import oc_utils
 from service_client import log
 
+remote_shell_connection = None
+
+
+def global_variables():
+    from tests.global_variables import DefaultVariables
+
+    return DefaultVariables()
+
+
+def initialize_remote_shell():
+    # use in context manager to init the connection
+    global remote_shell_connection
+    from assisted_test_infra.test_infra.controllers.node_controllers import remote_shell
+
+    if not remote_shell_connection:
+        log.info("Initialize initialize_remote_shell")
+        remote_shell_connection = remote_shell.RemoteShell(
+            ipv4_address=global_variables().remote_shell_address,
+            username=global_variables().remote_shell_user,
+            private_ssh_key_path=global_variables().remote_shell_private_key,
+        )
+    return remote_shell_connection
+
+
+def close_remote_shell():
+    global remote_shell_connection
+    if remote_shell_connection:
+        remote_shell_connection.close_remote()
+    remote_shell_connection = None
+
 
 def download_file(url: str, local_filename: str, verify_ssl: bool, tries=5) -> Path:
     @retry(exceptions=(RuntimeError, HTTPError), tries=tries, delay=10, logger=log)
@@ -45,7 +75,11 @@ def download_file(url: str, local_filename: str, verify_ssl: bool, tries=5) -> P
 
         return Path(local_filename)
 
-    return _download_file()
+    path = _download_file()
+    if global_variables().remote_shell_address:
+        remote_shell = initialize_remote_shell()
+        remote_shell.upload_file(local_filename, local_filename)
+    return path
 
 
 def scan_for_free_port(starting_port: int, step: int = 200):
@@ -64,14 +98,25 @@ def scan_for_free_port(starting_port: int, step: int = 200):
     raise RuntimeError("could not allocate free port for proxy")
 
 
-def run_command(command, shell=False, raise_errors=True, env=None, cwd=None, run_in_background=False):
-    command = command if shell else shlex.split(command)
-    if run_in_background:
-        subprocess.Popen(command, shell=shell, env=env, cwd=cwd, stderr=subprocess.STDOUT)
-        return
-
+def subprocess_run(
+    command,
+    shell=False,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    env=None,
+    universal_newlines=None,
+    cwd=None,
+    check=None,
+):
     process = subprocess.run(
-        command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True, cwd=cwd
+        command,
+        shell=shell,
+        stdout=stdout,
+        stderr=stderr,
+        env=env,
+        universal_newlines=universal_newlines,
+        cwd=cwd,
+        check=check,
     )
 
     def _io_buffer_to_str(buf):
@@ -81,11 +126,43 @@ def run_command(command, shell=False, raise_errors=True, env=None, cwd=None, run
 
     out = _io_buffer_to_str(process.stdout).strip()
     err = _io_buffer_to_str(process.stderr).strip()
-
-    if raise_errors and process.returncode != 0:
-        raise RuntimeError(f"command: {command} exited with an error: {err} " f"code: {process.returncode}")
-
     return out, err, process.returncode
+
+
+def run_command(
+    command,
+    shell=False,
+    raise_errors=True,
+    env=None,
+    cwd=None,
+    stderr=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    universal_newlines=True,
+    check=False,
+    local_only=False,
+):
+
+    if global_variables().remote_shell_address and not local_only:
+        remote_shell = initialize_remote_shell()
+        return remote_shell.run_command(command, raise_errors=raise_errors)
+
+    command = command if shell else shlex.split(command)
+
+    out, err, return_code = subprocess_run(
+        command,
+        shell=shell,
+        stdout=stdout,
+        stderr=stderr,
+        env=env,
+        universal_newlines=universal_newlines,
+        cwd=cwd,
+        check=check,
+    )
+
+    if raise_errors and return_code != 0:
+        raise RuntimeError(f"command: {command} exited with an error: {err} " f"code: {return_code}")
+
+    return out, err, return_code
 
 
 def run_command_with_output(command, env=None, cwd=None):
@@ -193,7 +270,7 @@ def recreate_folder(folder, with_chmod=True, force_recreate=True):
         os.makedirs(folder, exist_ok=True)
 
     if with_chmod:
-        run_command(f"chmod -R ugo+rx '{folder}'")
+        run_command(f"chmod -R ugo+rx '{folder}'", local_only=True)
 
 
 def get_assisted_service_url_by_args(args, wait=True):
@@ -423,13 +500,13 @@ def run_container(container_name, image, flags=None, command=""):
 
     run_container_cmd += f" {image} {command}"
 
-    run_command(run_container_cmd, shell=True)
+    run_command(run_container_cmd, shell=True, local_only=True)
 
 
 def remove_running_container(container_name):
     log.info(f"Removing Container {container_name}")
     container_rm_cmd = f"podman-remote rm --force {container_name}"
-    run_command(container_rm_cmd, shell=True)
+    run_command(container_rm_cmd, shell=True, local_only=True)
 
 
 def get_kubeconfig_path(cluster_name: str) -> str:

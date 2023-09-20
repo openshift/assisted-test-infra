@@ -6,12 +6,29 @@ from service_client import log
 DEFAULT_SKIP_LIST = ["default"]
 
 
-def _run_command(command, check=False, resource_filter=None):
+def _run_command(
+    command,
+    check=False,
+    resource_filter=None,
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    universal_newlines=True,
+):
     if resource_filter:
         joined = "|".join(resource_filter)
         command += f'| grep -E "{joined}"'
-    process = subprocess.run(command, shell=True, check=check, stdout=subprocess.PIPE, universal_newlines=True)
-    output = process.stdout.strip()
+
+    output, _, _ = utils.run_command(
+        command,
+        shell=shell,
+        check=check,
+        stdout=stdout,
+        raise_errors=False,
+        stderr=stderr,
+        universal_newlines=universal_newlines,
+    )
+    output = output.strip()
     return output
 
 
@@ -19,11 +36,12 @@ def _clean_domains(skip_list, resource_filter):
     log.info("---- CLEANING VIRSH DOMAINS ----")
     domains = _run_command("virsh -c qemu:///system list --all --name", resource_filter=resource_filter)
     domains = domains.splitlines()
+    add_ram = "--nvram" if utils.global_variables().cpu_architecture == "arm64" else ""
     for domain in domains:
         log.info("Deleting domain %s", domain)
         if domain and domain not in skip_list:
             _run_command(f"virsh -c qemu:///system destroy {domain}", check=False)
-            _run_command(f"virsh -c qemu:///system undefine {domain}", check=False)
+            _run_command(f"virsh -c qemu:///system undefine {add_ram} {domain}", check=False)
 
     log.info("---- CLEANING VIRSH DOMAINS DONE ----")
 

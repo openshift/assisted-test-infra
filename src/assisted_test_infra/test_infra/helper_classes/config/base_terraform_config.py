@@ -4,8 +4,6 @@ from typing import Dict, List
 
 from munch import Munch
 
-import consts
-
 from .base_nodes_config import BaseNodesConfig
 
 
@@ -19,7 +17,10 @@ class BaseTerraformConfig(BaseNodesConfig, ABC):
     single_node_ip: str = None
     dns_records: Dict[str, str] = field(default_factory=dict)
 
-    libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI
+    remote_shell_address: str = None
+    remote_shell_user: str = None
+    remote_shell_private_key: str = None
+    libvirt_uri: str = None
     libvirt_master_ips: List[str] = None
     libvirt_secondary_master_ips: List[str] = None
     libvirt_worker_ips: List[str] = None

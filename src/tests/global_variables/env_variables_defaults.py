@@ -156,6 +156,10 @@ class _EnvVariables(DataPool, ABC):
 
     # day2 libvirt target and VM network configuration
     day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])
+    libvirt_uri: EnvVar = EnvVar(["LIBVIRT_URI"], default=consts.DEFAULT_LIBVIRT_URI)
+    remote_shell_address: EnvVar = EnvVar(["REMOTE_SHELL_ADDRESS"])
+    remote_shell_user: EnvVar = EnvVar(["REMOTE_SHELL_USER"])
+    remote_shell_private_key: EnvVar = EnvVar(["REMOTE_SHELL_PRIVATE_KEY"])
     day2_machine_cidr: EnvVar = EnvVar(["DAY2_MACHINE_CIDR"])
     day2_provisioning_cidr: EnvVar = EnvVar(["DAY2_PROVISIONING_CIDR"])
     day2_machine_cidr6: EnvVar = EnvVar(["DAY2_MACHINE_CIDR6"])

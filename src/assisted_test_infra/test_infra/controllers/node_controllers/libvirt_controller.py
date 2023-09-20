@@ -256,9 +256,6 @@ class LibvirtController(NodeController, ABC):
     @classmethod
     def format_disk(cls, disk_path):
         log.info("Formatting disk %s", disk_path)
-        if not os.path.exists(disk_path):
-            log.info("Path to %s disk not exists. Skipping", disk_path)
-            return
 
         command = f"qemu-img info {disk_path} --output json"
         output, _, _ = utils.run_command(command, shell=True)
@@ -353,7 +350,7 @@ class LibvirtController(NodeController, ABC):
             assert test_disk.source_path.startswith(
                 tempfile.gettempdir()
             ), "File unexpectedly not in tmp, avoiding deletion to be on the safe side"
-            os.remove(test_disk.source_path)
+            utils.run_command(f"rm -rf {test_disk.source_path}", shell=True)
 
     def attach_interface(self, node_name, network_xml, target_interface=consts.TEST_TARGET_INTERFACE):
         """

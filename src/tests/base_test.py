@@ -149,9 +149,8 @@ class BaseTest:
             return
 
         # Configuring net asset which currently supported by libvirt terraform only
-        net_asset = LibvirtNetworkAssets()
+        net_asset = LibvirtNetworkAssets(libvirt_uri=global_variables.libvirt_uri)
         new_controller_configuration.net_asset = net_asset.get()
-
         if new_controller_configuration.bootstrap_in_place:
             new_controller_configuration.single_node_ip = new_controller_configuration.net_asset.machine_cidr.replace(
                 "0/24", "10"
@@ -166,7 +165,7 @@ class BaseTest:
     ) -> BaseNodesConfig:
         assert isinstance(new_day2_controller_configuration, TerraformConfig)
 
-        if day2_cluster_configuration.day2_libvirt_uri:
+        if day2_cluster_configuration.day2_libvirt_uri and global_variables.remote_shell_address is None:
             # set libvirt_uri in controller configuration
             new_day2_controller_configuration.libvirt_uri = day2_cluster_configuration.day2_libvirt_uri
 
@@ -189,7 +188,7 @@ class BaseTest:
                 libvirt_uri=day2_cluster_configuration.day2_libvirt_uri,
             )
         else:
-            net_asset = LibvirtNetworkAssets()
+            net_asset = LibvirtNetworkAssets(libvirt_uri=global_variables.libvirt_uri)
 
         # Configuring net asset which currently supported by libvirt terraform only
         new_day2_controller_configuration.net_asset = net_asset.get()
@@ -533,7 +532,8 @@ class BaseTest:
             cluster_configuration.iso_download_path = utils.get_iso_download_path(
                 infra_env_configuration.entity_name.get()
             )
-
+        if utils.remote_shell_connection:
+            pass
         yield cluster
 
         if self._is_test_failed(request):

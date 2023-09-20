@@ -21,6 +21,14 @@ class SshConnection:
         self._port = port
         self._ssh_client = None
 
+    @property
+    def ssh_client(self):
+        return self._ssh_client
+
+    @ssh_client.setter
+    def ssh_client(self, connection):
+        self._ssh_client = connection
+
     def __enter__(self):
         self.connect()
         return self
@@ -29,12 +37,12 @@ class SshConnection:
         self.close()
 
     def close(self):
-        if self._ssh_client:
-            self._ssh_client.close()
-            self._ssh_client = None
+        if self.ssh_client:
+            self.ssh_client.close()
+            self.ssh_client = None
 
     def connect(self, timeout=60):
-        logging.info("Going to connect to ip %s", self._ip)
+        log.info("Going to connect to ip %s", self._ip)
         self.wait_for_tcp_server()
         self._ssh_client = paramiko.SSHClient()
         self._ssh_client.known_hosts = None
@@ -52,7 +60,7 @@ class SshConnection:
         self._ssh_client.get_transport().set_keepalive(15)
 
     def wait_for_tcp_server(self, timeout=60, interval=0.1):
-        logging.info("Wait for %s to be available", self._ip)
+        log.info("Wait for %s to be available", self._ip)
         before = time.time()
         while time.time() - before < timeout:
             if self._raw_tcp_connect((self._ip, self._port)):
@@ -92,7 +100,7 @@ class SshConnection:
             self.connect()
         if verbose:
             name = getattr(self._ssh_client, "name", "")
-            log.debug(f"Running bash script: {command.strip()} {'on ' + name if name else name}")
+            logging.info(f"{self._ip} execute: {command} {'on ' + name if name else name}")
         stdin, stdout, stderr = self._ssh_client.exec_command(command, timeout=timeout)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
@@ -109,10 +117,12 @@ class SshConnection:
 
     def upload_file(self, local_source_path, remote_target_path):
         with scp.SCPClient(self._ssh_client.get_transport()) as scp_client:
+            logging.info(f"{self._ip} upload_file: {local_source_path} to {remote_target_path}")
             scp_client.put(local_source_path, remote_target_path)
 
     def download_file(self, remote_source_path, local_target_path):
         with scp.SCPClient(self._ssh_client.get_transport()) as scp_client:
+            logging.info(f"{self._ip} download_file: {remote_source_path} to {local_target_path}")
             scp_client.get(remote_source_path, local_target_path)
 
     def background_script(self, bash_script, connect_timeout=10 * 60):
@@ -126,6 +136,7 @@ class SshConnection:
         transport = self._ssh_client.get_transport()
         chan = transport.open_session(timeout=connect_timeout)
         try:
+            logging.info(f"{self._ip} background_script: {bash_script}")
             chan.exec_command(command)
             status = chan.recv_exit_status()
             if status != 0:

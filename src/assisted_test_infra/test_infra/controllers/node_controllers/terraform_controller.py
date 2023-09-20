@@ -144,11 +144,31 @@ class TerraformController(LibvirtController):
         return static_network.generate_macs(num_to_create)
 
     # Run make run terraform -> creates vms
+    @staticmethod
+    def _create_remote_path(iso_download_path, storage_pool_path):
+        # create iso path on remote node
+        directory = os.path.dirname(iso_download_path)
+        directory_exists, _, _ = utils.run_command(f"ls {directory} >> /dev/null 2>&1 && echo 1 || echo 0", shell=True)
+        if not int(directory_exists.strip()):
+            utils.run_command(f"mkdir -p {directory}", shell=True)
+        file_exists, _, _ = utils.run_command(
+            f"ls {iso_download_path} >> /dev/null 2>&1 && echo 1 || echo 0", shell=True)
+        if not int(file_exists.strip()):
+            utils.run_command(f"touch {iso_download_path}", shell=True)
+
+        # create remote directory for storage path
+        storage_path_exists, _, _ = utils.run_command(f"ls {storage_pool_path} >> /dev/null 2>&1 && echo 1 || echo 0", shell=True)
+        if not int(storage_path_exists.strip()):
+            utils.run_command(f"mkdir -p {storage_pool_path}", shell=True)
+
     def _create_nodes(self, running=True):
         log.info("Creating tfvars")
         self._params = self._get_params_from_config()
-
+        # Verify storage and path exists on remote node if used
         self._fill_tfvars(running)
+        if self._config.remote_shell_address:
+            self._create_remote_path(self._entity_config.iso_download_path, self._params.libvirt_storage_pool_path)
+
         log.info("Start running terraform")
         self.tf.apply()
         if self._params.running:
