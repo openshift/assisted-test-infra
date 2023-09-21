@@ -29,7 +29,7 @@
         -command=export
         -compartment_id={{ oci_compartment_id }}
         -output_path=.
-        -services=core,load_balancer,identity,object_storage,tagging
+        -services=core,load_balancer,network_load_balancer,identity,object_storage,tagging
         -generate_state
     creates: "terraform.tfstate"
     chdir: "{{ terraform_working_dir }}"
@@ -59,12 +59,12 @@
     excluded_resources: "{{ excluded_resources + [item] }}"
   loop: "{{ terraform_resources }}"
   when:
-    - item["values"]["time_created"] is defined
+    - item["values"]["defined_tags"]["Oracle-Tags.CreatedOn"] is defined
     - >-
         (
           now(utc=true).replace(tzinfo=None)
           -
-          (item["values"]["time_created"] | ansible.builtin.to_datetime("%Y-%m-%d %H:%M:%S.%f %z %Z")).replace(tzinfo=None)
+          (item["values"]["defined_tags"]["Oracle-Tags.CreatedOn"] | ansible.builtin.to_datetime("%Y-%m-%dT%H:%M:%S.%fZ")).replace(tzinfo=None)
         ).total_seconds() / 3600 < expired_after_hours
 
 - name: Remove excluded resources from terraform state
