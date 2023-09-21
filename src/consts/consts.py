@@ -330,3 +330,10 @@ class DeployTargets:
     ONPREM = "onprem"
     MINIKUBE = "minikube"
     ASSISTED_OPERATOR = "operator"
+
+
+class CPUArchitecture:
+    X86 = "x86_64"
+    ARM = "arm64"
+    S390X = "s390x"
+    PPC64 = "ppc64le"
