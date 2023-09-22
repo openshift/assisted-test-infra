@@ -83,6 +83,11 @@ _default_triggers = frozendict(
             master_boot_devices=["hd", "network"],
             worker_boot_devices=["hd", "network"],
         ),
+        "cpu_s390x": Trigger(
+            conditions=[lambda config: config.cpu_architecture == consts.CPUArchitecture.S390X],
+            user_managed_networking=True,
+            iso_image_type=consts.ImageType.FULL_ISO,
+        ),
     }
 )
 
