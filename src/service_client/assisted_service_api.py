@@ -260,7 +260,9 @@ class InventoryClient(object):
 
     def download_manifests(self, cluster_id: str, dir_path: str) -> None:
         log.info(f"Downloading manifests for cluster {cluster_id} into {dir_path}")
-        response = self.manifest.v2_list_cluster_manifests(cluster_id=cluster_id, _preload_content=False)
+        response = self.manifest.v2_list_cluster_manifests(
+            cluster_id=cluster_id, include_system_generated=True, _preload_content=False
+        )
         for record in json.loads(response.data):
             response = self.manifest.v2_download_cluster_manifest(
                 cluster_id=cluster_id, file_name=record["file_name"], folder=record["folder"], _preload_content=False
