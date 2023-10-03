@@ -33,6 +33,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     disk_encryption_roles: str = None
     tang_servers: str = None
     custom_manifests: List[Manifest] = None
+    is_disconnected: bool = None
 
     @property
     def cluster_name(self) -> BaseName:

@@ -61,6 +61,7 @@ class TestKubeAPI(BaseKubeAPI):
             prepared_controller_configuration,
             infra_env_configuration,
             proxy_server if cluster_configuration.is_ipv6 else None,
+            is_disconnected=cluster_configuration.is_disconnected,
         )
 
     @JunitTestSuite()

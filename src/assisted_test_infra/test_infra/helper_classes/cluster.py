@@ -122,6 +122,9 @@ class Cluster(BaseCluster):
         if self._config.cpu_architecture:
             extra_vars["cpu_architecture"] = self._config.cpu_architecture
 
+        if self._config.is_disconnected:
+            extra_vars["is_disconnected"] = self._config.is_disconnected
+
         if len(self._config.olm_operators) > 0:
             olm_operators = self.get_olm_operators()
             if olm_operators:
