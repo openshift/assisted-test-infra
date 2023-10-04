@@ -137,6 +137,12 @@ class TerraformController(LibvirtController):
     def list_nodes(self) -> List[Node]:
         return self.list_nodes_with_name_filter(self._entity_name.get())
 
+    def generate_macs(self, nodes_count: int) -> List[str]:
+        num_to_create = (
+            nodes_count * self._entity_config.num_bonded_slaves if self._entity_config.is_bonded else nodes_count
+        )
+        return static_network.generate_macs(num_to_create)
+
     # Run make run terraform -> creates vms
     def _create_nodes(self, running=True):
         log.info("Creating tfvars")
@@ -184,10 +190,13 @@ class TerraformController(LibvirtController):
             tfvars["base_cluster_domain"] = self._config.base_cluster_domain
 
         tfvars["running"] = running
-        tfvars["libvirt_master_macs"] = static_network.generate_macs(self._params.master_count)
-        tfvars["libvirt_worker_macs"] = static_network.generate_macs(self._params.worker_count)
+        tfvars["libvirt_master_macs"] = self.generate_macs(self._params.master_count)
+        tfvars["libvirt_worker_macs"] = self.generate_macs(self._params.worker_count)
         tfvars["master_boot_devices"] = self._params.master_boot_devices
         tfvars["worker_boot_devices"] = self._params.worker_boot_devices
+        if self._entity_config.is_bonded:
+            tfvars["slave_interfaces"] = True
+            tfvars["network_interfaces_count"] = self._entity_config.num_bonded_slaves
         tfvars.update(self._params)
         tfvars.update(self._secondary_tfvars())
 
@@ -207,8 +216,8 @@ class TerraformController(LibvirtController):
             "libvirt_secondary_master_ips": self._create_address_list(
                 self._params.master_count, starting_ip_addr=secondary_master_starting_ip
             ),
-            "libvirt_secondary_master_macs": static_network.generate_macs(self._params.master_count),
-            "libvirt_secondary_worker_macs": static_network.generate_macs(self._params.worker_count),
+            "libvirt_secondary_master_macs": self.generate_macs(self._params.master_count),
+            "libvirt_secondary_worker_macs": self.generate_macs(self._params.worker_count),
         }
 
     def start_all_nodes(self):

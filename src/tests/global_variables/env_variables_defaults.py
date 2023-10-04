@@ -54,8 +54,16 @@ class _EnvVariables(DataPool, ABC):
     )
     log_folder: EnvVar = EnvVar(["LOG_FOLDER"], default=env_defaults.DEFAULT_LOG_FOLDER)
     is_static_ip: EnvVar = EnvVar(
-        ["STATIC_IPS"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_STATIC_IPS
+        ["STATIC_IPS", "IS_BONDED"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_STATIC_IPS
     )
+
+    is_bonded: EnvVar = EnvVar(
+        ["IS_BONDED"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_IS_BONDED
+    )
+    num_bonded_slaves: EnvVar = EnvVar(
+        ["NUM_BONDED_SLAVES"], loader=int, default=env_defaults.DEFAULT_NUM_BONDED_SLAVES
+    )
+    bonding_mode: EnvVar = EnvVar(["BONDING_MODE"], default=env_defaults.DEFAULT_BONDING_MODE)
     iso_image_type: EnvVar = EnvVar(["ISO_IMAGE_TYPE"], default=env_defaults.DEFAULT_IMAGE_TYPE)
     worker_vcpu: EnvVar = EnvVar(["WORKER_CPU"], loader=int, default=resources.DEFAULT_WORKER_CPU)
     master_vcpu: EnvVar = EnvVar(["MASTER_CPU"], loader=int, default=resources.DEFAULT_MASTER_CPU)

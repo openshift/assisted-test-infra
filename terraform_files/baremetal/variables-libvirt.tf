@@ -261,3 +261,15 @@ variable "base_cluster_domain" {
   description = "Set base cluster domain. Defaults to <cluster_name>.<cluster_domain> if left unset."
   default     = ""
 }
+
+variable "network_interfaces_count" {
+  type        = number
+  description = "the number of interfaces per network"
+  default     = 2
+}
+
+variable "slave_interfaces" {
+  type        = bool
+  description = "create interfaces as slaves.  do not assign to them mac and IP addresses"
+  default     = false
+}

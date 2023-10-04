@@ -140,7 +140,7 @@ class TestKubeAPI(BaseKubeAPI):
         agent_cluster_install.wait_to_be_ready(ready=False)
 
         if infra_env_configuration.is_static_ip:
-            self.apply_static_network_config(kube_api_context, nodes, cluster_name)
+            self.apply_static_network_config(kube_api_context, nodes, cluster_name, infra_env_configuration)
 
         agents = self.start_nodes(nodes, infra_env, cluster_config, infra_env_configuration.is_static_ip)
 

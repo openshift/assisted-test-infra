@@ -1147,8 +1147,8 @@ class Cluster(BaseCluster):
         network = IPNetwork(machine_cidr)
         interfaces = client.get_inventory_host_nics_data(cluster_info["hosts"][0], ipv4_first=ipv4_first)
         for intf in interfaces:
-            ip = intf["ip"]
-            if IPAddress(ip) in network:
+            ip = intf.get("ip")
+            if ip and IPAddress(ip) in network:
                 return ip
         raise Exception("IP for single node not found")
 
