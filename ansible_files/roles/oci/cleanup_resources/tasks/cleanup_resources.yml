@@ -30,6 +30,18 @@
           (item["values"]["defined_tags"]["Oracle-Tags.CreatedOn"] | ansible.builtin.to_datetime("%Y-%m-%dT%H:%M:%S.%fZ")).replace(tzinfo=None)
         ).total_seconds() / 3600 < expired_after_hours
 
+- name: List excluded bucket names
+  ansible.builtin.set_fact:
+    excluded_buckets: "{{ excluded_resources | json_query('[?type==`oci_objectstorage_bucket`].values.name') }}"
+
+- name: Exclude objects belonging to excluded buckets
+  ansible.builtin.set_fact:
+    excluded_resources: "{{ excluded_resources + [item] }}"
+  loop: "{{ terraform_resources }}"
+  when:
+    - item["type"] == "oci_objectstorage_object"
+    - item["values"]["bucket"] in excluded_buckets
+
 - name: Remove excluded resources from terraform state
   ansible.builtin.command:
     cmd: terraform state rm {{ excluded_resources | json_query('[].address') | unique | join(" ") }}

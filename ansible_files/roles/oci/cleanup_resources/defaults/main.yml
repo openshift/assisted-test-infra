@@ -1,6 +1,7 @@
 # these type are cleaned up by removing their parent resource
 # we exclude them from the removal to avoid conflict type of errors
 excluded_types:
+  - oci_core_network_security_group_security_rule
   - oci_core_private_ip
   - oci_core_public_ip
   - oci_load_balancer_backend
