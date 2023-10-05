@@ -107,19 +107,19 @@ class TestKubeAPI(BaseKubeAPI):
             base_domain=global_variables.base_dns_domain,
         )
         proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
-
-        if is_disconnected:
-            log.info("getting ignition and install config override for disconnected install")
-            ca_bundle = self.get_ca_bundle_from_hub(spoke_namespace)
-            self.patch_install_config_with_ca_bundle(cluster_deployment, ca_bundle)
-            ignition_config_override = self.get_ignition_config_override(ca_bundle)
-        else:
-            ignition_config_override = None
-
+        ignition_config_override = None
         infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
         infraenv = infra_env.create(
             cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
         )
+        if is_disconnected and cluster_config.registry_ca_path is not None:
+            log.info("setting additional trust bundle for disconnected install")
+            registry_ca = None
+            with open(cluster_config.registry_ca_path, "r") as f:
+                registry_ca = f.read()
+            if registry_ca:
+                infra_env.patch(cluster_deployment=None, secret=None, additionalTrustBundle=registry_ca)
+
         cluster_config.iso_download_path = utils.get_iso_download_path(infraenv.get("metadata", {}).get("name"))
         nodes.prepare_nodes()
 

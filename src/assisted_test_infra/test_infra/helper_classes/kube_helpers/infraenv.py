@@ -88,6 +88,7 @@ class InfraEnv(BaseCustomResource):
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
         ssh_pub_key: Optional[str] = None,
+        additional_trust_bundle: Optional[str] = None,
         **kwargs,
     ) -> Dict:
         body = {
@@ -112,6 +113,8 @@ class InfraEnv(BaseCustomResource):
             spec["proxy"] = proxy.as_dict()
         if ssh_pub_key:
             spec["sshAuthorizedKey"] = ssh_pub_key
+        if additional_trust_bundle:
+            spec["additionalTrustBundle"] = additional_trust_bundle
 
         spec.update(kwargs)
         infraenv = self.crd_api.create_namespaced_custom_object(
@@ -133,6 +136,7 @@ class InfraEnv(BaseCustomResource):
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
         ssh_pub_key: Optional[str] = None,
+        additional_trust_bundle: Optional[str] = None,
         **kwargs,
     ) -> None:
         body = {"spec": kwargs}
@@ -159,6 +163,9 @@ class InfraEnv(BaseCustomResource):
 
         if ssh_pub_key:
             spec["sshAuthorizedKey"] = ssh_pub_key
+
+        if additional_trust_bundle:
+            spec["additionalTrustBundle"] = additional_trust_bundle
 
         self.crd_api.patch_namespaced_custom_object(
             group=consts.CRD_API_GROUP,
@@ -288,6 +295,7 @@ class InfraEnv(BaseCustomResource):
         secret: Optional[Secret] = None,
         proxy: Optional[Proxy] = None,
         ignition_config_override: Optional[str] = None,
+        additional_trust_bundle: Optional[str] = None,
         **kwargs,
     ) -> None:
         if not secret:
@@ -302,6 +310,7 @@ class InfraEnv(BaseCustomResource):
             secret=secret,
             proxy=proxy,
             ignition_config_override=ignition_config_override,
+            additional_trust_bundle=additional_trust_bundle,
             **kwargs,
         )
 
@@ -350,6 +359,7 @@ def deploy_default_infraenv(
     secret: Optional[Secret] = None,
     proxy: Optional[Proxy] = None,
     ignition_config_override: Optional[str] = None,
+    additional_trust_bundle: Optional[str] = None,
     **kwargs,
 ) -> "InfraEnv":
     warnings.warn(
@@ -366,5 +376,6 @@ def deploy_default_infraenv(
         secret,
         proxy,
         ignition_config_override,
+        additional_trust_bundle,
         **kwargs,
     )

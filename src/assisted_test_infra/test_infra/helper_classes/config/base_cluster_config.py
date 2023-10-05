@@ -34,6 +34,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     tang_servers: str = None
     custom_manifests: List[Manifest] = None
     is_disconnected: bool = None
+    registry_ca_path: str = None
 
     @property
     def cluster_name(self) -> BaseName:
