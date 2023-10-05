@@ -44,10 +44,10 @@ resource "oci_core_instance" "master" {
     ocpus         = var.master_vcpu
   }
 
-  platform_config {
-    type                             = var.instance_platform_config_type
-    are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
-  }
+  # platform_config {
+  #   type                             = var.instance_platform_config_type
+  #   are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
+  # }
 
   source_details {
     source_id               = oci_core_image.discovery_image.id
@@ -81,7 +81,7 @@ resource "oci_core_instance" "master" {
   preserve_boot_volume = false
 
   # ensure the custom image was updated before creating these instances
-  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
+  # depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 # Create worker instances
@@ -98,10 +98,10 @@ resource "oci_core_instance" "worker" {
     ocpus         = var.worker_vcpu
   }
 
-  platform_config {
-    type                             = var.instance_platform_config_type
-    are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
-  }
+  # platform_config {
+  #   type                             = var.instance_platform_config_type
+  #   are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
+  # }
 
   source_details {
     source_id               = oci_core_image.discovery_image.id
@@ -135,7 +135,7 @@ resource "oci_core_instance" "worker" {
   preserve_boot_volume = false
 
   # ensure the custom image was updated before creating these instances
-  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
+  # depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 resource "oci_identity_dynamic_group" "master_nodes" {

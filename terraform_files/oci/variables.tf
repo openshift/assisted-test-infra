@@ -87,7 +87,7 @@ variable "oci_extra_lb_nsg_oicds" {
 variable "instance_shape" {
   type        = string
   description = "The shape of the instance. The shape determines the number of CPUs and the amount of memory allocated to the instance"
-  default     = "VM.Standard3.Flex"
+  default     = "VM.Standard.A1.Flex"
 }
 
 variable "instance_platform_config_type" {
