@@ -22,3 +22,7 @@ export BASE_DOMAIN="{{ oci_dns_zone }}"
 export CUSTOM_MANIFESTS_FILES="{{ custom_manifests_dir }}"
 
 export CPU_ARCHITECTURE="arm64"
+
+export AGENT_DOCKER_IMAGE=quay.io/edge-infrastructure/assisted-installer-agent-multi:latest
+export CONTROLLER_IMAGE=quay.io/edge-infrastructure/assisted-installer-controller-multi:latest
+export INSTALLER_IMAGE=quay.io/edge-infrastructure/assisted-installer-multi:latest
