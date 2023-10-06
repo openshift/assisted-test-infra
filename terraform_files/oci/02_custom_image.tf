@@ -49,34 +49,34 @@ resource "oci_core_shape_management" "compatible_shape" {
 # Ensure the discovered ISO will boot using UEFI_64
 #
 
-# locals {
-#   schema_firmware_key = "Compute.Firmware"
-#   schema_firmware_value = jsonencode({
-#     "descriptorType" = "enumstring",
-#     "source"         = "IMAGE",
-#     "defaultValue"   = "UEFI_64",
-#     "values"         = ["UEFI_64"]
-#   })
-# }
+locals {
+  schema_firmware_key = "Compute.Firmware"
+  schema_firmware_value = jsonencode({
+    "descriptorType" = "enumstring",
+    "source"         = "IMAGE",
+    "defaultValue"   = "UEFI_64",
+    "values"         = ["UEFI_64"]
+  })
+}
 
-# resource "oci_core_compute_image_capability_schema" "discovery_image_firmware_uefi_64" {
-#   compartment_id                                      = var.oci_compartment_oicd
-#   compute_global_image_capability_schema_version_name = data.oci_core_compute_global_image_capability_schemas_versions.global_image_capability_schemas_versions.compute_global_image_capability_schema_versions[0].name
-#   image_id                                            = oci_core_image.discovery_image.id
+resource "oci_core_compute_image_capability_schema" "discovery_image_firmware_uefi_64" {
+  compartment_id                                      = var.oci_compartment_oicd
+  compute_global_image_capability_schema_version_name = data.oci_core_compute_global_image_capability_schemas_versions.global_image_capability_schemas_versions.compute_global_image_capability_schema_versions[0].name
+  image_id                                            = oci_core_image.discovery_image.id
 
-#   schema_data = {
-#     # if using var as key in map, enclose in parenthesis
-#     (local.schema_firmware_key) = local.schema_firmware_value
-#   }
-# }
+  schema_data = {
+    # if using var as key in map, enclose in parenthesis
+    (local.schema_firmware_key) = local.schema_firmware_value
+  }
+}
 
-# data "oci_core_compute_global_image_capability_schemas_versions" "global_image_capability_schemas_versions" {
-#   compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schema.global_image_capability_schema.id
-# }
+data "oci_core_compute_global_image_capability_schemas_versions" "global_image_capability_schemas_versions" {
+  compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schema.global_image_capability_schema.id
+}
 
-# data "oci_core_compute_global_image_capability_schema" "global_image_capability_schema" {
-#   compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schemas.global_image_capability_schemas.compute_global_image_capability_schemas[0].id
-# }
+data "oci_core_compute_global_image_capability_schema" "global_image_capability_schema" {
+  compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schemas.global_image_capability_schemas.compute_global_image_capability_schemas[0].id
+}
 
-# data "oci_core_compute_global_image_capability_schemas" "global_image_capability_schemas" {
-# }
+data "oci_core_compute_global_image_capability_schemas" "global_image_capability_schemas" {
+}

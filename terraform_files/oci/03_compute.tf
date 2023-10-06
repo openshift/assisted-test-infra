@@ -81,7 +81,7 @@ resource "oci_core_instance" "master" {
   preserve_boot_volume = false
 
   # ensure the custom image was updated before creating these instances
-  # depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
+  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 # Create worker instances
@@ -135,7 +135,7 @@ resource "oci_core_instance" "worker" {
   preserve_boot_volume = false
 
   # ensure the custom image was updated before creating these instances
-  # depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
+  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 resource "oci_identity_dynamic_group" "master_nodes" {
