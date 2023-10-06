@@ -39,6 +39,12 @@ resource "oci_core_image" "discovery_image" {
   }
 }
 
+resource "oci_core_shape_management" "compatible_shape" {
+  compartment_id = var.oci_compartment_oicd
+  image_id       = oci_core_image.discovery_image.id
+  shape_name     = var.instance_shape
+}
+
 #
 # Ensure the discovered ISO will boot using UEFI_64
 #
