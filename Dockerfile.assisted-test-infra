@@ -1,6 +1,6 @@
 FROM quay.io/edge-infrastructure/assisted-service:latest AS service
 
-FROM quay.io/assisted-installer-ops/base-python:3.11.0
+FROM quay.io/assisted-installer-ops/base-python:3.12.0
 
 # A directory in the path with write permission even for non-root users
 ENV TOOLS=/tools/
