@@ -570,3 +570,9 @@ class InventoryClient(object):
     def create_custom_manifest(self, cluster_id: str, folder: str, file_name: str, base64_content: str) -> Manifest:
         params = CreateManifestParams(file_name=file_name, folder=folder, content=base64_content)
         return self.manifest.v2_create_cluster_manifest(cluster_id=cluster_id, create_manifest_params=params)
+
+    def list_custom_manifests(self, cluster_id: str) -> models.ListManifests:
+        return self.manifest.v2_list_cluster_manifests(cluster_id=cluster_id)
+
+    def delete_custom_manifest(self, cluster_id: str, file_name: str) -> None:
+        self.manifest.v2_delete_cluster_manifest(cluster_id=cluster_id, file_name=file_name)
