@@ -160,8 +160,8 @@ class TestKubeAPI(BaseKubeAPI):
         else:
             # patch the aci with the vips. The cidr will be derived from the range
             access_vips = nodes.controller.get_ingress_and_api_vips()
-            api_vip = access_vips["api_vip"]
-            ingress_vip = access_vips["ingress_vip"]
+            api_vip = access_vips["api_vips"][0].get("ip", "") if len(access_vips["api_vips"]) > 0 else ""
+            ingress_vip = access_vips["ingress_vips"][0].get("ip", "") if len(access_vips["ingress_vips"]) > 0 else ""
 
             agent_cluster_install.set_api_vip(api_vip)
             agent_cluster_install.set_ingress_vip(ingress_vip)

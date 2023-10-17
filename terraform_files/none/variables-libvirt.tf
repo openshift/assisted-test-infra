@@ -88,9 +88,9 @@ variable "libvirt_worker_macs" {
   description = "the list of the desired macs for worker interface"
 }
 
-variable "api_vip" {
-  type        = string
-  description = "the API virtual IP"
+variable "api_vips" {
+  type        = list(string)
+  description = "the API virtual IPs"
 }
 
 # It's definitely recommended to bump this if you can.

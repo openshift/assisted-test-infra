@@ -118,14 +118,14 @@ variable "libvirt_secondary_worker_macs" {
   description = "the list of the desired macs for secondary worker interface"
 }
 
-variable "api_vip" {
-  type        = string
-  description = "the API virtual IP"
+variable "api_vips" {
+  type        = list(string)
+  description = "the API virtual IPs"
 }
 
-variable "ingress_vip" {
-  type        = string
-  description = "the Ingress virtual IP"
+variable "ingress_vips" {
+  type        = list(string)
+  description = "the Ingress virtual IPs"
 }
 
 # It's definitely recommended to bump this if you can.

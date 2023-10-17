@@ -102,10 +102,10 @@ class AgentClusterInstall(BaseCustomResource):
         )
 
     def set_api_vip(self, vip):
-        self.patch(apiVIP=vip)
+        self.patch(apiVIPs=[vip])
 
     def set_ingress_vip(self, vip):
-        self.patch(ingressVIP=vip)
+        self.patch(ingressVIPs=[vip])
 
     def _get_spec_dict(
         self,
@@ -134,11 +134,11 @@ class AgentClusterInstall(BaseCustomResource):
             },
         }
 
-        if "api_vip" in kwargs:
-            spec["apiVIP"] = kwargs.pop("api_vip")
+        if "api_vips" in kwargs:
+            spec["apiVIPs"] = kwargs.pop("api_vips")
 
-        if "ingress_vip" in kwargs:
-            spec["ingressVIP"] = kwargs.pop("ingress_vip")
+        if "ingress_vips" in kwargs:
+            spec["ingressVIPs"] = kwargs.pop("ingress_vips")
 
         if "ssh_pub_key" in kwargs:
             spec["sshPublicKey"] = kwargs.pop("ssh_pub_key")

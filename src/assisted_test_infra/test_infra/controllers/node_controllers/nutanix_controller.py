@@ -61,7 +61,10 @@ class NutanixController(TFController):
                 raise ValueError("API VIP is not set")
             if not self._entity_config.ingress_vip:
                 raise ValueError("Ingress VIP is not set")
-            return {"api_vip": self._entity_config.api_vip, "ingress_vip": self._entity_config.ingress_vip}
+            return {
+                "api_vips": [{"ip": self._entity_config.api_vip}],
+                "ingress_vips": [{"ip": self._entity_config.ingress_vip}],
+            }
 
         nutanix_subnet = next(
             s for s in NutanixSubnet.list_entities(self._provider_client) if s.name == self._config.nutanix_subnet
@@ -88,7 +91,7 @@ class NutanixController(TFController):
             raise ConnectionError("Failed to locate free API and Ingress VIPs")
 
         log.info(f"Found 2 optional VIPs: {free_ips}")
-        return {"api_vip": free_ips.pop(), "ingress_vip": free_ips.pop()}
+        return {"api_vips": [free_ips.pop()], "ingress_vips": [free_ips.pop()]}
 
     def set_boot_order(self, node_name, cd_first=False, cdrom_iso_path=None) -> None:
         vm = self._get_provider_vm(tf_vm_name=node_name)
