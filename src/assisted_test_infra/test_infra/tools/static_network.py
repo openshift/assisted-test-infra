@@ -168,7 +168,7 @@ def _prepare_host_bonded_static_network_data(
     for i in range(len(primary_macs)):
         mac_interface_map.append({"mac_address": primary_macs[i], "logical_nic_name": f"eth{i}"})
     for i in range(len(secondary_macs)):
-        mac_interface_map.append({"mac_address": secondary_macs[i], "logical_nic_name": f"eth{i+len(primary_macs)}"})
+        mac_interface_map.append({"mac_address": secondary_macs[i], "logical_nic_name": f"eth{i + len(primary_macs)}"})
     return {"network_yaml": yaml.dump(host_network_config), "mac_interface_map": mac_interface_map}
 
 
@@ -262,7 +262,7 @@ def _prepare_link_aggregation(
     return {
         "mode": bonding_mode,
         "options": {"miimon": "140"},
-        "port": [f"eth{starting_physical_interface+i}" for i in range(num_bonded_slaves)],
+        "port": [f"eth{starting_physical_interface + i}" for i in range(num_bonded_slaves)],
     }
 
 
