@@ -27,6 +27,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Full flow cases](#full-flow-cases)
     - [Run full flow with install](#run-full-flow-with-install)
     - [Run full flow without install](#run-full-flow-without-install)
+    - [Run base flow without configuring networking](#run-base-flow-without-configuring-networking)
     - [Run full flow with ipv6](#run-full-flow-with-ipv6)
     - [Redeploy nodes](#redeploy-nodes)
     - [Cleaning](#cleaning)
@@ -158,6 +159,8 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `DISCOVERY_KERNEL_ARGUMENTS` | JSON formatted string containing array of dictionaries each having 2 attributes: `operation` and `value`. Currently, only `append` operation is supported. |
 | `CPU_ARCHITECTURE`           | CPU architecture of the nodes that will be part of the cluster, one of: `x86_64`, `arm64`, `s390x`, `ppc64le`, default: `x86_64`                           |
 | `CUSTOM_MANIFESTS_FILES`     | List of local manifest files separated by commas or path to directory containing multiple manifests                                                        |
+| `DISCONNECTED`               | Set to "true" if local mirror needs to be used                                                            |
+| `REGISTRY_CA_PATH`           | Path to mirror registry CA bundle                                                            |
 
 
 ## Vsphere parameters

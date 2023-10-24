@@ -178,4 +178,5 @@ class _EnvVariables(DataPool, ABC):
     oci_extra_lb_nsg_oicds: EnvVar = EnvVar(
         ["OCI_EXTRA_LOAD_BALANCER_NSG_IDS"], default=[], loader=lambda oicd: re.split(r"\s|,", oicd)
     )
-    is_disconnected: EnvVar = EnvVar(["DISCONNECTED"], default="")
+    is_disconnected: EnvVar = EnvVar(["DISCONNECTED"], loader=lambda x: bool(strtobool(x)))
+    registry_ca_path: EnvVar = EnvVar(["REGISTRY_CA_PATH"], loader=Path)

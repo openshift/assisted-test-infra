@@ -125,6 +125,9 @@ class Cluster(BaseCluster):
         if self._config.is_disconnected:
             extra_vars["is_disconnected"] = self._config.is_disconnected
 
+        if self._config.registry_ca_path:
+            extra_vars["registry_ca_path"] = self._config.registry_ca_path
+
         if len(self._config.olm_operators) > 0:
             olm_operators = self.get_olm_operators()
             if olm_operators:
