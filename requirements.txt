@@ -1,9 +1,9 @@
 debugpy==1.8.0
 dnspython==2.4.2
-filelock==3.12.4
+filelock==3.13.1
 frozendict==2.3.8
 ipdb==0.13.13
-ipython==8.16.1
+ipython==8.17.1
 jedi==0.19.1
 Jinja2===3.1.2
 junit-report==0.2.7
@@ -17,7 +17,7 @@ paramiko==3.3.1
 pre-commit==3.5.0
 pycharm_remote_debugger==0.1.16
 pytest-xdist==3.3.1
-pytest==7.4.2
+pytest==7.4.3
 python-dateutil==2.8.2
 python-hcl2==4.3.2
 python-terraform==0.10.1
@@ -36,4 +36,4 @@ nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==8.5.0
 jmespath==1.0.1
-oci==2.114.0
+oci==2.115.0
