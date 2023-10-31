@@ -17,6 +17,8 @@ provider "vsphere" {
   password             = var.vsphere_password
   vsphere_server       = var.vsphere_server
   allow_unverified_ssl = true
+  client_debug         = true
+  client_debug_path    = "/tmp/govnomi"
 }
 
 data "vsphere_datacenter" "datacenter" {
@@ -82,16 +84,16 @@ resource "vsphere_file" "ISO_UPLOAD" {
 resource "vsphere_virtual_machine" "master" {
   count = var.masters_count
 
-  name                        = "${var.cluster_name}-master-${count.index}"
-  resource_pool_id            = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id                = data.vsphere_datastore.datastore.id
-  num_cpus                    = var.master_vcpu
-  num_cores_per_socket        = var.vsphere_control_plane_cores_per_socket
-  memory                      = var.master_memory
-  guest_id                    = "coreos64Guest"
-  folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
-  enable_disk_uuid            = "true"
-  hardware_version            = 15
+  name                 = "${var.cluster_name}-master-${count.index}"
+  resource_pool_id     = data.vsphere_compute_cluster.cluster.resource_pool_id
+  datastore_id         = data.vsphere_datastore.datastore.id
+  num_cpus             = var.master_vcpu
+  num_cores_per_socket = var.vsphere_control_plane_cores_per_socket
+  memory               = var.master_memory
+  guest_id             = "coreos64Guest"
+  folder               = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
+  enable_disk_uuid     = "true"
+  hardware_version     = 15
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
   wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
@@ -127,16 +129,16 @@ resource "vsphere_virtual_machine" "master" {
 resource "vsphere_virtual_machine" "worker" {
   count = var.workers_count
 
-  name                        = "${var.cluster_name}-worker-${count.index}"
-  resource_pool_id            = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id                = data.vsphere_datastore.datastore.id
-  num_cpus                    = var.worker_vcpu
-  num_cores_per_socket        = var.vsphere_control_plane_cores_per_socket
-  memory                      = var.worker_memory
-  guest_id                    = "coreos64Guest"
-  folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
-  enable_disk_uuid            = "true"
-  hardware_version            = 15
+  name                 = "${var.cluster_name}-worker-${count.index}"
+  resource_pool_id     = data.vsphere_compute_cluster.cluster.resource_pool_id
+  datastore_id         = data.vsphere_datastore.datastore.id
+  num_cpus             = var.worker_vcpu
+  num_cores_per_socket = var.vsphere_control_plane_cores_per_socket
+  memory               = var.worker_memory
+  guest_id             = "coreos64Guest"
+  folder               = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
+  enable_disk_uuid     = "true"
+  hardware_version     = 15
   # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
   wait_for_guest_net_routable = local.hasISO
   wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
