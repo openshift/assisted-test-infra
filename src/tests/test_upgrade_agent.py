@@ -72,7 +72,7 @@ class TestUpgradeAgent(BaseTest):
 
         # Restart the deployment:
         deployments_api = client.resources.get(api_version="apps/v1", kind="Deployment")
-        date = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        date = datetime.datetime.utcnow().isoformat()
         deployments_api.patch(
             namespace=namespace,
             name="assisted-service",
