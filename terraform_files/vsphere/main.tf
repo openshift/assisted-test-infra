@@ -18,7 +18,7 @@ provider "vsphere" {
   vsphere_server       = var.vsphere_server
   allow_unverified_ssl = true
   client_debug         = true
-  client_debug_path    = "/tmp/govnomi"
+  client_debug_path    = "/tmp/artifacts"
 }
 
 data "vsphere_datacenter" "datacenter" {
