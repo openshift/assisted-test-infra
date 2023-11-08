@@ -42,7 +42,7 @@ REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
 
 # terraform
 TF_LOG_PATH=$(REPORTS)/terraform_$(TEST_SESSION_ID).log
-TF_LOG=json
+TF_LOG=debug
 
 # ui service
 UI_SERVICE_NAME := $(or $(UI_SERVICE_NAME),assisted-installer-ui)

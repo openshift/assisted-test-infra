@@ -73,11 +73,12 @@ resource "vsphere_folder" "folder" {
 # Uploading the ISO file.
 resource "vsphere_file" "ISO_UPLOAD" {
   # upload the file only if exist
-  count            = local.hasISO ? 1 : 0
-  datacenter       = var.vsphere_datacenter
-  datastore        = var.vsphere_datastore
-  source_file      = var.iso_download_path
-  destination_file = "test/cluster-${var.cluster_name}/${basename(var.iso_download_path)}"
+  count              = local.hasISO ? 1 : 0
+  datacenter         = var.vsphere_datacenter
+  datastore          = var.vsphere_datastore
+  source_file        = var.iso_download_path
+  destination_file   = "test/cluster-${var.cluster_name}/${basename(var.iso_download_path)}"
+  create_directories = true
 }
 
 # Creating the master VMs.
@@ -118,7 +119,7 @@ resource "vsphere_virtual_machine" "master" {
     for_each = local.hasISO ? [1] : []
     content {
       datastore_id = data.vsphere_datastore.datastore.id
-      path         = local.hasISO ? vsphere_file.ISO_UPLOAD[0].destination_file : null
+      path         = vsphere_file.ISO_UPLOAD[0].destination_file
     }
   }
 
