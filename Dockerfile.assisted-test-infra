@@ -40,7 +40,7 @@ RUN dnf -y install --enablerepo=crb \
 RUN git config --system --add safe.directory '*'
 
 RUN curl --retry 5 --connect-timeout 30 -Lo packer.zip https://releases.hashicorp.com/packer/1.9.4/packer_1.9.4_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
-RUN curl --retry 5 --connect-timeout 30 -Lo terraform.zip https://releases.hashicorp.com/terraform/1.3.6/terraform_1.3.6_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
+RUN curl --retry 5 --connect-timeout 30 -Lo terraform.zip https://releases.hashicorp.com/terraform/1.6.3/terraform_1.6.3_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
 RUN curl --retry 5 --connect-timeout 30 -L https://github.com/containers/podman/releases/download/v3.4.4/podman-remote-static.tar.gz -o "/tmp/podman-remote3.tar.gz" && \
     tar -zxvf /tmp/podman-remote3.tar.gz && \
     mv podman-remote-static /tools/podman-remote3 && \
