@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 import waiting
 from kubernetes.client import ApiClient, CustomObjectsApi
 
+import config
 import consts
 from service_client import log
 
@@ -197,7 +198,7 @@ class Agent(BaseCustomResource):
 
     @classmethod
     def wait_for_agents_to_install(
-        cls, agents: List["Agent"], timeout: Union[int, float] = consts.CLUSTER_INSTALLATION_TIMEOUT
+        cls, agents: List["Agent"], timeout: Union[int, float] = config.CLUSTER_INSTALLATION_TIMEOUT
     ) -> None:
         cls.wait_for_agents_to_be_ready_for_install(agents=agents, timeout=timeout)
         cls.wait_till_all_agents_are_in_status(

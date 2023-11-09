@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Tuple
 
 import waiting
 
+import config
 import consts
 from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.exceptions import InstallationFailedError, InstallationPendingActionError
@@ -91,7 +92,7 @@ def wait_till_all_hosts_are_in_status(
     nodes_count,
     statuses,
     status_info="",
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    timeout=config.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
     fall_on_pending_status=False,
@@ -138,7 +139,7 @@ def wait_till_all_infra_env_hosts_are_in_status(
     infra_env_id,
     nodes_count,
     statuses,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    timeout=config.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
 ):
@@ -163,7 +164,7 @@ def wait_till_at_least_one_host_is_in_status(
     statuses,
     status_info="",
     nodes_count=1,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    timeout=config.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=True,
     fall_on_pending_status=False,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
@@ -215,7 +216,7 @@ def wait_till_at_least_one_host_is_in_stage(
     cluster_id,
     stages,
     nodes_count=1,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    timeout=config.CLUSTER_INSTALLATION_TIMEOUT / 2,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
 ):
     log.info(f"Wait till {nodes_count} node is in stage {stages}")
@@ -246,7 +247,7 @@ def wait_till_specific_host_is_in_stage(
     host_name: str,
     stages: List[str],
     nodes_count: int = 1,
-    timeout: int = consts.CLUSTER_INSTALLATION_TIMEOUT / 2,
+    timeout: int = config.CLUSTER_INSTALLATION_TIMEOUT / 2,
     interval: int = 5,
 ):
     log.info(f"Wait till {host_name} host is in stage {stages}")

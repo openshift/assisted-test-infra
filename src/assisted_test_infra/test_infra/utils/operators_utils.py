@@ -4,6 +4,7 @@ from typing import List
 import waiting
 from assisted_service_client import MonitoredOperator
 
+import config
 import consts
 from service_client import InventoryClient, log
 
@@ -59,7 +60,7 @@ def wait_till_all_operators_are_in_status(
     operators_count,
     operator_types,
     statuses,
-    timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+    timeout=config.CLUSTER_INSTALLATION_TIMEOUT,
     fall_on_error_status=False,
     interval=10,
 ):

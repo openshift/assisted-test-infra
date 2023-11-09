@@ -13,6 +13,7 @@ from assisted_service_client.models.operator_type import OperatorType
 from junit_report import JunitTestCase
 from netaddr import IPAddress, IPNetwork
 
+import config
 import consts
 from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, ClusterName, exceptions, utils
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
@@ -806,7 +807,7 @@ class Cluster(BaseCluster):
 
     def wait_for_hosts_to_install(
         self,
-        timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+        timeout=config.CLUSTER_INSTALLATION_TIMEOUT,
         fall_on_error_status=True,
         nodes_count: int = None,
         fall_on_pending_status: bool = False,
@@ -821,7 +822,7 @@ class Cluster(BaseCluster):
             fall_on_pending_status=fall_on_pending_status,
         )
 
-    def wait_for_operators_to_finish(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True):
+    def wait_for_operators_to_finish(self, timeout=config.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True):
         operators = self.get_operators()
 
         if fall_on_error_status:
@@ -855,7 +856,7 @@ class Cluster(BaseCluster):
             operators=self.get_operators(), operator_name=operator_name, status=status
         )
 
-    def wait_for_install(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
+    def wait_for_install(self, timeout=config.CLUSTER_INSTALLATION_TIMEOUT):
         utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
             cluster_id=self.id,
@@ -1057,7 +1058,7 @@ class Cluster(BaseCluster):
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.INSTALLING],
-            timeout=consts.START_CLUSTER_INSTALLATION_TIMEOUT,
+            timeout=config.START_CLUSTER_INSTALLATION_TIMEOUT,
         )
 
     def wait_for_cluster_to_be_in_finalizing_status(self):
@@ -1065,7 +1066,7 @@ class Cluster(BaseCluster):
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.ClusterStatus.FINALIZING, consts.ClusterStatus.INSTALLED],
-            timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
+            timeout=config.CLUSTER_INSTALLATION_TIMEOUT,
             break_statuses=[consts.ClusterStatus.ERROR],
         )
 
