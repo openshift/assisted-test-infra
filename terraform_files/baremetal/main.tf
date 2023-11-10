@@ -181,13 +181,13 @@ data "libvirt_network_dns_host_template" "api" {
   # API VIP is always present. A value is set by the installation flow that updates
   # either the single node IP or API VIP, depending on the scenario
   count    = 1
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vips[0]
   hostname = "api.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "api-int" {
   count    = 1
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vip
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vips[0]
   hostname = "api-int.${local.base_cluster_domain}"
 }
 
@@ -195,26 +195,26 @@ data "libvirt_network_dns_host_template" "api-int" {
 # Read more at: https://bugzilla.redhat.com/show_bug.cgi?id=1532856
 data "libvirt_network_dnsmasq_options_template" "wildcard-apps-ingress" {
   # Enable "apps" wildcard in case of SNO and when we try to add day2 worker to SNO
-  count        = var.ingress_vip == var.api_vip ? 1 : 0
+  count        = var.ingress_vips == var.api_vips ? 1 : 0
   option_name  = "address"
-  option_value = "/apps.${local.base_cluster_domain}/${var.ingress_vip}"
+  option_value = "/apps.${local.base_cluster_domain}/${var.ingress_vips[0]}"
 }
 
 data "libvirt_network_dns_host_template" "oauth" {
   count    = var.master_count == 1 ? 1 : 0
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vips[0]
   hostname = "oauth-openshift.apps.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "console" {
   count    = var.master_count == 1 ? 1 : 0
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vips[0]
   hostname = "console-openshift-console.apps.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "canary" {
   count    = var.master_count == 1 ? 1 : 0
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vips[0]
   hostname = "canary-openshift-ingress-canary.apps.${local.base_cluster_domain}"
 }
 
@@ -222,6 +222,6 @@ data "libvirt_network_dns_host_template" "assisted_service" {
   # Ingress VIP is always present. A value is set by the installation flow that updates
   # either the single node IP or API VIP, depending on the scenario
   count    = 1
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vip
+  ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vips[0]
   hostname = "assisted-service-assisted-installer.apps.${local.base_cluster_domain}"
 }

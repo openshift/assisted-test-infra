@@ -25,8 +25,10 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     machine_networks: List[models.MachineNetwork] = None
     kubeconfig_path: str = None
     network_type: str = None
-    api_vip: str = None
-    ingress_vip: str = None
+    api_vip: str = None  # TODO: Remove singular VIPs once MGMT-14810 gets merged.
+    ingress_vip: str = None  # TODO: Remove singular VIPs once MGMT-14810 gets merged.
+    api_vips: List[models.ApiVip] = None
+    ingress_vips: List[models.IngressVip] = None
     metallb_api_ip: str = None
     metallb_ingress_ip: str = None
     disk_encryption_mode: str = None
