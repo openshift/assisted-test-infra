@@ -20,24 +20,6 @@ class VSphereController(TFController):
     def terraform_vm_resource_type(self) -> str:
         return "vsphere_virtual_machine"
 
-    def prepare_nodes(self):
-        if not os.path.exists(self._entity_config.iso_download_path):
-            utils.recreate_folder(os.path.dirname(self._entity_config.iso_download_path), force_recreate=False)
-            # if file not exist lets create dummy
-            utils.touch(self._entity_config.iso_download_path)
-        config = self.get_all_vars()
-        # The ISO file isn't available now until preparing for installation
-        del config["iso_download_path"]
-
-        self._create_folder(self._config.vsphere_parent_folder)
-        self.tf.set_and_apply(**config)
-        return self.list_nodes()
-
-    def notify_iso_ready(self) -> None:
-        self.shutdown_all_nodes()
-        config = self.get_all_vars()
-        self.tf.set_and_apply(**config)
-
     def get_cpu_cores(self, node_name: str) -> int:
         return self._get_vm(node_name)["attributes"]["num_cpus"]
 
