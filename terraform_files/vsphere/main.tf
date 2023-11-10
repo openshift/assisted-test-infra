@@ -123,7 +123,8 @@ resource "vsphere_virtual_machine" "master" {
     }
   }
 
-  tags = [vsphere_tag.tag.id]
+  tags       = [vsphere_tag.tag.id]
+  depends_on = [vsphere_file.ISO_UPLOAD]
 }
 
 # Creating the workers VMs.
@@ -169,5 +170,6 @@ resource "vsphere_virtual_machine" "worker" {
     }
   }
 
-  tags = [vsphere_tag.tag.id]
+  tags       = [vsphere_tag.tag.id]
+  depends_on = [vsphere_file.ISO_UPLOAD]
 }
