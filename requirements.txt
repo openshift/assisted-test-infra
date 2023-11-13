@@ -16,7 +16,7 @@ openshift-client==1.0.19
 paramiko==3.3.1
 pre-commit==3.5.0
 pycharm_remote_debugger==0.1.16
-pytest-xdist==3.3.1
+pytest-xdist==3.4.0
 pytest==7.4.3
 python-dateutil==2.8.2
 python-hcl2==4.3.2
@@ -31,9 +31,9 @@ tqdm==4.66.1
 urllib3<3.0
 pyvmomi>=7.0.2
 waiting>=1.4.1
-prompt_toolkit==3.0.39
+prompt_toolkit==3.0.40
 nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
-ansible==8.5.0
+ansible==8.6.1
 jmespath==1.0.1
-oci==2.115.0
+oci==2.115.1
