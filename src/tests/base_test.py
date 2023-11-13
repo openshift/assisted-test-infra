@@ -1083,21 +1083,28 @@ class BaseTest:
     @staticmethod
     def update_oc_config(nodes: Nodes, cluster: Cluster):
         os.environ["KUBECONFIG"] = cluster.kubeconfig_path
-        api_vip = ""
-
         if nodes.nodes_count == 1:
-            api_vips = [
-                cluster.get_ip_for_single_node(cluster.api_client, cluster.id, cluster.get_primary_machine_cidr())
-            ]
+            try:
+                # Bubble up exception when vip not found for sno, returns ip string
+                ip_vip = cluster.get_ip_for_single_node(
+                    cluster.api_client, cluster.id, cluster.get_primary_machine_cidr()
+                )
+            except Exception as e:
+                log.warning(f"ip_vip for single node not found for {cluster.name}: {str(e)}")
+                ip_vip = ""
+            api_vips = [{"ip": ip_vip}]
         else:
-            vips = nodes.controller.get_ingress_and_api_vips()
-            api_vips = vips["api_vips"]
+            try:
+                # Bubble up exception when vip not found for multiple nodes
+                api_vips = nodes.controller.get_ingress_and_api_vips()["api_vips"]
+            except Exception as e:
+                log.warning(f"api_vips for multi node not found for {cluster.name}: {str(e)}")
+                api_vips = [{"ip": ""}]
 
-        if len(api_vips) > 0:
-            api_vip = api_vips[0].get("ip", "")
+        api_vip_address = api_vips[0].get("ip", "") if len(api_vips) > 0 else ""
 
         utils.config_etc_hosts(
-            cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vips=api_vip
+            cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vip=api_vip_address
         )
 
     def wait_for_controller(self, cluster, nodes):
