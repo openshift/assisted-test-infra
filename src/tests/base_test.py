@@ -826,16 +826,17 @@ class BaseTest:
             cluster: Cluster,
             iptables_rules: List[IptableRule],
             given_nodes=None,
+            start_stop_nodes=True,
         ):
-            given_node_ips = []
             given_nodes = given_nodes or cluster.nodes.nodes
-
-            if cluster.enable_image_download:
-                cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
-            cluster.nodes.start_given(given_nodes)
-            for node in given_nodes:
-                given_node_ips.append(node.ips[0])
-            cluster.nodes.shutdown_given(given_nodes)
+            if start_stop_nodes:
+                if cluster.enable_image_download:
+                    cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
+                cluster.nodes.start_given(given_nodes)
+                given_node_ips = [node.ips[0] for node in given_nodes]
+                cluster.nodes.shutdown_given(given_nodes)
+            else:
+                given_node_ips = [node.ips[0] for node in given_nodes]
 
             log.info(f"Given node ips: {given_node_ips}")
 
