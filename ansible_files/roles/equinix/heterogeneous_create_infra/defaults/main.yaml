@@ -1,3 +1,6 @@
+metal_version: 0.17.0
+wait_delay_seconds: 60
+wait_retry_count: 60
 primary_device_group_name: "primary"
 secondary_device_group_name: "secondary"
 equinix_ssh_user: "root"
