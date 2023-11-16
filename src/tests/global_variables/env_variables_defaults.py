@@ -154,6 +154,12 @@ class _EnvVariables(DataPool, ABC):
     nutanix_cluster: EnvVar = EnvVar(["NUTANIX_CLUSTER_NAME"])
     nutanix_subnet: EnvVar = EnvVar(["NUTANIX_SUBNET_NAME"])
 
+    # all about zVM env vars
+    zvm_bastion_host: EnvVar = EnvVar(["ZVM_BASTION_HOST"])
+    zvm_bastion_user: EnvVar = EnvVar(["ZVM_BASTION_USER"])
+    zvm_bastion_private_key: EnvVar = EnvVar(["ZVM_BASTION_PRIVATE_KEY"])
+    zvm_node_cfg_path: EnvVar = EnvVar(["ZVM_NODE_CFG_PATH"])
+
     # day2 libvirt target and VM network configuration
     day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])
     day2_machine_cidr: EnvVar = EnvVar(["DAY2_MACHINE_CIDR"])
