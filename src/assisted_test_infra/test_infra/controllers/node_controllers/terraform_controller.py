@@ -156,6 +156,7 @@ class TerraformController(LibvirtController):
 
     def _get_vips(self):
         vips = self.get_ingress_and_api_vips()
+
         if self._config.api_vips:
             api_vips = [i.ip for i in self._config.api_vips]
         else:
