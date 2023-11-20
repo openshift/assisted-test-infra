@@ -31,9 +31,9 @@ tqdm==4.66.1
 urllib3<3.0
 pyvmomi>=7.0.2
 waiting>=1.4.1
-prompt_toolkit==3.0.40
+prompt_toolkit==3.0.41
 nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==8.6.1
 jmespath==1.0.1
-oci==2.115.1
+oci==2.116.0
