@@ -1,3 +1,6 @@
+- name: Wait for instance 
+  include_tasks:  wait_for_instance.yaml
+
 - name: "Save terraform variables into {{ equinix_tf_vars_file }}"
   ansible.builtin.template:
     src: "terraform.tfvars.j2"
