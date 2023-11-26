@@ -357,18 +357,18 @@ class Cluster(BaseCluster):
 
         if self._config.platform == consts.Platforms.NONE:
             log.info("On None platform, leaving network management to the user")
-            api_vip = ingress_vip = machine_networks = None
+            api_vips = ingress_vips = machine_networks = None
 
         elif self._config.vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
             log.info("Letting access VIPs be deducted from machine networks")
-            api_vip = ingress_vip = None
+            api_vips = ingress_vips = None
             machine_networks = [self.get_machine_networks()[0]]
 
         else:
             log.info("Assigning VIPs statically")
             access_vips = controller.get_ingress_and_api_vips()
-            api_vip = access_vips["api_vip"] if access_vips else None
-            ingress_vip = access_vips["ingress_vip"] if access_vips else None
+            api_vips = access_vips["api_vips"] if access_vips else None
+            ingress_vips = access_vips["ingress_vips"] if access_vips else None
             machine_networks = None
 
         if self._config.is_ipv4 and self._config.is_ipv6:
@@ -379,8 +379,8 @@ class Cluster(BaseCluster):
             cluster_networks=self._config.cluster_networks,
             service_networks=self._config.service_networks,
             machine_networks=machine_networks,
-            api_vip=api_vip,
-            ingress_vip=ingress_vip,
+            api_vips=api_vips,
+            ingress_vips=ingress_vips,
         )
 
     def get_primary_machine_cidr(self):
@@ -441,8 +441,8 @@ class Cluster(BaseCluster):
         cluster_networks: Optional[List[models.ClusterNetwork]] = None,
         service_networks: Optional[List[models.ServiceNetwork]] = None,
         machine_networks: Optional[List[models.MachineNetwork]] = None,
-        api_vip: Optional[str] = None,
-        ingress_vip: Optional[str] = None,
+        api_vips: Optional[List[models.ApiVip]] = None,
+        ingress_vips: Optional[List[models.IngressVip]] = None,
     ):
         if machine_networks is None:
             machine_networks = self._config.machine_networks
@@ -459,12 +459,30 @@ class Cluster(BaseCluster):
             "cluster_networks": cluster_networks if cluster_networks is not None else self._config.cluster_networks,
             "service_networks": service_networks if service_networks is not None else self._config.service_networks,
             "machine_networks": machine_networks,
-            "api_vip": api_vip if api_vip is not None else self._config.api_vip,
-            "ingress_vip": ingress_vip if ingress_vip is not None else self._config.ingress_vip,
+            "api_vips": api_vips if api_vips is not None else self._config.api_vips,
+            "ingress_vips": ingress_vips if ingress_vips is not None else self._config.ingress_vips,
             **extra_vars,
         }
 
         log.info(f"Updating advanced networking with {advanced_networking} for cluster: {self.id}")
+
+        # TODO: Remove singular VIPs once MGMT-14810 gets merged.
+        advanced_networking["api_vip"] = ""
+
+        if (
+            advanced_networking["api_vips"] is not None
+            and len(advanced_networking["api_vips"]) > 0
+            and advanced_networking["api_vips"][0]["ip"] is not None
+        ):
+            advanced_networking["api_vip"] = advanced_networking["api_vips"][0]["ip"]
+
+        advanced_networking["ingress_vip"] = ""
+        if (
+            advanced_networking["ingress_vips"] is not None
+            and len(advanced_networking["ingress_vips"]) > 0
+            and advanced_networking["ingress_vips"][0]["ip"] is not None
+        ):
+            advanced_networking["ingress_vip"] = advanced_networking["ingress_vips"][0]["ip"]
 
         self.update_config(**advanced_networking)
         self.api_client.update_cluster(self.id, advanced_networking)
@@ -935,7 +953,9 @@ class Cluster(BaseCluster):
         # in our case when nodes are ready, vips will be there for sure
         if self._ha_not_none():
             vips_info = self.api_client.get_vips_from_cluster(self.id)
-            self.nodes.controller.set_dns(api_ip=vips_info["api_vip"], ingress_ip=vips_info["ingress_vip"])
+            api_ip = vips_info["api_vips"][0].ip if len(vips_info["api_vips"]) > 0 else ""
+            ingress_ip = vips_info["ingress_vips"][0].ip if len(vips_info["ingress_vips"]) > 0 else ""
+            self.nodes.controller.set_dns(api_ip=api_ip, ingress_ip=ingress_ip)
 
     def download_kubeconfig_no_ingress(self, kubeconfig_path: str = None):
         self.api_client.download_kubeconfig_no_ingress(self.id, kubeconfig_path or self._config.kubeconfig_path)

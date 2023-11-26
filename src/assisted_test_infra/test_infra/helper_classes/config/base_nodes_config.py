@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+from assisted_service_client import models
+
 import consts
 
 from .base_config import BaseConfig
@@ -35,8 +37,10 @@ class BaseNodesConfig(BaseConfig, ABC):
     worker_disk_count: int = None
     worker_boot_devices: List[str] = None
 
-    api_vip: Optional[str] = None
-    ingress_vip: Optional[str] = None
+    api_vip: str = None  # TODO: Remove singular VIPs once MGMT-14810 gets merged.
+    ingress_vip: str = None  # TODO: Remove singular VIPs once MGMT-14810 gets merged.
+    api_vips: List[models.ApiVip] = None
+    ingress_vips: List[models.IngressVip] = None
     base_cluster_domain: Optional[str] = None
 
     network_mtu: int = None

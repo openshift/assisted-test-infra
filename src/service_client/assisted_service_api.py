@@ -473,7 +473,7 @@ class InventoryClient(object):
 
     def get_api_vip(self, cluster_info: dict, cluster_id: str = None):
         cluster = cluster_info or self.cluster_get(cluster_id)
-        api_vip = cluster.get("api_vip")
+        api_vip = cluster.get("api_vips")[0]["ip"] if len(cluster.get("api_vips")) > 0 else ""
         user_managed_networking = cluster.get("user_managed_networking")
 
         if not api_vip and user_managed_networking:
@@ -560,9 +560,10 @@ class InventoryClient(object):
                     ret = ret + [intf["ip"]]
         return ret
 
-    def get_vips_from_cluster(self, cluster_id: str) -> Dict[str, str]:
+    def get_vips_from_cluster(self, cluster_id: str) -> Dict[str, Any]:
         cluster_info = self.cluster_get(cluster_id)
-        return dict(api_vip=cluster_info.api_vip, ingress_vip=cluster_info.ingress_vip)
+
+        return dict(api_vips=cluster_info.api_vips, ingress_vips=cluster_info.ingress_vips)
 
     def get_cluster_supported_platforms(self, cluster_id: str) -> List[str]:
         return self.client.get_cluster_supported_platforms(cluster_id)

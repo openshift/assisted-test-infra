@@ -194,11 +194,8 @@ class BaseTest:
         # Configuring net asset which currently supported by libvirt terraform only
         new_day2_controller_configuration.net_asset = net_asset.get()
 
-        day1_api_vip = day2_cluster_configuration.day1_cluster_details.api_vip
-        day1_ingress_vip = day2_cluster_configuration.day1_cluster_details.ingress_vip
-
-        new_day2_controller_configuration.api_vip = day1_api_vip
-        new_day2_controller_configuration.ingress_vip = day1_ingress_vip
+        new_day2_controller_configuration.api_vips = day2_cluster_configuration.day1_cluster_details.api_vips
+        new_day2_controller_configuration.ingress_vips = day2_cluster_configuration.day1_cluster_details.ingress_vips
         new_day2_controller_configuration.masters_count = 0
         new_day2_controller_configuration.workers_count = day2_cluster_configuration.day2_workers_count
         new_day2_controller_configuration.masters_count = day2_cluster_configuration.day2_masters_count
@@ -826,16 +823,17 @@ class BaseTest:
             cluster: Cluster,
             iptables_rules: List[IptableRule],
             given_nodes=None,
+            start_stop_nodes=True,
         ):
-            given_node_ips = []
             given_nodes = given_nodes or cluster.nodes.nodes
-
-            if cluster.enable_image_download:
-                cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
-            cluster.nodes.start_given(given_nodes)
-            for node in given_nodes:
-                given_node_ips.append(node.ips[0])
-            cluster.nodes.shutdown_given(given_nodes)
+            if start_stop_nodes:
+                if cluster.enable_image_download:
+                    cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
+                cluster.nodes.start_given(given_nodes)
+                given_node_ips = [node.ips[0] for node in given_nodes]
+                cluster.nodes.shutdown_given(given_nodes)
+            else:
+                given_node_ips = [node.ips[0] for node in given_nodes]
 
             log.info(f"Given node ips: {given_node_ips}")
 
@@ -1083,15 +1081,28 @@ class BaseTest:
     @staticmethod
     def update_oc_config(nodes: Nodes, cluster: Cluster):
         os.environ["KUBECONFIG"] = cluster.kubeconfig_path
-
         if nodes.nodes_count == 1:
-            api_vip = cluster.get_ip_for_single_node(cluster.api_client, cluster.id, cluster.get_primary_machine_cidr())
+            try:
+                # Bubble up exception when vip not found for sno, returns ip string
+                ip_vip = cluster.get_ip_for_single_node(
+                    cluster.api_client, cluster.id, cluster.get_primary_machine_cidr()
+                )
+            except Exception as e:
+                log.warning(f"ip_vip for single node not found for {cluster.name}: {str(e)}")
+                ip_vip = ""
+            api_vips = [{"ip": ip_vip}]
         else:
-            vips = nodes.controller.get_ingress_and_api_vips()
-            api_vip = vips["api_vip"]
+            try:
+                # Bubble up exception when vip not found for multiple nodes
+                api_vips = nodes.controller.get_ingress_and_api_vips()["api_vips"]
+            except Exception as e:
+                log.warning(f"api_vips for multi node not found for {cluster.name}: {str(e)}")
+                api_vips = [{"ip": ""}]
+
+        api_vip_address = api_vips[0].get("ip", "") if len(api_vips) > 0 else ""
 
         utils.config_etc_hosts(
-            cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vip=api_vip
+            cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vip=api_vip_address
         )
 
     def wait_for_controller(self, cluster, nodes):

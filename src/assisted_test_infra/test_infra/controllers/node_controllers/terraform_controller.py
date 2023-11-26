@@ -154,6 +154,20 @@ class TerraformController(LibvirtController):
         if self._params.running:
             self.wait_till_nodes_are_ready(network_name=self._params.libvirt_network_name)
 
+    def _get_vips(self):
+        vips = self.get_ingress_and_api_vips()
+        if self._config.api_vips:
+            api_vips = [i.ip for i in self._config.api_vips]
+        else:
+            api_vips = [i.get("ip") for i in vips["api_vips"]]
+
+        if self._config.ingress_vips:
+            ingress_vips = [i.ip for i in self._config.ingress_vips]
+        else:
+            ingress_vips = [i.get("ip") for i in vips["ingress_vips"]]
+
+        return api_vips, ingress_vips
+
     # Filling tfvars json files with terraform needed variables to spawn vms
     def _fill_tfvars(self, running=True):
         log.info("Filling tfvars")
@@ -183,9 +197,12 @@ class TerraformController(LibvirtController):
         tfvars["provisioning_cidr_addresses"] = self.get_all_provisioning_addresses()
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
 
-        vips = self.get_ingress_and_api_vips()
-        tfvars["api_vip"] = self._config.api_vip or vips["api_vip"]
-        tfvars["ingress_vip"] = self._config.ingress_vip or vips["ingress_vip"]
+        tfvars["api_vips"], tfvars["ingress_vips"] = self._get_vips()
+
+        # TODO: Remove singular VIPs once MGMT-14810 gets merged.
+        tfvars["api_vip"] = tfvars["api_vips"][0]
+        tfvars["ingress_vip"] = tfvars["ingress_vips"][0]
+
         if self._config.base_cluster_domain:
             tfvars["base_cluster_domain"] = self._config.base_cluster_domain
 
@@ -233,17 +250,17 @@ class TerraformController(LibvirtController):
         log.info("Formatting disk for %s", node_name)
         self.format_disk(f"{self._params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
-    def get_ingress_and_api_vips(self) -> Dict[str, str]:
+    def get_ingress_and_api_vips(self) -> Dict[str, List[dict]]:
         """Pick two IPs for setting static access endpoint IPs.
 
-        Using <sub-net>.100 for the API endpoint and <sub-net>.101 for the ingress endpoint
+        Using <subnet>.100 for the API endpoint and <subnet>.101 for the ingress endpoint
         (the IPv6 values are appropriately <sub-net>:64 and <sub-net>:65).
 
         This method is not applicable for SNO clusters, where access IPs should be the node's IP.
         """
         network_subnet_starting_ip = ip_address(ip_network(self.get_primary_machine_cidr()).network_address)
         ips = utils.create_ip_address_list(2, starting_ip_addr=network_subnet_starting_ip + 100)
-        return {"api_vip": ips[0], "ingress_vip": ips[1]}
+        return {"api_vips": [{"ip": ips[0]}], "ingress_vips": [{"ip": ips[1]}]}
 
     @utils.on_exception(message="Failed to run terraform delete", silent=True)
     def _create_address_list(self, num, starting_ip_addr):
