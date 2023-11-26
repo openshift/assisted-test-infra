@@ -196,12 +196,7 @@ class TerraformController(LibvirtController):
         tfvars["machine_cidr_addresses"] = self.get_all_machine_addresses()
         tfvars["provisioning_cidr_addresses"] = self.get_all_provisioning_addresses()
         tfvars["bootstrap_in_place"] = self._config.bootstrap_in_place
-
         tfvars["api_vips"], tfvars["ingress_vips"] = self._get_vips()
-
-        # TODO: Remove singular VIPs once MGMT-14810 gets merged.
-        tfvars["api_vip"] = tfvars["api_vips"][0]
-        tfvars["ingress_vip"] = tfvars["ingress_vips"][0]
 
         if self._config.base_cluster_domain:
             tfvars["base_cluster_domain"] = self._config.base_cluster_domain

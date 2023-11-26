@@ -57,13 +57,13 @@ class NutanixController(TFController):
 
     def get_ingress_and_api_vips(self):
         if not self._entity_config.vip_dhcp_allocation:
-            if not self._entity_config.api_vip:
+            if self._entity_config.api_vips is None or len(self._entity_config.api_vips) == 0:
                 raise ValueError("API VIP is not set")
-            if not self._entity_config.ingress_vip:
+            if self._entity_config.ingress_vips is None or len(self._entity_config.ingress_vips) == 0:
                 raise ValueError("Ingress VIP is not set")
             return {
-                "api_vips": [{"ip": self._entity_config.api_vip}],
-                "ingress_vips": [{"ip": self._entity_config.ingress_vip}],
+                "api_vips": self._entity_config.api_vips,
+                "ingress_vips": self._entity_config.ingress_vips,
             }
 
         nutanix_subnet = next(
