@@ -110,10 +110,10 @@ class TFController(NodeController, ABC):
         )
 
     def get_ingress_and_api_vips(self) -> dict[str, list[dict]] | None:
-        if self._entity_config.api_vip and self._entity_config.ingress_vip:
+        if self._entity_config.api_vips and self._entity_config.ingress_vips:
             return {
-                "api_vips": [{"ip": self._entity_config.api_vip}],
-                "ingress_vips": [{"ip": self._entity_config.ingress_vip}],
+                "api_vips": self._entity_config.api_vips,
+                "ingress_vips": self._entity_config.ingress_vips,
             }
 
         return None

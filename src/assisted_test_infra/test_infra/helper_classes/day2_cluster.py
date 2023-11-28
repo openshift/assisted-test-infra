@@ -51,7 +51,7 @@ class Day2Cluster(BaseCluster):
 
         self.set_pull_secret(self._config.pull_secret)
         self.set_cluster_proxy()
-        self.config_etc_hosts(self._config.day1_cluster_details.api_vip, self._config.day1_api_vip_dnsname)
+        self.config_etc_hosts(self._config.day1_cluster_details.api_vips[0].ip, self._config.day1_api_vip_dnsname)
 
         # create the infraenv with specified day2 CPU architecture
         self.generate_and_download_infra_env(
