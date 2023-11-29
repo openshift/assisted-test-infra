@@ -37,8 +37,6 @@ class BaseNodesConfig(BaseConfig, ABC):
     worker_disk_count: int = None
     worker_boot_devices: List[str] = None
 
-    api_vip: str = None  # TODO: Remove singular VIPs once MGMT-14810 gets merged.
-    ingress_vip: str = None  # TODO: Remove singular VIPs once MGMT-14810 gets merged.
     api_vips: List[models.ApiVip] = None
     ingress_vips: List[models.IngressVip] = None
     base_cluster_domain: Optional[str] = None

@@ -284,7 +284,9 @@ class Cluster(BaseCluster):
     def set_metallb(self, properties: str = None, update: bool = False):
         if properties is None:
             properties = consts.get_operator_properties(
-                consts.OperatorType.METALLB, api_vip=self._config.api_vip, ingress_vip=self._config.ingress_vip
+                consts.OperatorType.METALLB,
+                api_vip=self._config.api_vips[0].ip,
+                ingress_vip=self._config.ingress_vips[0].ip,
             )
 
         self.set_olm_operator(consts.OperatorType.METALLB, properties=properties, update=update)
@@ -421,10 +423,6 @@ class Cluster(BaseCluster):
         log.info(f"Setting Network type:{network_type} for cluster: {self.id}")
         self.api_client.update_cluster(self.id, {"network_type": network_type})
 
-    def set_ingress_and_api_vips(self, vips):
-        log.info(f"Setting API VIP:{vips['api_vip']} and ingress VIP:{vips['ingress_vip']} for cluster: {self.id}")
-        self.api_client.update_cluster(self.id, vips)
-
     def set_ssh_key(self, ssh_key: str):
         log.info(f"Setting SSH key:{ssh_key} for cluster: {self.id}")
         self.update_config(ssh_public_key=ssh_key)
@@ -465,24 +463,6 @@ class Cluster(BaseCluster):
         }
 
         log.info(f"Updating advanced networking with {advanced_networking} for cluster: {self.id}")
-
-        # TODO: Remove singular VIPs once MGMT-14810 gets merged.
-        advanced_networking["api_vip"] = ""
-
-        if (
-            advanced_networking["api_vips"] is not None
-            and len(advanced_networking["api_vips"]) > 0
-            and advanced_networking["api_vips"][0]["ip"] is not None
-        ):
-            advanced_networking["api_vip"] = advanced_networking["api_vips"][0]["ip"]
-
-        advanced_networking["ingress_vip"] = ""
-        if (
-            advanced_networking["ingress_vips"] is not None
-            and len(advanced_networking["ingress_vips"]) > 0
-            and advanced_networking["ingress_vips"][0]["ip"] is not None
-        ):
-            advanced_networking["ingress_vip"] = advanced_networking["ingress_vips"][0]["ip"]
 
         self.update_config(**advanced_networking)
         self.api_client.update_cluster(self.id, advanced_networking)

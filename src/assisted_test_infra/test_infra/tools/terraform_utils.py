@@ -117,8 +117,5 @@ class TerraformUtils:
         resources = [resource for resource in getattr(state, "resources", {})]
         return [resource for resource in resources if resource_type is None or resource["type"] == resource_type]
 
-    def set_new_vips(self, api_vip: str, ingress_vip: str) -> None:
-        self.change_variables(variables={"api_vip": api_vip, "ingress_vip": ingress_vip}, refresh=True)
-
     def destroy(self, force: bool = True) -> None:
         self.tf.destroy(force=force, input=False, auto_approve=True)

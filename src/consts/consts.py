@@ -301,7 +301,6 @@ class Platforms:
     VSPHERE = "vsphere"
     NUTANIX = "nutanix"
     OCI = "oci"
-    S390X = "s390x"
 
 
 class KubeAPIPlatforms:

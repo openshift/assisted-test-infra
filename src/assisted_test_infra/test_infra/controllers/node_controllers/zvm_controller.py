@@ -1,36 +1,34 @@
 import os
 import shutil
+from abc import ABC
+from typing import List, Tuple
 
 from paramiko import SSHException
 from scp import SCPException
 
-from abc import ABC
-from typing import List, Tuple, Union
-from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, utils
+from assisted_test_infra.test_infra import BaseClusterConfig, utils
+from assisted_test_infra.test_infra.controllers.node_controllers import ssh
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config import BaseNodesConfig
-from assisted_test_infra.test_infra.controllers.node_controllers import ssh
 from service_client import log
 
 
 class ZVMController(NodeController, ABC):
-    def __init__(
-        self,
-        config: BaseNodesConfig,
-        entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig],
-    ):
-        super().__init__(config, entity_config)
+    _entity_config: BaseClusterConfig
+
+    def __init__(self, config: BaseNodesConfig, cluster_config: BaseClusterConfig):
+        super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
         self._dir = os.path.dirname(os.path.realpath(__file__))
         self._ipxe_scripts_folder = f"{self._dir}/zVM/ipxe_scripts"
-        self.cfg_node_path = zvm_node_cfg_path
+        self._cfg_node_path = ""
 
     @property
     def ssh_connection(self):
-        if not sself._entity_config.zvm_bastion_host:
-            raise RuntimeError(f"Bastion host not configured")
+        if not self._entity_config.zvm_bastion_host:
+            raise RuntimeError("Bastion host not configured")
 
         log.info(f"Trying to accessing bastion host {self._entity_config.zvm_bastion_host}")
         for ip in self.ips:
@@ -64,12 +62,12 @@ class ZVMController(NodeController, ABC):
             shutil.rmtree(path)
 
     def get_cfg_node_path(self):
-        log.info(f"Node configuration path: {self.cfg_node_path}")
-        return self.cfg_node_path
+        log.info(f"Node configuration path: {self._cfg_node_path}")
+        return self._cfg_node_path
 
     def set_cfg_node_path(self, cfg_path):
         log.info(f"New node configuration path: {cfg_path}")
-        self.cfg_node_path = cfg_path
+        self._cfg_node_path = cfg_path
 
     def list_nodes(self) -> List[Node]:
         return None
