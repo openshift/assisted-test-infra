@@ -111,7 +111,13 @@ class Cluster(BaseCluster):
         )
 
         if self._config.platform:
-            extra_vars["platform"] = models.Platform(type=self._config.platform)
+            platform = models.Platform(type=self._config.platform)
+            if self._config.platform == consts.Platforms.EXTERNAL:
+                platform.external = models.PlatformExternal(
+                    platform_name=self._config.external_platform_name,
+                    cloud_controller_manager=self._config.cloud_controller_manager
+                    )
+            extra_vars["platform"] = platform
 
         if self._config.vip_dhcp_allocation is not None:
             extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation
@@ -355,7 +361,7 @@ class Cluster(BaseCluster):
         # Controller argument is here only for backward compatibility TODO - Remove after QE refactor all e2e tests
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
 
-        if self._config.platform == consts.Platforms.NONE:
+        if self._config.platform in [ consts.Platforms.NONE, consts.Platforms.EXTERNAL ]:
             log.info("On None platform, leaving network management to the user")
             api_vips = ingress_vips = machine_networks = None
 
@@ -884,7 +890,7 @@ class Cluster(BaseCluster):
     def _ha_not_none(self):
         return (
             self._high_availability_mode != consts.HighAvailabilityMode.NONE
-            and self._config.platform != consts.Platforms.NONE
+            and self._config.platform not in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]
         )
 
     def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
@@ -938,7 +944,7 @@ class Cluster(BaseCluster):
         self.set_network_params(controller=self.nodes.controller)
 
         # in case of None platform we need to specify dns records before hosts are ready
-        if self._config.platform == consts.Platforms.NONE:
+        if self._config.platform == consts.Platforms.NONE or self._config.platform == consts.Platforms.EXTERNAL:
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:

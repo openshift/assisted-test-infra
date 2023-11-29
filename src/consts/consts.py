@@ -301,6 +301,7 @@ class Platforms:
     VSPHERE = "vsphere"
     NUTANIX = "nutanix"
     OCI = "oci"
+    EXTERNAL = "external"
 
 
 class KubeAPIPlatforms:

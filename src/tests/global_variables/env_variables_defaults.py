@@ -186,3 +186,5 @@ class _EnvVariables(DataPool, ABC):
     )
     is_disconnected: EnvVar = EnvVar(["DISCONNECTED"], loader=lambda x: bool(strtobool(x)))
     registry_ca_path: EnvVar = EnvVar(["REGISTRY_CA_PATH"], loader=Path)
+    external_platform_name = EnvVar(["EXTERNAL_PLATFORM_NAME"], default=env_defaults.DEFAULT_EXTERNAL_PLATFORM_NAME)
+    external_cloud_controller_manager = EnvVar(["EXTERNAL_CLOUD_CONTROLLER_MANAGER"], default=env_defaults.DEFAULT_EXTERNAL_CLOUD_CONTROLLER_MANAGER)

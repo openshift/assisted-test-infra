@@ -22,6 +22,8 @@ class BaseEntityConfig(BaseConfig, ABC):
     iso_image_type: str = None
     download_image: bool = None
     platform: str = None
+    external_platform_name: str = None
+    external_cloud_controller_manager: str = None
     is_ipv4: bool = None
     is_ipv6: bool = None
     base_dns_domain: str = None
