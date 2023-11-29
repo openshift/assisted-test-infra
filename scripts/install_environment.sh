@@ -177,6 +177,7 @@ function install_packages() {
     sudo systemctl enable --now xinetd
 
     echo "Installing python packages"
+    sudo pip3 install -U pip
     sudo pip3 install aicli
 }
 
