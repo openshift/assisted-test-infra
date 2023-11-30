@@ -84,6 +84,12 @@ variable "oci_extra_lb_nsg_oicds" {
   description = "Extra network security group IDs be assigned to load balancer (e.g.: to allow API/MCS/HTTP/HTTPS access to the cluster)"
 }
 
+variable "oci_boot_volume_type" {
+  type        = string
+  description = "Boot volume type to use for the cluster nodes"
+  default     = null
+}
+
 variable "instance_shape" {
   type        = string
   description = "The shape of the instance. The shape determines the number of CPUs and the amount of memory allocated to the instance"

@@ -44,13 +44,23 @@ resource "oci_core_image" "discovery_image" {
 #
 
 locals {
-  schema_firmware_key = "Compute.Firmware"
-  schema_firmware_value = jsonencode({
-    "descriptorType" = "enumstring",
-    "source"         = "IMAGE",
-    "defaultValue"   = "UEFI_64",
-    "values"         = ["UEFI_64"]
-  })
+  schema_firmware = {
+    "Compute.Firmware" = jsonencode({
+      "descriptorType" = "enumstring",
+      "source"         = "IMAGE",
+      "defaultValue"   = "UEFI_64",
+      "values"         = ["UEFI_64"]
+    })
+  }
+
+  schema_boot_volume_type = var.oci_boot_volume_type == null ? null : {
+    "Storage.BootVolumeType" = jsonencode({
+      "descriptorType" = "enumstring",
+      "source"         = "IMAGE",
+      "defaultValue"   = var.oci_boot_volume_type,
+      "values"         = [var.oci_boot_volume_type]
+    })
+  }
 }
 
 resource "oci_core_compute_image_capability_schema" "discovery_image_firmware_uefi_64" {
@@ -58,10 +68,7 @@ resource "oci_core_compute_image_capability_schema" "discovery_image_firmware_ue
   compute_global_image_capability_schema_version_name = data.oci_core_compute_global_image_capability_schemas_versions.global_image_capability_schemas_versions.compute_global_image_capability_schema_versions[0].name
   image_id                                            = oci_core_image.discovery_image.id
 
-  schema_data = {
-    # if using var as key in map, enclose in parenthesis
-    (local.schema_firmware_key) = local.schema_firmware_value
-  }
+  schema_data = merge(local.schema_firmware, local.schema_boot_volume_type)
 }
 
 data "oci_core_compute_global_image_capability_schemas_versions" "global_image_capability_schemas_versions" {

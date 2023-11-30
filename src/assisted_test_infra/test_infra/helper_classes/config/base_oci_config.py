@@ -19,6 +19,7 @@ class BaseOciConfig(BaseNodesConfig, ABC):
     oci_private_subnet_oicd: str = None
     oci_extra_node_nsg_oicds: List[str] = None
     oci_extra_lb_nsg_oicds: List[str] = None
+    oci_boot_volume_type: bool = None
 
     def get_provider_config(self) -> Dict[str, str]:
         return {
