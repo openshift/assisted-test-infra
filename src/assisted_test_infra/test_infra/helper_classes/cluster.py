@@ -361,7 +361,7 @@ class Cluster(BaseCluster):
         # Controller argument is here only for backward compatibility TODO - Remove after QE refactor all e2e tests
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
 
-        if self._config.platform in [ consts.Platforms.NONE, consts.Platforms.EXTERNAL ]:
+        if self._config.platform in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]:
             log.info("On None platform, leaving network management to the user")
             api_vips = ingress_vips = machine_networks = None
 
@@ -888,10 +888,10 @@ class Cluster(BaseCluster):
         )
 
     def _ha_not_none(self):
-        return (
-            self._high_availability_mode != consts.HighAvailabilityMode.NONE
-            and self._config.platform not in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]
-        )
+        return self._high_availability_mode != consts.HighAvailabilityMode.NONE and self._config.platform not in [
+            consts.Platforms.NONE,
+            consts.Platforms.EXTERNAL,
+        ]
 
     def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
         super(Cluster, self).prepare_nodes(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
