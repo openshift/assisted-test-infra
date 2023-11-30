@@ -19,7 +19,7 @@ _default_triggers = frozendict(
         "external_platform": Trigger(
             conditions=[lambda config: config.platform == consts.Platforms.EXTERNAL],
             user_managed_networking=True,
-            tf_platform=consts.Platforms.EXTERNAL,
+            tf_platform=consts.Platforms.BARE_METAL,
         ),
         "vsphere_platform": Trigger(
             conditions=[lambda config: config.platform == consts.Platforms.VSPHERE],

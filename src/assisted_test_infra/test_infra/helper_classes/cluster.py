@@ -115,8 +115,8 @@ class Cluster(BaseCluster):
             if self._config.platform == consts.Platforms.EXTERNAL:
                 platform.external = models.PlatformExternal(
                     platform_name=self._config.external_platform_name,
-                    cloud_controller_manager=self._config.cloud_controller_manager
-                    )
+                    cloud_controller_manager=self._config.external_cloud_controller_manager,
+                )
             extra_vars["platform"] = platform
 
         if self._config.vip_dhcp_allocation is not None:
