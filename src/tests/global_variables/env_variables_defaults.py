@@ -85,7 +85,7 @@ class _EnvVariables(DataPool, ABC):
         default=[],
     )
     platform: EnvVar = EnvVar(["PLATFORM"])
-    tf_platform: EnvVar = EnvVar(["TF_PLATFORM", "PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
+    tf_platform: EnvVar = EnvVar(["TF_PLATFORM"], default=env_defaults.DEFAULT_PLATFORM)
     user_managed_networking: EnvVar = EnvVar(
         ["USER_MANAGED_NETWORKING"],
         loader=lambda x: bool(strtobool(x)),
@@ -187,3 +187,7 @@ class _EnvVariables(DataPool, ABC):
     oci_boot_volume_type: EnvVar = EnvVar(["OCI_BOOT_VOLUME_TYPE"])
     is_disconnected: EnvVar = EnvVar(["DISCONNECTED"], loader=lambda x: bool(strtobool(x)))
     registry_ca_path: EnvVar = EnvVar(["REGISTRY_CA_PATH"], loader=Path)
+    external_platform_name = EnvVar(["EXTERNAL_PLATFORM_NAME"], default=env_defaults.DEFAULT_EXTERNAL_PLATFORM_NAME)
+    external_cloud_controller_manager = EnvVar(
+        ["EXTERNAL_CLOUD_CONTROLLER_MANAGER"], default=env_defaults.DEFAULT_EXTERNAL_CLOUD_CONTROLLER_MANAGER
+    )

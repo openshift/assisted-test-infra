@@ -155,7 +155,7 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `WORKER_MEMORY`              | memory for worker VM, default: 8892MB                                                                                                                      |
 | `SSH_PUB_KEY`                | SSH public key to use for image generation, gives option to SSH to VMs, default: ~/.ssh/id_rsa.pub                                                         |
 | `IPXE_BOOT`                  | Boots VMs using iPXE if set to `true`, default: `false`                                                                                                    |
-| `PLATFORM`                   | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, default: `baremetal`                                                      |
+| `PLATFORM`                   | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, `external`, default: `baremetal`                                          |
 | `DISCOVERY_KERNEL_ARGUMENTS` | JSON formatted string containing array of dictionaries each having 2 attributes: `operation` and `value`. Currently, only `append` operation is supported. |
 | `CPU_ARCHITECTURE`           | CPU architecture of the nodes that will be part of the cluster, one of: `x86_64`, `arm64`, `s390x`, `ppc64le`, default: `x86_64`                           |
 | `CUSTOM_MANIFESTS_FILES`     | List of local manifest files separated by commas or path to directory containing multiple manifests                                                        |
@@ -175,6 +175,12 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `VSPHERE_USERNAME`                | vSphere vcenter server username, mandatory for vsphere platform |
 | `VSPHERE_PASSWORD`                | vSphere vcenter server password, mandatory for vsphere platform |
 
+## External parameters
+
+|     |     |
+| --- | --- |
+| `EXTERNAL_PLATFORM_NAME`            | Plaform name when using `external` platform                                                                                                         |
+| `EXTERNAL_CLOUD_CONTROLLER_MANAGER` | Cloud controller manager when using `external` platform                                                                                             |
 
 ## Instructions
 
@@ -248,7 +254,7 @@ To run the flow without the installation stage:
 make run deploy_nodes_with_networking
 ```
 
-### Run base flow without configuring networking 
+### Run base flow without configuring networking
 
 Deploy the nodes without the network configuration and without the installation stage:
 

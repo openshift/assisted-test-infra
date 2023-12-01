@@ -111,7 +111,13 @@ class Cluster(BaseCluster):
         )
 
         if self._config.platform:
-            extra_vars["platform"] = models.Platform(type=self._config.platform)
+            platform = models.Platform(type=self._config.platform)
+            if self._config.platform == consts.Platforms.EXTERNAL:
+                platform.external = models.PlatformExternal(
+                    platform_name=self._config.external_platform_name,
+                    cloud_controller_manager=self._config.external_cloud_controller_manager,
+                )
+            extra_vars["platform"] = platform
 
         if self._config.vip_dhcp_allocation is not None:
             extra_vars["vip_dhcp_allocation"] = self._config.vip_dhcp_allocation
@@ -357,8 +363,8 @@ class Cluster(BaseCluster):
         # Controller argument is here only for backward compatibility TODO - Remove after QE refactor all e2e tests
         controller = controller or self.nodes.controller  # TODO - Remove after QE refactor all e2e tests
 
-        if self._config.platform == consts.Platforms.NONE:
-            log.info("On None platform, leaving network management to the user")
+        if self._config.platform in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]:
+            log.info("On None/External platforms, leaving network management to the user")
             api_vips = ingress_vips = machine_networks = None
 
         elif self._config.vip_dhcp_allocation or self._high_availability_mode == consts.HighAvailabilityMode.NONE:
@@ -861,11 +867,11 @@ class Cluster(BaseCluster):
             timeout=timeout,
         )
 
-    def _ha_not_none(self):
-        return (
-            self._high_availability_mode != consts.HighAvailabilityMode.NONE
-            and self._config.platform != consts.Platforms.NONE
-        )
+    def _ha_not_none_not_external(self):
+        return self._high_availability_mode != consts.HighAvailabilityMode.NONE and self._config.platform not in [
+            consts.Platforms.NONE,
+            consts.Platforms.EXTERNAL,
+        ]
 
     def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
         super(Cluster, self).prepare_nodes(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
@@ -918,7 +924,7 @@ class Cluster(BaseCluster):
         self.set_network_params(controller=self.nodes.controller)
 
         # in case of None platform we need to specify dns records before hosts are ready
-        if self._config.platform == consts.Platforms.NONE:
+        if self._config.platform in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]:
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:
@@ -931,7 +937,7 @@ class Cluster(BaseCluster):
 
         # in case of regular cluster, need to set dns after vips exits
         # in our case when nodes are ready, vips will be there for sure
-        if self._ha_not_none():
+        if self._ha_not_none_not_external():
             vips_info = self.api_client.get_vips_from_cluster(self.id)
             api_ip = vips_info["api_vips"][0].ip if len(vips_info["api_vips"]) > 0 else ""
             ingress_ip = vips_info["ingress_vips"][0].ip if len(vips_info["ingress_vips"]) > 0 else ""

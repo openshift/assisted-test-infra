@@ -188,7 +188,7 @@ delete_minikube:
 # Map the directory $(HOME)/.test-infra/etc/nginx/conf.d to be /etc/nginx/conf.d
 # so it will be used by the python code to fill up load balancing definitions
 start_load_balancer: stop_load_balancer
-	@if [ "$(PLATFORM)" = "none"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
+	@if [ "$(PLATFORM)" = "none"  ] || [ "$(PLATFORM)" = "external"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
 		id=$(shell $(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"); \
 		( test -z "$$id" && echo "Starting load balancer ..." && \
 		$(CONTAINER_COMMAND) run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
