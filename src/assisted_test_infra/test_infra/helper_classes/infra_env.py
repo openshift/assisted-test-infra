@@ -100,15 +100,12 @@ class InfraEnv(Entity):
             disks_skip_formatting=disks_skip_formatting,
         )
 
-    def update_host_installer_args(self):
+    def update_host_installer_args(self, host_id: str):
         if not self._config.host_installer_args:
             return
 
-        log.info(f"Updating hosts with installer args: {self._config.host_installer_args}")
-
-        hosts = self.api_client.get_cluster_hosts(self.id)
-        for host in hosts:
-            self.api_client.client.v2_update_host_installer_args(infra_env_id=self.id, host_id=host['id'], installer_args_params=self._config.host_installer_args)
+        log.info(f"Updating host {host_id} with installer args: {self._config.host_installer_args}")
+        self.api_client.client.v2_update_host_installer_args(infra_env_id=self.id, host_id=host_id, installer_args_params=self._config.host_installer_args)
 
     def bind_host(self, host_id: str, cluster_id: str) -> None:
         self.api_client.bind_host(infra_env_id=self.id, host_id=host_id, cluster_id=cluster_id)

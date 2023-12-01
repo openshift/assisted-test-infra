@@ -39,15 +39,15 @@ resource "oci_core_instance" "master" {
   compartment_id      = var.oci_compartment_oicd
   shape               = var.instance_shape
 
-  shape_config {
-    memory_in_gbs = var.master_memory_gib
-    ocpus         = var.master_vcpu
-  }
+  # shape_config {
+  #   memory_in_gbs = var.master_memory_gib
+  #   ocpus         = var.master_vcpu
+  # }
 
-  platform_config {
-    type                             = var.instance_platform_config_type
-    are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
-  }
+  # platform_config {
+  #   type                             = var.instance_platform_config_type
+  #   are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
+  # }
 
   source_details {
     source_id               = oci_core_image.discovery_image.id
@@ -93,15 +93,15 @@ resource "oci_core_instance" "worker" {
   compartment_id      = var.oci_compartment_oicd
   shape               = var.instance_shape
 
-  shape_config {
-    memory_in_gbs = var.worker_memory_gib
-    ocpus         = var.worker_vcpu
-  }
+  # shape_config {
+  #   memory_in_gbs = var.worker_memory_gib
+  #   ocpus         = var.worker_vcpu
+  # }
 
-  platform_config {
-    type                             = var.instance_platform_config_type
-    are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
-  }
+  # platform_config {
+  #   type                             = var.instance_platform_config_type
+  #   are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
+  # }
 
   source_details {
     source_id               = oci_core_image.discovery_image.id
