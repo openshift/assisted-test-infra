@@ -161,7 +161,7 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `CUSTOM_MANIFESTS_FILES`     | List of local manifest files separated by commas or path to directory containing multiple manifests                                                        |
 | `DISCONNECTED`               | Set to "true" if local mirror needs to be used                                                            |
 | `REGISTRY_CA_PATH`           | Path to mirror registry CA bundle                                                            |
-
+| `HOST_INSTALLER_ARGS`        | JSON formatted string used to customize installer arguments on all the hosts. Example: `{"args": ["--append-karg", "console=ttyS0"]}`                      |
 
 ## Vsphere parameters
 

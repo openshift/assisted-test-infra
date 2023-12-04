@@ -901,6 +901,8 @@ class Cluster(BaseCluster):
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
+        self.set_installer_args()
+
     @JunitTestCase()
     def create_custom_manifests(self):
         log.info(f"Adding {len(self._config.custom_manifests)} custom manifests")
