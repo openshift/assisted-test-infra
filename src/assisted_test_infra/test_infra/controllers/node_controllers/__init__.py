@@ -5,6 +5,7 @@ from .node_controller import NodeController
 from .oci_controller import OciController
 from .terraform_controller import TerraformController
 from .vsphere_controller import VSphereController
+from .zvm_controller import ZVMController
 
 __all__ = [
     "TerraformController",
@@ -14,4 +15,5 @@ __all__ = [
     "Node",
     "LibvirtController",
     "OciController",
+    "ZVMController",
 ]

@@ -35,6 +35,7 @@ from assisted_test_infra.test_infra.controllers import (
     VSphereController,
 )
 from assisted_test_infra.test_infra.controllers.node_controllers.tf_controller import TFController
+from assisted_test_infra.test_infra.controllers.node_controllers.zvm_controller import ZVMController
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodesConfig
@@ -401,6 +402,9 @@ class BaseTest:
 
         if platform == consts.Platforms.OCI:
             return OciController(controller_configuration, cluster_configuration)
+
+        if platform == consts.CPUArchitecture.S390X:
+            return ZVMController(controller_configuration, cluster_configuration)
 
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 

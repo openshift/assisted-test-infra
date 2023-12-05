@@ -498,7 +498,7 @@ class Cluster(BaseCluster):
             ntp_source_string = ntp_source
         else:
             raise TypeError(
-                f"ntp_source must be a string or a list of strings, got: {ntp_source}," f" type: {type(ntp_source)}"
+                f"ntp_source must be a string or a list of strings, got: {ntp_source}, type: {type(ntp_source)}"
             )
         self.update_config(additional_ntp_source=ntp_source_string)
         self.api_client.update_cluster(self.id, {"additional_ntp_source": ntp_source_string})
@@ -677,6 +677,23 @@ class Cluster(BaseCluster):
             self.download_kubeconfig()
 
         log.info(f"{self.get_details()}")
+        self._is_installed = True
+
+    @JunitTestCase()
+    def start_install_s390x_and_wait_for_installed(
+        self,
+        wait_for_hosts=True,
+        wait_for_operators=True,
+        wait_for_cluster_install=True,
+        download_kubeconfig=True,
+        fall_on_pending_status=False,
+    ):
+        """
+        self.api_client.create_cluster(cluster_id=self.id)
+        """
+        log.info("Start install on s390x and wait for be installed...")
+
+        log.info(f"Not implemented yet ... {self.get_details()}")
         self._is_installed = True
 
     def disable_worker_hosts(self):
@@ -917,6 +934,11 @@ class Cluster(BaseCluster):
     def prepare_for_installation(self, **kwargs):
         self.create_custom_manifests()
         super().prepare_for_installation(**kwargs)
+        self.create_custom_manifests()
+
+    @JunitTestCase()
+    def prepare_for_installation_s390x(self, **kwargs):
+        log.info("Prepare for installation on s390x")
         self.create_custom_manifests()
 
     def prepare_networking(self):
