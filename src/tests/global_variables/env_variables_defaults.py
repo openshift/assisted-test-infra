@@ -20,6 +20,7 @@ class _EnvVariables(DataPool, ABC):
     deploy_target: EnvVar = EnvVar(["DEPLOY_TARGET"])
     offline_token: EnvVar = EnvVar(["OFFLINE_TOKEN"])
     kernel_arguments: EnvVar = EnvVar(["KERNEL_ARGUMENTS"], loader=json.loads)
+    host_installer_args: EnvVar = EnvVar(["HOST_INSTALLER_ARGS"], loader=json.loads)
     openshift_version: EnvVar = EnvVar(["OPENSHIFT_VERSION"], default=consts.OpenshiftVersion.DEFAULT.value)
     base_dns_domain: EnvVar = EnvVar(["BASE_DOMAIN"], default=env_defaults.DEFAULT_BASE_DNS_DOMAIN)
     cluster_name: EnvVar = EnvVar(["CLUSTER_NAME"], default="")

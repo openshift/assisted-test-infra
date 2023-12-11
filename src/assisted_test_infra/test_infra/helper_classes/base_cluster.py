@@ -153,6 +153,11 @@ class BaseCluster(Entity, ABC):
             role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
             self._infra_env.update_host(host_id=host.get_id(), host_role=role, host_name=name)
 
+    def set_installer_args(self):
+        hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(self.id))
+        for host in hosts:
+            self._infra_env.update_host_installer_args(host_id=host.get_id())
+
     @staticmethod
     def to_cluster_hosts(hosts: list[dict[str, Any]]) -> list[ClusterHost]:
         return [ClusterHost(models.Host(**h)) for h in hosts]
