@@ -947,8 +947,8 @@ class Cluster(BaseCluster):
         self.nodes.wait_for_networking()
         self.set_network_params(controller=self.nodes.controller)
 
-        # in case of None platform we need to specify dns records before hosts are ready
-        if self._config.platform in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]:
+        # in case of None or External platform we need to specify dns records before hosts are ready
+        if self.nodes.controller.tf_platform in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]:
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:

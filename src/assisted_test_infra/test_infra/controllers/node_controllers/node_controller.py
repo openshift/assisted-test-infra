@@ -36,6 +36,10 @@ class NodeController(ABC):
     def is_ipv6(self):
         return self._config.is_ipv6
 
+    @property
+    def tf_platform(self):
+        return self._config.tf_platform
+
     @abstractmethod
     def list_nodes(self) -> List[Node]:
         pass
