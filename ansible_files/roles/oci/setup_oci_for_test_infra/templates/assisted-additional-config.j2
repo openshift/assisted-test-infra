@@ -22,4 +22,4 @@ export BASE_DOMAIN="{{ oci_dns_zone }}"
 export CUSTOM_MANIFESTS_FILES="{{ custom_manifests_dir }}"
 
 export HOST_INSTALLER_ARGS='{"args": ["--append-karg", "console=ttyS0"]}'
-export DISCOVERY_KERNEL_ARGUMENTS='[{"operation": "append", "value": "console=ttyS0"}]'
+export KERNEL_ARGUMENTS='[{"operation": "append", "value": "console=ttyS0"}]'
