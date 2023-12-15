@@ -20,3 +20,6 @@ export OCI_EXTRA_LOAD_BALANCER_NSG_IDS="{{ infra.oci_load_balancer_ci_nsg_id }}"
 export BASE_DOMAIN="{{ oci_dns_zone }}"
 
 export CUSTOM_MANIFESTS_FILES="{{ custom_manifests_dir }}"
+
+export HOST_INSTALLER_ARGS='{"args": ["--append-karg", "console=ttyS0"]}'
+export KERNEL_ARGUMENTS='[{"operation": "append", "value": "console=ttyS0"}]'
