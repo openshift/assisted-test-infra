@@ -93,7 +93,7 @@ def add_log_file_handler(logger: logging.Logger, filename: str) -> logging.FileH
 
 def add_stream_handler(logger: logging.Logger):
     fmt = SensitiveFormatter(
-        "%(asctime)s  %(name)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)->%(funcName)s"
+        "%(asctime)s  %(name)s %(levelname)-10s - %(thread)d - %(message)s \t" "(%(pathname)s:%(lineno)d)"
     )
     ch = ColorizingStreamHandler(sys.stderr)
     ch.setFormatter(fmt)
