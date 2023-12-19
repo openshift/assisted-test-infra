@@ -84,7 +84,7 @@ logging.getLogger("asyncio").setLevel(logging.ERROR)
 
 
 def add_log_file_handler(logger: logging.Logger, filename: str) -> logging.FileHandler:
-    fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
+    fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d:%(process)d - %(message)s")
     fh = logging.FileHandler(filename)
     fh.setFormatter(fmt)
     logger.addHandler(fh)
