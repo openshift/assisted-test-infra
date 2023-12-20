@@ -130,8 +130,8 @@ class _EnvVariables(DataPool, ABC):
     )
     reclaim_hosts: EnvVar = EnvVar(["RECLAIM_HOSTS"], loader=lambda x: bool(strtobool(x)), default=False)
 
-    api_vip: EnvVar = EnvVar(["API_VIP"])
-    ingress_vip: EnvVar = EnvVar(["INGRESS_VIP"])
+    api_vips: EnvVar = EnvVar(["API_VIPS"], loader=json.loads)
+    ingress_vips: EnvVar = EnvVar(["INGRESS_VIPS"], loader=json.loads)
 
     metallb_api_ip: EnvVar = EnvVar(["METALLB_API_IP"])
     metallb_ingress_ip: EnvVar = EnvVar(["METALLB_INGRESS_IP"])
