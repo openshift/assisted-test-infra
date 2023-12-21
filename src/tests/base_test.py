@@ -450,7 +450,8 @@ class BaseTest:
                 log.info("--- TEARDOWN --- node controller\n")
                 nodes.destroy_all_nodes()
                 log.info(f"--- TEARDOWN --- deleting iso file from: {cluster_configuration.iso_download_path}\n")
-                Path(cluster_configuration.iso_download_path).unlink(missing_ok=True)
+                if cluster_configuration.iso_download_path:
+                    Path(cluster_configuration.iso_download_path).unlink(missing_ok=True)
                 self.delete_dnsmasq_conf_file(cluster_name=cluster_configuration.cluster_name)
 
     @pytest.fixture
@@ -518,43 +519,87 @@ class BaseTest:
         if cluster_configuration.disk_encryption_mode == consts.DiskEncryptionMode.TANG:
             self._start_tang_server(tang_server, cluster_configuration)
 
-        cluster = Cluster(
-            api_client=api_client,
-            config=cluster_configuration,
-            infra_env_config=infra_env_configuration,
-            nodes=prepare_nodes_network,
-        )
+        def _post_cluster_registered(_cluster):
+            # post cluster registration actions
+            assert consts.Platforms.NONE in api_client.get_cluster_supported_platforms(_cluster.id)
 
-        assert consts.Platforms.NONE in api_client.get_cluster_supported_platforms(cluster.id)
+            if self._does_need_proxy_server(prepare_nodes_network):
+                self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
 
-        if self._does_need_proxy_server(prepare_nodes_network):
-            self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
+            if global_variables.ipxe_boot:
+                infra_env = cluster.generate_infra_env()
+                ipxe_server_controller = ipxe_server(name="ipxe_controller", api_client=_cluster.api_client)
+                ipxe_server_controller.run(infra_env_id=infra_env.id, cluster_name=_cluster.name)
+                cluster_configuration.iso_download_path = utils.get_iso_download_path(
+                    infra_env_configuration.entity_name.get()
+                )
 
-        if global_variables.ipxe_boot:
-            infra_env = cluster.generate_infra_env()
-            ipxe_server_controller = ipxe_server(name="ipxe_controller", api_client=cluster.api_client)
-            ipxe_server_controller.run(infra_env_id=infra_env.id, cluster_name=cluster.name)
-            cluster_configuration.iso_download_path = utils.get_iso_download_path(
-                infra_env_configuration.entity_name.get()
+        def tear_down(cluster_):
+            # tear down cluster support call_back cluster or cluster that registered
+            if isinstance(cluster_, CallbackCluster):
+                cluster_ = cluster_.cluster
+            if self._is_test_failed(request):
+                log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
+                self.collect_test_logs(cluster_, api_client, request, cluster_.nodes)
+
+                if global_variables.test_teardown and hasattr(cluster_, "id"):
+                    if cluster_.is_installing() or cluster_.is_finalizing():
+                        cluster_.cancel_install()
+
+            if global_variables.test_teardown and hasattr(cluster_, "id"):
+                with SuppressAndLog(ApiException):
+                    cluster_.deregister_infraenv()
+
+                with suppress(ApiException):
+                    log.info(f"--- TEARDOWN --- deleting created cluster {cluster_.id}\n")
+                    cluster_.delete()
+
+        def create_register_cluster(
+            _api_client, _cluster_configuration, _infra_env_configuration, _prepare_nodes_network
+        ):
+            return Cluster(
+                api_client=_api_client,
+                config=_cluster_configuration,
+                infra_env_config=_infra_env_configuration,
+                nodes=_prepare_nodes_network,
             )
 
+        class CallbackCluster:
+            """Callback cluster when created initialized cluster object
+            Used as a proxy to clusters params and allow to modify cluster params before registered
+            """
+
+            def __init__(self):
+                self.api_client = api_client
+                self._infra_env_config = infra_env_configuration
+                self._config = cluster_configuration
+                self._nodes = prepare_nodes_network
+                self.cluster = None
+
+            def __call__(self):
+                # Trigger to create and register cluster by calling obj()
+                self.cluster = create_register_cluster(
+                    self.api_client, self._config, self._infra_env_config, self._nodes
+                )
+                _post_cluster_registered(self.cluster)
+                return self.cluster
+
+        def _cluster(callback):
+            """Create cluster object already registered or before registration
+            :param callback:  BaseTest childs will create callback_cluster = True if needs callback
+            """
+            if callback:
+                return CallbackCluster()
+
+            cluster_ = create_register_cluster(
+                api_client, cluster_configuration, infra_env_configuration, prepare_nodes_network
+            )
+            _post_cluster_registered(cluster_)
+            return cluster_
+
+        cluster = _cluster(hasattr(self, "callback_cluster") and self.callback_cluster)
         yield cluster
-
-        if self._is_test_failed(request):
-            log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
-            self.collect_test_logs(cluster, api_client, request, cluster.nodes)
-
-            if global_variables.test_teardown:
-                if cluster.is_installing() or cluster.is_finalizing():
-                    cluster.cancel_install()
-
-        if global_variables.test_teardown:
-            with SuppressAndLog(ApiException):
-                cluster.deregister_infraenv()
-
-            with suppress(ApiException):
-                log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
-                cluster.delete()
+        tear_down(cluster)
 
     @classmethod
     def _start_tang_server(
