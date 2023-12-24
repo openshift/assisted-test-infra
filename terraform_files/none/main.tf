@@ -106,6 +106,7 @@ module "masters" {
   pool           = libvirt_pool.storage_pool.name
   disk_base_name = "${var.cluster_name}-master-${count.index}"
   disk_size      = var.libvirt_master_disk
+  disk_count     = var.master_disk_count
 }
 
 module "workers" {
@@ -132,6 +133,7 @@ module "workers" {
   pool           = libvirt_pool.storage_pool.name
   disk_base_name = "${var.cluster_name}-worker-${count.index}"
   disk_size      = var.libvirt_worker_disk
+  disk_count     = var.worker_disk_count
 }
 
 data "libvirt_network_dns_host_template" "masters" {
