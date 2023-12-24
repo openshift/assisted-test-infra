@@ -7,8 +7,12 @@ set -o pipefail
 set -o errexit
 set -o xtrace
 
-MINIKUBE_DISK_SIZE="${MINIKUBE_DISK_SIZE:-50g}"
-MINIKUBE_RAM_MB="${MINIKUBE_RAM_MB:-8192}"
+export MINIKUBE_DRIVER="${MINIKUBE_DRIVER:-kvm2}"
+export MINIKUBE_CPUS="${MINIKUBE_CPUS:-4}"
+export MINIKUBE_MEMORY="${MINIKUBE_MEMORY:-8192}"
+export MINIKUBE_DISK_SIZE="${MINIKUBE_DISK_SIZE:-50g}"
+export MINIKUBE_REGISTRY="${MINIKUBE_REGISTRY:-quay.io/libpod/registry:2.8}"
+
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
 __dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -29,7 +33,7 @@ function _init_minikube() {
     for i in {1..5}
     do
         minikube delete
-        minikube start --driver=kvm2 --memory="${MINIKUBE_RAM_MB}" --cpus=4 --force --wait-timeout=15m0s --disk-size="${MINIKUBE_DISK_SIZE}" || true
+        minikube start --force --wait-timeout=15m0s  || true
 
         if minikube status ; then
             break
@@ -40,7 +44,7 @@ function _init_minikube() {
     done
 
     minikube status
-    minikube addons enable registry --images="Registry=quay.io/libpod/registry:2.8"
+    minikube addons enable registry --images="Registry=${MINIKUBE_REGISTRY}"
     minikube update-context
     minikube tunnel --cleanup &> /dev/null &
 }

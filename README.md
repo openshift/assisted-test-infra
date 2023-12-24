@@ -96,7 +96,15 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `DEPLOY_TARGET`               | Specifies where assisted-service will be deployed. Defaults to "minikube". Other options are "onprem" for installing as a podman pod and "kind". |
 | `KUBECONFIG`                  | kubeconfig file path, default: <home>/.kube/config |
 | `SERVICE_NAME`                | assisted-service target service name, default: assisted-service |
-
+### Minikube configuration
+|   |   |
+|---|---|
+| `MINIKUBE_DRIVER`| set minikube driver, default = kvm2 | 
+| `MINIKUBE_CPUS`| set amount of cpus, default = 4|
+| `MINIKUBE_MEMORY`| set amount of memory, default = 8G|
+| `MINIKUBE_DISK_SIZE`| set disk size, default = 50G |
+| `MINIKUBE_HOME`| set default location for minikube, default = ~/.minikube |
+| `MINIKUBE_REGISTRY`| set registry image, default = "quay.io/libpod/registry:2.8" | 
 ### Cluster configmap
 
 |     |     |
