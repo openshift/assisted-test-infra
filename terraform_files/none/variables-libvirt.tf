@@ -137,6 +137,17 @@ variable "libvirt_storage_pool_path" {
   description = "storage pool path"
 }
 
+variable "master_disk_count" {
+  type        = number
+  description = "Number of master disks."
+  default     = "1"
+}
+
+variable "worker_disk_count" {
+  type        = number
+  description = "Number of worker disks."
+  default     = "1"
+}
 
 variable "libvirt_worker_disk" {
   type        = string
