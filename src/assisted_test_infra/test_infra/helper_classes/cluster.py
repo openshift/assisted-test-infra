@@ -439,6 +439,11 @@ class Cluster(BaseCluster):
         self.update_config(base_dns_domain=base_dns_domain)
         self.api_client.update_cluster(self.id, {"base_dns_domain": base_dns_domain})
 
+    def set_ingress_and_api_vips(self, api_vip: str, ingress_vip: str):
+        log.info(f"Setting API VIP address:{api_vip} and ingress VIP address:{ingress_vip} for cluster: {self.id}")
+        vips = {"api_vips": [{"ip": f"{api_vip}"}], "ingress_vips": [{"ip": f"{ingress_vip}"}]}
+        self.api_client.update_cluster(self.id, vips)
+
     def set_advanced_networking(
         self,
         vip_dhcp_allocation: Optional[bool] = None,
