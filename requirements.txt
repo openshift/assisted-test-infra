@@ -1,7 +1,7 @@
 debugpy==1.8.0
 dnspython==2.4.2
 filelock==3.13.1
-frozendict==2.3.10
+frozendict==2.4.0
 ipdb==0.13.13
 ipython==8.19.0
 jedi==0.19.1
@@ -10,14 +10,14 @@ junit-report==0.2.7
 kubernetes==28.1.0
 libvirt-python==9.10.0
 munch==4.0.0
-netaddr==0.9.0
+netaddr==0.10.0
 netifaces==0.11.0
 openshift-client==1.0.19
 paramiko==3.4.0
 pre-commit==3.6.0
 pycharm_remote_debugger==0.1.16
 pytest-xdist==3.5.0
-pytest==7.4.3
+pytest==7.4.4
 python-dateutil==2.8.2
 python-hcl2==4.3.2
 python-terraform==0.10.1
