@@ -73,6 +73,22 @@ class ColorizingStreamHandler(logging.StreamHandler):
             self.handleError(record)
 
 
+def add_log_record(test_id):
+    # Adding log record for testcase id
+    _former_log_record_factory = logging.getLogRecordFactory()
+
+    def log_record_uuid_injector(*args, **kwargs):
+        record = _former_log_record_factory(*args, **kwargs)
+        record.test_id = test_id
+        return record
+
+    logging.setLogRecordFactory(log_record_uuid_injector)
+
+
+# set test_id record to "" empty by default
+add_log_record("")
+
+
 def get_logging_level():
     level = os.environ.get("LOGGING_LEVEL", "")
     return logging.getLevelName(level.upper()) if level else logging.DEBUG
@@ -84,7 +100,9 @@ logging.getLogger("asyncio").setLevel(logging.ERROR)
 
 
 def add_log_file_handler(logger: logging.Logger, filename: str) -> logging.FileHandler:
-    fmt = SensitiveFormatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d:%(process)d - %(message)s")
+    fmt = SensitiveFormatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(test_id)s:%(thread)d:%(process)d - %(message)s"
+    )
     fh = logging.FileHandler(filename)
     fh.setFormatter(fmt)
     logger.addHandler(fh)

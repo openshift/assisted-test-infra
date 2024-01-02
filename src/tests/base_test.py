@@ -43,7 +43,7 @@ from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Clust
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
-from service_client import InventoryClient, SuppressAndLog, log
+from service_client import InventoryClient, SuppressAndLog, add_log_record, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, OciConfig, VSphereConfig
 from triggers import get_default_triggers
@@ -351,6 +351,8 @@ class BaseTest:
         def test_something(cluster):
             pass
         """
+        # Add log record when starting cluster test
+        add_log_record(request.node.name)
         yield utils.run_marked_fixture(new_infra_env_configuration, "override_infra_env_configuration", request)
 
     @pytest.fixture
