@@ -2,7 +2,7 @@ variable "devices" {
   description = "Settings for desired devices"
   type = list(
     object({
-      metros               = optional(list(string), ["any"])
+      facilities           = optional(list(string), ["any"])
       hostname             = string
       operating_system     = optional(string, "rocky_8")
       plan                 = string

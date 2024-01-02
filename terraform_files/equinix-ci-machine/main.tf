@@ -11,7 +11,7 @@ resource "equinix_metal_device" "ci_devices" {
 
   hostname         = each.value["hostname"]
   plan             = each.value["plan"]
-  metro            = each.value["metros"]
+  facilities       = each.value["facilities"]
   operating_system = each.value["operating_system"]
   project_id       = each.value["project_id"]
   tags             = each.value["tags"]
