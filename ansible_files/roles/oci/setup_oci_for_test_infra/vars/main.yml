@@ -1,7 +1,6 @@
-oci_ccm_manifests:
-  - oci-ccm-00-namespace.yaml
-  - oci-ccm-01-service-account.yaml
-  - oci-ccm-02-cluster-role.yaml
-  - oci-ccm-03-cluster-role-binding.yaml
-  - oci-ccm-04-cloud-controller-manager-config.yaml
-  - oci-ccm-05-daemon-set.yaml
+# taken from https://github.com/oracle-quickstart/oci-openshift
+oci_manifests:
+  - oci-ccm.yml.j2
+  - oci-csi.yml.j2
+  - machineconfig-ccm.yml.j2
+  - machineconfig-csi.yml.j2
