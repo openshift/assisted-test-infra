@@ -1,6 +1,6 @@
 # taken from https://github.com/oracle-quickstart/oci-openshift
 oci_manifests:
-  - oci-ccm.yml.j2
-  - oci-csi.yml.j2
-  - machineconfig-ccm.yml.j2
-  - machineconfig-csi.yml.j2
+  - oci-ccm.yml
+  - oci-csi.yml
+  - machineconfig-ccm.yml
+  - machineconfig-csi.yml
