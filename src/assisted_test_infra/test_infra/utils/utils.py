@@ -612,3 +612,8 @@ def get_iso_download_path(entity_name: str):
             f"{entity_name}-{consts.env_defaults.DEFAULT_IMAGE_FILENAME}"
         )
     ).strip()
+
+
+def get_major_minor_version(openshift_full_version: str) -> str:
+    semantic_version = semver.VersionInfo.parse(openshift_full_version, optional_minor_and_patch=True)
+    return f"{semantic_version.major}.{semantic_version.minor}"

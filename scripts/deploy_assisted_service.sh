@@ -41,6 +41,7 @@ export REGISTRY_SERVICE_NAMESPACE=kube-system
 export REGISTRY_SERVICE_PORT=80
 export REGISTRY_SERVICE_HOST_PORT=5000
 export ENABLE_HOST_RECLAIM=${RECLAIM_HOSTS:-false}
+export OPENSHIFT_CI=${OPENSHIFT_CI:-false}
 
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" ]]; then
@@ -67,8 +68,10 @@ if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
     fi
 fi
 
-OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
-export OS_IMAGES
+if [ "${OPENSHIFT_CI}" == "true" ]; then
+    OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    export OS_IMAGES
+fi
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     if [ -n "${INSTALLER_IMAGE:-}" ]; then
