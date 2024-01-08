@@ -33,17 +33,17 @@ def get_available_openshift_versions() -> List[str]:
     except RuntimeError:
         return [global_variables.openshift_version]  # if no service found return hard-coded version number
 
-    available_versions = list(openshift_versions.keys())
+    available_versions = set(utils.get_major_minor_version(version) for version in openshift_versions.keys())
     override_version = utils.get_openshift_version(allow_default=False)
 
     if override_version:
         if override_version == consts.OpenshiftVersion.MULTI_VERSION.value:
-            return sorted(available_versions, key=lambda s: list(map(int, s.split("."))))
+            return sorted(list(available_versions), key=lambda s: list(map(int, s.split("."))))
         if override_version in available_versions:
             return [override_version]
         raise ValueError(
             f"Invalid version {override_version}, can't find among versions: "
-            f"{available_versions + [consts.OpenshiftVersion.MULTI_VERSION.value]}"
+            f"{list(available_versions) + [consts.OpenshiftVersion.MULTI_VERSION.value]}"
         )
 
     return [k for k, v in openshift_versions.items() if "default" in v and v["default"]]
