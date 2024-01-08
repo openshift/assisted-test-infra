@@ -24,6 +24,7 @@ from typing import List, Tuple, Union
 import filelock
 import requests
 import semver
+import waiting
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -560,6 +561,37 @@ def get_assisted_controller_status(kubeconfig):
     return response.stdout
 
 
+def retry_success(repeat, sleep_between=30):
+    def retry_func(func):
+        def inner(*args, **kwargs):
+            start = 1
+            while start <= repeat:
+                log.info(f"retry_success decorator call func {func.__name__} {start} time")
+                res = func(*args, **kwargs)
+                if res:
+                    return res
+                else:
+                    start += 1
+                    time.sleep(sleep_between)
+            return ""
+
+        return inner
+
+    return retry_func
+
+
+@retry_success(5)
+def get_assisted_controller_log(kubeconfig: str, log_resource: str) -> str:
+    log.info(f"Getting controller logs {kubeconfig} from {log_resource}")
+    command = f"oc logs --kubeconfig={kubeconfig} --insecure-skip-tls-verify {log_resource} -n assisted-installer "
+    out, err, return_code = run_command(command, shell=True, raise_errors=False)
+    if return_code != 0 or (not out):
+        log.error(f"failed to get controller status: {err}")
+        return ""
+
+    return str(out)
+
+
 def fetch_url(url, timeout=60, max_retries=5):
     """
     Returns the response content for the specified URL.
@@ -617,3 +649,66 @@ def get_iso_download_path(entity_name: str):
 def get_major_minor_version(openshift_full_version: str) -> str:
     semantic_version = semver.VersionInfo.parse(openshift_full_version, optional_minor_and_patch=True)
     return f"{semantic_version.major}.{semantic_version.minor}"
+
+
+def waiter_decorator(func):
+    """decorate cluster waiters
+    When waiter called from cluster timeout exception may raise without information
+    Adding information about the timeout from job.batch/assisted-installer-controller,
+    Taking the last error log levels and append to the timeout message object.
+
+    We will be able to download kubeconfig in the next states:
+    installing, finalizing, installed, error, adding-hosts, cancelled, installing-pending-user-action
+
+    Sometimes logs from job.batch/assisted-installer-controller may return empty or failed when:
+    - In case pod/assisted-installer-controller-zzz in pending status (~10 minutes after installing phase)
+    - In case api vip address not accessible.
+
+    Current code will retry_success 3 times log assisted-installer-controller.
+    The code will ignore failures when trying to get assisted-installer-controller logs  and return
+    the timeout exception with pre-configured message
+    """
+
+    def update_kube_config(cluster_object):
+        # download kubeconfig and update /etc/hosts with api-vip host ip
+        try:
+            cluster_object.download_kubeconfig()
+            config_etc_hosts(
+                cluster_name=cluster_object.name,
+                base_dns_domain=cluster_object.get_details().base_dns_domain,
+                api_vip=cluster_object.get_details().api_vips[0].ip,
+            )
+            return True
+        except Exception:
+            log.info(f"Unable to download kubeconfig from cluster {cluster_object.name} - ignored")
+            return False
+
+    def filter_log_by(output, filter_by, repeat_count=2):
+        if output:
+            lines = output.splitlines()
+            reverse_list = [line + "\n" for line in lines[::-1] if filter_by in line]
+            str_represent = map(str, reverse_list[:repeat_count])
+            str_represent = "\n".join(str_represent)
+            log.info(f"assister-installer-controller filter: {str_represent}")
+            return str_represent
+        log.info("assister-installer-controller filter returned empty")
+        return ""
+
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except waiting.exceptions.TimeoutExpired as time_expired:
+            # Check if self from function is Cluster object (isinstanceof is better)
+            # to prevent cycle loops
+            if args and args[0].__class__.__name__ in ["Cluster", "Day2Cluster"]:
+                # if self from func method is type cluster( waiters from cluster class)
+                cluster_object = args[0]
+                if update_kube_config(cluster_object):
+                    res = get_assisted_controller_log(
+                        cluster_object.kubeconfig_path, "job.batch/assisted-installer-controller"
+                    )
+                    time_expired._what += "\n" + filter_log_by(res, filter_by="error=")
+
+            raise
+
+    return inner
