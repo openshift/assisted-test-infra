@@ -934,8 +934,8 @@ class Cluster(BaseCluster):
     def list_custom_manifests(self) -> models.ListManifests:
         return self.api_client.list_custom_manifests(self.id)
 
-    def delete_custom_manifest(self, filename: str = None) -> None:
-        self.api_client.delete_custom_manifest(self.id, filename)
+    def delete_custom_manifest(self, filename: str = None, folder: str = None) -> None:
+        self.api_client.delete_custom_manifest(self.id, filename, folder)
 
     @JunitTestCase()
     def prepare_for_installation(self, **kwargs):
