@@ -575,5 +575,9 @@ class InventoryClient(object):
     def list_custom_manifests(self, cluster_id: str) -> models.ListManifests:
         return self.manifest.v2_list_cluster_manifests(cluster_id=cluster_id)
 
-    def delete_custom_manifest(self, cluster_id: str, file_name: str) -> None:
-        self.manifest.v2_delete_cluster_manifest(cluster_id=cluster_id, file_name=file_name)
+    def delete_custom_manifest(self, cluster_id: str, file_name: str, folder: str) -> None:
+        if folder:
+            self.manifest.v2_delete_cluster_manifest(cluster_id=cluster_id, file_name=file_name, folder=folder)
+        else:
+            # if folder is None, use default
+            self.manifest.v2_delete_cluster_manifest(cluster_id=cluster_id, file_name=file_name)
