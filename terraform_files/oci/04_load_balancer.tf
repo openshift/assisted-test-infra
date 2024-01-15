@@ -39,10 +39,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
   }
 
   dynamic "backends" {
-    for_each = oci_core_instance.master
+    for_each = oci_core_vnic.master_vnic
     content {
       port      = 6443
-      target_id = backends.value["id"]
+      ip_address = backends.value["private_ip_address"]
     }
   }
 
@@ -65,10 +65,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
   }
 
   dynamic "backends" {
-    for_each = oci_core_instance.master
+    for_each = oci_core_vnic.master_vnic
     content {
       port      = 22623
-      target_id = backends.value["id"]
+      ip_address = backends.value["private_ip_address"]
     }
   }
 
@@ -90,10 +90,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
 
   dynamic "backends" {
     # for SNO and compact clusters, attach the masters to the HTTPS backend
-    for_each = var.workers_count > 0 ? oci_core_instance.worker : oci_core_instance.master
+    for_each = var.workers_count > 0 ? oci_core_vnic.worker_vnic : oci_core_vnic.master_vnic
     content {
       port      = 443
-      target_id = backends.value["id"]
+      ip_address = backends.value["private_ip_address"]
     }
   }
 
@@ -115,10 +115,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
 
   dynamic "backends" {
     # for SNO and compact clusters, attach the masters to the HTTP backend
-    for_each = var.workers_count > 0 ? oci_core_instance.worker : oci_core_instance.master
+    for_each = var.workers_count > 0 ? oci_core_vnic.worker_vnic : oci_core_vnic.master_vnic
     content {
       port      = 80
-      target_id = backends.value["id"]
+      ip_address = backends.value["private_ip_address"]
     }
   }
 

@@ -50,7 +50,7 @@ resource "oci_core_instance" "master" {
   }
 
   source_details {
-    source_id               = oci_core_image.discovery_image.id
+    source_id               = "ocid1.image.oc1.us-sanjose-1.aaaaaaaaoueh3ekhx237gw53ftzmcufqceudl6qvgrieyei5fzmxe5n7x56a"
     source_type             = "image"
     boot_volume_size_in_gbs = var.master_disk_size_gib
     boot_volume_vpus_per_gb = 20
@@ -61,24 +61,21 @@ resource "oci_core_instance" "master" {
 
   create_vnic_details {
     assign_public_ip          = false
-    assign_private_dns_record = true
-    hostname_label            = "${var.cluster_name}-master-${count.index}"
+    assign_private_dns_record = false
     subnet_id                 = var.oci_private_subnet_oicd
-    nsg_ids = concat(
-      [
-        oci_core_network_security_group.nsg_cluster.id,
-        oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
-        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
-      ],
-      var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
-    )
   }
 
   defined_tags = {
     "${var.cluster_name}.instance-role" = "master"
   }
+    
+  extended_metadata = {
+    ignition = var.discovery_ignition_file ? file(var.discovery_ignition_file) : null 
+  }
 
   preserve_boot_volume = false
+
+  state = var.instance_state
 
   # ensure the custom image was updated before creating these instances
   depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
@@ -104,7 +101,7 @@ resource "oci_core_instance" "worker" {
   }
 
   source_details {
-    source_id               = oci_core_image.discovery_image.id
+    source_id               = "ocid1.image.oc1.us-sanjose-1.aaaaaaaaoueh3ekhx237gw53ftzmcufqceudl6qvgrieyei5fzmxe5n7x56a"
     source_type             = "image"
     boot_volume_size_in_gbs = var.worker_disk_size_gib
     boot_volume_vpus_per_gb = 20
@@ -115,24 +112,21 @@ resource "oci_core_instance" "worker" {
 
   create_vnic_details {
     assign_public_ip          = false
-    assign_private_dns_record = true
-    hostname_label            = "${var.cluster_name}-worker-${count.index}"
+    assign_private_dns_record = false
     subnet_id                 = var.oci_private_subnet_oicd
-    nsg_ids = concat(
-      [
-        oci_core_network_security_group.nsg_cluster.id,
-        oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
-        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
-      ],
-      var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
-    )
   }
-
+  
   defined_tags = {
     "${var.cluster_name}.instance-role" = "worker"
   }
 
+    extended_metadata = {
+    ignition = var.discovery_ignition_file ? file(var.discovery_ignition_file) : null 
+  }
+
   preserve_boot_volume = false
+
+  state = var.instance_state
 
   # ensure the custom image was updated before creating these instances
   depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
@@ -157,4 +151,61 @@ resource "oci_identity_policy" "master_nodes" {
     "Allow dynamic-group ${oci_identity_dynamic_group.master_nodes.name} to use virtual-network-family in compartment id ${var.oci_compartment_oicd}",
     "Allow dynamic-group ${oci_identity_dynamic_group.master_nodes.name} to manage load-balancers in compartment id ${var.oci_compartment_oicd}",
   ]
+}
+
+resource "oci_core_vnic_attachment" "master_vnic_attachment" {
+  count = var.masters_count
+
+    #Required
+    create_vnic_details {
+      assign_public_ip          = false
+      assign_private_dns_record = true
+      hostname_label            = "${var.cluster_name}-master-${count.index}"
+      subnet_id                 = var.oci_private_subnet_oicd
+      nsg_ids = concat(
+        [
+          oci_core_network_security_group.nsg_cluster.id,
+          oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
+          oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
+        ],
+        var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
+      )
+    }
+    instance_id = oci_core_instance.master[count.index]
+
+    display_name = "${var.cluster_name}-master-${count.index}-vnic"
+}
+
+resource "oci_core_vnic_attachment" "worker_vnic_attachment" {
+  count = var.masters_count
+
+    #Required
+    create_vnic_details {
+      assign_public_ip          = false
+      assign_private_dns_record = true
+      hostname_label            = "${var.cluster_name}-worker-${count.index}"
+      subnet_id                 = var.oci_private_subnet_oicd
+      nsg_ids = concat(
+        [
+          oci_core_network_security_group.nsg_cluster.id,
+          oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
+          oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
+        ],
+        var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
+      )
+    }
+    instance_id = oci_core_instance.master[count.index]
+
+    display_name = "${var.cluster_name}-worker-${count.index}-vnic"
+}
+
+
+data "oci_core_vnic" "master_vnic" {
+  count = var.masters_count
+  vnic_id = oci_core_vnic_attachment.master_vnic_attachment[count.index].vnic_id
+}
+
+data "oci_core_vnic" "worker_vnic" {
+  count = var.workers_count
+  vnic_id = oci_core_vnic_attachment.worker_vnic_attachment[count.index].vnic_id
 }

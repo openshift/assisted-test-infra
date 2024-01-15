@@ -151,3 +151,13 @@ variable "worker_disk_size_gib" {
   type        = number
   description = "Amount of disk space allocated to a worker node"
 }
+
+variable "instance_state" {
+  type = string
+default = "STOPPED"
+}
+
+variable "discovery_ignition_file" {
+type = string
+  default = null
+}
