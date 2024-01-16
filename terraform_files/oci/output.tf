@@ -50,28 +50,16 @@ locals {
     }
   }
 
-  nmstate_mac_interface_map_by_instance_id = {
-    for instance_id, vnics in local.vnics_by_instance_id :
-    instance_id => {
-      mac_interface_map = [
-        for vnic in vnics :
-        {
-          mac_address      = vnic.mac_address,
-          logical_nic_name = vnic.is_primary ? "ens3" : "ens4"
-        }
-      ]
-    }
-  }
-
   nmstate_interfaces_by_instance_id = {
     for instance_id, vnics in local.vnics_by_instance_id :
     instance_id => {
       interfaces = [
         for vnic in vnics :
         {
-          name  = vnic.is_primary ? "ens3" : "ens4",
-          type  = "ethernet",
-          state = "up"
+          name        = vnic.is_primary ? "ens3" : "ens4",
+          mac-address = vnic.mac_address,
+          type        = "ethernet",
+          state       = "up"
           ipv4 = {
             enabled = true
             address = [
@@ -91,7 +79,7 @@ locals {
 
   nmstate = [
     for instance_id, interfaces in local.nmstate_interfaces_by_instance_id :
-    merge(interfaces, local.nmstate_mac_interface_map_by_instance_id[instance_id], local.nmstate_dns, local.nmstate_routes)
+    merge(interfaces, local.nmstate_dns, local.nmstate_routes)
   ]
 }
 
