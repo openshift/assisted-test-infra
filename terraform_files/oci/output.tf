@@ -14,7 +14,7 @@ locals {
 
   vnics_by_instance_id = {
     for instance_id, vnic_ids in local.vnic_ids_by_instance_id :
-    instance_id => [ 
+    instance_id => [
       for vnic_id in vnic_ids : local.vnic_by_vnic_id[vnic_id]
     ]
   }

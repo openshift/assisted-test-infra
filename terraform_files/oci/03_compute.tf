@@ -75,6 +75,8 @@ resource "oci_core_instance" "master" {
   preserve_boot_volume = false
 
   state = var.instance_state
+
+  depends_on = [oci_identity_tag_namespace.cluster_tags]
 }
 
 # Create worker instances
@@ -122,6 +124,8 @@ resource "oci_core_instance" "worker" {
   preserve_boot_volume = false
 
   state = var.instance_state
+
+  depends_on = [oci_identity_tag_namespace.cluster_tags]
 }
 
 resource "oci_identity_dynamic_group" "master_nodes" {
