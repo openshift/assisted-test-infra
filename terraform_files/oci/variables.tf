@@ -153,11 +153,11 @@ variable "worker_disk_size_gib" {
 }
 
 variable "instance_state" {
-  type = string
-default = "STOPPED"
+  type    = string
+  default = "RUNNING"
 }
 
 variable "discovery_ignition_file" {
-type = string
+  type    = string
   default = null
 }

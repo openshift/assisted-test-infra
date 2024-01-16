@@ -21,6 +21,9 @@ resource "oci_network_load_balancer_network_load_balancer" "nlb" {
 locals {
   cluster_nlb_public_ip  = one([for ip in oci_network_load_balancer_network_load_balancer.nlb.ip_addresses : ip.ip_address if ip.is_public])
   cluster_nlb_private_ip = one([for ip in oci_network_load_balancer_network_load_balancer.nlb.ip_addresses : ip.ip_address if !ip.is_public])
+
+  master_private_ips = [for vnic in data.oci_core_vnic.master_secondary_vnics : vnic.private_ip_address]
+  worker_private_ips = [for vnic in data.oci_core_vnic.worker_secondary_vnics : vnic.private_ip_address]
 }
 
 # Backendset definitions
@@ -39,10 +42,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
   }
 
   dynamic "backends" {
-    for_each = oci_core_vnic.master_vnic
+    for_each = toset(local.master_private_ips)
     content {
-      port      = 6443
-      ip_address = backends.value["private_ip_address"]
+      port       = 6443
+      ip_address = backends.value
     }
   }
 
@@ -65,10 +68,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
   }
 
   dynamic "backends" {
-    for_each = oci_core_vnic.master_vnic
+    for_each = toset(local.master_private_ips)
     content {
-      port      = 22623
-      ip_address = backends.value["private_ip_address"]
+      port       = 22623
+      ip_address = backends.key
     }
   }
 
@@ -90,10 +93,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
 
   dynamic "backends" {
     # for SNO and compact clusters, attach the masters to the HTTPS backend
-    for_each = var.workers_count > 0 ? oci_core_vnic.worker_vnic : oci_core_vnic.master_vnic
+    for_each = toset(var.workers_count > 0 ? local.worker_private_ips : local.master_private_ips)
     content {
-      port      = 443
-      ip_address = backends.value["private_ip_address"]
+      port       = 443
+      ip_address = backends.key
     }
   }
 
@@ -115,10 +118,10 @@ resource "oci_network_load_balancer_network_load_balancers_backend_sets_unified"
 
   dynamic "backends" {
     # for SNO and compact clusters, attach the masters to the HTTP backend
-    for_each = var.workers_count > 0 ? oci_core_vnic.worker_vnic : oci_core_vnic.master_vnic
+    for_each = toset(var.workers_count > 0 ? local.worker_private_ips : local.master_private_ips)
     content {
-      port      = 80
-      ip_address = backends.value["private_ip_address"]
+      port       = 80
+      ip_address = backends.key
     }
   }
 

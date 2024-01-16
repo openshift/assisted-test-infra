@@ -45,8 +45,7 @@ resource "oci_core_instance" "master" {
   }
 
   platform_config {
-    type                             = var.instance_platform_config_type
-    are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
+    type = var.instance_platform_config_type
   }
 
   source_details {
@@ -68,17 +67,14 @@ resource "oci_core_instance" "master" {
   defined_tags = {
     "${var.cluster_name}.instance-role" = "master"
   }
-    
+
   extended_metadata = {
-    ignition = var.discovery_ignition_file ? file(var.discovery_ignition_file) : null 
+    ignition = var.discovery_ignition_file == null ? null : file(var.discovery_ignition_file)
   }
 
   preserve_boot_volume = false
 
   state = var.instance_state
-
-  # ensure the custom image was updated before creating these instances
-  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 # Create worker instances
@@ -96,8 +92,7 @@ resource "oci_core_instance" "worker" {
   }
 
   platform_config {
-    type                             = var.instance_platform_config_type
-    are_virtual_instructions_enabled = var.instance_platform_config_virtualization_enabled
+    type = var.instance_platform_config_type
   }
 
   source_details {
@@ -115,21 +110,18 @@ resource "oci_core_instance" "worker" {
     assign_private_dns_record = false
     subnet_id                 = var.oci_private_subnet_oicd
   }
-  
+
   defined_tags = {
     "${var.cluster_name}.instance-role" = "worker"
   }
 
-    extended_metadata = {
-    ignition = var.discovery_ignition_file ? file(var.discovery_ignition_file) : null 
+  extended_metadata = {
+    ignition = var.discovery_ignition_file == null ? null : file(var.discovery_ignition_file)
   }
 
   preserve_boot_volume = false
 
   state = var.instance_state
-
-  # ensure the custom image was updated before creating these instances
-  depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
 resource "oci_identity_dynamic_group" "master_nodes" {
@@ -153,59 +145,60 @@ resource "oci_identity_policy" "master_nodes" {
   ]
 }
 
-resource "oci_core_vnic_attachment" "master_vnic_attachment" {
-  count = var.masters_count
+resource "oci_core_vnic_attachment" "master_vnic_attachments" {
+  count = length(oci_core_instance.master)
 
-    #Required
-    create_vnic_details {
-      assign_public_ip          = false
-      assign_private_dns_record = true
-      hostname_label            = "${var.cluster_name}-master-${count.index}"
-      subnet_id                 = var.oci_private_subnet_oicd
-      nsg_ids = concat(
-        [
-          oci_core_network_security_group.nsg_cluster.id,
-          oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
-          oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
-        ],
-        var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
-      )
-    }
-    instance_id = oci_core_instance.master[count.index]
+  #Required
+  create_vnic_details {
+    assign_public_ip          = false
+    assign_private_dns_record = true
+    hostname_label            = "${var.cluster_name}-master-${count.index}"
+    subnet_id                 = var.oci_private_subnet_oicd
+    nsg_ids = concat(
+      [
+        oci_core_network_security_group.nsg_cluster.id,
+        oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
+        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
+      ],
+      var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
+    )
+  }
+  instance_id = oci_core_instance.master[count.index].id
 
-    display_name = "${var.cluster_name}-master-${count.index}-vnic"
+  display_name = "${var.cluster_name}-master-${count.index}-vnic"
 }
 
-resource "oci_core_vnic_attachment" "worker_vnic_attachment" {
-  count = var.masters_count
+resource "oci_core_vnic_attachment" "worker_vnic_attachments" {
+  count = length(oci_core_instance.worker)
 
-    #Required
-    create_vnic_details {
-      assign_public_ip          = false
-      assign_private_dns_record = true
-      hostname_label            = "${var.cluster_name}-worker-${count.index}"
-      subnet_id                 = var.oci_private_subnet_oicd
-      nsg_ids = concat(
-        [
-          oci_core_network_security_group.nsg_cluster.id,
-          oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
-          oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
-        ],
-        var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
-      )
-    }
-    instance_id = oci_core_instance.master[count.index]
+  #Required
+  create_vnic_details {
+    assign_public_ip          = false
+    assign_private_dns_record = true
+    hostname_label            = "${var.cluster_name}-worker-${count.index}"
+    subnet_id                 = var.oci_private_subnet_oicd
+    nsg_ids = concat(
+      [
+        oci_core_network_security_group.nsg_cluster.id,
+        oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
+        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
+      ],
+      var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
+    )
+  }
+  instance_id = oci_core_instance.worker[count.index].id
 
-    display_name = "${var.cluster_name}-worker-${count.index}-vnic"
+  display_name = "${var.cluster_name}-worker-${count.index}-vnic"
 }
 
+data "oci_core_vnic" "master_secondary_vnics" {
+  count = length(oci_core_vnic_attachment.master_vnic_attachments)
 
-data "oci_core_vnic" "master_vnic" {
-  count = var.masters_count
-  vnic_id = oci_core_vnic_attachment.master_vnic_attachment[count.index].vnic_id
+  vnic_id = oci_core_vnic_attachment.master_vnic_attachments[count.index].vnic_id
 }
 
-data "oci_core_vnic" "worker_vnic" {
-  count = var.workers_count
-  vnic_id = oci_core_vnic_attachment.worker_vnic_attachment[count.index].vnic_id
+data "oci_core_vnic" "worker_secondary_vnics" {
+  count = length(oci_core_vnic_attachment.worker_vnic_attachments)
+
+  vnic_id = oci_core_vnic_attachment.worker_vnic_attachments[count.index].vnic_id
 }
