@@ -104,7 +104,7 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `MINIKUBE_MEMORY`| set amount of memory, default = 8G|
 | `MINIKUBE_DISK_SIZE`| set disk size, default = 50G |
 | `MINIKUBE_HOME`| set default location for minikube, default = ~/.minikube |
-| `MINIKUBE_REGISTRY`| set registry image, default = "quay.io/libpod/registry:2.8" | 
+| `MINIKUBE_REGISTRY_IMAGE`| set registry image, default = "quay.io/libpod/registry:2.8" | 
 ### Cluster configmap
 
 |     |     |

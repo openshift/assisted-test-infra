@@ -11,7 +11,7 @@ export MINIKUBE_DRIVER="${MINIKUBE_DRIVER:-kvm2}"
 export MINIKUBE_CPUS="${MINIKUBE_CPUS:-4}"
 export MINIKUBE_MEMORY="${MINIKUBE_MEMORY:-8192}"
 export MINIKUBE_DISK_SIZE="${MINIKUBE_DISK_SIZE:-50g}"
-export MINIKUBE_REGISTRY="${MINIKUBE_REGISTRY:-quay.io/libpod/registry:2.8}"
+export MINIKUBE_REGISTRY_IMAGE="${MINIKUBE_REGISTRY_IMAGE:-quay.io/libpod/registry:2.8}"
 
 export SUDO=$(if [ -x "$(command -v sudo)" ]; then echo "sudo"; else echo ""; fi)
 
@@ -44,7 +44,7 @@ function _init_minikube() {
     done
 
     minikube status
-    minikube addons enable registry --images="Registry=${MINIKUBE_REGISTRY}"
+    minikube addons enable registry --images="Registry=${MINIKUBE_REGISTRY_IMAGE}"
     minikube update-context
     minikube tunnel --cleanup &> /dev/null &
 }
