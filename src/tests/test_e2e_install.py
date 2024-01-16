@@ -23,7 +23,7 @@ class TestInstall(BaseTest):
     @JunitTestSuite()
     @pytest.mark.parametrize("network_type", [consts.NetworkType.OpenShiftSDN, consts.NetworkType.OVNKubernetes])
     def test_networking(self, cluster, network_type):
-        if semver.compare(global_variables.openshift_version, "4.15.0") >= 0:
+        if semver.compare(_get_semver(global_variables.openshift_version), "4.15.0") >= 0:
             raise ValueError(
                 "parametrization of network type not necessary from 4.15.0 and above,"
                 " as the only supported network type is OVN"
@@ -36,3 +36,12 @@ class TestInstall(BaseTest):
     def test_olm_operator(self, cluster, olm_operators):
         cluster.prepare_for_installation()
         cluster.start_install_and_wait_for_installed(fall_on_pending_status=True)
+
+
+def _get_semver(version: str) -> str:
+    """
+    Ensure version to be semver compatible
+    """
+    if version.count(".") > 1:
+        return version
+    return _get_semver(f"{version}.0")
