@@ -7,6 +7,13 @@ locals {
   availability_domains_count = length(data.oci_identity_availability_domains.ads.availability_domains)
 }
 
+resource "oci_core_subnet" "iscsi_subnet" {
+  cidr_block                 = "10.0.2.0/24"
+  compartment_id             = var.oci_compartment_oicd
+  vcn_id                     = var.oci_vcn_oicd
+  prohibit_public_ip_on_vnic = true
+}
+
 # Define tag namespace. Use to mark instance roles and configure instance policy
 resource "oci_identity_tag_namespace" "cluster_tags" {
   compartment_id = var.oci_compartment_oicd
@@ -61,7 +68,7 @@ resource "oci_core_instance" "master" {
   create_vnic_details {
     assign_public_ip          = false
     assign_private_dns_record = false
-    subnet_id                 = var.oci_private_subnet_oicd
+    subnet_id                 = oci_core_subnet.iscsi_subnet.id
   }
 
   defined_tags = {
@@ -110,7 +117,7 @@ resource "oci_core_instance" "worker" {
   create_vnic_details {
     assign_public_ip          = false
     assign_private_dns_record = false
-    subnet_id                 = var.oci_private_subnet_oicd
+    subnet_id                 = oci_core_subnet.iscsi_subnet.id
   }
 
   defined_tags = {
