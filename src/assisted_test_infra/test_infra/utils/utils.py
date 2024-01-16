@@ -138,11 +138,14 @@ def are_host_progress_in_stage(hosts, stages, nodes_count=1):
 def is_cluster_in_status(client, cluster_id, statuses):
     log.info("Is cluster %s in status %s", cluster_id, statuses)
     try:
-        cluster_status = client.cluster_get(cluster_id).status
-        if cluster_status in statuses:
+        cluster_response = client.cluster_get(cluster_id)
+        if cluster_response.status in statuses:
             return True
         else:
-            log.info(f"Cluster not yet in its required status. " f"Current status: {cluster_status}")
+            log.info(
+                f"Cluster not yet in its required status. "
+                f"Current status: {cluster_response.status}\n Info message: {cluster_response.status_info}"
+            )
             return False
     except BaseException:
         log.exception("Failed to get cluster %s info", cluster_id)
