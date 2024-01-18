@@ -3,3 +3,7 @@ storage_pool
 build/
 assisted-service/
 .git/
+
+**/*.md
+LICENSE    
+OWNERS
