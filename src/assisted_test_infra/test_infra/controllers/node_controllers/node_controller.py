@@ -165,6 +165,10 @@ class NodeController(ABC):
         pass
 
     @abstractmethod
+    def set_disk_tune(self, node_name: str, disk_name: str, **kwargs: dict) -> None:
+        pass
+
+    @abstractmethod
     def get_ram_kib(self, node_name: str) -> int:
         pass
 

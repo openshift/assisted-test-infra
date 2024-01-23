@@ -592,6 +592,42 @@ class LibvirtController(NodeController, ABC):
         dom.setVcpusFlags(core_count)
         log.info(f"Successfully set vcpus to {core_count} for node: {node_name}")
 
+    def set_disk_tune(self, node_name: str, disk_name: str, **kwargs: dict) -> None:
+        """Set disk speed rate bytes per second and iops per second. by default all zero
+        xml additional xml:
+        <iotune>
+        <total_bytes_sec>1500</total_bytes_sec>
+        <total_iops_sec>1500</total_iops_sec>
+        </iotune>
+
+        list of supported kwargs:
+        {'read_bytes_sec': 0,
+        'read_bytes_sec_max': 0,
+        'read_bytes_sec_max_length': 0,
+        'read_iops_sec': 0,
+        'read_iops_sec_max': 0,
+        'read_iops_sec_max_length': 0,
+        'size_iops_sec': 0,
+        'total_bytes_sec': 0,
+        'total_bytes_sec_max': 0,
+        'total_bytes_sec_max_length': 0,
+        'total_iops_sec': 0,
+        'total_iops_sec_max': 0,
+        'total_iops_sec_max_length': 0,
+        'write_bytes_sec': 0,
+        'write_bytes_sec_max': 0,
+        'write_bytes_sec_max_length': 0,
+        'write_iops_sec': 0,
+        'write_iops_sec_max': 0,
+        'write_iops_sec_max_length': 0}
+        :param node_name:
+        :param disk_name: disk name as sda ,vdb
+        :param kwargs: {"total_bytes_sec": 0, total_iops_sec:0}
+        :return:
+        """
+        domain = self.libvirt_connection.lookupByName(node_name)
+        domain.setBlockIoTune(disk_name, kwargs)
+
     def get_ram_kib(self, node_name):
         xml = self._get_xml(node_name)
         memory_element = xml.getElementsByTagName("currentMemory")[0]

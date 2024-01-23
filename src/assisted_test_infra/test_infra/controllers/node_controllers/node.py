@@ -160,6 +160,9 @@ class Node:
     def set_cpu_cores(self, core_count):
         self.node_controller.set_cpu_cores(self.name, core_count)
 
+    def set_disk_tune(self, disk_name: str, **kwargs: dict) -> None:
+        self.node_controller.set_disk_tune(self.name, disk_name, **kwargs)
+
     def reset_cpu_cores(self):
         self.set_cpu_cores(self.original_vcpu_count)
 

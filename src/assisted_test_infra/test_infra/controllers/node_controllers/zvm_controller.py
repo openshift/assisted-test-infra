@@ -161,6 +161,9 @@ class ZVMController(NodeController, ABC):
     def set_cpu_cores(self, node_name: str, core_count: int) -> None:
         pass
 
+    def set_disk_tune(self, node_name: str, disk_name: str, **kwargs: dict) -> None:
+        pass
+
     def get_ram_kib(self, node_name: str) -> int:
         return -1
 
