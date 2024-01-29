@@ -105,12 +105,12 @@ class TerraformController(LibvirtController):
             "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE),
-            "master_boot_devices": master_boot_devices
-            if master_boot_devices is not None
-            else consts.DEFAULT_BOOT_DEVICES,
-            "worker_boot_devices": worker_boot_devices
-            if worker_boot_devices is not None
-            else consts.DEFAULT_BOOT_DEVICES,
+            "master_boot_devices": (
+                master_boot_devices if master_boot_devices is not None else consts.DEFAULT_BOOT_DEVICES
+            ),
+            "worker_boot_devices": (
+                worker_boot_devices if worker_boot_devices is not None else consts.DEFAULT_BOOT_DEVICES
+            ),
             **self._get_disk_encryption_appliance(),
         }
 
