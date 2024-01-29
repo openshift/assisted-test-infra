@@ -42,7 +42,9 @@ class BaseNodesConfig(BaseConfig, ABC):
     base_cluster_domain: Optional[str] = None
 
     network_mtu: int = None
-    tf_platform: str = None  # todo - make all tf dependent platforms (e.g. vsphere, nutanix) inherit from BaseTerraformConfig  # noqa E501
+    tf_platform: str = (
+        None  # todo - make all tf dependent platforms (e.g. vsphere, nutanix) inherit from BaseTerraformConfig  # noqa E501
+    )
 
     @property
     def nodes_count(self):
