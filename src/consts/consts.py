@@ -304,6 +304,8 @@ class Platforms:
     OCI = "oci"
     EXTERNAL = "external"
 
+class ExternalPlatformNames:
+    OCI = "oci"
 
 class KubeAPIPlatforms:
     """
