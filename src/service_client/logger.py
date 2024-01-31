@@ -5,6 +5,7 @@ import re
 import sys
 import traceback
 from contextlib import suppress
+from enum import Enum
 from types import TracebackType
 from typing import Type
 
@@ -33,7 +34,7 @@ class SensitiveFormatter(logging.Formatter):
         return self._filter(original)
 
 
-class ColorizingStreamHandler(logging.StreamHandler):
+class Color(Enum):
     BLUE = "\033[0;34m"
     LIGHT_RED = "\033[1;31m"
     LIGHT_YELLOW = "\033[1;33m"
@@ -43,14 +44,31 @@ class ColorizingStreamHandler(logging.StreamHandler):
     WHITE = "\033[1;37m"
     RESET = "\033[0m"
 
+
+ColorLevel = {
+    logging.DEBUG: Color.BLUE.value,
+    logging.INFO: Color.RESET.value,
+    logging.WARNING: Color.LIGHT_YELLOW.value,
+    logging.ERROR: Color.LIGHT_RED.value,
+    logging.CRITICAL: Color.LIGHT_PURPLE.value,
+}
+
+
+class ColorizingFileHandler(logging.FileHandler):
+    def emit(self, record):
+        if self.stream is None:
+            if self.mode != "w" or not self._closed:
+                self.stream = self._open()
+        if self.stream:
+            ColorizingStreamHandler.emit(self, record)
+
+    @property
+    def is_tty(self):
+        return True
+
+
+class ColorizingStreamHandler(logging.StreamHandler):
     def __init__(self, *args, **kwargs):
-        self._colors = {
-            logging.DEBUG: self.BLUE,
-            logging.INFO: self.RESET,
-            logging.WARNING: self.LIGHT_YELLOW,
-            logging.ERROR: self.LIGHT_RED,
-            logging.CRITICAL: self.LIGHT_PURPLE,
-        }
         super().__init__(*args, **kwargs)
 
     @property
@@ -65,7 +83,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
             if not self.is_tty:
                 stream.write(message)
             else:
-                message = self._colors[record.levelno] + message + self.RESET
+                message = ColorLevel[record.levelno] + message + Color.RESET.value
                 stream.write(message)
             stream.write(getattr(self, "terminator", "\n"))
             self.flush()
@@ -103,7 +121,7 @@ def add_log_file_handler(logger: logging.Logger, filename: str) -> logging.FileH
     fmt = SensitiveFormatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(test_id)s:%(thread)d:%(process)d - %(message)s"
     )
-    fh = logging.FileHandler(filename)
+    fh = ColorizingFileHandler(filename)
     fh.setFormatter(fmt)
     logger.addHandler(fh)
     return fh
