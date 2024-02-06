@@ -4,7 +4,7 @@ import os
 import tempfile
 from typing import Callable, List, Optional
 
-import openshift as oc
+import openshift_client as oc
 import pytest
 import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
