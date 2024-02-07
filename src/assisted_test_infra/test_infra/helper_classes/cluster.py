@@ -897,11 +897,11 @@ class Cluster(BaseCluster):
 
     def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
         super(Cluster, self).prepare_nodes(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
-        platform_type = self.get_details().platform.type
-        assert (
-            platform_type in self.api_client.get_cluster_supported_platforms(self.id)
-            or platform_type == consts.Platforms.OCI
-        )  # Patch for SNO OCI - currently not supported in the service
+        platform = self.get_details().platform
+        assert platform.type in self.api_client.get_cluster_supported_platforms(self.id) or (
+            platform.type == consts.Platforms.EXTERNAL
+            and platform.external.platform_name == consts.ExternalPlatformNames.OCI
+        )  # required to test against stage/production  # Patch for SNO OCI - currently not supported in the service
         self.set_hostnames_and_roles()
         if self._high_availability_mode != consts.HighAvailabilityMode.NONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))

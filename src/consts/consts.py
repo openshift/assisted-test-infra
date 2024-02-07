@@ -305,6 +305,10 @@ class Platforms:
     EXTERNAL = "external"
 
 
+class ExternalPlatformNames:
+    OCI = "oci"
+
+
 class KubeAPIPlatforms:
     """
     Platform types as defined in kube-api (AgentClusterInstall)
