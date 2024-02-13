@@ -391,7 +391,7 @@ class LibvirtController(NodeController, ABC):
         log.info(f"Destroy network: {network.name()}")
         network.destroy()
 
-    def add_interface(self, node_name, network_name, target_interface):
+    def add_interface(self, node_name, network_name, target_interface, model="virtio"):
         """
         Create an interface using given network name, return created interface's mac address.
         Note: Do not use the same network for different tests
@@ -401,7 +401,11 @@ class LibvirtController(NodeController, ABC):
         mac_addresses = []
         for lease in net_leases:
             mac_addresses.append(lease["mac"])
-        command = f"virsh attach-interface {node_name} network {network_name} --target {target_interface} --persistent"
+        command = (
+            f"virsh attach-interface {node_name} network {network_name} --target {target_interface}"
+            f" --persistent --model {model}"
+        )
+
         utils.run_command(command)
         try:
             waiting.wait(
