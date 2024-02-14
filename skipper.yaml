@@ -11,8 +11,6 @@ volumes:
   - /usr/bin/kubectl:/usr/bin/kubectl
   - /usr/local/bin/kubectl:/usr/local/bin/kubectl
   - $MINIKUBE_HOME:$MINIKUBE_HOME
-  - $(which iptables):/usr/sbin/iptables
-  - $(which ip6tables):/usr/sbin/ip6tables
   # config
   - $HOME/.kube/:$HOME/.kube/
   - $HOME/.minikube/:$HOME/.minikube/
