@@ -589,6 +589,7 @@ class Cluster(BaseCluster):
         self,
         host,
         statuses,
+        status_info="",
         nodes_count: int = MINIMUM_NODES_TO_WAIT,
         timeout: int = consts.NODES_REGISTERED_TIMEOUT,
     ):
@@ -597,6 +598,7 @@ class Cluster(BaseCluster):
             cluster_id=self.id,
             host_name=host.get("requested_hostname"),
             statuses=statuses,
+            status_info=status_info,
             nodes_count=nodes_count,
             timeout=timeout,
         )
