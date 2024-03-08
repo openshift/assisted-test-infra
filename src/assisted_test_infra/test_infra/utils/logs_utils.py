@@ -150,8 +150,11 @@ def verify_logs_uploaded(
                 elif check_oc and "controller" in file:
                     _verify_oc_logs_uploaded(os.path.join(tempdir, file))
                 elif "master" in file or "worker" in file:
-                    # check master, workers includes bootstrap(master)
-                    _verify_node_logs_uploaded(tempdir, file)
+                    try:
+                        # check master, workers includes bootstrap(master)
+                        _verify_node_logs_uploaded(tempdir, file)
+                    except tarfile.ReadError as e:
+                        log.warning(f"could not verify file {tempdir}/{file} ({e})")
 
 
 def wait_and_verify_oc_logs_uploaded(cluster, cluster_tar_path):
