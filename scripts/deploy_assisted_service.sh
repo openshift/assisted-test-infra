@@ -42,6 +42,7 @@ export REGISTRY_SERVICE_PORT=80
 export REGISTRY_SERVICE_HOST_PORT=5000
 export ENABLE_HOST_RECLAIM=${RECLAIM_HOSTS:-false}
 export OPENSHIFT_CI=${OPENSHIFT_CI:-false}
+export ENABLE_SKIP_MCO_REBOOT=${ENABLE_SKIP_MCO_REBOOT:-true}
 
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" ]]; then
