@@ -193,7 +193,7 @@ start_load_balancer: stop_load_balancer
 		( test -z "$$id" && echo "Starting load balancer ..." && \
 		$(CONTAINER_COMMAND) run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
 			-v $(HOME)/.test-infra/etc/nginx/conf.d:/etc/nginx/conf.d \
-			quay.io/odepaz/dynamic-load-balancer:latest ) || ! test -z "$$id"; \
+			quay.io/edge-infrastructure/dynamic-load-balancer:latest ) || ! test -z "$$id"; \
 	fi
 
 stop_load_balancer:
