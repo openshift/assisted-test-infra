@@ -42,6 +42,7 @@ ENVS = [
     ("ENABLE_UPGRADE_AGENT", "true"),
     ("ENABLE_HOST_RECLAIM", ""),
     ("ENABLE_SKIP_MCO_REBOOT", ""),
+    ("ENABLE_SOFT_TIMEOUTS", ""),
 ]
 DEFAULT_MASTER_REQUIREMENTS = {
     "cpu_cores": 4,
