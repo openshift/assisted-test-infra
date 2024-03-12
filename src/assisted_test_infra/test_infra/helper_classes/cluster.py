@@ -830,6 +830,7 @@ class Cluster(BaseCluster):
             client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.INSUFFICIENT]
         )
 
+    @utils.waiter_decorator
     def wait_for_hosts_to_install(
         self,
         timeout=consts.CLUSTER_INSTALLATION_TIMEOUT,
@@ -847,6 +848,7 @@ class Cluster(BaseCluster):
             fall_on_pending_status=fall_on_pending_status,
         )
 
+    @utils.waiter_decorator
     def wait_for_operators_to_finish(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT, fall_on_error_status=True):
         operators = self.get_operators()
 
@@ -881,6 +883,7 @@ class Cluster(BaseCluster):
             operators=self.get_operators(), operator_name=operator_name, status=status
         )
 
+    @utils.waiter_decorator
     def wait_for_install(self, timeout=consts.CLUSTER_INSTALLATION_TIMEOUT):
         utils.waiting.wait_till_cluster_is_in_status(
             client=self.api_client,
