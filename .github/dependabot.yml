@@ -24,6 +24,7 @@ updates:
           - "*"
         exclude-patterns:
           - "flake8-bugbear"
+          - "netaddr"
 
   - package-ecosystem: "docker"
     directory: "/"
