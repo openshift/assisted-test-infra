@@ -35,6 +35,7 @@ source "nutanix" "test-infra" {
 
   # Location Configuration
   image_name =  var.image_name
+  force_deregister  = true
 
   # Shutdown Configuration
   shutdown_command = "shutdown -P now"
