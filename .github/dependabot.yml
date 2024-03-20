@@ -11,7 +11,7 @@ updates:
       interval: "weekly"
     assignees:
       - "eliorerz"
-      - "osherdp"
+      - "adriengentil"
     labels:
       - "approved"
       - "lgtm"
