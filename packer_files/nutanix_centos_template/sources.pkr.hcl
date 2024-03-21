@@ -17,7 +17,7 @@ source "nutanix" "test-infra" {
 
   vm_disks {
     image_type = "DISK"
-    disk_size_gb = var.disk_size / 1024
+    disk_size_gb = var.disk_size
   }
 
   vm_nics {
