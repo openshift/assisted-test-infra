@@ -2,7 +2,7 @@ terraform {
   required_providers {
     equinix = {
       source = "equinix/equinix"
-      version = "1.24.0"
+      version = "1.32.0"
     }
   }
 }
@@ -12,7 +12,7 @@ resource "equinix_metal_device" "ci_devices" {
 
   hostname         = each.value["hostname"]
   plan             = each.value["plan"]
-  facilities       = each.value["facilities"]
+  metro            = each.value["metro"]
   operating_system = each.value["operating_system"]
   project_id       = each.value["project_id"]
   tags             = each.value["tags"]
