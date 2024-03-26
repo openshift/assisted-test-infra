@@ -553,3 +553,20 @@ Optional environment variables that may be set for this test
 
 **Notes**:
 * A containerized Python server will be used to host the iPXE scripts for each cluster. This is due to the URL of the iPXE script file hosted in the assisted-service is longer than the character limit allowed in libvirt.
+
+## Test MCE and storage
+
+To test MCE deployed correctly with a storage driver, we should run the following:
+```bash
+export OLM_OPERATORS=mce,odf
+export NUM_WORKERS=3
+export WORKER_MEMORY=50000
+export WORKER_CPU=20
+export TEST_FUNC=test_mce_storage_post
+make setup
+make run
+make deploy_nodes_with_install
+export KUBECONFIG=./build/kubeconfig
+export KUBECONFIG=$(find ${KUBECONFIG} -type f)
+make test_parallel
+```

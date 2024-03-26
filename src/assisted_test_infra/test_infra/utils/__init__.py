@@ -1,4 +1,5 @@
 from .env_var import EnvVar
+from .k8s_utils import wait_for_pod_ready
 from .logs_utils import verify_logs_uploaded
 from .terraform_util import TerraformControllerUtil
 from .utils import *  # TODO - temporary import all old utils
@@ -23,4 +24,5 @@ __all__ = [
     "fetch_url",
     "config_etc_hosts",
     "run_command",
+    "wait_for_pod_ready",
 ]
