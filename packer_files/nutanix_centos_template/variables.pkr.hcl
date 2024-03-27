@@ -43,8 +43,8 @@ variable "image_name" {
 
 variable "disk_size" {
   type = number
-  default = 102400 
-  description = "The VM disk size in MB. default 100G"
+  default = 100
+  description = "The VM disk size in GB. default 100GB"
 }
 
 variable "memory_size" {

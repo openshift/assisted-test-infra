@@ -1,0 +1,10 @@
+chpasswd:
+  list: |
+    root:packer
+  expire: False
+ssh_pwauth: True
+users:
+  - name: root
+    lock_passwd: false
+    ssh_authorized_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIwXUKAPxJm/1Rf500vh9TUusq7DPxrGdK+/DhsfCJEN vsphere@redhat.com"
