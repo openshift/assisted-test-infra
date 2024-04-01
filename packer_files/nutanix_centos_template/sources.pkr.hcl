@@ -18,7 +18,7 @@ source "nutanix" "test-infra" {
 
   vm_disks {
     image_type = "DISK_IMAGE"
-    source_image_uri = "https://dl.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-Base.latest.x86_64.qcow2"
+    source_image_uri = "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20230501.0.x86_64.qcow2"
     disk_size_gb = var.disk_size
   }
 
