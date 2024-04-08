@@ -1,3 +1,5 @@
+ssh_pwauth: True
+disable_root: false
 chpasswd:
   list: |
     root:packer
