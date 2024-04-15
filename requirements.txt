@@ -1,7 +1,7 @@
 debugpy==1.8.1
 dnspython==2.6.1
-filelock==3.13.3
-frozendict==2.4.1
+filelock==3.13.4
+frozendict==2.4.2
 ipdb==0.13.13
 ipython==8.23.0
 jedi==0.19.1
@@ -36,4 +36,4 @@ nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==9.4.0
 jmespath==1.0.1
-oci==2.125.2
+oci==2.125.3
