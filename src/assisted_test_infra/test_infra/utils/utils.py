@@ -622,6 +622,7 @@ def get_major_minor_version(openshift_full_version: str) -> str:
     semantic_version = semver.VersionInfo.parse(openshift_full_version, optional_minor_and_patch=True)
     return f"{semantic_version.major}.{semantic_version.minor}"
 
+
 def get_release_images_path() -> str:
     flavor = os.getenv("IMAGES_FLAVOR")
     if flavor:
