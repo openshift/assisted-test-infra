@@ -61,7 +61,7 @@ BASE_IMAGE_FOLDER = "/tmp/images"
 IMAGE_NAME = "installer-image.iso"
 STORAGE_PATH = "/var/lib/libvirt/openshift-images"
 DEFAULT_CLUSTER_KUBECONFIG_DIR_PATH = "build/kubeconfig"
-RELEASE_IMAGES_PATH = "assisted-service/data/default_release_images.json"
+ASSISTED_SERVICE_DATA_BASE_PATH = "assisted-service/data/"
 
 TF_TEMPLATES_ROOT = "terraform_files"
 TF_NETWORK_POOL_PATH = "/tmp/tf_network_pool.json"

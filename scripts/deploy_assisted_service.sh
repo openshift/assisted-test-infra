@@ -44,7 +44,15 @@ export ENABLE_HOST_RECLAIM=${RECLAIM_HOSTS:-false}
 export OPENSHIFT_CI=${OPENSHIFT_CI:-false}
 export ENABLE_SKIP_MCO_REBOOT=${ENABLE_SKIP_MCO_REBOOT:-true}
 export ENABLE_SOFT_TIMEOUTS=${ENABLE_SOFT_TIMEOUTS:-false}
+export IMAGES_FLAVOR=${IMAGES_FLAVOR:-}
+export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
+export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
+export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
 
+if [ -n "${IMAGES_FLAVOR}" ]; then
+    RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_${IMAGES_FLAVOR}_release_images.json"
+    OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_${IMAGES_FLAVOR}_os_images.json"
+fi
 
 if [[ "${ENABLE_KUBE_API}" == "true" || "${DEPLOY_TARGET}" == "operator" ]]; then
     # Only OS_IMAGES list is required in kube-api flow (assisted-service is using defaults if missing)
@@ -62,7 +70,7 @@ fi
 mkdir -p build
 
 if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
-    RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src ./assisted-service/data/default_release_images.json)
+    RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src "${RELEASE_IMAGES_PATH}")
     export RELEASE_IMAGES
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
@@ -71,7 +79,7 @@ if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
 fi
 
 if [ "${OPENSHIFT_CI}" == "true" ]; then
-    OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src ./assisted-service/data/default_os_images.json)
+    OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src "${OS_IMAGES_PATH}")
     export OS_IMAGES
 fi
 

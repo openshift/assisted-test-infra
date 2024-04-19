@@ -452,13 +452,14 @@ def get_kubeconfig_path(cluster_name: str) -> str:
 
 
 def get_default_openshift_version(client=None) -> str:
+    release_images_path = get_release_images_path()
     if client:
         log.info("Using client to get default openshift version")
         ocp_versions_dict = client.get_openshift_versions()
         versions = [k for k, v in ocp_versions_dict.items() if v.get("default", False)]
-    elif os.path.exists(consts.RELEASE_IMAGES_PATH):
-        log.info(f"Reading {consts.RELEASE_IMAGES_PATH} to get default openshift version")
-        with open(consts.RELEASE_IMAGES_PATH, "r") as f:
+    elif os.path.exists(release_images_path):
+        log.info(f"Reading {release_images_path} to get default openshift version")
+        with open(release_images_path, "r") as f:
             release_images = json.load(f)
             versions = [v.get("openshift_version") for v in release_images if v.get("default", False)]
     else:
@@ -521,7 +522,7 @@ def get_openshift_release_image(allow_default=True):
         # TODO: Support remote client. kube-api client needs to respond supported versions
         ocp_version = get_openshift_version(allow_default=allow_default)
 
-        with open(consts.RELEASE_IMAGES_PATH, "r") as f:
+        with open(get_release_images_path(), "r") as f:
             release_images = json.load(f)
 
         release_image = [
@@ -620,3 +621,11 @@ def get_iso_download_path(entity_name: str):
 def get_major_minor_version(openshift_full_version: str) -> str:
     semantic_version = semver.VersionInfo.parse(openshift_full_version, optional_minor_and_patch=True)
     return f"{semantic_version.major}.{semantic_version.minor}"
+
+
+def get_release_images_path() -> str:
+    flavor = os.getenv("IMAGES_FLAVOR")
+    if flavor:
+        return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_{flavor}_release_images.json"
+
+    return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
