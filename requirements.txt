@@ -36,4 +36,4 @@ nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==9.4.0
 jmespath==1.0.1
-oci==2.125.3
+oci==2.126.0
