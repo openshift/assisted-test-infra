@@ -1,4 +1,4 @@
-FROM quay.io/cchun/python:3.9.12-alpine3.15
+FROM quay.io/assisted-installer-ops/base-python:3.12
 
 ARG SERVER_IP
 ARG SERVER_PORT
