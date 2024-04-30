@@ -137,7 +137,7 @@ else
         # Change the registry service type to LoadBalancer to be able to access it from outside the cluster
         kubectl patch service $REGISTRY_SERVICE_NAME -n $REGISTRY_SERVICE_NAMESPACE --type json -p='[{"op": "replace", "path": "/spec/type", "value":"LoadBalancer"}]'
         # Forward the minikube registry addon k8s service to the host to push the debug image using localhost:5000
-        spawn_port_forwarding_command $REGISTRY_SERVICE_NAME $REGISTRY_SERVICE_HOST_PORT $REGISTRY_SERVICE_NAMESPACE 999 $KUBECONFIG minikube undeclaredip $REGISTRY_SERVICE_PORT $REGISTRY_SERVICE_NAME
+        spawn_port_forwarding_command $REGISTRY_SERVICE_NAME $REGISTRY_SERVICE_HOST_PORT $REGISTRY_SERVICE_NAMESPACE 999 $KUBECONFIG minikube undeclaredip $REGISTRY_SERVICE_PORT
         # Set the local registry to the minikube registry (used by the assisted-service update-local-image target)
         export SUBSYSTEM_LOCAL_REGISTRY=localhost:5000
 
@@ -159,8 +159,6 @@ else
 
     (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD TARGET=$DEPLOY_TARGET DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-})
 
-    add_firewalld_port $SERVICE_PORT
-
     print_log "Starting port forwarding for deployment/${SERVICE_NAME} on port $SERVICE_PORT"
     wait_for_url_and_run ${SERVICE_BASE_URL} "spawn_port_forwarding_command $SERVICE_NAME $SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclared $SERVICE_INTERNAL_PORT"
 
@@ -170,14 +168,13 @@ else
         print_log "Removing liveness Probe to prevent rebooting while debugging"
         kubectl patch deployment assisted-service -n $NAMESPACE --type json   -p='[{"op": "remove", "path": "/spec/template/spec/containers/0/livenessProbe"}]'
 
-        add_firewalld_port ${DEBUG_SERVICE_PORT}
         print_log "Starting port forwarding for deployment/${SERVICE_NAME} on debug port $DEBUG_SERVICE_PORT"
-        spawn_port_forwarding_command $SERVICE_NAME $DEBUG_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $DEBUG_SERVICE_PORT $DEBUG_SERVICE_NAME
+        spawn_port_forwarding_command $SERVICE_NAME $DEBUG_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $DEBUG_SERVICE_PORT
     fi
 
     add_firewalld_port ${IMAGE_SERVICE_PORT}
     print_log "Starting port forwarding for deployment/${IMAGE_SERVICE_NAME} on debug port $IMAGE_SERVICE_PORT"
-    spawn_port_forwarding_command $IMAGE_SERVICE_NAME $IMAGE_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $IMAGE_SERVICE_INTERNAL_PORT $IMAGE_SERVICE_NAME
+    spawn_port_forwarding_command $IMAGE_SERVICE_NAME $IMAGE_SERVICE_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube undeclaredip $IMAGE_SERVICE_INTERNAL_PORT
 
     print_log "${SERVICE_NAME} can be reached at ${SERVICE_BASE_URL} "
     print_log "Done"

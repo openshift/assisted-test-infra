@@ -60,7 +60,7 @@ function create() {
     # Change the registry service type to LoadBalancer to be able to access it from outside the cluster
     kubectl patch service registry -n kube-system --type json -p='[{"op": "replace", "path": "/spec/type", "value":"LoadBalancer"}]'
     # Forward the minikube registry addon k8s service to the host to push the debug image using localhost:5000
-    spawn_port_forwarding_command registry 5000 kube-system 999 $KUBECONFIG minikube undeclaredip 80 registry
+    spawn_port_forwarding_command registry 5000 kube-system 999 $KUBECONFIG minikube undeclaredip 80
 
     eval $(minikube docker-env)
 }

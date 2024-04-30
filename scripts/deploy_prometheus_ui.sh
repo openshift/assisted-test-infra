@@ -19,10 +19,8 @@ mkdir -p build
 print_log "Wait till ui Prometheus Port is ready"
 wait_for_url_and_run "$(minikube service ${PROMETHEUS_SERVICE_NAME} -n ${NAMESPACE} --url)" "echo \"waiting for ${PROMETHEUS_SERVICE_NAME}\""
 
-add_firewalld_port $PROMETHEUS_UI_PORT
-
 print_log "Starting port forwarding for deployment/${PROMETHEUS_SERVICE_NAME} on port $PROMETHEUS_UI_PORT"
-wait_for_url_and_run "http://${NODE_IP}:${PROMETHEUS_UI_PORT}" "spawn_port_forwarding_command $PROMETHEUS_SERVICE_NAME $PROMETHEUS_UI_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube"
+wait_for_url_and_run "http://${NODE_IP}:${PROMETHEUS_UI_PORT}" "spawn_port_forwarding_command $PROMETHEUS_SERVICE_NAME $PROMETHEUS_UI_PORT $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG"
 print_log "Prometheus UI can be reached at http://${NODE_IP}:${PROMETHEUS_UI_PORT}"
 
 print_log "Done"

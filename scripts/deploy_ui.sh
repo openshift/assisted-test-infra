@@ -43,7 +43,7 @@ add_firewalld_port $ui_port
 
 if [[ "${DEPLOY_TARGET}" == "minikube" ]]; then
     print_log "Starting port forwarding for deployment/${UI_SERVICE_NAME} on port $ui_port"
-    wait_for_url_and_run "http://${node_ip}:${ui_port}" "spawn_port_forwarding_command $UI_SERVICE_NAME $ui_port $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube"
+    wait_for_url_and_run "http://${node_ip}:${ui_port}" "spawn_port_forwarding_command $UI_SERVICE_NAME $ui_port $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG"
 fi
 
 print_log "Done. Assisted-installer UI can be reached at http://${node_ip}:${ui_port}"

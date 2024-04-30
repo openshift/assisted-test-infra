@@ -38,9 +38,7 @@ function spawn_port_forwarding_command() {
     target=$6
     ip=${7:-""}
     port=${8:-""}
-    xinet_service_name="${9:-${service_name}}"
 
-    filename=${xinet_service_name}__${namespace}__${namespace_index}__${external_port}__assisted_installer
     if [ "$target" = "minikube" ]; then
         ip=$(kubectl --kubeconfig=$kubeconfig get nodes -o=jsonpath={.items[0].status.addresses[0].address})
         if [ -z "$port" ]
@@ -51,23 +49,11 @@ function spawn_port_forwarding_command() {
           port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${namespace} -o=jsonpath="{.spec.ports[?(@.port==$port)].nodePort}")
         fi
     fi
-    mkdir -p ./build
-    cat <<EOF >build/xinetd-$filename
-service ${xinet_service_name}
-{
-  type		= UNLISTED
-  socket_type	= stream
-  protocol	= tcp
-  user		= root
-  wait		= no
-  redirect	= $ip $port
-  port		= ${external_port}
-  per_source	= UNLIMITED
-  instances	= UNLIMITED
-}
-EOF
-    sudo mv build/xinetd-$filename /etc/xinetd.d/$filename --force
-    sudo systemctl restart xinetd
+    zones=$(sudo firewall-cmd --get-zones)
+    for zone in ${zones}; do
+      sudo firewall-cmd --zone=${zone} --add-rich-rule="rule family=ipv4 forward-port to-port=$port to-addr=$ip protocol=tcp port=$external_port"
+    done
+    sudo firewall-cmd --reload
 }
 
 function run_in_background() {
@@ -75,12 +61,9 @@ function run_in_background() {
 }
 
 function kill_port_forwardings() {
-    services=$1
-    sudo systemctl stop xinetd
-    for s in $services; do
-        for f in $(sudo ls /etc/xinetd.d/ | grep $s); do
-            sudo rm -f /etc/xinetd.d/$f
-        done
+    port_forwards=$(sudo firewall-cmd --zone=public --list-forward-ports)
+    for p in $port_forwards; do
+        sudo firewall-cmd --zone=public --remove-forward-ports
     done
 }
 

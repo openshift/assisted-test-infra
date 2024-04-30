@@ -171,8 +171,7 @@ function install_runtime_container() {
 
 function install_packages() {
     echo "Installing dnf packages"
-    sudo dnf install -y make python3 python3-pip git jq bash-completion xinetd
-    sudo systemctl enable --now xinetd
+    sudo dnf install -y make python3 python3-pip git jq bash-completion
 
     echo "Installing python packages"
     sudo pip3 install aicli
