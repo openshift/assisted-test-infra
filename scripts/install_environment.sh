@@ -5,6 +5,14 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
+export OS_VER=$(awk -F= '/^VERSION_ID=/ { print $2 }' /etc/os-release | tr -d '"' | cut -f1 -d'.')
+if [[ ${OS_VER} == "9" ]]; then
+    export LIBVIRTD_SETTINGS_DIR="/usr/lib/systemd/system/libvirtd.service"
+else
+    export LIBVIRTD_SETTINGS_DIR="/etc/sysconfig/libvirtd"
+fi
+
+
 readonly PODMAN_MINIMUM_VERSION="3.2.0"
 
 function version_is_greater() {
@@ -38,6 +46,10 @@ function config_additional_modules() {
 
 function install_libvirt() {
     echo "Installing libvirt-related packages..."
+    if [[ ${OS_VER} == "9" ]]; then
+        sudo dnf install -y 'dnf-command(config-manager)'
+        sudo dnf config-manager --set-enabled crb
+    fi
     sudo dnf install -y \
         libvirt \
         libvirt-devel \
@@ -46,6 +58,7 @@ function install_libvirt() {
         libgcrypt \
         swtpm \
         swtpm-tools
+
 
     sudo systemctl enable libvirtd
 
@@ -75,11 +88,11 @@ function install_libvirt() {
 }
 
 function add_libvirt_listen_flag() {
-    if [[ -z $(sudo grep '#LIBVIRTD_ARGS="--listen"' /etc/sysconfig/libvirtd) ]]; then
+    if [[ -z $(sudo grep '#LIBVIRTD_ARGS="--listen"' ${LIBVIRTD_SETTINGS_DIR}) ]]; then
         return
     fi
     echo "Adding --listen flag to libvirt"
-    sudo sed -i -e 's/#LIBVIRTD_ARGS="--listen"/LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
+    sudo sed -i -e 's/#LIBVIRTD_ARGS="--listen"/LIBVIRTD_ARGS="--listen"/g' ${LIBVIRTD_SETTINGS_DIR}
     sudo systemctl restart libvirtd
 }
 
@@ -89,7 +102,7 @@ function start_and_enable_libvirtd_tcp_socket() {
     fi
     echo "libvirtd version is greater then 5.5.x, starting libvirtd-tcp.socket"
     echo "Removing --listen flag to libvirt"
-    sudo sed -i -e 's/LIBVIRTD_ARGS="--listen"/#LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
+    sudo sed -i -e 's/LIBVIRTD_ARGS="--listen"/#LIBVIRTD_ARGS="--listen"/g' ${LIBVIRTD_SETTINGS_DIR}
     sudo systemctl stop libvirtd
     sudo systemctl unmask libvirtd-tcp.socket
     sudo systemctl unmask libvirtd.socket
@@ -171,7 +184,12 @@ function install_runtime_container() {
 
 function install_packages() {
     echo "Installing dnf packages"
-    sudo dnf install -y make python3 python3-pip git jq bash-completion xinetd
+    sudo dnf install -y make python3 python3-pip git jq bash-completion
+    if [[ ${OS_VER} == "8" ]]; then
+        sudo dnf install -y xinetd
+    else
+        sudo dnf install -y http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/xinetd-2.3.15-25.el8.$(arch).rpm
+    fi
     sudo systemctl enable --now xinetd
 
     echo "Installing python packages"
@@ -205,7 +223,7 @@ function config_squid() {
     echo "Config squid"
     sudo dnf install -y squid
     sudo sed -i  -e '/^.*allowed_ips.*$/d' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8::/120' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8:0:200::/120' -e '/^http_access deny all/i http_access allow allowed_ips'  /etc/squid/squid.conf
-    sudo systemctl restart squid
+    sudo systemctl restart squid || journalctl -xeu squid.service
     sudo firewall-cmd --zone=libvirt --add-port=3128/tcp
     sudo firewall-cmd --zone=libvirt --add-port=3129/tcp
 }
