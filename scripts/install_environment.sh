@@ -16,7 +16,7 @@ function version_is_greater() {
 }
 
 function config_additional_modules() {
-    source /etc/os-release  # This should set `PRETTY_NAME` as environment variable
+    source /etc/os-release # This should set `PRETTY_NAME` as environment variable
 
     case "${PRETTY_NAME}" in
     "Red Hat Enterprise Linux 8"* | "CentOS Linux 8"*)
@@ -30,6 +30,13 @@ function config_additional_modules() {
         sudo dnf module install -y container-tools:4.0
         ;;
 
+    "Red Hat Enterprise Linux 9"* | "CentOS Linux 9"*)
+        echo "Enable EPEL for swtpm packages when on RHEL/CentOS based distributions"
+        sudo dnf install -y \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+        dnf install podman -y
+        ;;
+
     *)
         echo "Enable EPEL for swtpm packages"
         sudo dnf install -y epel-release
@@ -38,6 +45,11 @@ function config_additional_modules() {
 
 function install_libvirt() {
     echo "Installing libvirt-related packages..."
+    source "/etc/os-release" # This should set `PRETTY_NAME` as environment variable
+    if [[ "${PRETTY_NAME}" == "Rocky Linux 9"* ]]; then
+        sudo dnf install -y 'dnf-command(config-manager)'
+        sudo dnf config-manager --set-enabled crb
+    fi
     sudo dnf install -y \
         libvirt \
         libvirt-devel \
@@ -45,7 +57,9 @@ function install_libvirt() {
         qemu-kvm \
         libgcrypt \
         swtpm \
-        swtpm-tools
+        swtpm-tools \
+        socat \
+        tigervnc-server
 
     sudo systemctl enable libvirtd
 
@@ -89,7 +103,12 @@ function start_and_enable_libvirtd_tcp_socket() {
     fi
     echo "libvirtd version is greater then 5.5.x, starting libvirtd-tcp.socket"
     echo "Removing --listen flag to libvirt"
-    sudo sed -i -e 's/LIBVIRTD_ARGS="--listen"/#LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
+    
+    OS_VERSION=$(awk -F= '/^VERSION_ID=/ { print $2 }' /etc/os-release | tr -d '"' | cut -f1 -d'.')
+    if [[ "${OS_VERSION}" ==  "8" ]]; then
+        sudo sed -i -e 's/LIBVIRTD_ARGS="--listen"/#LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
+    fi
+
     sudo systemctl stop libvirtd
     sudo systemctl unmask libvirtd-tcp.socket
     sudo systemctl unmask libvirtd.socket
@@ -171,8 +190,7 @@ function install_runtime_container() {
 
 function install_packages() {
     echo "Installing dnf packages"
-    sudo dnf install -y make python3 python3-pip git jq bash-completion xinetd
-    sudo systemctl enable --now xinetd
+    sudo dnf install -y make python3 python3-pip git jq bash-completion
 
     echo "Installing python packages"
     sudo pip3 install -U pip
@@ -204,7 +222,19 @@ function config_firewalld() {
 function config_squid() {
     echo "Config squid"
     sudo dnf install -y squid
-    sudo sed -i  -e '/^.*allowed_ips.*$/d' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8::/120' -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8:0:200::/120' -e '/^http_access deny all/i http_access allow allowed_ips'  /etc/squid/squid.conf
+
+    OS_VERSION=$(awk -F= '/^VERSION_ID=/ { print $2 }' /etc/os-release | tr -d '"' | cut -f1 -d'.')
+    if [[ "${OS_VERSION}" ==  "8" ]]; then
+        sudo sed -i  -e '/^.*allowed_ips.*$/d' \
+            -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8::/120' \
+            -e '/^acl CONNECT.*/a acl allowed_ips src 1001:db8:0:200::/120' \
+            -e '/^http_access deny all/i http_access allow allowed_ips' /etc/squid/squid.conf
+    else
+        sudo sed -i -e '/^.*allowed_ips.*$/d' \
+            -e '/^acl Safe_ports port 777/a acl allowed_ips src 1001:db8::/120\nacl allowed_ips src 1001:db8:0:200::/120' \
+            -e '/^http_access deny all/i http_access allow allowed_ips' /etc/squid/squid.conf
+    fi
+
     sudo systemctl restart squid
     sudo firewall-cmd --zone=libvirt --add-port=3128/tcp
     sudo firewall-cmd --zone=libvirt --add-port=3129/tcp

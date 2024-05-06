@@ -16,13 +16,13 @@ fi
 
 #Check CentOS version
 VER=$(awk -F= '/^VERSION_ID=/ { print $2 }' /etc/os-release | tr -d '"' | cut -f1 -d'.')
-VER_SUPPORTED=8
-
-if [[ ${OS} =~ ^(centos)$ && ${VER} -ne ${VER_SUPPORTED} ]]; then
-    error "CentOS version ${VER_SUPPORTED} is required."
-    exit 1
-elif [[ ${OS} =~ ^(rhel)$ && ${VER} -ne ${VER_SUPPORTED} ]]; then
-    error "RHEL version ${VER_SUPPORTED} is required."
+SUPPORTED_VERSIONS=( 8 9 )
+if [[ ! " ${SUPPORTED_VERSIONS[@]} " =~ " ${VER} " ]]; then
+    if [[ ${OS} =~ ^(centos)$ ]]; then
+        error "CentOS version 8 or 9 is required."
+    elif [[ ${OS} =~ ^(rhel)$ ]]; then
+        error "RHEL version 8 or 9 is required."
+    fi
     exit 1
 fi
 
