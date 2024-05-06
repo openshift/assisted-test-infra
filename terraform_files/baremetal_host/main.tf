@@ -62,6 +62,13 @@ resource "libvirt_domain" "host" {
     dev = var.boot_devices
   }
 
+  graphics {
+    type           = "vnc"
+    listen_type    = "address"
+    listen_address = "127.0.0.1"
+    autoport       = true
+  }
+
   dynamic "tpm" {
     for_each = var.vtpm2 ? [1] : []
 
