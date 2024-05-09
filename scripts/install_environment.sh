@@ -49,6 +49,8 @@ function install_libvirt() {
     if [[ ${OS_VER} == "9" ]]; then
         sudo dnf install -y 'dnf-command(config-manager)'
         sudo dnf config-manager --set-enabled crb
+        sudo dnf -y copr enable ligenix/enterprise-qemu-spice
+        sudo dnf -y update
     fi
     sudo dnf install -y \
         libvirt \
@@ -58,8 +60,6 @@ function install_libvirt() {
         libgcrypt \
         swtpm \
         swtpm-tools
-
-
     sudo systemctl enable libvirtd
 
     current_version="$(libvirtd --version | awk '{print $3}')"
