@@ -33,6 +33,7 @@ RUN dnf -y install --enablerepo=crb \
   libxslt \
   xorriso \
   iptables-nft \
+   && dnf -y upgrade \ 
    && dnf clean all
 
 # Git checks if the user that owns the files on the filesystem match the
