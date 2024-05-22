@@ -28,10 +28,6 @@
     ansible_ssh_private_key_file: "{{ deployed_tf.outputs.ci_machine_inventory.value.ssh_private_key_path }}"
     groups: "primary"
 
-- name: Sleep for 1 hour
-  ansible.builtin.pause:
-    minutes: 60
-
 - name: Collect facts from added host
   ansible.builtin.setup:
   delegate_to: "{{ deployed_tf.outputs.ci_machine_inventory.value.display_name }}"
