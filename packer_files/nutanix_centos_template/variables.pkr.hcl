@@ -43,7 +43,7 @@ variable "image_name" {
 
 variable "disk_size" {
   type = number
-  default = 102400 
+  default = 102400
   description = "The VM disk size in MB. default 100G"
 }
 
@@ -61,7 +61,7 @@ variable "vcpus" {
 
 variable "root_password" {
   type = string
-  default = "test"
+  default = "packer"
   description = "The os root password"
 }
 
