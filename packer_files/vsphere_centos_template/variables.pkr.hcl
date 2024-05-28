@@ -76,7 +76,7 @@ variable "iso_url" {
 
 variable "iso_checksum" {
   type = string
-  default = "9602c69c52d93f51295c0199af395ca0edbe35e36506e32b8e749ce6c8f5b60a"
+  default = "9602c69c52d93f51295c0199af395ca0edbe35e3650632b8e749ce6c8f5b60a"
   description = "The Centos8 ISO checksum"
 }
 
