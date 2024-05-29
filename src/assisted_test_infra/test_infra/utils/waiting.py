@@ -40,8 +40,9 @@ def _are_hosts_in_status(
         raise InstallationPendingActionError()
 
     log.info(
-        "Asked hosts to be in one of the statuses from %s and currently hosts statuses are %s",
+        "Asked hosts to be in one of the statuses from %s %s and currently hosts statuses are %s",
         statuses,
+        status_info,
         host_statuses(hosts),
     )
     return False
@@ -191,17 +192,19 @@ def wait_till_specific_host_is_in_status(
     host_name,
     nodes_count,
     statuses,
+    status_info="",
     timeout=consts.NODES_REGISTERED_TIMEOUT,
     fall_on_error_status=True,
     interval=consts.DEFAULT_CHECK_STATUSES_INTERVAL,
 ):
-    log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses}")
+    log.info(f"Wait till {nodes_count} host is in one of the statuses: {statuses} {status_info}")
 
     waiting.wait(
         lambda: _are_hosts_in_status(
             hosts=[client.get_host_by_name(cluster_id, host_name)],
             nodes_count=nodes_count,
             statuses=statuses,
+            status_info=status_info,
             fall_on_error_status=fall_on_error_status,
         ),
         timeout_seconds=timeout,
