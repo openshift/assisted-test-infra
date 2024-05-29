@@ -37,3 +37,4 @@ pytest-error-for-skips==2.0.2
 ansible==9.5.1
 jmespath==1.0.1
 oci==2.126.2
+setuptools==70.0.0
