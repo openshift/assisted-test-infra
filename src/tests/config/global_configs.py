@@ -68,6 +68,17 @@ class Day2ClusterConfig(BaseDay2ClusterConfig):
         if self.iso_download_path is None:
             self.iso_download_path = utils.get_iso_download_path(self.entity_name.get())
 
+    def get_base_asset(self) -> dict:
+        """define network assets used by the remote libvirt host"""
+        return {
+            "machine_cidr": self.day2_machine_cidr,
+            "provisioning_cidr": self.day2_provisioning_cidr,
+            "machine_cidr6": self.day2_machine_cidr6,
+            "provisioning_cidr6": self.day2_provisioning_cidr6,
+            "libvirt_network_if": self.day2_network_if,
+            "libvirt_secondary_network_if": self.day2_secondary_network_if,
+        }
+
 
 @dataclass
 class TerraformConfig(BaseTerraformConfig):

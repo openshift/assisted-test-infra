@@ -1,24 +1,22 @@
 import hashlib
 import json
 import os
-import shutil
 from contextlib import suppress
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import libvirt
 import pytest
-import waiting
 from _pytest.fixtures import FixtureRequest
 from assisted_service_client import models
 from assisted_service_client.rest import ApiException
-from junit_report import JunitFixtureTestCase, JunitTestCase
+from junit_report import JunitFixtureTestCase
 from netaddr import IPNetwork
 from paramiko import SSHException
 
 import consts
 from assisted_test_infra.download_logs.download_logs import download_logs
-from assisted_test_infra.test_infra import BaseTerraformConfig, Nodes, utils
+from assisted_test_infra.test_infra import Nodes, utils
 from assisted_test_infra.test_infra.controllers import (
     AssistedInstallerInfraController,
     IptableRule,
@@ -34,6 +32,7 @@ from assisted_test_infra.test_infra.controllers import (
     TerraformController,
     VSphereController,
 )
+from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import collect_virsh_logs
 from assisted_test_infra.test_infra.controllers.node_controllers.tf_controller import TFController
 from assisted_test_infra.test_infra.controllers.node_controllers.zvm_controller import ZVMController
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
@@ -52,7 +51,7 @@ from triggers.env_trigger import Trigger, VariableOrigin
 
 class BaseTest:
     @classmethod
-    def _get_parameterized_keys(cls, request: pytest.FixtureRequest):
+    def _get_parameterized_keys(cls, request: pytest.FixtureRequest) -> List[str]:
         """This method return the parameterized keys decorated the current test function.
         If the key is a tuple (e.g. 'ipv4, ipv6') is will return them both as individuals"""
 
@@ -67,7 +66,7 @@ class BaseTest:
         return parameterized_keys
 
     @classmethod
-    def update_parameterized(cls, request: pytest.FixtureRequest, config: BaseConfig):
+    def update_parameterized(cls, request: pytest.FixtureRequest, config: BaseConfig) -> None:
         """Update the given configuration object with parameterized values if the key is present"""
 
         config_type = config.__class__.__name__
@@ -84,7 +83,9 @@ class BaseTest:
                     raise AttributeError(f"No attribute name {fixture_name} in {config_type} object type")
 
     @pytest.fixture
-    def k8s_assisted_installer_infra_controller(self, request: pytest.FixtureRequest):
+    def k8s_assisted_installer_infra_controller(
+        self, request: pytest.FixtureRequest
+    ) -> AssistedInstallerInfraController:
         """k8 hub cluster wrapper client  object fixture passed to test function
         This function fixture called by testcase, we initialize k8client
         Storing configmap before test begins -> for later restoring
@@ -135,8 +136,8 @@ class BaseTest:
         assert global_variables.tf_platform == consts.Platforms.BARE_METAL
 
         config = TerraformConfig()
-
         self.update_parameterized(request, config)
+
         yield config
 
     @pytest.fixture
@@ -170,16 +171,7 @@ class BaseTest:
         if day2_cluster_configuration.day2_libvirt_uri:
             # set libvirt_uri in controller configuration
             new_day2_controller_configuration.libvirt_uri = day2_cluster_configuration.day2_libvirt_uri
-
-            # define network assets used by the remote libvirt host
-            day2_base_asset = {
-                "machine_cidr": day2_cluster_configuration.day2_machine_cidr,
-                "provisioning_cidr": day2_cluster_configuration.day2_provisioning_cidr,
-                "machine_cidr6": day2_cluster_configuration.day2_machine_cidr6,
-                "provisioning_cidr6": day2_cluster_configuration.day2_provisioning_cidr6,
-                "libvirt_network_if": day2_cluster_configuration.day2_network_if,
-                "libvirt_secondary_network_if": day2_cluster_configuration.day2_secondary_network_if,
-            }
+            day2_base_asset = day2_cluster_configuration.get_base_asset()
             assert all(day2_base_asset.values())  # ensure all values are set
 
             unique_id = hashlib.sha1(day2_cluster_configuration.day2_libvirt_uri.encode()).hexdigest()
@@ -515,7 +507,7 @@ class BaseTest:
         cluster_configuration: ClusterConfig,
         ipxe_server: Callable,
         tang_server: Callable,
-    ):
+    ) -> Cluster:
         log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
         if cluster_configuration.disk_encryption_mode == consts.DiskEncryptionMode.TANG:
             self._start_tang_server(tang_server, cluster_configuration)
@@ -635,140 +627,9 @@ class BaseTest:
         cluster.prepare_for_installation()
         yield cluster
 
-    @pytest.fixture(scope="function")
-    def get_nodes(self) -> Callable[[BaseTerraformConfig, ClusterConfig], Nodes]:
-        """Currently support only single instance of nodes"""
-        nodes_data = dict()
-
-        @JunitTestCase()
-        def get_nodes_func(tf_config: BaseTerraformConfig, cluster_config: ClusterConfig):
-            if "nodes" in nodes_data:
-                return nodes_data["nodes"]
-
-            nodes_data["configs"] = cluster_config, tf_config
-
-            net_asset = LibvirtNetworkAssets()
-            tf_config.net_asset = net_asset.get()
-            nodes_data["net_asset"] = net_asset
-
-            controller = TerraformController(tf_config, entity_config=cluster_config)
-            nodes = Nodes(controller)
-            nodes_data["nodes"] = nodes
-
-            interfaces = self.nat_interfaces(tf_config)
-            nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
-            nat.add_nat_rules()
-
-            nodes_data["nat"] = nat
-
-            return nodes
-
-        yield get_nodes_func
-
-        _nodes: Nodes = nodes_data.get("nodes")
-        _cluster_config, _tf_config = nodes_data.get("configs", (None, None))
-        _nat: NatController = nodes_data.get("nat")
-        _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
-
-        try:
-            if _nodes and global_variables.test_teardown:
-                log.info("--- TEARDOWN --- node controller\n")
-                _nodes.destroy_all_nodes()
-                log.info(f"--- TEARDOWN --- deleting iso file from: {_cluster_config.iso_download_path}\n")
-                Path(_cluster_config.iso_download_path).unlink(missing_ok=True)
-                self.teardown_nat(_nat)
-                self.delete_dnsmasq_conf_file(cluster_name=_cluster_config.cluster_name)
-
-        finally:
-            if _net_asset:
-                _net_asset.release_all()
-
-    @pytest.fixture(scope="function")
-    def get_nodes_infraenv(self) -> Callable[[BaseTerraformConfig, InfraEnvConfig], Nodes]:
-        """Currently support only single instance of nodes"""
-        nodes_data = dict()
-
-        @JunitTestCase()
-        def get_nodes_func(tf_config: BaseTerraformConfig, infraenv_config: InfraEnvConfig):
-            if "nodes" in nodes_data:
-                return nodes_data["nodes"]
-
-            nodes_data["configs"] = infraenv_config, tf_config
-
-            net_asset = LibvirtNetworkAssets()
-            tf_config.net_asset = net_asset.get()
-            nodes_data["net_asset"] = net_asset
-
-            controller = TerraformController(tf_config, entity_config=infraenv_config)
-            nodes = Nodes(controller)
-            nodes_data["nodes"] = nodes
-
-            interfaces = self.nat_interfaces(tf_config)
-            nat = NatController(interfaces, NatController.get_namespace_index(interfaces[0]))
-            nat.add_nat_rules()
-
-            nodes_data["nat"] = nat
-
-            return nodes
-
-        yield get_nodes_func
-
-        _nodes: Nodes = nodes_data.get("nodes")
-        _infraenv_config, _tf_config = nodes_data.get("configs")
-        _nat: NatController = nodes_data.get("nat")
-        _net_asset: LibvirtNetworkAssets = nodes_data.get("net_asset")
-
-        try:
-            if _nodes and global_variables.test_teardown:
-                log.info("--- TEARDOWN --- node controller\n")
-                _nodes.destroy_all_nodes()
-                log.info(f"--- TEARDOWN --- deleting iso file from: {_infraenv_config.iso_download_path}\n")
-                Path(_infraenv_config.iso_download_path).unlink(missing_ok=True)
-                self.teardown_nat(_nat)
-
-        finally:
-            if _net_asset:
-                _net_asset.release_all()
-
     @classmethod
     def nat_interfaces(cls, config: TerraformConfig) -> Tuple[str, str]:
         return config.net_asset.libvirt_network_if, config.net_asset.libvirt_secondary_network_if
-
-    @pytest.fixture()
-    @JunitFixtureTestCase()
-    def get_cluster(
-        self, api_client, request, proxy_server, get_nodes, infra_env_configuration
-    ) -> Callable[[Nodes, ClusterConfig], Cluster]:
-        """Do not use get_nodes fixture in this fixture. It's here only to force pytest teardown
-        nodes after cluster"""
-
-        clusters = list()
-
-        @JunitTestCase()
-        def get_cluster_func(nodes: Nodes, cluster_config: ClusterConfig) -> Cluster:
-            log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
-            _cluster = Cluster(
-                api_client=api_client, config=cluster_config, nodes=nodes, infra_env_config=infra_env_configuration
-            )
-
-            if self._does_need_proxy_server(nodes):
-                self.__set_up_proxy_server(_cluster, cluster_config, proxy_server)
-
-            clusters.append(_cluster)
-            return _cluster
-
-        yield get_cluster_func
-        for cluster in clusters:
-            if self._is_test_failed(request):
-                log.info(f"--- TEARDOWN --- Collecting Logs for test: {request.node.name}\n")
-                self.collect_test_logs(cluster, api_client, request, cluster.nodes)
-            if global_variables.test_teardown:
-                if cluster.id and (cluster.is_installing() or cluster.is_finalizing()):
-                    cluster.cancel_install()
-
-                with suppress(ApiException):
-                    log.info(f"--- TEARDOWN --- deleting created cluster {cluster.id}\n")
-                    cluster.delete()
 
     @pytest.fixture
     def configs(self, cluster_configuration, controller_configuration) -> Tuple[ClusterConfig, TerraformConfig]:
@@ -857,7 +718,7 @@ class BaseTest:
             rule.delete()
 
     @staticmethod
-    def attach_disk_flags(persistent):
+    def attach_disk_flags(persistent) -> Callable:
         modified_nodes = set()
 
         def attach(node, disk_size, bootable=False, with_wwn=False):
@@ -875,15 +736,15 @@ class BaseTest:
                     log.warning(f"Failed to detach test disks from node {modified_node.name}")
 
     @pytest.fixture(scope="function")
-    def attach_disk(self):
+    def attach_disk(self) -> Callable:
         yield from self.attach_disk_flags(persistent=False)
 
     @pytest.fixture(scope="function")
-    def attach_disk_persistent(self):
+    def attach_disk_persistent(self) -> Callable:
         yield from self.attach_disk_flags(persistent=True)
 
     @pytest.fixture()
-    def attach_interface(self):
+    def attach_interface(self) -> Callable:
         added_networks = []
 
         def add(node, network_name=None, network_xml=None):
@@ -905,7 +766,7 @@ class BaseTest:
                 node_obj.destroy_network(added_network.get("network"))
 
     @pytest.fixture()
-    def proxy_server(self):
+    def proxy_server(self) -> Callable:
         log.info("--- SETUP --- proxy controller")
         proxy_servers = []
 
@@ -923,7 +784,7 @@ class BaseTest:
                 server.remove()
 
     @pytest.fixture()
-    def tang_server(self):
+    def tang_server(self) -> Callable:
         log.info("--- SETUP --- Tang controller")
         tang_servers = []
 
@@ -940,7 +801,7 @@ class BaseTest:
                 server.remove()
 
     @pytest.fixture()
-    def ipxe_server(self):
+    def ipxe_server(self) -> Callable:
         log.info("--- SETUP --- ipxe controller")
         ipxe_server_controllers = []
 
@@ -956,22 +817,16 @@ class BaseTest:
                 server.remove()
 
     @staticmethod
-    def get_cluster_by_name(api_client, cluster_name):
-        clusters = api_client.clusters_list()
-        for cluster in clusters:
-            if cluster["name"] == cluster_name:
-                return cluster
-        return None
-
-    @staticmethod
-    def assert_http_error_code(api_call, status, reason, **kwargs):
+    def assert_http_error_code(api_call: Callable, status: int, reason: str, **kwargs) -> None:
         with pytest.raises(ApiException) as response:
             api_call(**kwargs)
         assert response.value.status == status
         assert response.value.reason == reason
 
     @staticmethod
-    def assert_cluster_validation(cluster_info, validation_section, validation_id, expected_status):
+    def assert_cluster_validation(
+        cluster_info: models.cluster.Cluster, validation_section: str, validation_id: str, expected_status: str
+    ) -> None:
         found_status = utils.get_cluster_validation_value(cluster_info, validation_section, validation_id)
         assert found_status == expected_status, (
             "Found validation status "
@@ -993,13 +848,15 @@ class BaseTest:
             + string
         )
 
-    def delete_dnsmasq_conf_file(self, cluster_name):
+    def delete_dnsmasq_conf_file(self, cluster_name: str) -> None:
         with SuppressAndLog(FileNotFoundError):
             fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
             log.info(f"--- TEARDOWN --- deleting dnsmasq file: {fname}\n")
             os.remove(fname)
 
-    def collect_test_logs(self, cluster, api_client, request, nodes: Nodes):
+    def collect_test_logs(
+        self, cluster: Cluster, api_client: InventoryClient, request: pytest.FixtureRequest, nodes: Nodes
+    ):
         log_dir_name = f"{global_variables.log_folder}/{request.node.name}"
         with suppress(ApiException, KeyboardInterrupt):
             cluster_details = json.loads(json.dumps(cluster.get_details().to_dict(), sort_keys=True, default=str))
@@ -1011,64 +868,17 @@ class BaseTest:
             )
 
         if isinstance(nodes.controller, LibvirtController):
-            self._collect_virsh_logs(nodes, log_dir_name)
+            collect_virsh_logs(nodes, log_dir_name)
 
         self._collect_journalctl(nodes, log_dir_name)
 
     @classmethod
-    def _is_test_failed(cls, test):
+    def _is_test_failed(cls, test: pytest.FixtureRequest) -> bool:
         # When cancelling a test the test.result_call isn't available, mark it as failed
         return not hasattr(test.node, "result_call") or test.node.result_call.failed
 
-    @classmethod
-    def _collect_virsh_logs(cls, nodes: Nodes, log_dir_name):
-        log.info("Collecting virsh logs\n")
-        os.makedirs(log_dir_name, exist_ok=True)
-        virsh_log_path = os.path.join(log_dir_name, "libvirt_logs")
-        os.makedirs(virsh_log_path, exist_ok=False)
-
-        libvirt_list_path = os.path.join(virsh_log_path, "virsh_list")
-        utils.run_command(f"virsh list --all >> {libvirt_list_path}", shell=True)
-
-        libvirt_net_list_path = os.path.join(virsh_log_path, "virsh_net_list")
-        utils.run_command(f"virsh net-list --all >> {libvirt_net_list_path}", shell=True)
-
-        network_name = nodes.get_cluster_network()
-        virsh_leases_path = os.path.join(virsh_log_path, "net_dhcp_leases")
-        utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
-
-        messages_log_path = os.path.join(virsh_log_path, "messages.log")
-        try:
-            shutil.copy("/var/log/messages", messages_log_path)
-        except FileNotFoundError:
-            log.warning("Failed to copy /var/log/messages, file does not exist")
-
-        qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
-        os.makedirs(qemu_libvirt_path, exist_ok=False)
-        for node in nodes:
-            try:
-                shutil.copy(f"/var/log/libvirt/qemu/{node.name}.log", f"{qemu_libvirt_path}/{node.name}-qemu.log")
-            except FileNotFoundError:
-                log.warning(f"Failed to copy {node.name} qemu log, file does not exist")
-
-        console_log_path = os.path.join(virsh_log_path, "console_logs")
-        os.makedirs(console_log_path, exist_ok=False)
-        for node in nodes:
-            try:
-                shutil.copy(
-                    f"/var/log/libvirt/qemu/{node.name}-console.log", f"{console_log_path}/{node.name}-console.log"
-                )
-            except FileNotFoundError:
-                log.warning(f"Failed to copy {node.name} console log, file does not exist")
-
-        libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
-        utils.run_command(
-            f'journalctl --since "{nodes.setup_time}" ' f"-u libvirtd -D /run/log/journal >> {libvird_log_path}",
-            shell=True,
-        )
-
     @staticmethod
-    def _collect_journalctl(nodes: Nodes, log_dir_name):
+    def _collect_journalctl(nodes: Nodes, log_dir_name: str) -> None:
         log.info("Collecting journalctl\n")
         utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
         journal_ctl_path = Path(log_dir_name) / "nodes_journalctl"
@@ -1082,13 +892,7 @@ class BaseTest:
                 log.info(f"Could not collect journalctl for {node.name}")
 
     @staticmethod
-    def verify_no_logs_uploaded(cluster, cluster_tar_path):
-        with pytest.raises(ApiException) as ex:
-            cluster.download_installation_logs(cluster_tar_path)
-        assert "No log files" in str(ex.value)
-
-    @staticmethod
-    def update_oc_config(nodes: Nodes, cluster: Cluster):
+    def update_oc_config(nodes: Nodes, cluster: Cluster) -> None:
         os.environ["KUBECONFIG"] = cluster.kubeconfig_path
         if nodes.nodes_count == 1:
             try:
@@ -1112,19 +916,4 @@ class BaseTest:
 
         utils.config_etc_hosts(
             cluster_name=cluster.name, base_dns_domain=global_variables.base_dns_domain, api_vip=api_vip_address
-        )
-
-    def wait_for_controller(self, cluster, nodes):
-        cluster.download_kubeconfig_no_ingress()
-        self.update_oc_config(nodes, cluster)
-
-        def check_status():
-            res = utils.get_assisted_controller_status(cluster.kubeconfig_path)
-            return "Running" in str(res, "utf-8")
-
-        waiting.wait(
-            lambda: check_status(),
-            timeout_seconds=900,
-            sleep_seconds=30,
-            waiting_for="controller to be running",
         )
