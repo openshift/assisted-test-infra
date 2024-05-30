@@ -56,7 +56,17 @@ class NutanixController(TFController):
         vm.power_on()
 
     def get_ingress_and_api_vips(self):
-        if not self._entity_config.vip_dhcp_allocation:
+        """
+        Need to distinguish between 3 cases:
+        1) vip_dhcp_allocation is set to False: Need to provide API and Ingress VIPs - raise an exception if
+        one or more are empty.
+        2) vip_dhcp_allocation is set to True: No need to provide API and Ingress VIP, return None.
+        3) vip_dhcp_allocation is not being set at all and its value is equal to None: In this case, search free IPs
+        and set them as VIPs. The behavior is the same as vip_dhcp_allocation = False but getting the IPs first.
+        Note that (3) is supposed to happen only locally due to the face that vip_dhcp_allocation is set in CI to some
+        value.
+        """
+        if self._entity_config.vip_dhcp_allocation is False:
             if self._entity_config.api_vips is None or len(self._entity_config.api_vips) == 0:
                 raise ValueError("API VIP is not set")
             if self._entity_config.ingress_vips is None or len(self._entity_config.ingress_vips) == 0:
@@ -66,6 +76,10 @@ class NutanixController(TFController):
                 "ingress_vips": self._entity_config.ingress_vips,
             }
 
+        elif self._entity_config.vip_dhcp_allocation is True:
+            return None
+
+        # If VIP DHCP Allocation is not set at all - search for free IPs and select addresses for VIPs
         nutanix_subnet = next(
             s for s in NutanixSubnet.list_entities(self._provider_client) if s.name == self._config.nutanix_subnet
         )
@@ -91,7 +105,7 @@ class NutanixController(TFController):
             raise ConnectionError("Failed to locate free API and Ingress VIPs")
 
         log.info(f"Found 2 optional VIPs: {free_ips}")
-        return {"api_vips": [free_ips.pop()], "ingress_vips": [free_ips.pop()]}
+        return {"api_vips": [{"ip": free_ips.pop()}], "ingress_vips": [{"ip": free_ips.pop()}]}
 
     def set_boot_order(self, node_name, cd_first=False, cdrom_iso_path=None) -> None:
         vm = self._get_provider_vm(tf_vm_name=node_name)
