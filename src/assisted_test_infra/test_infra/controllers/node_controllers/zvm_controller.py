@@ -110,7 +110,7 @@ class ZVMController(NodeController, ABC):
         return None
 
     # attach for zVM might be tricky or not possible due to missing cli support for zVM commands
-    def attach_test_disk(self, node_name: str, disk_size: int, bootable=False, persistent=False, with_wwn=False):
+    def attach_test_disk(self, node_name: str, disk_size: int, bus="scsi", bootable=False, persistent=False, with_wwn=False):
         pass
 
     # as attach the detach of disks might be tricky (missing cli support for zVM commands)

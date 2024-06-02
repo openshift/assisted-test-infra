@@ -13,6 +13,7 @@ from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 import libvirt
+import random
 import waiting
 
 import consts
@@ -266,31 +267,32 @@ class LibvirtController(NodeController, ABC):
         cls.create_disk(disk_path, image_size)
 
     @classmethod
-    def _get_all_scsi_disks(cls, node):
-        return (disk for disk in cls._list_disks(node) if disk.bus == "scsi")
+    def _get_all_disks(cls, node, bus="scsi"):
+        if bus is None:
+            return (disk for disk in cls._list_disks(node))
+        return (disk for disk in cls._list_disks(node) if disk.bus == bus)
 
     @classmethod
     def _get_attached_test_disks(cls, node):
         return (
             disk
-            for disk in cls._get_all_scsi_disks(node)
+            for disk in cls._get_all_disks(node, None)
             if disk.alias and disk.alias.startswith(cls.TEST_DISKS_PREFIX)
         )
 
     @staticmethod
-    def _get_disk_scsi_identifier(disk):
+    def _get_disk_identifier(disk):
         """
         :return: Returns `b` if, for example, the disks' target.dev is `sdb`
         """
         regex_by = disk.target[:2]
         return re.findall(rf"^{regex_by}(.*)$", disk.target)[0]
 
-    def _get_available_scsi_identifier(self, node):
+    def _get_available_identifier(self, node, bus="scsi"):
         """
         :return: Returns, for example, `d` if `sda`, `sdb`, `sdc`, `sde` are all already in use
         """
-        identifiers_in_use = [self._get_disk_scsi_identifier(disk) for disk in self._get_all_scsi_disks(node)]
-
+        identifiers_in_use = [self._get_disk_identifier(disk) for disk in self._get_all_disks(node, bus=bus)]
         try:
             result = next(candidate for candidate in string.ascii_lowercase if candidate not in identifiers_in_use)
         except StopIteration as e:
@@ -298,7 +300,7 @@ class LibvirtController(NodeController, ABC):
 
         return result
 
-    def attach_test_disk(self, node_name, disk_size, bootable=False, persistent=False, with_wwn=False):
+    def attach_test_disk(self, node_name, disk_size, bus="scsi", bootable=False, persistent=False, with_wwn=False):
         """
         Attaches a disk with the given size to the given node. All tests disks can later
         be detached with detach_all_test_disks
@@ -309,8 +311,10 @@ class LibvirtController(NodeController, ABC):
         # We don't use `vd` virtio disks because libvirt overwrites our aliases if we do so, coming up with
         # its own `virtio-<num>` aliases instead. Those aliases allow us to identify disks created by this
         # function when we perform `detach_all_test_disks` for cleanup.
-        target_dev = f"sd{self._get_available_scsi_identifier(node)}"
-        disk_alias = f"{self.TEST_DISKS_PREFIX}-{target_dev}"
+        dev = {"scsi": "sd", "sata": "sd", "usb": "sd", "virtio": "vd"}
+        target_dev = f"{dev[bus]}{self._get_available_identifier(node, None)}"
+        # Allow to create multiple devices when node shutdown required (sata)
+        disk_alias = f"{self.TEST_DISKS_PREFIX}{str(random.randint(0, 10000))}-{bus}-{target_dev}"
 
         with tempfile.NamedTemporaryFile() as f:
             tmp_disk = f.name
@@ -319,27 +323,27 @@ class LibvirtController(NodeController, ABC):
 
         if bootable:
             self.add_disk_bootflag(tmp_disk)
-
-        attach_flags = libvirt.VIR_DOMAIN_AFFECT_LIVE
+        # sata bus does not support hot plugin - requires shutdown / start node
+        attach_flags = libvirt.VIR_DOMAIN_AFFECT_LIVE if bus != "sata" else libvirt.VIR_DOMAIN_AFFECT_CURRENT
 
         if persistent:
             attach_flags |= libvirt.VIR_DOMAIN_AFFECT_CONFIG
 
         wwn = f"<wwn>0x{secrets.token_hex(8)}</wwn>" if with_wwn else ""
+        # set usb disk as removable
+        removable = "" if bus != "usb" else "removable='on'"
 
-        node.attachDeviceFlags(
-            f"""
-            <disk type='file' device='disk'>
+        attach_template = \
+            f"""<disk type='file' device='disk'>
                 <alias name='{disk_alias}'/>
                 <driver name='qemu' type='qcow2'/>
                 <source file='{tmp_disk}'/>
-                <target dev='{target_dev}'/>
+                <target dev='{target_dev}' bus='{bus}' {removable}/>
                 {wwn}
-            </disk>
-        """,
-            attach_flags,
-        )
-
+                </disk>"""
+        node.attachDeviceFlags(attach_template, attach_flags)
+        log.info(f"Attached test disk: {node_name} alias={disk_alias} bus={bus} source file={tmp_disk}"
+                 f" target dev={target_dev} wwn={wwn}")
         return tmp_disk
 
     def detach_all_test_disks(self, node_name):

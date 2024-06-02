@@ -142,7 +142,7 @@ class TFController(NodeController, ABC):
     def list_leases(self, network_name: str) -> List[Any]:
         pass
 
-    def attach_test_disk(self, node_name: str, disk_size: int, bootable=False, persistent=False, with_wwn=False):
+    def attach_test_disk(self, node_name: str, disk_size: int, bus="scsi", bootable=False, persistent=False, with_wwn=False):
         pass
 
     def detach_all_test_disks(self, node_name: str):
