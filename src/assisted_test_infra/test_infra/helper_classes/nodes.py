@@ -70,10 +70,6 @@ class Nodes:
         for n in self.nodes:
             yield n
 
-    def init_controller(self):
-        if self.controller and hasattr(self.controller, "init_controller"):
-            self.controller.init_controller()
-
     def drop_cache(self):
         self._nodes = None
         self._nodes_as_dict = None

@@ -94,7 +94,6 @@ class TestMakefileTargets(BaseTest):
                     dummy_iso_path.touch(exist_ok=True)
 
                     controller = self.get_terraform_controller(prepared_controller_configuration, cluster_configuration)
-                    controller.init_controller()
                     config_vars = controller.get_all_vars()
                     controller.tf.set_vars(**config_vars)
                     controller.destroy_all_nodes()
