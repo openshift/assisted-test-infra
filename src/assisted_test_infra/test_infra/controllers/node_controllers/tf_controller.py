@@ -14,27 +14,18 @@ class TFController(NodeController, ABC):
 
     def __init__(self, config: BaseNodesConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
-        self._tf = None
+        self.cluster_name = cluster_config.cluster_name.get()
+        folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=config.tf_platform)
+        self.tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
         self._provider_client = None
 
     @property
-    def tf(self):
-        return self._tf
-
-    def init_controller(self):
-        folder = TerraformControllerUtil.create_folder(self.cluster_name, platform=self._config.tf_platform)
-        self._tf = terraform_utils.TerraformUtils(working_dir=folder, terraform_init=False)
-
-    @property
-    def cluster_name(self):
-        return self._entity_config.cluster_name.get()
-
     @abstractmethod
     def terraform_vm_resource_type(self) -> str:
         pass
 
     def _get_tf_resource(self, resource_type: str) -> List[Dict[str, Any]]:
-        resource_object_type = self._tf.get_resources(resource_type=resource_type)
+        resource_object_type = self.tf.get_resources(resource_type=resource_type)
 
         if not resource_object_type:
             return list()
@@ -54,7 +45,7 @@ class TFController(NodeController, ABC):
     def prepare_nodes(self):
         config = self.get_all_vars()
         self._provider_client = self._get_provider_client()
-        self._tf.set_and_apply(**config)
+        self.tf.set_and_apply(**config)
         nodes = self.list_nodes()
         for node in nodes:
             self.set_boot_order(node.name)
@@ -94,7 +85,7 @@ class TFController(NodeController, ABC):
         pass
 
     def destroy_all_nodes(self) -> None:
-        self._tf.destroy(force=False)
+        self.tf.destroy(force=False)
 
     def start_all_nodes(self) -> List[Node]:
         nodes = self.list_nodes()

@@ -30,13 +30,13 @@ class VSphereController(TFController):
         del config["iso_download_path"]
 
         self._create_folder(self._config.vsphere_parent_folder)
-        self._tf.set_and_apply(**config)
+        self.tf.set_and_apply(**config)
         return self.list_nodes()
 
     def notify_iso_ready(self) -> None:
         self.shutdown_all_nodes()
         config = self.get_all_vars()
-        self._tf.set_and_apply(**config)
+        self.tf.set_and_apply(**config)
 
     def get_cpu_cores(self, node_name: str) -> int:
         return self._get_vm(node_name)["attributes"]["num_cpus"]
@@ -56,7 +56,7 @@ class VSphereController(TFController):
         return ips, macs
 
     def destroy_all_nodes(self) -> None:
-        self._tf.destroy(force=False)
+        self.tf.destroy(force=False)
 
     def start_node(self, node_name: str, check_ips: bool) -> None:
         def start(vm) -> task:
