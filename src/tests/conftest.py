@@ -2,6 +2,7 @@ from typing import List
 
 import pytest
 from _pytest.nodes import Item
+from assisted_service_client.rest import ApiException
 
 import consts
 from assisted_test_infra.test_infra import utils
@@ -20,8 +21,11 @@ def api_client():
     # prevent from kubeapi tests from failing if the fixture is dependant on api_client fixture
     if not global_variables.is_kube_api:
         log.debug("Getting new inventory client")
-        verify_client_version()
-        client = global_variables.get_api_client()
+        try:
+            verify_client_version()
+            client = global_variables.get_api_client()
+        except (RuntimeError, ApiException) as e:
+            log.warning(f"Failed to access api client, {e}")
 
     yield client
 
