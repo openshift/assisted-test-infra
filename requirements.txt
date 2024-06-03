@@ -10,7 +10,7 @@ junit-report==0.2.7
 kubernetes==29.0.0
 libvirt-python==10.3.0
 munch==4.0.0
-netaddr==0.10.0
+netaddr==1.3.0
 netifaces==0.11.0
 openshift-client==2.0.4
 paramiko==3.4.0
