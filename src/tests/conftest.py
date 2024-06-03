@@ -15,9 +15,15 @@ assert global_variables.pull_secret is not None, "Missing pull secret"
 @pytest.fixture(scope="session")
 def api_client():
     log.info("--- SETUP --- api_client\n")
-    verify_client_version()
+    client = None
 
-    yield global_variables.get_api_client()
+    # prevent from kubeapi tests from failing if the fixture is dependant on api_client fixture
+    if not global_variables.is_kube_api:
+        log.debug("Getting new inventory client")
+        verify_client_version()
+        client = global_variables.get_api_client()
+
+    yield client
 
 
 def get_supported_operators() -> List[str]:

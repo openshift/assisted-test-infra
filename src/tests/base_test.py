@@ -16,7 +16,7 @@ from paramiko import SSHException
 
 import consts
 from assisted_test_infra.download_logs.download_logs import download_logs
-from assisted_test_infra.test_infra import Nodes, utils
+from assisted_test_infra.test_infra import Nodes, utils, ClusterName
 from assisted_test_infra.test_infra.controllers import (
     AssistedInstallerInfraController,
     IptableRule,
@@ -240,7 +240,7 @@ class BaseTest:
         )
 
     @pytest.fixture
-    def new_cluster_configuration(self, request: FixtureRequest) -> ClusterConfig:
+    def new_cluster_configuration(self, request: FixtureRequest, api_client) -> ClusterConfig:
         """
         Creates new cluster configuration object.
         Override this fixture in your test class to provide a custom cluster configuration. (See TestInstall)
@@ -248,6 +248,11 @@ class BaseTest:
         """
         config = ClusterConfig()
         self.update_parameterized(request, config)
+
+        # Update cluster name before creating the controller if cluster id was provided
+        if api_client and config.cluster_id is not None:
+            c = api_client.cluster_get(config.cluster_id)
+            config.cluster_name = ClusterName(c.name)
 
         return config
 
