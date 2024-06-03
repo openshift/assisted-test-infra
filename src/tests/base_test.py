@@ -16,7 +16,7 @@ from paramiko import SSHException
 
 import consts
 from assisted_test_infra.download_logs.download_logs import download_logs
-from assisted_test_infra.test_infra import Nodes, utils, ClusterName
+from assisted_test_infra.test_infra import ClusterName, Nodes, utils
 from assisted_test_infra.test_infra.controllers import (
     AssistedInstallerInfraController,
     IptableRule,
