@@ -22,7 +22,7 @@ python-dateutil==2.9.0.post0
 python-hcl2==4.3.3
 python-terraform==0.10.1
 PyYAML==6.0.1
-requests==2.31.0
+requests==2.32.2
 retry==0.9.2
 scp==0.14.5
 semver==3.0.2
