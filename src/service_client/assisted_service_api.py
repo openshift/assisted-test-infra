@@ -76,7 +76,14 @@ class InventoryClient(object):
             }
 
             log.info("Refreshing API key")
-            response = requests.post(os.environ.get("SSO_URL"), data=params)
+            try:
+                sso_url = os.environ["SSO_URL"]
+            except KeyError:
+                log.error("The environment variable SSO_URL is mandatory but was not supplied")
+                raise
+            else:
+                response = requests.post(sso_url, data=params)
+
             response.raise_for_status()
 
             config.api_key["Authorization"] = response.json()["access_token"]
