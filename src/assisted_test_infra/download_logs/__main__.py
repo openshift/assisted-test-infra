@@ -64,11 +64,6 @@ def main():
             log.info("No clusters were found")
             return
 
-        if args.clusters_to_filter_out_file:
-            with open(args.clusters_to_filter_out_file, "r") as file:
-                clusters_to_filter_out = set(line.strip() for line in file)
-            clusters = [cluster for cluster in clusters if cluster["id"] not in clusters_to_filter_out]
-
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
                 download_cluster_logs(client, cluster, args.dest, args.must_gather, args.update_by_events)
@@ -81,11 +76,6 @@ def handle_arguments():
 
     parser.add_argument("inventory_url", help="URL of remote inventory", type=str)
     parser.add_argument("dest", help="Destination to download logs", type=str)
-    parser.add_argument(
-        "clusters_to_filter_out_file",
-        help="A file containing a list of clusters to ignore, delimeted by a new line",
-        type=str,
-    )
     parser.add_argument("--cluster-id", help="Cluster id to download its logs", type=str, default=None, nargs="?")
     parser.add_argument("--download-all", help="Download logs from all clusters", action="store_true")
     parser.add_argument("--must-gather", help="must-gather logs", action="store_true")
