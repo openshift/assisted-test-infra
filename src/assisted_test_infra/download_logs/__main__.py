@@ -9,6 +9,7 @@ from assisted_test_infra.download_logs import gather_sosreport_data
 from assisted_test_infra.download_logs.download_logs import (
     download_cluster_logs,
     download_logs_kube_api,
+    get_cluster_installation_date_and_id,
     get_clusters,
     should_download_logs,
 )
@@ -64,6 +65,15 @@ def main():
             log.info("No clusters were found")
             return
 
+        if args.clusters_to_filter_out_file:
+            with open(args.clusters_to_filter_out_file, "r") as file:
+                clusters_to_filter_out = set((line.strip().split(",")[0], line.strip().split(",")[1]) for line in file)
+            clusters = [
+                cluster
+                for cluster in clusters
+                if get_cluster_installation_date_and_id(cluster) not in clusters_to_filter_out
+            ]
+
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
                 download_cluster_logs(client, cluster, args.dest, args.must_gather, args.update_by_events)
@@ -88,6 +98,12 @@ def handle_arguments():
         help="kubeconfig-path",
         type=str,
         default=os.path.join(os.getenv("HOME"), ".kube/config"),
+    )
+    parser.add_argument(
+        "--exclude-installs",
+        help="A file containing a list of installations in the form of "
+        "installation_timestamp,cluster_id to exclude, delimeted by a new line",
+        type=str,
     )
 
     return parser.parse_args()
