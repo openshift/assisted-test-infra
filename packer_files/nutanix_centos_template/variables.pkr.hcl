@@ -31,7 +31,7 @@ variable "nutanix_cluster" {
 
 ### Builder variables
 
-variable "centos_iso_image_name" {
+variable "centos_disk_image_url" {
   type = string
 }
 

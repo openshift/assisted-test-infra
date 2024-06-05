@@ -10,23 +10,12 @@ source "nutanix" "test-infra" {
   nutanix_insecure = var.nutanix_insecure
   cluster_name     = var.nutanix_cluster
   os_type          = "Linux"
+  user_data = base64encode(file("cloud-config.yaml"))
 
   vm_disks {
-    image_type        = "ISO_IMAGE"
-    source_image_name = var.centos_iso_image_name
-  }
-
-  cd_label = "OEMDRV"
-  cd_content = {
-    "ks.cfg" = templatefile("centos-config/ks.cfg", {
-      ssh_public_key_content = local.ssh_public_key_content
-      root_password  = var.root_password
-    })
-  }
-
-  vm_disks {
-    image_type   = "DISK"
-    disk_size_gb = var.disk_size / 1024
+    image_type       =  "DISK_IMAGE"
+    source_image_uri =  var.centos_disk_image_url
+    disk_size_gb     =  var.disk_size / 1024
   }
 
   vm_nics {

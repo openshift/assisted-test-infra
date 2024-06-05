@@ -1,0 +1,14 @@
+#cloud-config
+ssh_pwauth: True
+disable_root: False
+chpasswd:
+  list: |
+    root:packer
+  expire: False
+users:
+  - name: root
+    lock_passwd: False
+    ssh_authorized_keys:
+      - SSH_KEY_PLACEHOLDER
+runcmd:
+  - systemctl enable --now sshd

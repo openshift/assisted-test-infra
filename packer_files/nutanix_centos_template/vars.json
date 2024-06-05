@@ -6,6 +6,6 @@
     "nutanix_port": "placeholder",
     "nutanix_cluster": "placeholder",
     "nutanix_subnet": "placeholder",
-    "centos_iso_image_name": "placeholder",
+    "centos_disk_image_url": "placeholder",
     "image_name": "assisted-test-infra-machine"
 }
