@@ -50,7 +50,9 @@ function install_libvirt() {
         sudo dnf install -y 'dnf-command(config-manager)'
         sudo dnf config-manager --set-enabled crb
     fi
-    sudo dnf install -y \
+
+    # CRB repo is required for libvirt-devel
+    sudo dnf install -y --enablerepo=crb \
         libvirt \
         libvirt-devel \
         libvirt-daemon-kvm \

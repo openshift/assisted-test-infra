@@ -70,13 +70,13 @@ variable "vcpus" {
 
 variable "iso_url" {
   type = string
-  default = "http://rep-centos-il.upress.io/8-stream/isos/x86_64/CentOS-Stream-8-x86_64-latest-boot.iso"
+  default = "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-boot.iso"
   description = "The Centos8 ISO download URL"
 }
 
 variable "iso_checksum" {
   type = string
-  description = "The Centos8 ISO checksum. See checksum at http://rep-centos-il.upress.io/8-stream/isos/x86_64/CHECKSUM"
+  description = "The Centos ISO checksum. See checksum at https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-boot.iso.SHA256SUM"
 }
 
 variable "root_password" {
