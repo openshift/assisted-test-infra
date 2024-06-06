@@ -36,3 +36,4 @@ nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==8.3.0
 oci==2.111.0
+setuptools==70.0.0
