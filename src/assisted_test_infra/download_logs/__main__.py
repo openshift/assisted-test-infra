@@ -65,8 +65,8 @@ def main():
             log.info("No clusters were found")
             return
 
-        if args.clusters_to_filter_out_file:
-            with open(args.clusters_to_filter_out_file, "r") as file:
+        if args.exclude_installs:
+            with open(args.exclude_installs, "r") as file:
                 clusters_to_filter_out = set((line.strip().split(",")[0], line.strip().split(",")[1]) for line in file)
             clusters = [
                 cluster
