@@ -34,3 +34,4 @@ waiting>=1.4.1
 prompt_toolkit==3.0.33
 nutanix-api==0.0.19
 pytest-error-for-skips==2.0.2
+setuptools==63.4.1
