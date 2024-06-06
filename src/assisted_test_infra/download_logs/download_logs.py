@@ -82,6 +82,10 @@ def should_download_logs(cluster: dict):
     return cluster["status"] in [ClusterStatus.ERROR] or "degraded" in cluster["status_info"]
 
 
+def get_cluster_installation_date_and_id(cluster: dict) -> tuple[str, str]:
+    return (cluster["created_at"][:10], cluster["id"])
+
+
 def min_number_of_log_files(cluster, is_controller_expected):
     if is_controller_expected:
         return len(cluster["hosts"]) + 1
