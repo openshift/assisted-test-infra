@@ -2,25 +2,57 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.oci_compartment_id
 }
 
-data "oci_core_images" "os_images" {
-  compartment_id           = var.oci_compartment_id
-  operating_system         = "Oracle Linux"
-  operating_system_version = "8"
-  state                    = "AVAILABLE"
-  sort_by                  = "TIMECREATED"
-  sort_order               = "DESC"
+# Fetch Rocky Linux 9.x OS image from OCI marketpalce
+# See https://blogs.oracle.com/cloud-infrastructure/post/using-terraform-for-marketplace-images
+data "oci_marketplace_listings" "os_listings" {
+  category       = ["Operating Systems"]
+  pricing        = ["FREE"]
+  package_type   = "IMAGE"
+  compartment_id = var.oci_compartment_id
   filter {
-    # in order to filter out specialized images (e.g.: GPU) or non-x86 images,
-    # match OS names simillar to: Oracle-Linux-8.8-2023.08.16-0
-    name   = "display_name"
-    values = ["^Oracle-Linux-\\d\\.\\d-\\d{4}\\.\\d{2}\\.\\d{2}-\\d$"]
+    name   = "name"
+    values = ["Rocky Linux 9\\.\\d+ - Free \\(x86_64\\)"]
     regex  = true
   }
 }
 
+data "oci_marketplace_listing" "os_listing" {
+  listing_id     = data.oci_marketplace_listings.os_listings.listings[0].id
+  compartment_id = var.oci_compartment_id
+}
+
+data "oci_marketplace_listing_package" "os_listing_package" {
+  listing_id      = data.oci_marketplace_listing.os_listing.id
+  package_version = data.oci_marketplace_listing.os_listing.default_package_version
+  compartment_id  = var.oci_compartment_id
+}
+
+data "oci_core_app_catalog_listing_resource_version" "os_catalog_listing" {
+  listing_id       = data.oci_marketplace_listing_package.os_listing_package.app_catalog_listing_id
+  resource_version = data.oci_marketplace_listing_package.os_listing_package.app_catalog_listing_resource_version
+}
+
+data "oci_marketplace_listing_package_agreements" "os_listing_package_agreements" {
+  listing_id      = data.oci_marketplace_listing.os_listing.id
+  package_version = data.oci_marketplace_listing.os_listing.default_package_version
+  compartment_id  = var.oci_compartment_id
+}
+
+# Sign agreement to use Rocky Linux from the OCI marketpalce
+resource "oci_marketplace_accepted_agreement" "os_accepted_agreement" {
+  agreement_id    = oci_marketplace_listing_package_agreement.os_listing_package_agreement.agreement_id
+  compartment_id  = var.oci_compartment_id
+  listing_id      = data.oci_marketplace_listing.os_listing.id
+  package_version = data.oci_marketplace_listing.os_listing.default_package_version
+  signature       = oci_marketplace_listing_package_agreement.os_listing_package_agreement.signature
+}
+resource "oci_marketplace_listing_package_agreement" "os_listing_package_agreement" {
+  agreement_id    = data.oci_marketplace_listing_package_agreements.os_listing_package_agreements.agreements[0].id
+  listing_id      = data.oci_marketplace_listing.os_listing.id
+  package_version = data.oci_marketplace_listing.os_listing.default_package_version
+}
 
 # Use cloud init to configure root user
-# and grow root filesystem
 data "cloudinit_config" "config" {
   part {
     content_type = "text/cloud-config"
@@ -33,11 +65,6 @@ data "cloudinit_config" "config" {
             file(var.public_ssh_key_path)
           ]
         }
-      ],
-      "runcmd" : [
-        "growpart /dev/sda 3",
-        "pvresize /dev/sda3",
-        "lvresize --extents +100%FREE --resizefs /dev/mapper/ocivolume-root"
       ]
     })
   }
@@ -60,7 +87,7 @@ resource "oci_core_instance" "ci_instance" {
   }
 
   source_details {
-    source_id               = data.oci_core_images.os_images.images[0].id
+    source_id               = data.oci_core_app_catalog_listing_resource_version.os_catalog_listing.listing_resource_id
     source_type             = "image"
     boot_volume_size_in_gbs = 500
     boot_volume_vpus_per_gb = 30
@@ -98,6 +125,11 @@ resource "oci_core_instance" "ci_instance" {
     inline = [
       # Wait for cloud-init to complete.
       "cloud-init status --wait || true"
+    ]
+  }
+  lifecycle {
+    ignore_changes = [
+      source_details[0].source_id,
     ]
   }
 }
