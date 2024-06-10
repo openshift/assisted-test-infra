@@ -2,6 +2,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import string
 import tempfile
 import xml.dom.minidom as md
@@ -675,3 +676,48 @@ class LibvirtController(NodeController, ABC):
 
     def get_day2_static_network_data(self):
         pass
+
+
+def collect_virsh_logs(nodes, log_dir_name):
+    log.info("Collecting virsh logs\n")
+    os.makedirs(log_dir_name, exist_ok=True)
+    virsh_log_path = os.path.join(log_dir_name, "libvirt_logs")
+    os.makedirs(virsh_log_path, exist_ok=False)
+
+    libvirt_list_path = os.path.join(virsh_log_path, "virsh_list")
+    utils.run_command(f"virsh list --all >> {libvirt_list_path}", shell=True)
+
+    libvirt_net_list_path = os.path.join(virsh_log_path, "virsh_net_list")
+    utils.run_command(f"virsh net-list --all >> {libvirt_net_list_path}", shell=True)
+
+    network_name = nodes.get_cluster_network()
+    virsh_leases_path = os.path.join(virsh_log_path, "net_dhcp_leases")
+    utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
+
+    messages_log_path = os.path.join(virsh_log_path, "messages.log")
+    try:
+        shutil.copy("/var/log/messages", messages_log_path)
+    except FileNotFoundError:
+        log.warning("Failed to copy /var/log/messages, file does not exist")
+
+    qemu_libvirt_path = os.path.join(virsh_log_path, "qemu_libvirt_logs")
+    os.makedirs(qemu_libvirt_path, exist_ok=False)
+    for node in nodes:
+        try:
+            shutil.copy(f"/var/log/libvirt/qemu/{node.name}.log", f"{qemu_libvirt_path}/{node.name}-qemu.log")
+        except FileNotFoundError:
+            log.warning(f"Failed to copy {node.name} qemu log, file does not exist")
+
+    console_log_path = os.path.join(virsh_log_path, "console_logs")
+    os.makedirs(console_log_path, exist_ok=False)
+    for node in nodes:
+        try:
+            shutil.copy(f"/var/log/libvirt/qemu/{node.name}-console.log", f"{console_log_path}/{node.name}-console.log")
+        except FileNotFoundError:
+            log.warning(f"Failed to copy {node.name} console log, file does not exist")
+
+    libvird_log_path = os.path.join(virsh_log_path, "libvirtd_journal")
+    utils.run_command(
+        f'journalctl --since "{nodes.setup_time}" ' f"-u libvirtd -D /run/log/journal >> {libvird_log_path}",
+        shell=True,
+    )
