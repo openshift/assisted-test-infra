@@ -38,45 +38,37 @@ function spawn_port_forwarding_command() {
     target=$6
     ip=${7:-""}
     port=${8:-""}
-    socket_name="forward-${service_name}-${external_port}"
-    service_file="/etc/systemd/system/${socket_name}@.service"
-    socket_file="/etc/systemd/system/${socket_name}.socket"
+    xinet_service_name="${9:-${service_name}}"
 
+    filename=${xinet_service_name}__${namespace}__${namespace_index}__${external_port}__assisted_installer
     if [ "$target" = "minikube" ]; then
-        ip=$(kubectl --kubeconfig="$kubeconfig" get nodes -o=jsonpath='{.items[0].status.addresses[0].address}')
-        if [ -z "$port" ]; then
-            port=$(kubectl --kubeconfig="$kubeconfig" get svc/"${service_name}" -n "${namespace}" -o=jsonpath='{.spec.ports[0].nodePort}')
+        ip=$(kubectl --kubeconfig=$kubeconfig get nodes -o=jsonpath={.items[0].status.addresses[0].address})
+        if [ -z "$port" ]
+        then
+          port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${namespace} -o=jsonpath='{.spec.ports[0].nodePort}')
         else
-            port=$(kubectl --kubeconfig="$kubeconfig" get svc/"${service_name}" -n "${namespace}" -o=jsonpath="{.spec.ports[?(@.port==$port)].nodePort}")
+          # resolve the service node port form the service internal port (Support multiple ports per service).
+          port=$(kubectl --kubeconfig=$kubeconfig get svc/${service_name} -n ${namespace} -o=jsonpath="{.spec.ports[?(@.port==$port)].nodePort}")
         fi
     fi
-
-    cat <<EOF | sudo tee "${socket_file}"
-[Unit]
-Description=Socket for forwarding to Minikube ${service_name}
-
-[Socket]
-ListenStream=${external_port}
-Accept=yes
-
-[Install]
-WantedBy=sockets.target
-EOF
-
-    cat <<EOF | sudo tee "${service_file}"
-[Unit]
-Description=Forwarding instance to Minikube ${service_name}
-
-[Service]
-ExecStart=/usr/bin/socat STDIO TCP:${ip}:${port}
-StandardInput=socket
-EOF
-
-    sudo systemctl daemon-reload
-    sudo systemctl enable "${socket_name}.socket"
-    sudo systemctl start "${socket_name}.socket"
+    mkdir -p ./build
+    cat <<EOF >build/xinetd-$filename
+service ${xinet_service_name}
+{
+  type		= UNLISTED
+  socket_type	= stream
+  protocol	= tcp
+  user		= root
+  wait		= no
+  redirect	= $ip $port
+  port		= ${external_port}
+  per_source	= UNLIMITED
+  instances	= UNLIMITED
 }
-
+EOF
+    sudo mv build/xinetd-$filename /etc/xinetd.d/$filename --force
+    sudo systemctl restart xinetd
+}
 
 function run_in_background() {
     bash -c "nohup $1  >/dev/null 2>&1 &"
@@ -84,18 +76,12 @@ function run_in_background() {
 
 function kill_port_forwardings() {
     services=$1
-
-    for service_name in $services; do
-        for socket_file in $(ls /etc/systemd/system/forward-${service_name}-*.socket 2>/dev/null); do
-            socket_base=$(basename "$socket_file" .socket)
-            sudo systemctl stop "$socket_base.socket"
-            sudo systemctl disable "$socket_base.socket"
-            sudo rm -f "/etc/systemd/system/${socket_base}.socket"
-            sudo rm -f "/etc/systemd/system/${socket_base}@.service"
+    sudo systemctl stop xinetd
+    for s in $services; do
+        for f in $(sudo ls /etc/xinetd.d/ | grep $s); do
+            sudo rm -f /etc/xinetd.d/$f
         done
     done
-
-    sudo systemctl daemon-reload
 }
 
 function get_main_ip() {

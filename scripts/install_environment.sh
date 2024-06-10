@@ -50,9 +50,7 @@ function install_libvirt() {
         sudo dnf install -y 'dnf-command(config-manager)'
         sudo dnf config-manager --set-enabled crb
     fi
-
-    # CRB repo is required for libvirt-devel
-    sudo dnf install -y --enablerepo=crb \
+    sudo dnf install -y \
         libvirt \
         libvirt-devel \
         libvirt-daemon-kvm \
@@ -201,7 +199,7 @@ function install_packages() {
 
 function install_skipper() {
     echo "Installing skipper and adding ~/.local/bin to PATH"
-    pip3 install strato-skipper==2.0.2 --user
+    pip3 install strato-skipper==2.0.0 --user
 
     #grep -qxF "export PATH=~/.local/bin:$PATH" ~/.bashrc || echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
     #export PATH="$PATH:~/.local/bin"
