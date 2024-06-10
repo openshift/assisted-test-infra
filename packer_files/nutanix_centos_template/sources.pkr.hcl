@@ -17,12 +17,7 @@ source "nutanix" "test-infra" {
   }
 
   cd_label = "OEMDRV"
-  cd_content = {
-    "ks.cfg" = templatefile("centos-config/ks.cfg", {
-      ssh_public_key_content = local.ssh_public_key_content
-      root_password  = var.root_password
-    })
-  }
+  cd_files = ["centos-config/ks.cfg"]
 
   vm_disks {
     image_type   = "DISK"
