@@ -26,6 +26,8 @@ class InfraEnv(Entity):
         return self._config.infra_env_id
 
     def update_existing(self) -> str:
+        # Might cause issues with defaults
+        self.api_client.update_infra_env(self.id, models.InfraEnvUpdateParams(image_type=self._config.iso_image_type))
         return self.id
 
     def _create(self):

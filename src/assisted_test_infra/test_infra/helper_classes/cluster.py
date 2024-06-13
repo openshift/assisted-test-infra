@@ -74,7 +74,7 @@ class Cluster(BaseCluster):
         self.update_config(
             **dict(
                 openshift_version=existing_cluster.openshift_version,
-                cluster_name=ClusterName(existing_cluster.name),
+                entity_name=ClusterName(existing_cluster.name),
                 additional_ntp_source=existing_cluster.additional_ntp_source,
                 user_managed_networking=existing_cluster.user_managed_networking,
                 high_availability_mode=existing_cluster.high_availability_mode,
