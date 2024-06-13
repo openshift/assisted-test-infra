@@ -3,7 +3,7 @@
 #############
 
 SHELL=/bin/sh
-CONTAINER_COMMAND := $(shell scripts/utils.sh get_container_runtime_command)
+CONTAINER_COMMAND := podman
 
 # Selecting the right podman-remote version since podman-remote4 cannot work against podman-server3 and vice versa.
 # It must be occurred before any other container related task.

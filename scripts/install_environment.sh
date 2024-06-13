@@ -166,10 +166,6 @@ function install_podman(){
 
 function install_runtime_container() {
     echo "Container runtime package"
-    if [ -x "$(command -v docker)" ]; then
-        echo "docker is already installed"
-        return
-    fi
 
     # getting podman version and allowing it to fail if podman is not installed
     current_podman_version="$(podman info --format={{.Version.Version}} || true)"
