@@ -45,14 +45,11 @@ function config_additional_modules() {
 
 function install_libvirt() {
     echo "Installing libvirt-related packages..."
-    source "/etc/os-release" # This should set `PRETTY_NAME` as environment variable
-    if [[ "${PRETTY_NAME}" == "Rocky Linux 9"* ]]; then
-        sudo dnf install -y 'dnf-command(config-manager)'
-        sudo dnf config-manager --set-enabled crb
-    fi
 
-    # CRB repo is required for libvirt-devel
-    sudo dnf install -y --enablerepo=crb \
+    # CRB repo is required for libvirt-devel in some versions of RHEL
+    sudo dnf install -y 'dnf-command(config-manager)' || true
+    sudo dnf config-manager --set-enabled crb || true
+    sudo dnf install -y \
         libvirt \
         libvirt-devel \
         libvirt-daemon-kvm \
