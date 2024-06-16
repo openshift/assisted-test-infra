@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+set -x
 
 source scripts/utils.sh
 
@@ -17,6 +18,9 @@ mkdir -p build
 print_log "Starting ui"
 skipper run "make -C assisted-service/ deploy-ui" ${SKIPPER_PARAMS} TARGET=${DEPLOY_TARGET} DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE}
 
+ui_pod=$(get_pods_with_label app=assisted-installer-ui ${NAMESPACE})
+kubectl wait -n ${NAMESPACE} --for=condition=Ready=false --timeout=60s  $ui_pod
+
 case ${DEPLOY_TARGET} in
     minikube)
         node_ip=$(get_main_ip)
@@ -25,10 +29,9 @@ case ${DEPLOY_TARGET} in
         ;;
 
     kind)
-        EXTERNAL_PORT=false
-        node_ip=$(hostname)
-        ui_port=80
-        ui_url="http://${node_ip}/"
+        node_ip=$(get_main_ip)
+        ui_port=8060
+        ui_url="http://${node_ip}:${ui_port}"
         ;;
     *)
         echo "Non-supported deploy target ${DEPLOY_TARGET}!";

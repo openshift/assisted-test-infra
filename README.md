@@ -84,6 +84,14 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `SERVICE_BRANCH`              | assisted-service branch to use, default: master |
 | `SERVICE_BASE_REF`            | assisted-service base reference to merge `SERVICE_BRANCH` with, default: master |
 | `SERVICE_REPO`                | assisted-service repository to use, default: https://github.com/openshift/assisted-service |
+| `USE_LOCAL_SERVICE`           | if equals `true`, assisted-service will be build from `assisted-test-infra/assisted-service` code |
+| `DEBUG_SERVICE`               | if equals `true`, assisted-service will be build from `assisted-test-infra/assisted-service` code and deployed in debug mode, exposing port `40000` for `dlv` connection. |
+
+**Note** - When using `USE_LOCAL_SERVICE` or `DEBUG_SERVICE` local assisted-service code will be used. Therefore `bring_assisted_service.sh` script will not change the local service code unless it is missing. If you want to import assisted-service changes, you can use -
+```bash
+make bring_assisted_service SERVICE_REPO=<assisted-service repository to use> SERVICE_BASE_REF=<assisted-service branch to use>
+```
+before you run start the deployment.
 
 ### Deployment config
 

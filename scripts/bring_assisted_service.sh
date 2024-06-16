@@ -22,8 +22,10 @@ export PULL_BASE_REF=${PULL_BASE_REF:-master}
 if ! [[ -d "assisted-service" ]]; then
   echo "Can't find assisted-service source locally, cloning ${SERVICE_REPO}"
   retry -- git clone "${SERVICE_REPO}"
-elif
-  [[ ${SERVICE_REPO} != $(cd assisted-service && git remote get-url origin) ]]; then
+elif [[ "${USE_LOCAL_SERVICE}" == "true" || "${DEBUG_SERVICE}" == "true" ]]; then
+  echo "Using local assisted-service"
+  exit 0
+elif [[ ${SERVICE_REPO} != $(cd assisted-service && git remote get-url origin) ]]; then
   echo "assisted-service repository found locally but with a different origin, replacing with ${SERVICE_REPO}"
   rm -rf ./assisted-service
   retry -- git clone "${SERVICE_REPO}"
