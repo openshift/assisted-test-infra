@@ -68,7 +68,7 @@ EOF
 Description=Forwarding instance to Minikube ${service_name}
 
 [Service]
-ExecStart=/usr/bin/socat STDIO TCP:${ip}:${port}
+ExecStart=/usr/bin/socat TCP-LISTEN:${external_port},reuseaddr,fork TCP:${ip}:${port}
 StandardInput=socket
 EOF
 
