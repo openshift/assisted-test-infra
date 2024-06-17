@@ -73,8 +73,7 @@ StandardInput=socket
 EOF
 
     sudo systemctl daemon-reload
-    sudo systemctl enable "${socket_name}.socket"
-    sudo systemctl start "${socket_name}.socket"
+    sudo systemctl enable --now "${socket_name}.socket"
 }
 
 
@@ -88,8 +87,7 @@ function kill_port_forwardings() {
     for service_name in $services; do
         for socket_file in $(ls /etc/systemd/system/forward-${service_name}-*.socket 2>/dev/null); do
             socket_base=$(basename "$socket_file" .socket)
-            sudo systemctl stop "$socket_base.socket"
-            sudo systemctl disable "$socket_base.socket"
+            sudo systemctl disable --now "$socket_base.socket"
             sudo rm -f "/etc/systemd/system/${socket_base}.socket"
             sudo rm -f "/etc/systemd/system/${socket_base}@.service"
         done
@@ -141,7 +139,7 @@ function close_external_ports() {
 
 function add_firewalld_port() {
     port=$1
-    if [ "${EXTERNAL_PORT}" = "y" ]; then
+    if $EXTERNAL_PORT; then
         echo "configuring external ports"
         sudo firewall-cmd --zone=public --add-port=$port/tcp
     fi
