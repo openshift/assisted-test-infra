@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
+export EXTERNAL_PORT=${EXTERNAL_PORT:-true}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
 readonly PODMAN_MINIMUM_VERSION="3.2.0"
 
@@ -114,7 +114,6 @@ function start_and_enable_libvirtd_tcp_socket() {
     sudo systemctl unmask libvirtd-ro.socket
     sudo systemctl restart libvirtd.socket
     sudo systemctl enable --now libvirtd-tcp.socket
-    sudo systemctl start libvirtd-tcp.socket
     sudo systemctl start libvirtd
 }
 

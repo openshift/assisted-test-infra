@@ -6,7 +6,7 @@ source scripts/utils.sh
 export NODE_IP=$(get_main_ip)
 export PROMETHEUS_SERVICE_NAME=prometheus-k8s
 export NAMESPACE=${NAMESPACE:-assisted-installer}
-export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
+export EXTERNAL_PORT=${EXTERNAL_PORT:-true}
 export PROMETHEUS_UI_PORT=$(( 9091 + $NAMESPACE_INDEX ))
 export OCP_PROMETHEUS_UI_PORT=$(( 9091 + $NAMESPACE_INDEX ))
 
