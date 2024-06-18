@@ -141,6 +141,7 @@ function add_firewalld_port() {
     fi
     echo "configuring libvirt zone ports ports"
     sudo firewall-cmd --zone=libvirt --add-port=$port/tcp
+    sudo firewall-cmd --policy=libvirt-to-host   --add-port=$port/tcp
 }
 
 function as_singleton() {
