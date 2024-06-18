@@ -6,7 +6,7 @@ source scripts/utils.sh
 export UI_SERVICE_NAME=assisted-installer-ui
 export NO_UI=${NO_UI:-n}
 export NAMESPACE=${NAMESPACE:-assisted-installer}
-export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
+export EXTERNAL_PORT=${EXTERNAL_PORT:-true}
 
 if [[ "${NO_UI}" != "n" ]] || [[ "${DEPLOY_TARGET}" != @(minikube|kind) ]]; then
     exit 0
@@ -25,7 +25,7 @@ case ${DEPLOY_TARGET} in
         ;;
 
     kind)
-        EXTERNAL_PORT=no
+        EXTERNAL_PORT=false
         node_ip=$(hostname)
         ui_port=80
         ui_url="http://${node_ip}/"

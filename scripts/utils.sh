@@ -71,6 +71,7 @@ EOF
 
     sudo systemctl daemon-reload
     sudo systemctl enable --now "${service_file}"
+
 }
 
 
@@ -135,7 +136,7 @@ function close_external_ports() {
 
 function add_firewalld_port() {
     port=$1
-    if [ "${EXTERNAL_PORT}" = "y" ]; then
+    if $EXTERNAL_PORT; then
         echo "configuring external ports"
         sudo firewall-cmd --zone=public --add-port=$port/tcp
     fi

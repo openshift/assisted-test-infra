@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-export EXTERNAL_PORT=${EXTERNAL_PORT:-y}
+export EXTERNAL_PORT=${EXTERNAL_PORT:-true}
 export ADD_USER_TO_SUDO=${ADD_USER_TO_SUDO:-n}
 readonly PODMAN_MINIMUM_VERSION="3.2.0"
 
@@ -45,14 +45,11 @@ function config_additional_modules() {
 
 function install_libvirt() {
     echo "Installing libvirt-related packages..."
-    source "/etc/os-release" # This should set `PRETTY_NAME` as environment variable
-    if [[ "${PRETTY_NAME}" == "Rocky Linux 9"* ]]; then
-        sudo dnf install -y 'dnf-command(config-manager)'
-        sudo dnf config-manager --set-enabled crb
-    fi
 
-    # CRB repo is required for libvirt-devel
-    sudo dnf install -y --enablerepo=crb \
+    # CRB repo is required for libvirt-devel in some versions of RHEL
+    sudo dnf install -y 'dnf-command(config-manager)' || true
+    sudo dnf config-manager --set-enabled crb || true
+    sudo dnf install -y \
         libvirt \
         libvirt-devel \
         libvirt-daemon-kvm \
@@ -117,7 +114,6 @@ function start_and_enable_libvirtd_tcp_socket() {
     sudo systemctl unmask libvirtd-ro.socket
     sudo systemctl restart libvirtd.socket
     sudo systemctl enable --now libvirtd-tcp.socket
-    sudo systemctl start libvirtd-tcp.socket
     sudo systemctl start libvirtd
 }
 
