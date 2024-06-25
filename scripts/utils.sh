@@ -130,6 +130,9 @@ function close_external_ports() {
     ports=$1
     for p in $ports; do
         sudo firewall-cmd --zone=public --remove-port=$p/tcp
+        if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
+            sudo firewall-cmd --policy=libvirt-to-host --remove-port=$p/tcp
+        fi
     done
 }
 
@@ -138,6 +141,7 @@ function add_firewalld_port() {
     if $EXTERNAL_PORT; then
         echo "configuring external ports"
         sudo firewall-cmd --zone=public --add-port=$port/tcp
+        sudo firewall-cmd --policy=libvirt-to-host   --add-port=$port/tcp
     fi
     echo "configuring libvirt zone ports ports"
     sudo firewall-cmd --zone=libvirt --add-port=$port/tcp

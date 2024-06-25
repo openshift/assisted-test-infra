@@ -45,6 +45,7 @@ export OPENSHIFT_CI=${OPENSHIFT_CI:-false}
 export ENABLE_SKIP_MCO_REBOOT=${ENABLE_SKIP_MCO_REBOOT:-true}
 export ENABLE_SOFT_TIMEOUTS=${ENABLE_SOFT_TIMEOUTS:-false}
 export IMAGES_FLAVOR=${IMAGES_FLAVOR:-}
+export PLATFORM=${PLATFORM:-}
 export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
 export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
 export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
@@ -146,6 +147,15 @@ EOF
 else
     print_log "Updating assisted_service params"
 
+        if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
+        # on RHEl9 we need to open ports in a new policy
+        # between libvirt and HOST
+        print_log "Opening additional ports for none/external"
+        firewall-cmd --policy=libvirt-to-host --add-port={22623/tcp,6443/tcp}
+        firewall-cmd --policy=libvirt-to-host --add-service={http,https}
+        firewall-cmd --zone=libvirt-routed  --add-forward
+    fi
+    
     if [ "${DEBUG_SERVICE}" == "true" ]; then
         # Change the registry service type to LoadBalancer to be able to access it from outside the cluster
         kubectl patch service $REGISTRY_SERVICE_NAME -n $REGISTRY_SERVICE_NAMESPACE --type json -p='[{"op": "replace", "path": "/spec/type", "value":"LoadBalancer"}]'
