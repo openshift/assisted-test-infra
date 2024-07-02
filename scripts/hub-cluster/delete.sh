@@ -12,7 +12,7 @@ case ${DEPLOY_TARGET} in
         $__dir/minikube.sh delete
         ;;
     kind)
-        $__dir/kind/kind.sh delete
+        assisted-service/hack/kind/kind.sh delete
         ;;
     onprem)
         ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ clean-onprem
