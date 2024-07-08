@@ -37,7 +37,7 @@ nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==10.1.0
 jmespath==1.0.1
-oci==2.129.0
+oci==2.129.1
 setuptools==70.2.0
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
 cryptography>=42.0.8 # not directly required, pinned by Snyk to avoid a vulnerability
