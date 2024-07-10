@@ -41,3 +41,4 @@ oci==2.129.1
 setuptools==70.2.0
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
 cryptography>=42.0.8 # not directly required, pinned by Snyk to avoid a vulnerability
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
