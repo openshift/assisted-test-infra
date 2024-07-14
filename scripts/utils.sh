@@ -39,8 +39,7 @@ function spawn_port_forwarding_command() {
     ip=${7:-""}
     port=${8:-""}
     socket_name="forward-${service_name}-${external_port}"
-    service_file="/etc/systemd/system/${socket_name}@.service"
-    socket_file="/etc/systemd/system/${socket_name}.socket"
+    service_file="/etc/systemd/system/${socket_name}.service"
 
     if [ "$target" = "minikube" ]; then
         ip=$(kubectl --kubeconfig="$kubeconfig" get nodes -o=jsonpath='{.items[0].status.addresses[0].address}')
@@ -51,29 +50,24 @@ function spawn_port_forwarding_command() {
         fi
     fi
 
-    cat <<EOF | sudo tee "${socket_file}"
-[Unit]
-Description=Socket for forwarding to Minikube ${service_name}
-
-[Socket]
-ListenStream=${external_port}
-Accept=yes
-
-[Install]
-WantedBy=sockets.target
-EOF
-
     cat <<EOF | sudo tee "${service_file}"
 [Unit]
 Description=Forwarding instance to Minikube ${service_name}
 
 [Service]
-ExecStart=/usr/bin/socat STDIO TCP:${ip}:${port}
-StandardInput=socket
+Type=simple
+StandardOutput=syslog
+StandardError=syslog
+
+[Service]
+ExecStart=/usr/bin/socat TCP-LISTEN:${external_port},reuseaddr,fork TCP:${ip}:${port}
+
+[Install]
+WantedBy=multi-user.target
 EOF
 
     sudo systemctl daemon-reload
-    sudo systemctl enable --now "${socket_name}.socket"
+    sudo systemctl enable --now "${service_file}"
 }
 
 
@@ -85,11 +79,10 @@ function kill_port_forwardings() {
     services=$1
 
     for service_name in $services; do
-        for socket_file in $(ls /etc/systemd/system/forward-${service_name}-*.socket 2>/dev/null); do
-            socket_base=$(basename "$socket_file" .socket)
-            sudo systemctl disable --now "$socket_base.socket"
-            sudo rm -f "/etc/systemd/system/${socket_base}.socket"
-            sudo rm -f "/etc/systemd/system/${socket_base}@.service"
+        for service_file in $(ls /etc/systemd/system/forward-${service_name}-*.service 2>/dev/null); do
+            service_base_name=$(basename "$service_file")
+            sudo systemctl disable --now "service_base_name"
+            sudo rm -f "/etc/systemd/system/$service_file"
         done
     done
 
@@ -134,11 +127,19 @@ function close_external_ports() {
     ports=$1
     for p in $ports; do
         sudo firewall-cmd --zone=public --remove-port=$p/tcp
+        if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
+            sudo firewall-cmd --policy=libvirt-to-host --remove-port=$p/tcp
+        fi
     done
 }
 
 function add_firewalld_port() {
     port=$1
+
+    if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
+        sudo firewall-cmd --policy=libvirt-to-host --add-port=$port/tcp
+    fi
+
     if $EXTERNAL_PORT; then
         echo "configuring external ports"
         sudo firewall-cmd --zone=public --add-port=$port/tcp
