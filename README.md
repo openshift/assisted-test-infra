@@ -380,7 +380,7 @@ make image_build
 ## In case you would like to build the image with a different `assisted-service` client
 
 ```bash
-make image_build SERVICE=<assisted service image URL>
+make image_build SERVICE_REPO=<assisted-service repository to use> SERVICE_BASE_REF=<assisted-service branch to use>
 ```
 
 ## Test with RHSSO Authentication
