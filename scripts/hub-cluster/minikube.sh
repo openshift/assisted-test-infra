@@ -55,6 +55,7 @@ function install() {
     ${SUDO} install minikube /usr/local/bin/
     minikube version
     rm -f minikube
+    
 }
 
 function create() {
