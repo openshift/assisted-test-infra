@@ -18,13 +18,16 @@ export REPO_NAME=${REPO_NAME:-assisted-service}
 export JOB_TYPE=${JOB_TYPE:-}
 export PULL_BASE_REF=${PULL_BASE_REF:-master}
 
+
 if ! [[ -d "assisted-service" ]]; then
   echo "Can't find assisted-service source locally, cloning ${SERVICE_REPO}"
   retry -- git clone "${SERVICE_REPO}"
+elif
+  [[ ${SERVICE_REPO} != $(cd assisted-service && git remote get-url origin) ]]; then
+  echo "assisted-service repository found locally but with a different origin, replacing with ${SERVICE_REPO}"
+  rm -rf ./assisted-service
+  retry -- git clone "${SERVICE_REPO}"
 fi
-
-service_active_branch=$(cd assisted-service/ && git rev-parse --abbrev-ref HEAD)
-pr_branch_name=assisted-service-pr-${PULL_NUMBER}
 
 if [[ "${OPENSHIFT_CI}" == "true" ]]; then
     # Some git commands require user/email to be set, use a dummy global
@@ -40,6 +43,10 @@ if [[ "${OPENSHIFT_CI}" == "true" ]]; then
 fi
 
 if [[ "${OPENSHIFT_CI}" == "true" && "${REPO_NAME}" == "assisted-service" && "${JOB_TYPE}" == "presubmit" ]]; then
+
+  service_active_branch=$(cd assisted-service/ && git rev-parse --abbrev-ref HEAD)
+  pr_branch_name=assisted-service-pr-${PULL_NUMBER}
+  
   if [[ "${service_active_branch}" == "${pr_branch_name}" ]]; then
     # Assisted-Service source code is already updated and rebased with PULL_BASE_REF.
     # git fetch cannot be called twice after rebase so if the PR branch already exist the assumption is that it was
