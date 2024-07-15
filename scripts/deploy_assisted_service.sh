@@ -151,7 +151,7 @@ else
         # on RHEl9 we need to open ports in a new policy
         # between libvirt and HOST
         print_log "Opening additional ports for none/external"
-        firewall-cmd --policy=libvirt-to-host --add-port={22623/tcp,6443/tcp}
+        firewall-cmd --policy=libvirt-to-host --add-port={22623/tcp,22624/tcp,6443/tcp}
         firewall-cmd --policy=libvirt-to-host --add-service={http,https}
         firewall-cmd --zone=libvirt-routed  --add-forward
     fi
