@@ -124,7 +124,9 @@ function wait_for_url_and_run() {
 }
 
 function close_external_ports() {
+    export PLATFORM=${PLATFORM:-}
     ports=$1
+    
     for p in $ports; do
         sudo firewall-cmd --zone=public --remove-port=$p/tcp
         if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
@@ -135,6 +137,7 @@ function close_external_ports() {
 
 function add_firewalld_port() {
     port=$1
+    export PLATFORM=${PLATFORM:-}
 
     if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
         sudo firewall-cmd --policy=libvirt-to-host --add-port=$port/tcp
