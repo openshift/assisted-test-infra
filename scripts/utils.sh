@@ -226,4 +226,40 @@ function select_podman_client() {
   fi
 }
 
+function retry() {
+    attempts=5
+    interval=1
+
+    local OPTIND
+    while getopts "a:i:" opt ; do
+      case "${opt}" in
+          a )
+              attempts="${OPTARG}"
+              ;;
+          i )
+              interval="${OPTARG}"
+              ;;
+          * )
+              ;;
+      esac
+    done
+    shift $((OPTIND-1))
+
+    rc=0
+    for attempt in $(seq "${attempts}")
+    do
+        echo "Attempt ${attempt}/${attempts} to execute \"$*\"..."
+
+        if "$@"; then
+            return 0
+        else
+            rc=$?
+            echo "Failed with exit code ${rc}, retrying \"$*\"..."
+            sleep "${interval}"
+        fi
+    done
+
+    return ${rc}
+}
+
 "$@"

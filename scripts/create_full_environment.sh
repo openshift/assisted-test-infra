@@ -30,11 +30,6 @@ echo "Installing environment"
 scripts/install_environment.sh
 echo "Done installing"
 
-echo "Creating image"
-make bring_assisted_service
-make image_build
-echo "Done creating image"
-
 echo "Installing kind"
 scripts/hub-cluster/kind/kind.sh install
 echo "Done installing kind"
@@ -46,6 +41,10 @@ echo "Done installing minikube"
 echo "Installing oc and kubectl"
 scripts/install_k8s_clients.sh
 echo "Done installing oc and kubectl"
+
+echo "Creating image"
+make image_build
+echo "Done creating image"
 
 if [ "${DEPLOY_TARGET}" == "minikube" ] && [ -z "${NO_MINIKUBE}" ]; then
     echo "Start minikube"
