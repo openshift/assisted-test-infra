@@ -11,6 +11,7 @@ minikube
 .env
 capi
 sno-bootstrap-manifests
+.pip/
 
 # terraform
 .terraform.lock.hcl
