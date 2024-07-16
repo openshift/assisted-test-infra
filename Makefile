@@ -142,10 +142,8 @@ setup:
 
 create_environment: image_build bring_assisted_service create_hub_cluster
 
-image_build:
-	scripts/pull_dockerfile_images.sh
-	sed 's/^FROM .*assisted-service.*:latest/FROM $(subst /,\/,${SERVICE})/' Dockerfile.assisted-test-infra | \
-		$(CONTAINER_COMMAND) build --network=host -t $(IMAGE_NAME) -f- .
+image_build: bring_assisted_service generate_python_client
+	$(CONTAINER_COMMAND) build --network=host -t $(IMAGE_NAME) -f Dockerfile.assisted-test-infra .
 	$(CONTAINER_COMMAND) tag $(IMAGE_NAME) test-infra:latest  # For backwards computability
 
 create_hub_cluster:
@@ -410,3 +408,7 @@ cli:
 
 validate_client:
 	skipper run "python3 ${DEBUG_FLAGS} src/service_client/client_validator.py"
+
+generate_python_client: bring_assisted_service
+	cd assisted-service && skipper make generate-python-client
+	mkdir -p ./.pip && mv assisted-service/build/assisted-installer/assisted-service-client/dist/*.whl ./.pip/
