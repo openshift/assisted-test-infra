@@ -89,6 +89,19 @@ function kill_port_forwardings() {
     sudo systemctl daemon-reload
 }
 
+function delete_all_port_forwarding() {
+    for service_file in $(ls /etc/systemd/system/forward-*.service 2>/dev/null); do
+            sudo systemctl stop forward-*
+            service_base_name=$(basename "$service_file" | cut -d"." -f1)
+            echo "deleting service $service_base_name"
+            sudo systemctl disable "service_base_name" 2>/dev/null
+            sudo rm -f "$service_file"
+    done
+    
+    sudo systemctl daemon-reload
+}
+
+
 function get_main_ip() {
     echo "$(ip route get 1 | sed 's/^.*src \([^ ]*\).*$/\1/;q')"
 }
