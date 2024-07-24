@@ -85,6 +85,15 @@ if [ "${OPENSHIFT_CI}" == "true" ]; then
 fi
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
+    # Override assisted-service and assisted-image-service
+    if [ -n "${SERVICE:-}" ]; then
+        sed -i "s|quay.io/edge-infrastructure/assisted-service:latest|${SERVICE}|g" assisted-service/deploy/podman/pod.yml
+    fi
+    if [ -n "${IMAGE_SERVICE:-}" ]; then
+        sed -i "s|quay.io/edge-infrastructure/assisted-image-service:latest|${IMAGE_SERVICE}|g" assisted-service/deploy/podman/pod.yml
+    fi
+
+    # Override ConfigMap 
     if [ -n "${INSTALLER_IMAGE:-}" ]; then
         echo "  INSTALLER_IMAGE: ${INSTALLER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
