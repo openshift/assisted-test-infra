@@ -28,10 +28,13 @@ resource "equinix_metal_device" "ci_devices" {
 
   provisioner "remote-exec" {
     inline = [
+      # fix for missing Python
+      "dnf install python312 python3.12-pip -y || true",
+      "pip3 install -U pip || true",
       # Wait for cloud-init to complete.
       # Ignore any errors because some equinix machines fail in cloud-init but
       # it is without consequenses.
-      "cloud-init status --wait || true"
+      "cloud-init status --wait || true",
     ]
   }
 }
