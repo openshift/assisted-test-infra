@@ -11,7 +11,7 @@ data "oci_marketplace_listings" "os_listings" {
   compartment_id = var.oci_compartment_id
   filter {
     name   = "name"
-    values = ["Rocky Linux 9\\.\\d+ - Free \\(x86_64\\)"]
+    values = ["Rocky Linux 9\\.\\d+ Supported by CIQ - Free \\(x86_64\\)"]
     regex  = true
   }
 }
