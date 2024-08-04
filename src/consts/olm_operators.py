@@ -88,6 +88,7 @@ class OperatorResource:
             OperatorType.LVM: cls.get_resource_dict(
                 master_memory=1200,
                 master_vcpu=1,
+                worker_vcpu=1,
                 master_disk_count=1,
             ),
             OperatorType.MCE: cls.get_mce_resource_dict(is_sno),
