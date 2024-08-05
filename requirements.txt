@@ -11,7 +11,7 @@ kubernetes==30.1.0
 libvirt-python==10.5.0
 munch==4.0.0
 natsort==8.4.0 # natsort used in kni-assisted-installer-auto
-netaddr==0.10.0 ## from https://github.com/openshift/assisted-test-infra/pull/2398
+netaddr==1.3.0 ## from https://github.com/openshift/assisted-test-infra/pull/2398
 netifaces==0.11.0
 openshift-client==2.0.4
 paramiko==3.4.0
