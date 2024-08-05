@@ -392,6 +392,13 @@ class LibvirtController(NodeController, ABC):
         log.info(f"Destroy network: {network.name()}")
         network.destroy()
 
+    def undefine_network(self, network):
+        """
+        Undefine network of a given libvirt.virNetwork object
+        """
+        log.info(f"Undefine network: {network.name()}")
+        network.undefine()
+
     def add_interface(self, node_name, network_name, target_interface, model="virtio"):
         """
         Create an interface using given network name, return created interface's mac address.
@@ -624,6 +631,7 @@ class LibvirtController(NodeController, ABC):
         bootp.setAttribute("file", ipxe_url)
         dhcp_element.appendChild(bootp)
         self.destroy_network(network)
+        self.undefine_network(network)
         self.create_network(xml.toprettyxml())
 
     def _create_dns_host_xml(self, api_vip: str, cluster_name: str):
