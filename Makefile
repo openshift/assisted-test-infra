@@ -99,7 +99,7 @@ endif
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api.integration.openshift.com/)
 
-DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
+DEPLOY_TARGET := $(or $(DEPLOY_TARGET),kind)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
 
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)

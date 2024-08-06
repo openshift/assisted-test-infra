@@ -34,7 +34,8 @@ scripts/install_environment.sh
 echo "Done installing"
 
 echo "Installing kind"
-scripts/hub-cluster/kind/kind.sh install
+make bring_assisted_service
+assisted-service/hack/kind/kind.sh install
 echo "Done installing kind"
 
 echo "Installing minikube"

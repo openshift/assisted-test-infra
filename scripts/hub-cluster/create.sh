@@ -12,7 +12,7 @@ case ${DEPLOY_TARGET} in
         $__dir/minikube.sh create
         ;;
     kind)
-        $__dir/kind/kind.sh create
+        assisted-service/hack/kind/kind.sh create
         ;;
     onprem)
         echo "onprem/podman requires no special setup"

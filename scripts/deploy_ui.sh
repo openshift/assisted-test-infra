@@ -25,10 +25,9 @@ case ${DEPLOY_TARGET} in
         ;;
 
     kind)
-        EXTERNAL_PORT=false
-        node_ip=$(hostname)
-        ui_port=80
-        ui_url="http://${node_ip}/"
+        node_ip=$(get_main_ip)
+        ui_port=8060
+        ui_url="http://${node_ip}:${ui_port}"
         ;;
     *)
         echo "Non-supported deploy target ${DEPLOY_TARGET}!";
@@ -46,4 +45,4 @@ if [[ "${DEPLOY_TARGET}" == "minikube" ]]; then
     wait_for_url_and_run "http://${node_ip}:${ui_port}" "spawn_port_forwarding_command $UI_SERVICE_NAME $ui_port $NAMESPACE $NAMESPACE_INDEX $KUBECONFIG minikube"
 fi
 
-print_log "Done. Assisted-installer UI can be reached at http://${node_ip}:${ui_port}"
+print_log "Done. Assisted-installer UI can be reached at ${ui_url}"
