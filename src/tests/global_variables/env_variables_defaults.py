@@ -179,6 +179,7 @@ class _EnvVariables(DataPool, ABC):
     oci_vcn_oicd: EnvVar = EnvVar(["OCI_VCN"])
     oci_public_subnet_oicd: EnvVar = EnvVar(["OCI_PUBLIC_SUBNET"])
     oci_private_subnet_oicd: EnvVar = EnvVar(["OCI_PRIVATE_SUBNET"])
+    oci_iscsi_subnet_oicd: EnvVar = EnvVar(["OCI_ISCSI_SUBNET"])
     oci_extra_node_nsg_oicds: EnvVar = EnvVar(
         ["OCI_EXTRA_NODE_NSG_IDS"], default=[], loader=lambda oicd: re.split(r"\s|,", oicd)
     )

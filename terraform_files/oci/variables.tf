@@ -74,6 +74,11 @@ variable "oci_public_subnet_oicd" {
   description = "Subnet ID of the public subnet"
 }
 
+variable "oci_iscsi_subnet_oicd" {
+  type        = string
+  description = "Subnet ID of the iscsi subnet"
+}
+
 variable "oci_extra_node_nsg_oicds" {
   type        = list(string)
   description = "Extra network security group IDs be assigned to cluster nodes (e.g.: to allow nodes to reach assisted service or allow SSH access to nodes)"

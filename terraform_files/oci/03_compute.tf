@@ -63,7 +63,7 @@ resource "oci_core_instance" "master" {
     assign_public_ip          = false
     assign_private_dns_record = true
     hostname_label            = "${var.cluster_name}-master-${count.index}"
-    subnet_id                 = var.oci_private_subnet_oicd
+    subnet_id                 = var.oci_boot_volume_type != null && var.oci_boot_volume_type == "ISCSI" ? var.oci_iscsi_subnet_oicd : var.oci_private_subnet_oicd
     nsg_ids = concat(
       [
         oci_core_network_security_group.nsg_cluster.id,
@@ -82,6 +82,26 @@ resource "oci_core_instance" "master" {
 
   # ensure the custom image was updated before creating these instances
   depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
+}
+
+resource "oci_core_vnic_attachment" "master_vnic_attachment" {
+  count = var.oci_boot_volume_type != null && var.oci_boot_volume_type == "ISCSI" ? var.masters_count : 0
+  create_vnic_details {
+    assign_public_ip          = false
+    assign_private_dns_record = true
+    hostname_label            = "${var.cluster_name}-master-ocp-${count.index}"
+    subnet_id                 = var.oci_private_subnet_oicd
+    nsg_ids = concat(
+      [
+        oci_core_network_security_group.nsg_cluster.id,
+        oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
+        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
+      ],
+      var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
+    )
+  }
+  instance_id  = oci_core_instance.master[count.index]
+  display_name = "${var.cluster_name}-master-vnic-ocp"
 }
 
 # Create worker instances
@@ -117,7 +137,7 @@ resource "oci_core_instance" "worker" {
     assign_public_ip          = false
     assign_private_dns_record = true
     hostname_label            = "${var.cluster_name}-worker-${count.index}"
-    subnet_id                 = var.oci_private_subnet_oicd
+    subnet_id                 = var.oci_boot_volume_type != null && var.oci_boot_volume_type == "ISCSI" ? var.oci_iscsi_subnet_oicd : var.oci_private_subnet_oicd
     nsg_ids = concat(
       [
         oci_core_network_security_group.nsg_cluster.id,
@@ -138,6 +158,25 @@ resource "oci_core_instance" "worker" {
   depends_on = [oci_core_compute_image_capability_schema.discovery_image_firmware_uefi_64]
 }
 
+resource "oci_core_vnic_attachment" "worker_vnic_attachment" {
+  count = var.oci_boot_volume_type != null && var.oci_boot_volume_type == "ISCSI" ? var.workers_count : 0
+  create_vnic_details {
+    assign_public_ip          = false
+    assign_private_dns_record = true
+    hostname_label            = "${var.cluster_name}-worker-ocp-${count.index}"
+    subnet_id                 = var.oci_private_subnet_oicd
+    nsg_ids = concat(
+      [
+        oci_core_network_security_group.nsg_cluster.id,
+        oci_core_network_security_group.nsg_cluster_access.id,      # allow access from other cluster nodes
+        oci_core_network_security_group.nsg_load_balancer_access.id # allow access from load balancer
+      ],
+      var.oci_extra_node_nsg_oicds # e.g.: allow access to ci-machine (assisted-service)
+    )
+  }
+  instance_id  = oci_core_instance.worker[count.index]
+  display_name = "${var.cluster_name}-worker-vnic-ocp"
+}
 resource "oci_identity_dynamic_group" "master_nodes" {
   compartment_id = var.oci_tenancy_oicd # dynamic groups can only be created in root compartment
   description    = "${var.cluster_name} master nodes"
