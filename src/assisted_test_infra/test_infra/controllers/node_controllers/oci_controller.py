@@ -12,6 +12,8 @@ from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_oci_config import BaseOciConfig
 from service_client import log
 
+import waiting
+
 
 class OciInstanceState(Enum):
     RUNNING = "RUNNING"
@@ -22,6 +24,10 @@ class OciInstanceState(Enum):
     TERMINATED = "TERMINATED"
     RESETTING = "RESETTING"
     RESTARTING = "RESTARTING"
+
+
+class OciVolumesState(Enum):
+    AVAILABLE = "AVAILABLE"
 
 
 class OciInstanceAction(Enum):
@@ -64,16 +70,16 @@ class OciController(TFController):
 
         # Raise exception if failed
         oci.config.validate_config(oci_config)
-        oci_client = oci.core.ComputeClient(oci_config)
-        oci_client.list_instances(self._config.oci_compartment_oicd)
-        self._virtual_network_client = oci.core.VirtualNetworkClient(self._config.get_provider_config())
-
-        return oci_client
+        self._virtual_network_client = oci.core.VirtualNetworkClient(oci_config)
+        self._compute_client = oci.core.ComputeClient(oci_config)
+        self._volume_client = oci.core.BlockstorageClient(oci_config)
+        # self._provider_client is self._compute_client
+        return self._compute_client
 
     def _get_provider_vm(self, tf_vm_name: str) -> Union[Instance, None]:
         vm_attributes = self._get_vm(tf_vm_name)["attributes"]
 
-        oci_instances = self._provider_client.list_instances(self._config.oci_compartment_oicd).data
+        oci_instances = self._compute_client.list_instances(self._config.oci_compartment_oicd).data
         for instance in oci_instances:
             if instance.id == vm_attributes["id"]:
                 return instance
@@ -107,8 +113,24 @@ class OciController(TFController):
             )
 
     def _instance_action(self, instance: Instance, action: OciInstanceAction):
-        response = self._provider_client.instance_action(instance_id=instance.id, action=action.value)
+        response = self._compute_client.instance_action(instance_id=instance.id, action=action.value)
         assert response.status == 200, f"Failed to {action.value.lower()} {instance.display_name} OCI instance"
+
+    @staticmethod
+    def _waiter_status(client_callback, name, status, **callback_kwargs):
+        def is_status():
+            data = client_callback(**callback_kwargs).data
+            waiting_to = [obj for obj in data if obj.display_name == name]
+            # limit to
+            assert len(waiting_to) == 1, "Expecting for one volume with same name"
+            return waiting_to[0].lifecycle_state == status
+
+        waiting.wait(
+            lambda: is_status(),
+            timeout_seconds=120,
+            sleep_seconds=5,
+            waiting_for="Resource to be created",
+        )
 
     def restart_node(self, node_name: str) -> None:
         log.info(f"Restarting OCI instance {node_name}")
@@ -129,7 +151,7 @@ class OciController(TFController):
         vm_attributes = self._get_vm(node_name)["attributes"]
         instance_id = vm_attributes["id"]
 
-        vnics = self._provider_client.list_vnic_attachments(
+        vnics = self._compute_client.list_vnic_attachments(
             self._config.oci_compartment_oicd, instance_id=instance_id
         ).data
         mac_addresses = [self._virtual_network_client.get_vnic(vnic.vnic_id).data.mac_address for vnic in vnics]
@@ -139,3 +161,33 @@ class OciController(TFController):
 
     def set_dns(self, api_ip: str, ingress_ip: str) -> None:
         return
+
+    def attach_test_disk(self, node_name: str, disk_size: int, bootable=False, persistent=False, with_wwn=False):
+        """Attach disk to OCI instance.
+
+        Create a volume , configure with same domain as instance
+        Attach the volume to the instance
+        Disk size > 50G
+        """
+        instance = self._get_provider_vm(node_name)
+        disk_type = "paravirtualized"
+        volume_details = oci.core.models.CreateVolumeDetails(compartment_id=self._config.oci_compartment_oicd,
+                                                             display_name=node_name, size_in_gbs=disk_size,
+                                                             availability_domain=instance.availability_domain)
+
+        vol = self._volume_client.create_volume(create_volume_details=volume_details).data
+        self._waiter_status(self._volume_client.list_volumes, node_name, OciVolumesState.AVAILABLE.value,
+                            availability_domain=instance.availability_domain,
+                            compartment_id=self._config.oci_compartment_oicd)
+
+        attach_details = oci.core.models.AttachParavirtualizedVolumeDetails(instance_id=instance.id, volume_id=vol.id,
+                                                                            type=disk_type)
+        self._compute_client.attach_volume(attach_volume_details=attach_details)
+
+    def detach_all_test_disks(self, node_name):
+        instance = self._get_provider_vm(node_name)
+        volumes = self._compute_client.list_volume_attachments(availability_domain=instance.availability_domain,
+                                                               instance_id=instance.id,
+                                                               compartment_id=self._config.oci_compartment_oicd).data
+        for volume in volumes:
+            self._compute_client.detach_volume(volume_attachment_id=volume.id)
