@@ -43,6 +43,8 @@ ENVS = [
     ("ENABLE_HOST_RECLAIM", ""),
     ("ENABLE_SKIP_MCO_REBOOT", ""),
     ("ENABLE_SOFT_TIMEOUTS", ""),
+    ("OCM_SELF_TOKEN", ""),
+    ("ACKNOWLEDGE_DEPRECATED_OCM_SELF_TOKEN", ""),
 ]
 DEFAULT_MASTER_REQUIREMENTS = {
     "cpu_cores": 4,

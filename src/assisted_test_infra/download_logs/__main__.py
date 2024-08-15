@@ -15,7 +15,7 @@ from assisted_test_infra.download_logs.download_logs import (
 )
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import ClusterDeployment
 from assisted_test_infra.test_infra.utils import get_env
-from service_client import ClientFactory, log
+from service_client import ClientFactory, ServiceAccount, log
 from tests.config import global_variables
 
 CONNECTION_TIMEOUT = 30
@@ -45,9 +45,13 @@ def main():
     if global_variables.is_kube_api:
         log.info("download logs on kube api flow")
         return kube_api_logs(args)
-
     client = ClientFactory.create_client(
-        url=args.inventory_url, timeout=CONNECTION_TIMEOUT, offline_token=get_env("OFFLINE_TOKEN")
+        url=args.inventory_url,
+        offline_token=get_env("OFFLINE_TOKEN"),
+        service_account=ServiceAccount(
+            client_id=get_env("SERVICE_ACCOUNT_CLIENT_ID"), client_secret=get_env("SERVICE_ACCOUNT_CLIENT_SECRET")
+        ),
+        timeout=CONNECTION_TIMEOUT,
     )
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)

@@ -375,8 +375,8 @@ def write_metadata_file(client: InventoryClient, cluster: dict, infra_envs: list
 
 def get_ui_url_from_api_url(api_url: str):
     known_urls = {
-        "https://api.openshift.com/": "https://cloud.redhat.com/openshift/assisted-installer",
-        "https://api.stage.openshift.com/": "https://qaprodauth.cloud.redhat.com/openshift",
+        "https://api.openshift.com/": "https://console.redhat.com/openshift/assisted-installer",
+        "https://api.stage.openshift.com/": "https://console.dev.redhat.com/openshift",
     }
 
     for k, v in known_urls.items():

@@ -60,6 +60,8 @@ SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ~/.ssh/id_rsa.pub))
 PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 OFFLINE_TOKEN := $(or $(OFFLINE_TOKEN), "")
+SERVICE_ACCOUNT_CLIENT_ID := $(or $(SERVICE_ACCOUNT_CLIENT_ID), "")
+SERVICE_ACCOUNT_CLIENT_SECRET := $(or $(SERVICE_ACCOUNT_CLIENT_SECRET), "")
 
 # deploy
 DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
