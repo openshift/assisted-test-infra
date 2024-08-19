@@ -1,10 +1,10 @@
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 from assisted_test_infra.test_infra.helper_classes.config.base_config import Triggerable
 from assisted_test_infra.test_infra.utils import EnvVar, utils
-from service_client import ClientFactory, InventoryClient
+from service_client import ClientFactory, InventoryClient, ServiceAccount
 from tests.global_variables.env_variables_defaults import _EnvVariables
 from triggers import Trigger, get_default_triggers
 
@@ -43,11 +43,17 @@ class DefaultVariables(_EnvVariables, Triggerable):
     def get_env(self, item: str) -> EnvVar:
         return _EnvVariables.__getattribute__(self, item)
 
-    def get_api_client(self, offline_token=None, **kwargs) -> InventoryClient:
+    def get_api_client(
+        self, offline_token: Optional[str] = None, service_account: Optional[ServiceAccount] = None, **kwargs
+    ) -> InventoryClient:
         url = self.remote_service_url
+
         offline_token = offline_token or self.offline_token
+        service_account = service_account or ServiceAccount(
+            client_id=self.service_account_client_id, client_secret=self.service_account_client_secret
+        )
 
         if not url:
             url = utils.get_local_assisted_service_url(self.namespace, "assisted-service", self.deploy_target)
 
-        return ClientFactory.create_client(url, offline_token, **kwargs)
+        return ClientFactory.create_client(url, offline_token, service_account, **kwargs)

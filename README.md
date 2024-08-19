@@ -61,7 +61,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
 - Ideally on a bare metal host with at least 64G of RAM.
 - Run as a user with password-less `sudo` access or be ready to enter `sudo` password for prepare phase.
 - Make sure to unset the KUBECONFIG variable in the same shell where you run `make`.
-- Get a valid pull secret (JSON string) from [redhat.com](https://cloud.redhat.com/openshift/install/pull-secret) if you want to test the installation (not needed for testing only the discovery flow). Export it as:
+- Get a valid pull secret (JSON string) from [redhat.com](https://console.redhat.com/openshift/install/pull-secret) if you want to test the installation (not needed for testing only the discovery flow). Export it as:
 
 ```bash
 export PULL_SECRET='<pull secret JSON>'
@@ -109,32 +109,33 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 
 |     |     |
 | --- | --- |
-| `BASE_DNS_DOMAINS`            | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type. |
-| `AUTH_TYPE`                   | configure the type of authentication assisted-service will use, default: none |
-| `IPv4`                        | Boolean value indicating if IPv4 is enabled. Default is yes |
-| `IPv6`                        | Boolean value indicating if IPv6 is enabled. Default is no |
-| `STATIC_IPS`                  | Boolean value indicating if static networking should be enabled. Default is no |
-| `IS_BONDED`                   | Boolean value indicating if bonding should be enabled. It also implies static networking. Default is no |
-| `NUM_BONDED_SLAVES`           | Integer value indicating the number of bonded slaves per bond. It is only used if bonding support is enabled. Default is 2 |
-| `BONDING_MODE`                | Bonding mode when bonding is in use. Default is active-backup |
-| `OCM_BASE_URL`                | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/ |
-| `OCM_CLIENT_ID`               | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
-| `OCM_CLIENT_SECRET`           | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
-| `OC_MODE`                     | if set, use oc instead of minikube |
-| `OC_SCHEME`                   | Scheme for assisted-service url on oc, default: http |
-| `OC_SERVER`                   | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443 |
-| `OC_TOKEN`                    | token for oc login (an alternative for oc-user & oc-pass) |
-| `OFFLINE_TOKEN`               | token used to fetch JWT tokens for assisted-service authentication (from https://cloud.redhat.com/openshift/token)                          |
-| `PROXY`                       | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR |
-| `SERVICE_BASE_URL`            | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol |
-| `PUBLIC_CONTAINER_REGISTRIES` | comma-separated list of registries that do not require authentication for pulling assisted installer images |
-| `ENABLE_KUBE_API`             | If set, deploy assisted-service with Kube API controllers (minikube only) |
-| `DISABLED_HOST_VALIDATIONS`   | comma-separated list of validation IDs to be excluded from the host validation process. |
-| `SSO_URL`                     | URL used to fetch JWT tokens for assisted-service authentication |
-| `CHECK_CLUSTER_VERSION`       | If "True", the controller will wait for CVO to finish |
-| `AGENT_TIMEOUT_START`         | Update assisted-service config map AGENT_TIMEOUT_START parameter. Default is 3m.
-| `OS_IMAGES`                   | A list of available OS images (one for each minor OCP version and CPU architecture) |
-| `RELEASE_IMAGES`              | A list of available release images (one for each minor OCP version and CPU architecture) |
+| `BASE_DNS_DOMAINS`                      | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type. |
+| `AUTH_TYPE`                             | configure the type of authentication assisted-service will use, default: none |
+| `IPv4`                                  | Boolean value indicating if IPv4 is enabled. Default is yes |
+| `IPv6`                                  | Boolean value indicating if IPv6 is enabled. Default is no |
+| `STATIC_IPS`                            | Boolean value indicating if static networking should be enabled. Default is no |
+| `IS_BONDED`                             | Boolean value indicating if bonding should be enabled. It also implies static networking. Default is no |
+| `NUM_BONDED_SLAVES`                     | Integer value indicating the number of bonded slaves per bond. It is only used if bonding support is enabled. Default is 2 |
+| `BONDING_MODE`                          | Bonding mode when bonding is in use. Default is active-backup |
+| `OCM_BASE_URL`                          | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/ |
+| `OCM_CLIENT_ID`                         | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
+| `OCM_CLIENT_SECRET`                     | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
+| `OC_MODE`                               | if set, use oc instead of minikube |
+| `OC_SCHEME`                             | Scheme for assisted-service url on oc, default: http |
+| `OC_SERVER`                             | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443 |
+| `OC_TOKEN`                              | token for oc login (an alternative for oc-user & oc-pass) |
+| `OCM_SELF_TOKEN`                        | offline token token used to fetch JWT tokens for assisted-service authentication (from https://console.redhat.com/openshift/token)
+| `ACKNOWLEDGE_DEPRECATED_OCM_SELF_TOKEN` | flag indicates acknowledgement of offline token deprecation when used. should be `yes` when `OCM_SELF_TOKEN` is used
+| `PROXY`                                 | Set HTTP and HTTPS proxy with default proxy targets. The target is the default gateway in the network having the machine network CIDR |
+| `SERVICE_BASE_URL`                      | update assisted-service config map SERVICE_BASE_URL parameter with given URL, including port and protocol |
+| `PUBLIC_CONTAINER_REGISTRIES`           | comma-separated list of registries that do not require authentication for pulling assisted installer images |
+| `ENABLE_KUBE_API`                       | If set, deploy assisted-service with Kube API controllers (minikube only) |
+| `DISABLED_HOST_VALIDATIONS`             | comma-separated list of validation IDs to be excluded from the host validation process. |
+| `SSO_URL`                               | URL used to fetch JWT tokens for assisted-service authentication |
+| `CHECK_CLUSTER_VERSION`                 | If "True", the controller will wait for CVO to finish |
+| `AGENT_TIMEOUT_START`                   | Update assisted-service config map AGENT_TIMEOUT_START parameter. Default is 3m.
+| `OS_IMAGES`                             | A list of available OS images (one for each minor OCP version and CPU architecture) |
+| `RELEASE_IMAGES`                        | A list of available release images (one for each minor OCP version and CPU architecture) |
 
 ## Installation parameters
 
@@ -389,11 +390,20 @@ To test with Authentication, the following additional environment variables are 
 
 ```
 export AUTH_TYPE=rhsso
-export OCM_CLIENT_ID=<SSO Service Account Name>
-export OCM_CLIENT_SECRET=<SSO Service Account Password>
 export OCM_BASE_URL=https://api.openshift.com
-export OFFLINE_TOKEN=<User token from https://cloud.redhat.com/openshift/token>
 ```
+
+There are currently two ways to authentication:
+  1. Using service account - The service account need to have the necessary roles in order to make requests to OCM to check users roles/capabilities
+  ```
+  export OCM_CLIENT_ID=<SSO Service Account Name>
+  export OCM_CLIENT_SECRET=<SSO Service Account Password>
+  ```
+  2. Using offline token (deprecated soon)
+  ```
+  export OCM_SELF_TOKEN=<User token from https://console.redhat.com/openshift/token>
+  export ACKNOWLEDGE_DEPRECATED_OCM_SELF_TOKEN=yes
+  ```
 
 - UI is not available when Authentication is enabled.
 - The PULL_SECRET variable should be taken from the same Red Hat cloud environment as defined in OCM_URL (integration, stage or production).

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import contextlib
+import enum
 import ipaddress
 import json
 import os
@@ -13,19 +14,47 @@ import waiting
 from assisted_service_client import ApiClient, Configuration, CreateManifestParams, Manifest, api, models
 from junit_report import CaseFormatKeys, JsonJunitExporter
 from netaddr import IPAddress, IPNetwork
+from pydantic import BaseModel
 from retry import retry
 
 import consts
 from service_client.logger import log
 
 
+class ServiceAccount(BaseModel):
+    client_id: Optional[str]
+    client_secret: Optional[str]
+
+    def __hash__(self):
+        return hash((self.client_id, self.client_secret))
+
+    def __eq__(self, other):
+        if isinstance(other, ServiceAccount):
+            return self.client_id == other.client_id and self.client_secret == other.client_secret
+        return False
+
+    def is_provided(self) -> bool:
+        return self.client_id is not None and self.client_secret is not None
+
+
+class AuthenticationMethod(enum.Enum):
+    OFFLINE_TOKEN = "OFFLINE_TOKEN"
+    SERVICE_ACCOUNT = "SERVICE_ACCOUNT"
+
+
 class InventoryClient(object):
-    def __init__(self, inventory_url: str, offline_token: Optional[str], pull_secret: str):
+    def __init__(
+        self,
+        inventory_url: str,
+        offline_token: Optional[str],
+        service_account: Optional[ServiceAccount],
+        pull_secret: str,
+    ):
         self.inventory_url = inventory_url
         configs = Configuration()
         configs.host = self.get_host(configs)
         configs.verify_ssl = False
-        self.set_config_auth(configs, offline_token)
+        self.set_config_auth(c=configs, offline_token=offline_token, service_account=service_account)
         self._set_x_secret_key(configs, pull_secret)
 
         self.api = ApiClient(configuration=configs)
@@ -47,10 +76,18 @@ class InventoryClient(object):
         return parsed_host._replace(netloc=parsed_inventory_url.netloc, scheme=parsed_inventory_url.scheme).geturl()
 
     @classmethod
-    def set_config_auth(cls, c: Configuration, offline_token: Optional[str]) -> None:
-        if not offline_token:
-            log.info("OFFLINE_TOKEN not set, skipping authentication headers")
-            return
+    def set_config_auth(
+        cls, c: Configuration, offline_token: Optional[str], service_account: Optional[ServiceAccount]
+    ) -> None:
+        if service_account is not None and service_account.is_provided():
+            authentication_method = AuthenticationMethod.SERVICE_ACCOUNT
+            log.info("authenticating to assisted service using service account")
+        else:
+            log.info("service account was not provided, trying offline token")
+            if offline_token is None:
+                log.info("offline token wasn't provided as well, skipping authentication headers")
+                return
+            authentication_method = AuthenticationMethod.OFFLINE_TOKEN
 
         @retry(exceptions=requests.HTTPError, tries=5, delay=5)
         def refresh_api_key(config: Configuration) -> None:
@@ -69,11 +106,18 @@ class InventoryClient(object):
                     return
 
             # fetch new key if expired or not set yet
-            params = {
-                "client_id": "cloud-services",
-                "grant_type": "refresh_token",
-                "refresh_token": offline_token,
-            }
+            if authentication_method == AuthenticationMethod.SERVICE_ACCOUNT:
+                params = {
+                    "grant_type": "client_credentials",
+                    "client_id": service_account.client_id,
+                    "client_secret": service_account.client_secret,
+                }
+            else:
+                params = {
+                    "client_id": "cloud-services",
+                    "grant_type": "refresh_token",
+                    "refresh_token": offline_token,
+                }
 
             log.info("Refreshing API key")
             try:

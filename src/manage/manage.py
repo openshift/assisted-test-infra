@@ -9,7 +9,7 @@ import yaml
 from assisted_service_client.rest import ApiException
 
 from deprecated_utils import warn_deprecate
-from service_client import ClientFactory, log
+from service_client import ClientFactory, ServiceAccount, log
 
 warn_deprecate()
 
@@ -21,8 +21,10 @@ description = (
 
 
 class Manage:
-    def __init__(self, inventory_url: str, type: str, offline_token: str):
-        self.client = ClientFactory.create_client(url=inventory_url, offline_token=offline_token)
+    def __init__(self, inventory_url: str, type: str, offline_token: str, service_account: ServiceAccount):
+        self.client = ClientFactory.create_client(
+            url=inventory_url, offline_token=offline_token, service_account=service_account
+        )
 
         with open("src/manage/manageable_options.yaml", "r") as f:
             options = yaml.load(f, Loader=yaml.FullLoader)
@@ -92,6 +94,16 @@ def handle_arguments():
     parser = ArgumentParser(description=description)
     parser.add_argument("--inventory-url", help="URL of remote inventory", type=str)
     parser.add_argument("--offline-token", help="offline token", type=str)
+    parser.add_argument(
+        "--service-account-client-id",
+        help="client ID of the service account used to authenticate against assisted-service",
+        type=str,
+    )
+    parser.add_argument(
+        "--service-account-client-secret",
+        help="client secret of the service account used to authenticate against assisted-service",
+        type=str,
+    )
     parser.add_argument("--type", help="Type of managing process to commit", type=str)
 
     return parser.parse_args()
@@ -99,7 +111,14 @@ def handle_arguments():
 
 def main():
     args = handle_arguments()
-    Manage(inventory_url=args.inventory_url, type=args.type, offline_token=args.offline_token)
+    Manage(
+        inventory_url=args.inventory_url,
+        type=args.type,
+        offline_token=args.offline_token,
+        service_account=ServiceAccount(
+            client_id=args.service_account_client_id, client_secret=args.service_account_client_secret
+        ),
+    )
 
 
 if __name__ == "__main__":
