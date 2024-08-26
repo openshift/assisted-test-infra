@@ -3,12 +3,13 @@ from random import randint
 
 import openshift_client as oc
 import pytest
-from junit_report import JunitTestSuite
 import waiting
+from jinja2 import Environment, PackageLoader
+from junit_report import JunitTestSuite
+from packaging import version
+
 from assisted_test_infra.test_infra import utils
 from consts import resources
-from jinja2 import Environment, PackageLoader
-from packaging import version
 from tests.base_test import BaseTest
 from tests.config import global_variables
 
@@ -80,12 +81,8 @@ class TestClusterScaleUp(BaseTest):
     @staticmethod
     def _set_master_role(day2_cluster):
         # we re-use worker node from day1 cluster, setting the role to master for day2
-        host = day2_cluster.to_cluster_hosts(
-            day2_cluster.api_client.get_cluster_hosts(day2_cluster.id)
-        )[0]
-        day2_cluster._infra_env.update_host(
-            host_id=host.get_id(), host_role="master", host_name=host.get_hostname()
-        )
+        host = day2_cluster.to_cluster_hosts(day2_cluster.api_client.get_cluster_hosts(day2_cluster.id))[0]
+        day2_cluster._infra_env.update_host(host_id=host.get_id(), host_role="master", host_name=host.get_hostname())
 
     @staticmethod
     def _delete_ocp_node(the_node):
@@ -102,13 +99,11 @@ class TestClusterScaleUp(BaseTest):
                 try:
                     etcd_obj = oc.selector(obj_name).object()
                     message_returned = [
-                        v
-                        for v in etcd_obj.model.status.conditions
-                        if v.get("message") and the_message in v["message"]
+                        v for v in etcd_obj.model.status.conditions if v.get("message") and the_message in v["message"]
                     ]
                     return True if len(message_returned) == 1 else False
                 except oc.OpenShiftPythonException as e:
-                    log.debug(f'Unable to read object {str(e)}')
+                    log.debug(f"Unable to read object {str(e)}")
                 return False
 
         log.info(f"Checking if {message}")
@@ -125,14 +120,14 @@ class TestClusterScaleUp(BaseTest):
     @pytest.mark.parametrize("worker_vcpu", [resources.DEFAULT_MASTER_CPU])
     @pytest.mark.parametrize("worker_memory", [resources.DEFAULT_MASTER_MEMORY])
     def test_ctlplane_scaleup(
-            self,
-            day2_cluster,
-            cluster,
-            day2_workers_count,
-            worker_disk,
-            worker_vcpu,
-            worker_memory,
-            download_script,
+        self,
+        day2_cluster,
+        cluster,
+        day2_workers_count,
+        worker_disk,
+        worker_vcpu,
+        worker_memory,
+        download_script,
     ):
         """Day2 for master nodes.
 
@@ -155,10 +150,7 @@ class TestClusterScaleUp(BaseTest):
 
         """
 
-        new_nodes_count = (
-                cluster.nodes.masters_count
-                + day2_cluster._config.day2_masters_count
-        )
+        new_nodes_count = cluster.nodes.masters_count + day2_cluster._config.day2_masters_count
 
         self.update_oc_config(nodes=cluster.nodes, cluster=cluster)
         cluster.download_kubeconfig()
@@ -182,7 +174,8 @@ class TestClusterScaleUp(BaseTest):
 
         for host_worker in day2_cluster.to_cluster_hosts(day2_cluster.api_client.get_cluster_hosts(day2_cluster.id)):
             day2_cluster._infra_env.update_host(
-                host_id=host_worker.get_id(), host_role="master", host_name=host_worker.get_hostname())
+                host_id=host_worker.get_id(), host_role="master", host_name=host_worker.get_hostname()
+            )
 
         # delete the worker node from ocp because installing them as master role
         for re_use_worker in reused_workers:
@@ -190,15 +183,14 @@ class TestClusterScaleUp(BaseTest):
 
         day2_cluster.start_install_and_wait_for_installed()
 
-        log.info(
-            f"{new_nodes_count} master nodes were successfully added to OCP cluster"
-        )
+        log.info(f"{new_nodes_count} master nodes were successfully added to OCP cluster")
         # applying day2 nodes into yaml
         for worker in reused_workers:
             baremetal_host_name = "custom-" + worker.name
             self._apply_yaml_file("day2_baremetal.yaml.j2", master_host_name=baremetal_host_name)
-            self._apply_yaml_file("day2_machine.yaml.j2", master_host_name=baremetal_host_name,
-                                  cluster_name=cluster.name)
+            self._apply_yaml_file(
+                "day2_machine.yaml.j2", master_host_name=baremetal_host_name, cluster_name=cluster.name
+            )
             self._run_scripts(script_file, baremetal_host_name, worker.name)
         # verify etcd members updated and available
         self._wait_for_etcd_status_available(
