@@ -6,12 +6,10 @@ import pytest
 import waiting
 from jinja2 import Environment, PackageLoader
 from junit_report import JunitTestSuite
-from packaging import version
 
 from assisted_test_infra.test_infra import utils
 from consts import resources
 from tests.base_test import BaseTest
-from tests.config import global_variables
 
 log = logging.getLogger(__name__)
 curl_script = (
