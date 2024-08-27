@@ -233,14 +233,17 @@ def get_remote_assisted_service_url(oc, namespace, service, scheme):
 
 
 def get_local_assisted_service_url(namespace, service, deploy_target):
+    ip = socket.gethostbyname(socket.gethostname())
     if deploy_target == "onprem":
         assisted_hostname_or_ip = os.environ["ASSISTED_SERVICE_HOST"]
         return f"http://{assisted_hostname_or_ip}:8090"
     elif deploy_target == "kind":
-        return f"http://{socket.gethostname()}"
+        url = f"http://{ip}:8090"
+        if is_assisted_service_reachable(url):
+            return url
+
+        raise RuntimeError(f"The parsed url {url} to service {service} in {namespace} namespace was not reachable.]")
     elif deploy_target == "ocp":
-        res = subprocess.check_output("ip route get 1", shell=True).split()[6]
-        ip = str(res, "utf-8")
         return f"http://{ip}:7000"
     else:
         # Resolve the service ip and port

@@ -277,4 +277,11 @@ function retry() {
     return ${rc}
 }
 
+function get_pods_with_label() {
+    local pod_label=$1
+    local namespace=$2
+
+    kubectl get pods -n $namespace -l $pod_label -o name
+}
+
 "$@"

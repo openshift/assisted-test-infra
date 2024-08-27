@@ -39,6 +39,8 @@ SERVICE := $(or $(SERVICE), quay.io/edge-infrastructure/assisted-service:latest)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
 INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:latest)
 REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
+USE_LOCAL_SERVICE := $(or $(USE_LOCAL_SERVICE), false)
+DEBUG_SERVICE := $(or $(DEBUG_SERVICE), "")
 
 # terraform
 TF_LOG_PATH=$(REPORTS)/terraform_$(TEST_SESSION_ID).log
@@ -101,7 +103,7 @@ endif
 SSO_URL := $(or $(SSO_URL), https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token)
 OCM_BASE_URL := $(or $(OCM_BASE_URL), https://api.integration.openshift.com/)
 
-DEPLOY_TARGET := $(or $(DEPLOY_TARGET),minikube)
+DEPLOY_TARGET := $(or $(DEPLOY_TARGET),kind)
 OCP_KUBECONFIG := $(or $(OCP_KUBECONFIG),build/kubeconfig)
 
 IPV6_SUPPORT := $(or ${IPV6_SUPPORT},true)
@@ -149,10 +151,10 @@ image_build: bring_assisted_service generate_python_client
 	$(CONTAINER_COMMAND) tag $(IMAGE_NAME) test-infra:latest  # For backwards computability
 
 create_hub_cluster:
-	scripts/hub-cluster/create.sh
+	TARGET=${DEPLOY_TARGET} assisted-service/hack/hub_cluster.sh create
 
 delete_hub_cluster:
-	scripts/hub-cluster/delete.sh
+	(cd assisted-service && TARGET=${DEPLOY_TARGET} ROOT_DIR=${ROOT_DIR}/assisted-service hack/hub_cluster.sh delete)
 
 clean:
 	-rm -rf build assisted-service test_infra.log
