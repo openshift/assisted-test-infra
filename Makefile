@@ -419,3 +419,6 @@ validate_client:
 generate_python_client: bring_assisted_service
 	cd assisted-service && skipper make generate-python-client
 	rm -rf ./.pip && mkdir ./.pip && mv assisted-service/build/assisted-installer/assisted-service-client/dist/*.whl ./.pip/
+
+test_ctlplane_scaleup:
+	TEST_TEARDOWN=false TEST=./src/tests/test_ctlplane_scaleup.py TEST_FUNC=test_ctlplane_scaleup $(MAKE) test
