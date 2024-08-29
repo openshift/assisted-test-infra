@@ -19,7 +19,7 @@ print_log "Starting ui"
 skipper run "make -C assisted-service/ deploy-ui" ${SKIPPER_PARAMS} TARGET=${DEPLOY_TARGET} DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE}
 
 ui_pod=$(get_pods_with_label app=assisted-installer-ui ${NAMESPACE})
-kubectl wait -n ${NAMESPACE} --for=condition=Ready=false --timeout=60s  $ui_pod
+kubectl wait -n ${NAMESPACE} --for=condition=Ready=True --timeout=60s  $ui_pod
 
 case ${DEPLOY_TARGET} in
     minikube)
