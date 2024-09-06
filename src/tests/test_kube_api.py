@@ -435,6 +435,11 @@ class TestLateBinding(BaseKubeAPI):
             nodes.controller.add_dns_host_to_network(
                 network_name="default", api_vip=api_vip, cluster_name=cluster_deployment.ref.name
             )
+            utils.config_etc_hosts(
+                cluster_name=cluster_deployment.ref.name,
+                base_dns_domain=cluster_deployment.get()["spec"]["baseDomain"],
+                api_vip=api_vip,
+            )
 
         agent_cluster_install.wait_to_be_ready(ready=True)
         Agent.wait_for_agents_to_be_bound(agents)
