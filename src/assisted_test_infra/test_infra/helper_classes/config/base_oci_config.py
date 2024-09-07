@@ -8,6 +8,9 @@ from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config impo
 @dataclass
 class BaseOciConfig(BaseNodesConfig, ABC):
     oci_compartment_oicd: str = None
+    oci_compute_shape: str = None
+    oci_controller_plane_shape: str = None
+    oci_infrastructure_zip_file: str = None
     oci_dns_zone: str = None
     oci_user_oicd: str = None
     oci_private_key_path: str = None
