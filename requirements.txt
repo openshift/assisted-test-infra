@@ -1,6 +1,6 @@
 debugpy==1.8.5
 dnspython==2.6.1
-filelock==3.15.4
+filelock==3.16.0
 frozendict==2.4.4
 ipdb==0.13.13
 ipython==8.27.0
@@ -38,8 +38,8 @@ pytest-error-for-skips==2.0.2
 ansible==10.3.0 # Fix for issues with DNF and ansible core 2.17 on RHEL8 / RHEL9 systems
 jmespath==1.0.1
 oci==2.133.0
-setuptools==74.1.0
-pydantic==2.8.2
+setuptools==74.1.2
+pydantic==2.9.1
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
 cryptography>=42.0.8 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
