@@ -32,7 +32,7 @@ urllib3==1.26.15
 pyvmomi>=7.0.2
 waiting>=1.4.1
 prompt_toolkit==3.0.38
-nutanix-api==0.0.19
+nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==7.4.0
 setuptools==70.0.0
