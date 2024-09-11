@@ -273,3 +273,9 @@ variable "slave_interfaces" {
   description = "create interfaces as slaves.  do not assign to them mac and IP addresses"
   default     = false
 }
+
+variable "enable_dhcp" {
+  type        = bool
+  description = "Disabling DHCP for static IP"
+  default = true
+}

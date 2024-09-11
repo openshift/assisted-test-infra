@@ -98,6 +98,7 @@ class TerraformController(LibvirtController):
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
             # TODO change to namespace index
             "libvirt_secondary_network_if": self._config.net_asset.libvirt_secondary_network_if,
+            "enable_dhcp": (False if kwargs.get("is_static_ip") else True),
             "provisioning_cidr": self._config.net_asset.provisioning_cidr,
             "running": self._config.running,
             "single_node_ip": kwargs.get("single_node_ip", ""),
