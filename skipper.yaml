@@ -4,12 +4,9 @@ build-container-tag: latest
 
 volumes:
   # programs
-  - /usr/local/oc:/usr/local/oc
-  - /usr/local/bin/oc:/usr/local/bin/oc
-  - /usr/bin/minikube:/usr/bin/minikube
-  - /usr/local/bin/minikube:/usr/local/bin/minikube
-  - /usr/bin/kubectl:/usr/bin/kubectl
-  - /usr/local/bin/kubectl:/usr/local/bin/kubectl
+  - $(which oc --skip-alias || echo /usr/local/bin/oc):/usr/local/bin/oc
+  - $(which kubectl --skip-alias || echo /usr/local/bin/kubectl):/usr/bin/kubectl
+  - $(which minikube --skip-alias || echo /usr/local/bin/minikube):/usr/bin/minikube
   - $MINIKUBE_HOME:$MINIKUBE_HOME
   # config
   - $HOME/.kube/:$HOME/.kube/

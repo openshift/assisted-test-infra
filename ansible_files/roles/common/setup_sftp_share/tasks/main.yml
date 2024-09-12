@@ -39,3 +39,16 @@
     state: restarted
     daemon_reload: true
     name: "rclone-{{ rclone_remote_name }}"
+  ignore_errors: True
+  register: rclone_service
+
+- name: Service restart failed
+  block:
+  - name:  Get Service status
+    shell: "journalctl -xeu  rclone-{{ rclone_remote_name }}.service"
+    register: post_shell
+  - name: Print Status
+    ansible.builtin.fail:
+      msg: "{{ rclone_service }}"
+  when:
+    - rclone_service.failed

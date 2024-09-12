@@ -6,6 +6,9 @@
   register: ssh_key_pair
   run_once: true
 
+- name: Enable SHA1 algorithm
+  shell: 'update-crypto-policies --set DEFAULT:SHA1'
+
 - name: Ensure .ssh directory exists in user's home
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.ssh"
