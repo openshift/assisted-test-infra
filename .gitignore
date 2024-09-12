@@ -12,7 +12,7 @@ minikube
 capi
 sno-bootstrap-manifests
 .pip/
-
+**/UNKNOWN.egg-info
 # terraform
 .terraform.lock.hcl
 terraform.tfstate
