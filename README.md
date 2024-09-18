@@ -128,7 +128,7 @@ before you run start the deployment.
 | `OCM_BASE_URL`                          | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/ |
 | `OCM_CLIENT_ID`                         | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
 | `OCM_CLIENT_SECRET`                     | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
-| `JWKS_URL`                              | URL for retrieving the JSON Web Key Set (JWKS) used for verifying JWT tokens in authentication. Defaults to https://api.openshift.com/.well-known/jwks.json | 
+| `JWKS_URL`                              | URL for retrieving the JSON Web Key Set (JWKS) used for verifying JWT tokens in authentication. Defaults to https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/certs | 
 | `OC_MODE`                               | if set, use oc instead of minikube |
 | `OC_SCHEME`                             | Scheme for assisted-service url on oc, default: http |
 | `OC_SERVER`                             | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443 |
