@@ -325,7 +325,7 @@ deploy_assisted_operator: clear_operator
 # Inventory #
 #############
 
-deploy_assisted_service: create_hub_cluster bring_assisted_service
+deploy_assisted_service: bring_assisted_service create_hub_cluster 
 	mkdir -p assisted-service/build
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) DEBUG_FLAGS="${DEBUG_FLAGS}" scripts/deploy_assisted_service.sh
 
