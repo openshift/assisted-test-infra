@@ -40,6 +40,7 @@ ENVS = [
     ("HW_VALIDATOR_MIN_CPU_CORES_SNO", ""),
     ("HW_VALIDATOR_MIN_RAM_GIB_SNO", ""),
     ("ENABLE_UPGRADE_AGENT", "true"),
+    ("JWKS_URL", ""),
     ("ENABLE_HOST_RECLAIM", ""),
     ("ENABLE_SKIP_MCO_REBOOT", ""),
     ("ENABLE_SOFT_TIMEOUTS", ""),
