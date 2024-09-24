@@ -160,6 +160,8 @@ MiB_UNITS = 1024
 # DISK SIZES
 DISK_SIZE_100GB = 100 * GB
 
+DEFAULT_CPU_ARCHITECTURE = "x86_64"
+
 
 class RemoteEnvironment:
     PRODUCTION = "https://api.openshift.com"

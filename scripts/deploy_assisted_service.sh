@@ -29,6 +29,7 @@ export SERVICE_BASE_URL=${SERVICE_BASE_URL:-"http://${SERVICE_URL}:${SERVICE_POR
 export EXTERNAL_PORT=${EXTERNAL_PORT:-true}
 export OCP_SERVICE_PORT=$(( 7000 + $NAMESPACE_INDEX ))
 export OPENSHIFT_INSTALL_RELEASE_IMAGE=${OPENSHIFT_INSTALL_RELEASE_IMAGE:-}
+export OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-}
 export OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS:-}
 export ENABLE_KUBE_API=${ENABLE_KUBE_API:-false}
 export ENABLE_KUBE_API_CMD="ENABLE_KUBE_API=${ENABLE_KUBE_API}"
@@ -45,6 +46,8 @@ export ENABLE_SKIP_MCO_REBOOT=${ENABLE_SKIP_MCO_REBOOT:-true}
 export ENABLE_SOFT_TIMEOUTS=${ENABLE_SOFT_TIMEOUTS:-false}
 export IMAGES_FLAVOR=${IMAGES_FLAVOR:-}
 export PLATFORM=${PLATFORM:-}
+export RELEASE_IMAGES=${RELEASE_IMAGES:-}
+export OS_IMAGES=${OS_IMAGES:-}
 export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
 export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
 export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
@@ -69,8 +72,8 @@ fi
 
 mkdir -p build
 
-if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
-    RELEASE_IMAGES=$(skipper run ./scripts/override_release_images.py --src "${RELEASE_IMAGES_PATH}")
+if [ "${RELEASE_IMAGES}" = "" ] && { [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ] || [ "${OPENSHIFT_VERSION}" != "" ]; }; then
+    RELEASE_IMAGES=$(skipper run ./scripts/override_images/override_release_images.py)
     export RELEASE_IMAGES
 
     if [ "${DEPLOY_TARGET}" == "onprem" ]; then
@@ -78,8 +81,8 @@ if [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ]; then
     fi
 fi
 
-if [ "${OPENSHIFT_CI}" == "true" ]; then
-    OS_IMAGES=$(skipper run ./scripts/override_os_images.py --src "${OS_IMAGES_PATH}")
+if [ "${OS_IMAGES}" = "" ] && [ "${ENABLE_KUBE_API}" != "true" ] && { [ "${OPENSHIFT_CI}" = "true" ] || [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ] || [ "${OPENSHIFT_VERSION}" != "" ]; }; then
+    OS_IMAGES=$(skipper run ./scripts/override_images/override_os_images.py)
     export OS_IMAGES
 fi
 
