@@ -27,15 +27,9 @@ variable "nutanix_cluster" {
   description = "Nutanix cluster name"
 }
 
-
 variable "nutanix_subnet" {
   type        = string
   description = "Nutanix subnet name. While selected the nic Ip will be in that subnet addresses range"
-}
-
-variable "iso_name" {
-  type        = string
-  description = "Assisted Test Infra machine image name"
 }
 
 variable "build_id" {
@@ -57,8 +51,30 @@ variable "vcpu" {
 
 variable "disk_size" {
   type        = number
-  default     = 240
+  default     = 650
   description = "The size of the virtual machine's disk, in GB"
+}
+
+variable "ssh_public_key" {
+  type = string
+  description = "The public ssh key, added as a ssh authorized key"
+}
+
+variable "ssh_private_key" {
+  type = string
+  description = "The private ssh key path, used to authenticate against the new template"
+  sensitive   = true
+}
+
+variable "cloud_config_file" {
+  type = string
+  default = "cloud-config.yaml"
+  description = "Name for the cloud init configuration"
+}
+
+variable "cloud_image_url" {
+  type = string
+  description = "Cloud image URL"
 }
 
 variable "cores_per_socket" {

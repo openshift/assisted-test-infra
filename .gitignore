@@ -18,7 +18,7 @@ sno-bootstrap-manifests
 terraform.tfstate
 terraform.tfstate.backup
 .terraform
-
+**/cloud-config.yaml
 custom_manifests/
 venv
 

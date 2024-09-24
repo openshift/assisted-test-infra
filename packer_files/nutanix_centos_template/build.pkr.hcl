@@ -7,6 +7,12 @@ packer {
   }
 }
 
+# Dummy module need to be removed
+# need a CI PR before removing this
+source "null" "test" {
+  communicator = "none"
+}
+
 build {
-  sources = ["sources.nutanix.test-infra"]
+  sources = ["null.test"]
 }
