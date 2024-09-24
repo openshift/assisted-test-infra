@@ -912,6 +912,7 @@ class Cluster(BaseCluster):
 
     @JunitTestCase()
     def create_custom_manifests(self):
+        self.enable_console()
         log.info(f"Adding {len(self._config.custom_manifests)} custom manifests")
         for local_manifest in self._config.custom_manifests:
             with open(local_manifest.local_path, "rb") as f:
@@ -932,6 +933,19 @@ class Cluster(BaseCluster):
 
     def create_custom_manifest(self, folder: str = None, filename: str = None, base64_content: str = None):
         return self.api_client.create_custom_manifest(self.id, folder, filename, base64_content)
+
+    def enable_console(self):
+        log.info(f"enabling console")
+        kernel_args = { "operation": "append",
+                   "value": "console=tty0 console=ttyS0,115200 console=ttyAMA1 console=hvc0 console=ttyAMA0 earlycon=pl011,0x01000000"}
+        self._infra_env.update_infra_env_kernel(kernel_arguments=[kernel_args])
+
+        return self.api_client.create_custom_manifest(
+            self.id,
+            "manifests",
+            "99_master_kernel_arg.yaml",
+            "ewogICJhcGlWZXJzaW9uIjogIm1hY2hpbmVjb25maWd1cmF0aW9uLm9wZW5zaGlmdC5pby92MSIsCiAgImtpbmQiOiAiTWFjaGluZUNvbmZpZyIsCiAgIm1ldGFkYXRhIjogewogICAgImxhYmVscyI6IHsKICAgICAgIm1hY2hpbmVjb25maWd1cmF0aW9uLm9wZW5zaGlmdC5pby9yb2xlIjogIm1hc3RlciIKICAgIH0sCiAgICAibmFtZSI6ICI5OS1vcGVuc2hpZnQtbWFjaGluZWNvbmZpZy1tYXN0ZXIta2FyZ3MiCiAgfSwKICAic3BlYyI6IHsKICAgICJrZXJuZWxBcmd1bWVudHMiOiBbCiAgICAgICJjb25zb2xlPXR0eTAgY29uc29sZT10dHlTMCwxMTUyMDAgY29uc29sZT10dHlBTUExIGNvbnNvbGU9aHZjMCBjb25zb2xlPXR0eUFNQTAgZWFybHljb249cGwwMTEsMHgwMTAwMDAwMCIKICAgIF0KICB9Cn0K"
+        )
 
     def list_custom_manifests(self) -> models.ListManifests:
         return self.api_client.list_custom_manifests(self.id)
