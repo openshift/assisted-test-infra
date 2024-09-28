@@ -4,12 +4,15 @@ from junit_report import JunitTestSuite
 from kubernetes import client, config
 
 import consts
-from assisted_test_infra.test_infra.utils import wait_for_pod_ready
+
+from assisted_test_infra.test_infra.utils import console_redirect_decorator, wait_for_pod_ready
+
 from tests.base_test import BaseTest
 from tests.config import global_variables
 from tests.conftest import get_available_openshift_versions, get_supported_operators
 
 
+@console_redirect_decorator
 class TestInstall(BaseTest):
     @JunitTestSuite()
     @pytest.mark.parametrize("openshift_version", get_available_openshift_versions())

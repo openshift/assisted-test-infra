@@ -501,6 +501,19 @@ class BaseTest:
         yield EventsHandler(api_client)
 
     @pytest.fixture
+    def kernel_arguments(self):
+        """Hook to enable console redirect
+        The kernel_arguments should be enabled on a function with pytest.mark.parametrize decorator, but we can not
+        modify function signature on runtime.
+        We create a dummy fixture with same name.
+
+        In order to enable console redirection:
+        @console_redirect_decorator
+        class TestIPv6(BaseTest):
+        """
+        pass
+
+    @pytest.fixture
     @JunitFixtureTestCase()
     def cluster(
         self,
@@ -512,6 +525,7 @@ class BaseTest:
         cluster_configuration: ClusterConfig,
         ipxe_server: Callable,
         tang_server: Callable,
+        kernel_arguments
     ) -> Cluster:
         log.debug(f"--- SETUP --- Creating cluster for test: {request.node.name}\n")
         if cluster_configuration.disk_encryption_mode == consts.DiskEncryptionMode.TANG:

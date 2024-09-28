@@ -5,6 +5,7 @@ import ipaddress
 import json
 import logging
 import os
+import pytest
 import random
 import shlex
 import shutil
@@ -632,3 +633,33 @@ def get_release_images_path() -> str:
         return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_{flavor}_release_images.json"
 
     return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
+
+
+def console_redirect_decorator(_class):
+    """ Decorate all classes inherit from BaseTest and modify all functions begin with test_
+    All test_ in a class will be added with kernel_arguments to allow console redirection.
+    It allows to view all console output via virsh console command.
+
+    The test_ already declared in the class and without kernel_arguments param
+    Once we modify the function and decorate it with parametrize kernel_arguments we should
+    add somehow the kernel_arguments to the function.
+
+    Example:
+    @pytest.mark.parametrize("is_ipv4", [True])
+    def test_lone_dual_stack(self, cluster, is_ipv4...)
+
+    We can not modify function signature in runtime, added a hook to the cluster fixture
+    Creating  kernel_arguments fixture with the needed param (dummy return none)
+    """
+    funcs = [func for func in _class.__dict__ if "test_" in func]
+    logging.debug(f"Class {_class.__name__} adding kernel_arguments to {funcs}")
+    for func in funcs:
+        func_obj = getattr(_class, func)
+        setattr(_class, func, None)
+        # decorate func object with kernel_arguments
+        func_obj = pytest.mark.parametrize(
+            "kernel_arguments",
+            [json.loads('[ { "operation": "append", "value": "console=ttyS0,115200" } ]')])(func_obj)
+        # set _class.func reference to modified function object
+        setattr(_class, func, func_obj)
+    return _class

@@ -11,6 +11,7 @@ from .utils import (
     get_openshift_release_image,
     recreate_folder,
     run_command,
+    console_redirect_decorator,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "config_etc_hosts",
     "run_command",
     "wait_for_pod_ready",
+    "console_redirect_decorator",
 ]
