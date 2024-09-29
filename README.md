@@ -97,14 +97,18 @@ before you run start the deployment.
 
 |     |     |
 | --- | --- |
-| `ASSISTED_SERVICE_HOST`       | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="onprem". |
-| `DEPLOY_MANIFEST_PATH`        | the location of a manifest file that defines image tags images to be used |
-| `DEPLOY_MANIFEST_TAG`         | the Git tag of a manifest file that defines image tags to be used |
-| `DEPLOY_TAG`                  | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
-| `DEPLOY_TARGET`               | Specifies where assisted-service will be deployed. Defaults to "minikube". Other options are "onprem" for installing as a podman pod and "kind". |
-| `KUBECONFIG`                  | kubeconfig file path, default: <home>/.kube/config |
-| `SERVICE_NAME`                | assisted-service target service name, default: assisted-service |
+| `ASSISTED_SERVICE_HOST`              | FQDN or IP address to where assisted-service is deployed. Used when DEPLOY_TARGET="onprem". |
+| `DEPLOY_MANIFEST_PATH`               | the location of a manifest file that defines image tags images to be used |
+| `DEPLOY_MANIFEST_TAG`                | the Git tag of a manifest file that defines image tags to be used |
+| `DEPLOY_TAG`                         | the tag to be used for all images (assisted-service, assisted-installer, agent, etc) this will override any other os parameters |
+| `DEPLOY_TARGET`                      | Specifies where assisted-service will be deployed. Defaults to "minikube". Other options are "onprem" for installing as a podman pod and "kind". |
+| `KUBECONFIG`                         | kubeconfig file path, default: <home>/.kube/config |
+| `SERVICE_NAME`                       | assisted-service target service name, default: assisted-service |
+| `OPENSHIFT_VERSION`                  | The OCP version which will be supported by the deployed components. Should be in `x.y` format |
+| `OPENSHIFT_INSTALL_RELEASE_IMAGE`    | The OCP release image reference which will be supported by the deployed components. For example - `quay.io/openshift-release-dev/ocp-release:4.16.0-x86_64` |
+
 ### Minikube configuration
+
 |   |   |
 |---|---|
 | `MINIKUBE_DRIVER`| set minikube driver, default = kvm2 | 
