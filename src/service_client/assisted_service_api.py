@@ -56,7 +56,9 @@ class InventoryClient(object):
         configs = Configuration()
         configs.host = self.get_host(configs)
         configs.verify_ssl = False
-        self.set_config_auth(c=configs, offline_token=offline_token, service_account=service_account, refresh_token=refresh_token)
+        self.set_config_auth(
+            c=configs, offline_token=offline_token, service_account=service_account, refresh_token=refresh_token
+        )
         self._set_x_secret_key(configs, pull_secret)
 
         self.api = ApiClient(configuration=configs)
@@ -79,7 +81,11 @@ class InventoryClient(object):
 
     @classmethod
     def set_config_auth(
-        cls, c: Configuration, offline_token: Optional[str], service_account: Optional[ServiceAccount], refresh_token: Optional[str]
+        cls,
+        c: Configuration,
+        offline_token: Optional[str],
+        service_account: Optional[ServiceAccount],
+        refresh_token: Optional[str],
     ) -> None:
         if service_account is not None and service_account.is_provided():
             authentication_method = AuthenticationMethod.SERVICE_ACCOUNT

@@ -44,7 +44,11 @@ class DefaultVariables(_EnvVariables, Triggerable):
         return _EnvVariables.__getattribute__(self, item)
 
     def get_api_client(
-        self, offline_token: Optional[str] = None, service_account: Optional[ServiceAccount] = None, refresh_token: Optional[str] = None, **kwargs
+        self,
+        offline_token: Optional[str] = None,
+        service_account: Optional[ServiceAccount] = None,
+        refresh_token: Optional[str] = None,
+        **kwargs,
     ) -> InventoryClient:
         url = self.remote_service_url
 

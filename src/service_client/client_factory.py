@@ -25,7 +25,11 @@ class ClientFactory:
     ) -> InventoryClient:
         log.info("Creating assisted-service client for url: %s", url)
         c = InventoryClient(
-            inventory_url=url, offline_token=offline_token, service_account=service_account, refresh_token=refresh_token, pull_secret=pull_secret
+            inventory_url=url,
+            offline_token=offline_token,
+            service_account=service_account,
+            refresh_token=refresh_token,
+            pull_secret=pull_secret,
         )
         if wait_for_api:
             c.wait_for_api_readiness(timeout)
