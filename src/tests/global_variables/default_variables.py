@@ -57,4 +57,4 @@ class DefaultVariables(_EnvVariables, Triggerable):
         if not url:
             url = utils.get_local_assisted_service_url(self.namespace, "assisted-service", self.deploy_target)
 
-        return ClientFactory.create_client(url, offline_token, service_account, **kwargs)
+        return ClientFactory.create_client(url, offline_token, service_account, refresh_token, **kwargs)
