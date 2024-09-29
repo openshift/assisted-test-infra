@@ -90,7 +90,7 @@ class InventoryClient(object):
         if service_account is not None and service_account.is_provided():
             authentication_method = AuthenticationMethod.SERVICE_ACCOUNT
             log.info("authenticating to assisted service using service account")
-        elif offline_token is not None:
+        elif refresh_token is not None:
             authentication_method = AuthenticationMethod.REFRESH_TOKEN
             log.info("authenticating to assisted service using ocm cli refresh token")
         else:
