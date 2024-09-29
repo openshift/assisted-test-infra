@@ -44,7 +44,7 @@ class DefaultVariables(_EnvVariables, Triggerable):
         return _EnvVariables.__getattribute__(self, item)
 
     def get_api_client(
-        self, offline_token: Optional[str] = None, service_account: Optional[ServiceAccount] = None, **kwargs
+        self, offline_token: Optional[str] = None, service_account: Optional[ServiceAccount] = None, refresh_token: Optional[str] = None, **kwargs
     ) -> InventoryClient:
         url = self.remote_service_url
 
@@ -52,6 +52,7 @@ class DefaultVariables(_EnvVariables, Triggerable):
         service_account = service_account or ServiceAccount(
             client_id=self.service_account_client_id, client_secret=self.service_account_client_secret
         )
+        refresh_token = refresh_token or self.refresh_token
 
         if not url:
             url = utils.get_local_assisted_service_url(self.namespace, "assisted-service", self.deploy_target)

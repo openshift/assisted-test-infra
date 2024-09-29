@@ -40,6 +40,7 @@ class ServiceAccount(BaseModel):
 class AuthenticationMethod(enum.Enum):
     OFFLINE_TOKEN = "OFFLINE_TOKEN"
     SERVICE_ACCOUNT = "SERVICE_ACCOUNT"
+    REFRESH_TOKEN = "REFRESH_TOKEN"
 
 
 class InventoryClient(object):
@@ -48,13 +49,14 @@ class InventoryClient(object):
         inventory_url: str,
         offline_token: Optional[str],
         service_account: Optional[ServiceAccount],
+        refresh_token: Optional[str],
         pull_secret: str,
     ):
         self.inventory_url = inventory_url
         configs = Configuration()
         configs.host = self.get_host(configs)
         configs.verify_ssl = False
-        self.set_config_auth(c=configs, offline_token=offline_token, service_account=service_account)
+        self.set_config_auth(c=configs, offline_token=offline_token, service_account=service_account, refresh_token=refresh_token)
         self._set_x_secret_key(configs, pull_secret)
 
         self.api = ApiClient(configuration=configs)
@@ -77,13 +79,16 @@ class InventoryClient(object):
 
     @classmethod
     def set_config_auth(
-        cls, c: Configuration, offline_token: Optional[str], service_account: Optional[ServiceAccount]
+        cls, c: Configuration, offline_token: Optional[str], service_account: Optional[ServiceAccount], refresh_token: Optional[str]
     ) -> None:
         if service_account is not None and service_account.is_provided():
             authentication_method = AuthenticationMethod.SERVICE_ACCOUNT
             log.info("authenticating to assisted service using service account")
+        elif offline_token is not None:
+            authentication_method = AuthenticationMethod.REFRESH_TOKEN
+            log.info("authenticating to assisted service using ocm cli refresh token")
         else:
-            log.info("service account was not provided, trying offline token")
+            log.info("service account or refresh token was not provided, trying offline token")
             if offline_token is None:
                 log.info("offline token wasn't provided as well, skipping authentication headers")
                 return
@@ -111,6 +116,12 @@ class InventoryClient(object):
                     "grant_type": "client_credentials",
                     "client_id": service_account.client_id,
                     "client_secret": service_account.client_secret,
+                }
+            elif authentication_method == AuthenticationMethod.REFRESH_TOKEN:
+                params = {
+                    "client_id": "ocm-cli",
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
                 }
             else:
                 params = {

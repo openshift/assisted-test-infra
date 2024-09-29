@@ -21,6 +21,7 @@ class _EnvVariables(DataPool, ABC):
     offline_token: EnvVar = EnvVar(["OFFLINE_TOKEN"])
     service_account_client_id: EnvVar = EnvVar(["SERVICE_ACCOUNT_CLIENT_ID"])
     service_account_client_secret: EnvVar = EnvVar(["SERVICE_ACCOUNT_CLIENT_SECRET"])
+    refresh_token: EnvVar = EnvVar(["OCM_CLI_REFRESH_TOKEN"])
     kernel_arguments: EnvVar = EnvVar(["KERNEL_ARGUMENTS"], loader=json.loads)
     host_installer_args: EnvVar = EnvVar(["HOST_INSTALLER_ARGS"], loader=json.loads)
     openshift_version: EnvVar = EnvVar(["OPENSHIFT_VERSION"], default=consts.OpenshiftVersion.DEFAULT.value)

@@ -21,9 +21,9 @@ description = (
 
 
 class Manage:
-    def __init__(self, inventory_url: str, type: str, offline_token: str, service_account: ServiceAccount):
+    def __init__(self, inventory_url: str, type: str, offline_token: str, service_account: ServiceAccount, refresh_token: str):
         self.client = ClientFactory.create_client(
-            url=inventory_url, offline_token=offline_token, service_account=service_account
+            url=inventory_url, offline_token=offline_token, service_account=service_account, refresh_token=refresh_token
         )
 
         with open("src/manage/manageable_options.yaml", "r") as f:
@@ -104,6 +104,7 @@ def handle_arguments():
         help="client secret of the service account used to authenticate against assisted-service",
         type=str,
     )
+    parser.add_argument("--ocm-cli-refresh-token", help="ocm cli refresh token to authenticate against assisted-service", type=str)
     parser.add_argument("--type", help="Type of managing process to commit", type=str)
 
     return parser.parse_args()
@@ -118,6 +119,7 @@ def main():
         service_account=ServiceAccount(
             client_id=args.service_account_client_id, client_secret=args.service_account_client_secret
         ),
+        refresh_token=args.ocm_cli_refresh_token,
     )
 
 
