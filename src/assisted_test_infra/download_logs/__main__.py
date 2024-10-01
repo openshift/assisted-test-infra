@@ -51,6 +51,7 @@ def main():
         service_account=ServiceAccount(
             client_id=get_env("SERVICE_ACCOUNT_CLIENT_ID"), client_secret=get_env("SERVICE_ACCOUNT_CLIENT_SECRET")
         ),
+        refresh_token=get_env("OCM_CLI_REFRESH_TOKEN"),
         timeout=CONNECTION_TIMEOUT,
     )
     if args.cluster_id:

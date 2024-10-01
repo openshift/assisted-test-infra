@@ -18,13 +18,18 @@ class ClientFactory:
         url: str,
         offline_token: str,
         service_account: ServiceAccount,
+        refresh_token: str,
         pull_secret: Optional[str] = "",
         wait_for_api: Optional[bool] = True,
         timeout: Optional[int] = consts.WAIT_FOR_BM_API,
     ) -> InventoryClient:
         log.info("Creating assisted-service client for url: %s", url)
         c = InventoryClient(
-            inventory_url=url, offline_token=offline_token, service_account=service_account, pull_secret=pull_secret
+            inventory_url=url,
+            offline_token=offline_token,
+            service_account=service_account,
+            refresh_token=refresh_token,
+            pull_secret=pull_secret,
         )
         if wait_for_api:
             c.wait_for_api_readiness(timeout)
