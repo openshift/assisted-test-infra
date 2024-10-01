@@ -81,7 +81,7 @@ if [ "${RELEASE_IMAGES}" = "" ] && { [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "
     fi
 fi
 
-if [ "${OS_IMAGES}" = "" ] && [ "${ENABLE_KUBE_API}" != "true" ] && { [ "${OPENSHIFT_CI}" = "true" ] || [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ] || [ "${OPENSHIFT_VERSION}" != "" ]; }; then
+if [ "${OS_IMAGES}" = "" ] && [ "${ENABLE_KUBE_API}" != "true" ] && [ "${DEPLOY_TARGET}" != "operator" ] && { [ "${OPENSHIFT_CI}" = "true" ] || [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ] || [ "${OPENSHIFT_VERSION}" != "" ]; }; then
     OS_IMAGES=$(skipper run ./scripts/override_images/override_os_images.py)
     export OS_IMAGES
 fi
