@@ -3,6 +3,7 @@ from consts import GB
 
 class OperatorType:
     CNV = "cnv"
+    MTV = "mtv"
     ODF = "odf"
     LSO = "lso"
     LVM = "lvm"
@@ -73,6 +74,9 @@ class OperatorResource:
     def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
+            OperatorType.MTV: cls.get_resource_dict(
+                master_memory=1174, worker_memory=1384, master_vcpu=5, worker_vcpu=3
+            ),
             OperatorType.ODF: cls.get_resource_dict(
                 master_memory=24000,
                 worker_memory=24000,
@@ -104,6 +108,10 @@ class CNVOperatorFailedError(OperatorFailedError):
     pass
 
 
+class MTVOperatorFailedError(OperatorFailedError):
+    pass
+
+
 class ODFOperatorFailedError(OperatorFailedError):
     pass
 
@@ -125,8 +133,12 @@ class MetalLBOperatorFailedError(OperatorFailedError):
 
 
 def get_exception_factory(operator: str):
+
     if operator == OperatorType.CNV:
         return CNVOperatorFailedError
+
+    if operator == OperatorType.MTV:
+        return MTVOperatorFailedError
 
     if operator == OperatorType.ODF:
         return ODFOperatorFailedError
