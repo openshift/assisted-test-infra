@@ -6,6 +6,7 @@ from .node_controllers import NodeController
 from .node_controllers.libvirt_controller import LibvirtController
 from .node_controllers.node import Node
 from .node_controllers.nutanix_controller import NutanixController
+from .node_controllers.oci_api_controller import OciApiController
 from .node_controllers.oci_controller import OciController
 from .node_controllers.terraform_controller import TerraformController
 from .node_controllers.vsphere_controller import VSphereController
@@ -25,6 +26,7 @@ __all__ = [
     "TerraformController",
     "LibvirtController",
     "OciController",
+    "OciApiController",
     "VSphereController",
     "NutanixController",
 ]

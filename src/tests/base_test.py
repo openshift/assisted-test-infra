@@ -26,7 +26,7 @@ from assisted_test_infra.test_infra.controllers import (
     Node,
     NodeController,
     NutanixController,
-    OciController,
+    OciApiController,
     ProxyController,
     TangController,
     TerraformController,
@@ -400,7 +400,7 @@ class BaseTest:
             return NutanixController(controller_configuration, cluster_configuration)
 
         if platform == consts.Platforms.OCI:
-            return OciController(controller_configuration, cluster_configuration)
+            return OciApiController(controller_configuration, cluster_configuration)
 
         if platform == consts.CPUArchitecture.S390X:
             return ZVMController(controller_configuration, cluster_configuration)
