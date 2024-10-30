@@ -288,7 +288,9 @@ class OciApiController(NodeController):
             raise
         return obj.data.id
 
-    def _apply_job_from_stack(self, stack_id: str, display_name: str, timeout_seconds: int = 1800) -> str:
+    def _apply_job_from_stack(
+        self, stack_id: str, display_name: str, timeout_seconds: int = 1800, interval_wait: int = 60
+    ) -> str:
         """Apply job will run the stack terraform code and create the resources.
 
         On failure - raise Exception and cleanup resources
@@ -326,7 +328,14 @@ class OciApiController(NodeController):
             job = self._resource_manager_client_composite_operations.create_job_and_wait_for_state(
                 create_job_details,
                 wait_for_states=[OciState.FAILED.value, OciState.SUCCEEDED.value],
-                waiter_kwargs={"max_wait_seconds": timeout_seconds, "succeed_on_not_found": False},
+                waiter_kwargs={
+                    "max_wait_seconds": timeout_seconds,
+                    "succeed_on_not_found": False,
+                    "max_interval_seconds": interval_wait,
+                    "wait_callback": lambda index, res: log.info(
+                        f"_apply_job_from_stack: {str(index)} -> {str(res.data.lifecycle_state)}"
+                    ),
+                },
             )
             log.info(f"Job run ended with {job.data.lifecycle_state} state")
             log.info(self._resource_manager_client.get_job_logs_content(job.data.id).data)
