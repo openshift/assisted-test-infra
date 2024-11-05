@@ -220,6 +220,7 @@ class OciApiController(NodeController):
             "compute_shape": compute_shape,
             "compute_count": compute_count,
             "zone_dns": base_dns,
+            "tag_namespace_name": f"openshift-{str(cluster_name)}",
             **kwargs,
         }
         log.info(f"Terraform variables before apply setting  {variables}")
