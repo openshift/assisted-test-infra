@@ -9,6 +9,7 @@ class OperatorType:
     LVM = "lvm"
     MCE = "mce"
     METALLB = "metallb"
+    OPENSHIFT_AI = "openshift-ai"
 
 
 class OperatorStatus:
@@ -97,6 +98,18 @@ class OperatorResource:
             ),
             OperatorType.MCE: cls.get_mce_resource_dict(is_sno),
             OperatorType.METALLB: cls.get_resource_dict(),
+            OperatorType.OPENSHIFT_AI: cls.get_resource_dict(
+                # Note that these requirements are for OpenShift and all its dependencies, in particular ODF.
+                master_memory=40 * 1024,
+                worker_memory=64 * 1024,
+                master_vcpu=12,
+                worker_vcpu=20,
+                master_disk=100 * GB,
+                worker_disk=100 * GB,
+                master_disk_count=1,
+                worker_disk_count=2,
+                worker_count=3,
+            ),
         }
 
 
@@ -132,6 +145,10 @@ class MetalLBOperatorFailedError(OperatorFailedError):
     pass
 
 
+class OpenShiftAIOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
 
     if operator == OperatorType.CNV:
@@ -154,6 +171,9 @@ def get_exception_factory(operator: str):
 
     if operator == OperatorType.METALLB:
         return MetalLBOperatorFailedError
+
+    if operator == OperatorType.OPENSHIFT_AI:
+        return OpenShiftAIOperatorFailedError
 
     return OperatorFailedError
 
