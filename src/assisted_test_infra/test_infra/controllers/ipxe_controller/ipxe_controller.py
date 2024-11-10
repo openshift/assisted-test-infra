@@ -16,6 +16,7 @@ class IPXEController(ContainerizedController):
         port: int = consts.DEFAULT_IPXE_SERVER_PORT,
         ip: str = consts.DEFAULT_IPXE_SERVER_IP,
         local_pxe_assets: bool = False,
+        empty_pxe_content: bool = False,
     ):
         super().__init__(name, port, name)
         self._ip = ip
@@ -23,6 +24,7 @@ class IPXEController(ContainerizedController):
         self._local_pxe_assets = local_pxe_assets
         self._dir = os.path.dirname(os.path.realpath(__file__))
         self._ipxe_scripts_folder = f"{self._dir}/server/ipxe_scripts"
+        self._empty_pxe_content = empty_pxe_content
 
     def _on_container_start(self, infra_env_id: str, cluster_name: str):
         log.info("Preparing iPXE server")
@@ -40,13 +42,15 @@ class IPXEController(ContainerizedController):
     def _download_ipxe_script(self, infra_env_id: str, cluster_name: str):
         log.info(f"Downloading iPXE script to {self._ipxe_scripts_folder}")
         utils.recreate_folder(self._ipxe_scripts_folder, force_recreate=False)
-        pxe_content = self._api_client.client.v2_download_infra_env_files(
-            infra_env_id=infra_env_id, file_name="ipxe-script", _preload_content=False
-        ).data.decode("utf-8")
+        pxe_content = ""
+        if not self._empty_pxe_content:
+            pxe_content = self._api_client.client.v2_download_infra_env_files(
+                infra_env_id=infra_env_id, file_name="ipxe-script", _preload_content=False
+            ).data.decode("utf-8")
 
-        # PXE can not boot from http redirected to https, update the assets images to local http server
-        if self._local_pxe_assets:
-            pxe_content = self._download_ipxe_assets(pxe_content)
+            # PXE can not boot from http redirected to https, update the assets images to local http server
+            if self._local_pxe_assets:
+                pxe_content = self._download_ipxe_assets(pxe_content)
 
         with open(f"{self._ipxe_scripts_folder}/{cluster_name}", "w") as _file:
             _file.writelines(pxe_content)
