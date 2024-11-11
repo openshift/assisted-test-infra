@@ -1,6 +1,7 @@
 from .assisted_installer_infra_controller import AssistedInstallerInfraController
 from .iptables import IpTableCommandOption, IptableRule
 from .ipxe_controller.ipxe_controller import IPXEController
+from .iscsi_target_controller import IscsiTargetController
 from .nat_controller import NatController
 from .node_controllers import NodeController
 from .node_controllers.libvirt_controller import LibvirtController
@@ -20,6 +21,7 @@ __all__ = [
     "IptableRule",
     "IpTableCommandOption",
     "IPXEController",
+    "IscsiTargetController",
     "Node",
     "ProxyController",
     "TangController",
