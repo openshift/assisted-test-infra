@@ -2,6 +2,7 @@
 import base64
 import contextlib
 import enum
+import inspect
 import ipaddress
 import json
 import os
@@ -174,9 +175,13 @@ class InventoryClient(object):
     def create_cluster(
         self, name: str, ssh_public_key: Optional[str] = None, **cluster_params
     ) -> models.cluster.Cluster:
-        cluster = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params)
-        log.info("Creating cluster with params %s", cluster.__dict__)
-        result = self.client.v2_register_cluster(new_cluster_params=cluster)
+        init_signature = inspect.signature(models.ClusterCreateParams.__init__)
+        if "control_plane_count" not in init_signature.parameters:
+            del cluster_params["control_plane_count"]
+
+        params = models.ClusterCreateParams(name=name, ssh_public_key=ssh_public_key, **cluster_params)
+        log.info("Creating cluster with params %s", params.__dict__)
+        result = self.client.v2_register_cluster(new_cluster_params=params)
         return result
 
     def create_infra_env(
