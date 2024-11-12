@@ -71,7 +71,13 @@ def run_command(command, shell=False, raise_errors=True, env=None, cwd=None, run
         return
 
     process = subprocess.run(
-        command, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True, cwd=cwd
+        command,
+        shell=shell,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        universal_newlines=True,
+        cwd=cwd,
     )
 
     def _io_buffer_to_str(buf):
@@ -216,7 +222,11 @@ def get_assisted_service_url_by_args(args, wait=True):
         tries=5 if wait else 1,
         delay=3,
         backoff=2,
-        exceptions=(requests.ConnectionError, requests.ConnectTimeout, requests.RequestException),
+        exceptions=(
+            requests.ConnectionError,
+            requests.ConnectTimeout,
+            requests.RequestException,
+        ),
     )(get_url)(**kwargs)
 
 
@@ -262,13 +272,18 @@ def is_assisted_service_reachable(url):
     try:
         r = requests.get(url + "/health", timeout=10, verify=False)
         return r.status_code == 200
-    except (requests.ConnectionError, requests.ConnectTimeout, requests.RequestException):
+    except (
+        requests.ConnectionError,
+        requests.ConnectTimeout,
+        requests.RequestException,
+    ):
         return False
 
 
 def get_tf_folder(cluster_name, namespace=None):
     warnings.warn(
-        "get_tf_folder is deprecated. Use utils.TerraformControllerUtil.get_folder instead.", DeprecationWarning
+        "get_tf_folder is deprecated. Use utils.TerraformControllerUtil.get_folder instead.",
+        DeprecationWarning,
     )
     folder_name = f"{cluster_name}__{namespace}" if namespace else f"{cluster_name}"
     return os.path.join(consts.TF_FOLDER, folder_name)
@@ -302,7 +317,11 @@ def file_lock_context(filepath="/tmp/src.lock", timeout=300):
     try:
         lock.acquire()
     except filelock.Timeout:
-        log.info("Deleting lock file: %s " "since it exceeded timeout of: %d seconds", filepath, timeout)
+        log.info(
+            "Deleting lock file: %s " "since it exceeded timeout of: %d seconds",
+            filepath,
+            timeout,
+        )
         os.unlink(filepath)
         lock.acquire()
 
@@ -347,7 +366,11 @@ def extract_nodes_from_tf_state(tf_state, network_names, role):
                 if nic["network_name"] not in network_names:
                     continue
 
-                data[nic["mac"]] = {"ip": nic["addresses"], "name": d["attributes"]["name"], "role": role}
+                data[nic["mac"]] = {
+                    "ip": nic["addresses"],
+                    "name": d["attributes"]["name"],
+                    "role": role,
+                }
 
     return data
 
@@ -364,7 +387,12 @@ def touch(path):
         os.utime(path, None)
 
 
-def config_etc_hosts(cluster_name: str, base_dns_domain: str, api_vip: str = None, ingress_vip: str = None):
+def config_etc_hosts(
+    cluster_name: str,
+    base_dns_domain: str,
+    api_vip: str = None,
+    ingress_vip: str = None,
+):
     suffix = f"{cluster_name}.{base_dns_domain}"
 
     dns = {}
@@ -540,13 +568,16 @@ def get_openshift_release_image(allow_default=True):
 
 @contextmanager
 def pull_secret_file():
-    pull_secret = os.environ.get("PULL_SECRET")
+    if os.environ.get("PULL_SECRET_FILE") is None:
+        pull_secret = os.environ.get("PULL_SECRET")
+    else:
+        with open(os.environ.get("PULL_SECRET_FILE"), "r") as f:
+            pull_secret = f.read()
 
     try:
         json.loads(pull_secret)
     except json.JSONDecodeError as e:
         raise ValueError("Value of PULL_SECRET environment variable is not a valid JSON payload") from e
-
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(pull_secret)
         f.flush()
@@ -573,7 +604,12 @@ def fetch_url(url, timeout=60, max_retries=5):
     Raises an exception in case of any failure.
     """
     try:
-        retries = Retry(read=max_retries, status=max_retries, backoff_factor=0.5, status_forcelist=[500])
+        retries = Retry(
+            read=max_retries,
+            status=max_retries,
+            backoff_factor=0.5,
+            status_forcelist=[500],
+        )
         s = Session()
         s.mount("http://", HTTPAdapter(max_retries=retries))
 
