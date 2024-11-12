@@ -150,6 +150,7 @@ class Cluster(BaseCluster):
             high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
+            control_plane_count=self.nodes.masters_count,
             **extra_vars,
         )
 
