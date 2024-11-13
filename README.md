@@ -180,6 +180,7 @@ before you run start the deployment.
 | `PLATFORM`                   | The openshift platform to integrate with, one of: `baremetal`, `none`,`vsphere`, `external`, default: `baremetal`                                          |
 | `KERNEL_ARGUMENTS`           | Update live ISO kernel arguments. JSON formatted string containing array of dictionaries each having 2 attributes: `operation` and `value`. Currently, only `append` operation is supported. |
 | `CPU_ARCHITECTURE`           | CPU architecture of the nodes that will be part of the cluster, one of: `x86_64`, `arm64`, `s390x`, `ppc64le`, default: `x86_64`                           |
+| `DAY2_CPU_ARCHITECTURE`      | CPU architecture of the nodes that will be part of the cluster in day2, one of: `x86_64`, `arm64`, `s390x`, `ppc64le` default:`x86_64`                     |
 | `CUSTOM_MANIFESTS_FILES`     | List of local manifest files separated by commas or path to directory containing multiple manifests                                                        |
 | `DISCONNECTED`               | Set to "true" if local mirror needs to be used                                                            |
 | `REGISTRY_CA_PATH`           | Path to mirror registry CA bundle                                                            |

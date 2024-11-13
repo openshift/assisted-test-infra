@@ -28,7 +28,12 @@ class DefaultVariables(_EnvVariables, Triggerable):
         if not self.is_kube_api:
             with suppress(RuntimeError, TimeoutError):
                 client = self.get_api_client()
-        self._set("openshift_version", utils.get_openshift_version(allow_default=True, client=client))
+
+        openshift_version = utils.get_openshift_version(allow_default=True, client=client)
+        if openshift_version is None:
+            raise ValueError("openshift_Version is None")
+
+        self._set("openshift_version", openshift_version)
         Trigger.trigger_configurations([self], get_default_triggers())
 
     def _set(self, key: str, value: Any):

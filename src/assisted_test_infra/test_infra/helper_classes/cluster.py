@@ -125,9 +125,6 @@ class Cluster(BaseCluster):
         if self._config.network_type is not None:
             extra_vars["network_type"] = self._config.network_type
 
-        if self._config.cpu_architecture:
-            extra_vars["cpu_architecture"] = self._config.cpu_architecture
-
         if self._config.is_disconnected:
             extra_vars["is_disconnected"] = self._config.is_disconnected
 
@@ -153,6 +150,12 @@ class Cluster(BaseCluster):
             high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
+            control_plane_count=self.nodes.masters_count,
+            cpu_architecture=(
+                consts.CPUArchitecture.MULTI
+                if self._config.openshift_version.endswith(f"{consts.CPUArchitecture.MULTI}")
+                else self._config.cpu_architecture
+            ),
             **extra_vars,
         )
 
