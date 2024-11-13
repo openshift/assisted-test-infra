@@ -1,80 +1,76 @@
-FROM quay.io/assisted-installer-ops/base-python:3.12
-
-# A directory in the path with write permission even for non-root users
-ENV TOOLS=/tools/
-ENV PATH="$TOOLS:$PATH"
-RUN mkdir $TOOLS --mode g+xw
-
-# TODO: Remove once OpenShift CI supports it out of the box (see https://access.redhat.com/articles/4859371)
-RUN chmod g+w /etc/passwd && \
-    echo 'echo default:x:$(id -u):$(id -g):Default Application User:/alabama:/sbin/nologin\ >> /etc/passwd' > /usr/local/bin/fix_uid.sh && \
-    chmod g+rwx /usr/local/bin/fix_uid.sh
-
-# tune dnf to download more packages in parallel and from the closest mirror
-RUN echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
-    echo "max_parallel_downloads=10" >> /etc/dnf/dnf.conf
-
-# CRB repo is required for libvirt-devel
-RUN dnf -y install --enablerepo=crb \
-  make \
-  gcc \
-  unzip \
-  curl-minimal \
-  git \
-  httpd-tools \
-  jq \
-  nss_wrapper \
-  libvirt-client \
-  guestfs-tools \
-  libvirt-devel \
-  libguestfs-tools \
-  libxslt \
-  xorriso \
-  iptables-nft \
-   && dnf clean all
-
-# Git checks if the user that owns the files on the filesystem match the
-# current user.  We need to disable this check because tests in Prow are
-# running with a random user.
-RUN git config --system --add safe.directory '*'
-
-RUN curl --retry 5 --connect-timeout 30 -Lo packer.zip https://releases.hashicorp.com/packer/1.9.4/packer_1.9.4_linux_386.zip && unzip packer.zip -d /usr/bin/ && mv /usr/bin/packer /usr/bin/packer.io && rm -rf packer.zip
-RUN curl --retry 5 --connect-timeout 30 -Lo terraform.zip https://releases.hashicorp.com/terraform/1.6.3/terraform_1.6.3_linux_amd64.zip && unzip terraform.zip -d /usr/bin/ && rm -rf terraform.zip
-RUN curl --retry 5 --connect-timeout 30 -L https://github.com/containers/podman/releases/download/v3.4.4/podman-remote-static.tar.gz -o "/tmp/podman-remote3.tar.gz" && \
-    tar -zxvf /tmp/podman-remote3.tar.gz && \
-    mv podman-remote-static /tools/podman-remote3 && \
-    rm -f /tmp/podman-remote3.tar.gz &&\
-    curl --retry 5 --connect-timeout 30 -L https://github.com/containers/podman/releases/download/v4.1.1/podman-remote-static.tar.gz -o "/tmp/podman-remote4.tar.gz" && \
-    tar -zxvf /tmp/podman-remote4.tar.gz && \
-    mv podman-remote-static /tools/podman-remote4 && \
-    rm -f /tmp/podman-remote4.tar.gz
-
-COPY --from=quay.io/ocp-splat/govc:v0.29.0 /govc /usr/local/bin
+# FROM quay.io/assisted-installer-ops/base-python:3.12 AS base
+FROM quay.io/centos/centos:stream9 AS base
 
 WORKDIR /home/assisted-test-infra
 
-COPY requirements.txt requirements-dev.txt ./
-RUN pip3 install --upgrade pip && \
-      pip3 install --no-cache-dir -I -r ./requirements.txt -r ./requirements-dev.txt
+ENV GOPATH=/opt/app-root/src/go
+ENV GOCACHE=/opt/app-root/src/.cache/go-build
+ENV GOROOT=/usr/lib/golang
+ENV TOOLS=/tools/
+ENV PATH="$TOOLS:$GOROOT/bin:$GOPATH/bin:$PATH"
 
-RUN curl --retry 5 --connect-timeout 30 -s https://storage.googleapis.com/golang/go1.18.1.linux-amd64.tar.gz | tar -C /usr/local -xz
-ENV GOPATH=/go
-ENV GOCACHE=/go/.cache
-ENV PATH=$PATH:/usr/local/go/bin:/go/bin
+# Setup container
+RUN  <<EOR
+  cat <<EOF >>  /etc/dnf/dnf.conf
+fastestmirror=1
+max_parallel_downloads=10
+EOF
 
-COPY . .
+  chmod g+w /etc/passwd 
+  echo 'echo default:x:$(id -u):$(id -g):Default Application User:/alabama:/sbin/nologin\ >> /etc/passwd' > /usr/local/bin/fix_uid.sh 
+  chmod g+rwx /usr/local/bin/fix_uid.sh
+  mkdir -p $TOOLS $GOROOT $GOPATH $GOCACHE
+EOR
 
-# init terraform in order to cache the provider
-RUN source scripts/utils.sh && \
-    retry -- terraform -chdir=/home/assisted-test-infra/terraform_files/equinix-ci-machine init && \
-    retry -- terraform -chdir=/home/assisted-test-infra/terraform_files/oci-ci-machine init && \
-    chgrp -R 0 /home/assisted-test-infra && \
-    chmod -R g=u /home/assisted-test-infra
 
-# setting pre-commit env
-ENV PRE_COMMIT_HOME build
+FROM registry.access.redhat.com/ubi9/go-toolset:1.21 AS download
 
-# Install the assisted-service Python client if it exists locally. 
-# In the CI, it will be missing during the first build in "images" in prow,
-# but should be present after running "make image_build" during setup.
-RUN pip3 install --no-index ./.pip/* || true
+ARG TARGETPLATFORM
+ENV OPTS="--retry 2 --connect-timeout 30 -sL"
+
+WORKDIR /opt/downloads
+
+COPY --from=quay.io/ocp-splat/govc:v0.29.0 /govc /usr/local/bin/
+
+RUN PLATFORM=$(echo ${TARGETPLATFORM} | cut -d"/" -f2) && echo $PLATFORM && \
+    mkdir -p usr/local/bin tools && \
+    curl ${OPTS} "https://releases.hashicorp.com/packer/1.10.1/packer_1.10.1_linux_$PLATFORM.zip"     | bsdtar -C usr/local/bin/ -xvf-  packer && \
+    GOBIN=/opt/downloads/usr/local/bin go install github.com/hashicorp/terraform@v1.7.5 && \
+    curl ${OPTS} "https://github.com/containers/podman/releases/download/v3.4.4/podman-remote-static.tar.gz" | tar xvzO > tools/podman-remote3 && \
+    curl ${OPTS} "https://github.com/containers/podman/releases/download/v4.1.1/podman-remote-static.tar.gz" | tar xvzO > tools/podman-remote4 && \
+    chmod +x tools/* usr/local/bin/* 
+
+FROM base AS packages
+
+COPY --from=download $GOROOT $GOROOT
+COPY --from=download /opt/downloads /
+
+RUN dnf -y install --enablerepo=crb --setopt="install_weak_deps=False" \
+  make gcc unzip curl-minimal git httpd-tools jq \
+  nss_wrapper libvirt-client guestfs-tools libvirt-devel libguestfs-tools \
+  libxslt xorriso iptables-nft python3.12-pip python3.12-devel && \
+  dnf clean all 
+
+
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3.12 /usr/bin/python && \
+    ln -sf pip3.12 /usr/bin/pip3 && \
+    ln -sf pip3.12 /usr/bin/pip 
+    
+RUN git config --system --add safe.directory '*'
+
+COPY requirements.txt requirements-dev.txt /tmp
+
+RUN pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir -U -r /tmp/requirements.txt -r /tmp/requirements-dev.txt
+
+FROM packages AS final
+
+WORKDIR /home/assisted-test-infra
+
+
+
+
+
+
+
