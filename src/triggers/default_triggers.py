@@ -70,6 +70,10 @@ _default_triggers = frozendict(
         "mtv_operator": OlmOperatorsTrigger(conditions=[lambda config: "mtv" in config.olm_operators], operator="mtv"),
         "odf_operator": OlmOperatorsTrigger(conditions=[lambda config: "odf" in config.olm_operators], operator="odf"),
         "lvm_operator": OlmOperatorsTrigger(conditions=[lambda config: "lvm" in config.olm_operators], operator="lvm"),
+        "openshift_ai_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "openshift-ai" in config.olm_operators],
+            operator="openshift-ai",
+        ),
         "sno_mce_operator": OlmOperatorsTrigger(
             conditions=[lambda config: "mce" in config.olm_operators, lambda config2: config2.masters_count == 1],
             operator="mce",
