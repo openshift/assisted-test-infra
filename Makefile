@@ -59,6 +59,7 @@ BASE_DOMAIN := $(or $(BASE_DOMAIN),redhat.com)
 
 # secrets
 SSH_PUB_KEY := $(or $(SSH_PUB_KEY),$(shell cat ~/.ssh/id_rsa.pub))
+PULL_SECRET :=  $(or $(PULL_SECRET), $(shell if ! [ -z "${PULL_SECRET_FILE}" ];then cat ${PULL_SECRET_FILE};fi))
 ROUTE53_SECRET := $(or $(ROUTE53_SECRET), "")
 OFFLINE_TOKEN := $(or $(OFFLINE_TOKEN), "")
 SERVICE_ACCOUNT_CLIENT_ID := $(or $(SERVICE_ACCOUNT_CLIENT_ID), "")
