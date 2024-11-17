@@ -31,6 +31,14 @@ elif [[ ${SERVICE_REPO} != $(cd assisted-service && git remote get-url origin) ]
   retry -- git clone "${SERVICE_REPO}"
 fi
 
+# This is a workaround for QE for testing staging
+if [[ "${REMOTE_SERVICE_URL}" == *"stage"* ]]; then
+  latest_tag=$(cd assisted-service/ && git describe --tags $(git rev-list --tags --max-count=1))
+  cd assisted-service
+  retry -- git checkout tags/${latest_tag} -b "${latest_tag}"
+  exit 0
+fi
+
 if [[ "${OPENSHIFT_CI}" == "true" ]]; then
     # Some git commands require user/email to be set, use a dummy global
     # user/email for CI if one is not already configured
