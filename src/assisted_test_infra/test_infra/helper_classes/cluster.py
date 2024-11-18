@@ -134,6 +134,9 @@ class Cluster(BaseCluster):
         if self._config.registry_ca_path:
             extra_vars["registry_ca_path"] = self._config.registry_ca_path
 
+        if self.nodes.masters_count and self.nodes.masters_count > 3:
+            extra_vars["control_plane_count"] = self.nodes.masters_count
+
         if len(self._config.olm_operators) > 0:
             olm_operators = self.get_olm_operators()
             if olm_operators:
@@ -150,7 +153,6 @@ class Cluster(BaseCluster):
             high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
-            control_plane_count=self.nodes.masters_count,
             **extra_vars,
         )
 
@@ -161,7 +163,9 @@ class Cluster(BaseCluster):
         olm_operators = []
         for operator_name in self._config.olm_operators:
             operator_properties = consts.get_operator_properties(
-                operator_name, api_ip=self._config.metallb_api_ip, ingress_ip=self._config.metallb_ingress_ip
+                operator_name,
+                api_ip=self._config.metallb_api_ip,
+                ingress_ip=self._config.metallb_ingress_ip,
             )
             operator = {"name": operator_name}
             if operator_properties:
@@ -265,7 +269,10 @@ class Cluster(BaseCluster):
         self.api_client.update_cluster(self.id, {"disk_encryption": disk_encryption_params})
 
     def set_ignored_validations(
-        self, host_validation_ids: list[str] = None, cluster_validation_ids: list[str] = None, **kwargs
+        self,
+        host_validation_ids: list[str] = None,
+        cluster_validation_ids: list[str] = None,
+        **kwargs,
     ):
         ignore_obj = models.IgnoredValidations(
             host_validation_ids=json.dumps(host_validation_ids) if host_validation_ids else None,
@@ -345,7 +352,8 @@ class Cluster(BaseCluster):
     def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
         if requested_roles is None:
             requested_roles = Counter(
-                master=num_masters or self.nodes.masters_count, worker=num_workers or self.nodes.workers_count
+                master=num_masters or self.nodes.masters_count,
+                worker=num_workers or self.nodes.workers_count,
             )
         assigned_roles = self._get_matching_hosts(host_type=consts.NodeRoles.MASTER, count=requested_roles["master"])
 
@@ -442,7 +450,10 @@ class Cluster(BaseCluster):
 
     def set_ingress_and_api_vips(self, api_vip: str, ingress_vip: str):
         log.info(f"Setting API VIP address:{api_vip} and ingress VIP address:{ingress_vip} for cluster: {self.id}")
-        vips = {"api_vips": [{"ip": f"{api_vip}"}], "ingress_vips": [{"ip": f"{ingress_vip}"}]}
+        vips = {
+            "api_vips": [{"ip": f"{api_vip}"}],
+            "ingress_vips": [{"ip": f"{ingress_vip}"}],
+        }
         self.api_client.update_cluster(self.id, vips)
 
     def set_advanced_networking(
@@ -566,7 +577,10 @@ class Cluster(BaseCluster):
         utils.waiting.wait_till_at_least_one_host_is_in_stage(
             client=self.api_client,
             cluster_id=self.id,
-            stages=[consts.HostsProgressStages.WRITE_IMAGE_TO_DISK, consts.HostsProgressStages.REBOOTING],
+            stages=[
+                consts.HostsProgressStages.WRITE_IMAGE_TO_DISK,
+                consts.HostsProgressStages.REBOOTING,
+            ],
             nodes_count=nodes_count,
         )
 
@@ -739,7 +753,8 @@ class Cluster(BaseCluster):
 
     def get_reboot_required_hosts(self):
         return self.api_client.get_hosts_in_statuses(
-            cluster_id=self.id, statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION]
+            cluster_id=self.id,
+            statuses=[consts.NodesStatus.RESETING_PENDING_USER_ACTION],
         )
 
     def reboot_required_nodes_into_iso_after_reset(self):
@@ -764,7 +779,10 @@ class Cluster(BaseCluster):
             client=self.api_client,
             cluster_id=self.id,
             statuses=[consts.NodesStatus.INSTALLING_PENDING_USER_ACTION],
-            status_info=(consts.HostStatusInfo.REBOOT_TIMEOUT, consts.HostStatusInfo.OLD_REBOOT_TIMEOUT),
+            status_info=(
+                consts.HostStatusInfo.REBOOT_TIMEOUT,
+                consts.HostStatusInfo.OLD_REBOOT_TIMEOUT,
+            ),
             nodes_count=nodes_count,
             fall_on_error_status=fall_on_error_status,
             fall_on_pending_status=fall_on_pending_status,
@@ -807,22 +825,30 @@ class Cluster(BaseCluster):
 
     def is_in_cancelled_status(self):
         return utils.is_cluster_in_status(
-            client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.CANCELLED]
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.CANCELLED],
         )
 
     def is_in_error(self):
         return utils.is_cluster_in_status(
-            client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.ERROR]
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.ERROR],
         )
 
     def is_finalizing(self):
         return utils.is_cluster_in_status(
-            client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.FINALIZING]
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.FINALIZING],
         )
 
     def is_installing(self):
         return utils.is_cluster_in_status(
-            client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.INSTALLING]
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSTALLING],
         )
 
     def reset_install(self):
@@ -830,7 +856,9 @@ class Cluster(BaseCluster):
 
     def is_in_insufficient_status(self):
         return utils.is_cluster_in_status(
-            client=self.api_client, cluster_id=self.id, statuses=[consts.ClusterStatus.INSUFFICIENT]
+            client=self.api_client,
+            cluster_id=self.id,
+            statuses=[consts.ClusterStatus.INSUFFICIENT],
         )
 
     def wait_for_hosts_to_install(
@@ -956,7 +984,10 @@ class Cluster(BaseCluster):
         self.set_network_params(controller=self.nodes.controller)
 
         # in case of None or External platform we need to specify dns records before hosts are ready
-        if self.nodes.controller.tf_platform in [consts.Platforms.NONE, consts.Platforms.EXTERNAL]:
+        if self.nodes.controller.tf_platform in [
+            consts.Platforms.NONE,
+            consts.Platforms.EXTERNAL,
+        ]:
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:
@@ -1002,7 +1033,12 @@ class Cluster(BaseCluster):
 
     def host_post_step_result(self, host_id, step_type, step_id, exit_code, output):
         self.api_client.host_post_step_result(
-            self.id, host_id, step_type=step_type, step_id=step_id, exit_code=exit_code, output=output
+            self.id,
+            host_id,
+            step_type=step_type,
+            step_id=step_id,
+            exit_code=exit_code,
+            output=output,
         )
 
     def host_update_install_progress(self, host_id, current_stage, progress_info=None):
@@ -1012,13 +1048,25 @@ class Cluster(BaseCluster):
         self.api_client.complete_cluster_installation(cluster_id=self.id, is_success=True)
 
     def wait_for_cluster_validation(
-        self, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
+        self,
+        validation_section,
+        validation_id,
+        statuses,
+        timeout=consts.VALIDATION_TIMEOUT,
+        interval=2,
     ):
-        log.info("Wait until cluster %s validation %s is in status %s", self.id, validation_id, statuses)
+        log.info(
+            "Wait until cluster %s validation %s is in status %s",
+            self.id,
+            validation_id,
+            statuses,
+        )
         try:
             waiting.wait(
                 lambda: self.is_cluster_validation_in_status(
-                    validation_section=validation_section, validation_id=validation_id, statuses=statuses
+                    validation_section=validation_section,
+                    validation_id=validation_id,
+                    statuses=statuses,
                 ),
                 timeout_seconds=timeout,
                 sleep_seconds=interval,
@@ -1028,7 +1076,9 @@ class Cluster(BaseCluster):
             log.error(
                 "Cluster validation status is: %s",
                 utils.get_cluster_validation_value(
-                    self.api_client.cluster_get(self.id), validation_section, validation_id
+                    self.api_client.cluster_get(self.id),
+                    validation_section,
+                    validation_id,
                 ),
             )
             raise
@@ -1038,7 +1088,9 @@ class Cluster(BaseCluster):
         try:
             return (
                 utils.get_cluster_validation_value(
-                    self.api_client.cluster_get(self.id), validation_section, validation_id
+                    self.api_client.cluster_get(self.id),
+                    validation_section,
+                    validation_id,
                 )
                 in statuses
             )
@@ -1046,9 +1098,20 @@ class Cluster(BaseCluster):
             log.exception("Failed to get cluster %s validation info", self.id)
 
     def wait_for_host_validation(
-        self, host_id, validation_section, validation_id, statuses, timeout=consts.VALIDATION_TIMEOUT, interval=2
+        self,
+        host_id,
+        validation_section,
+        validation_id,
+        statuses,
+        timeout=consts.VALIDATION_TIMEOUT,
+        interval=2,
     ):
-        log.info("Wait until host %s validation %s is in status %s", host_id, validation_id, statuses)
+        log.info(
+            "Wait until host %s validation %s is in status %s",
+            host_id,
+            validation_id,
+            statuses,
+        )
         try:
             waiting.wait(
                 lambda: self.is_host_validation_in_status(
@@ -1065,7 +1128,10 @@ class Cluster(BaseCluster):
             log.error(
                 "Host validation status is: %s",
                 utils.get_host_validation_value(
-                    self.api_client.cluster_get(self.id), host_id, validation_section, validation_id
+                    self.api_client.cluster_get(self.id),
+                    host_id,
+                    validation_section,
+                    validation_id,
                 ),
             )
             raise
@@ -1075,7 +1141,10 @@ class Cluster(BaseCluster):
         try:
             return (
                 utils.get_host_validation_value(
-                    self.api_client.cluster_get(self.id), host_id, validation_section, validation_id
+                    self.api_client.cluster_get(self.id),
+                    host_id,
+                    validation_section,
+                    validation_id,
                 )
                 in statuses
             )
