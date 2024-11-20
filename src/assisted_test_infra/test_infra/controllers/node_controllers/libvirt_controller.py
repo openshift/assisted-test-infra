@@ -522,12 +522,12 @@ class LibvirtController(NodeController, ABC):
 
         for el in os_element.getElementsByTagName("boot"):
             dev = el.getAttribute("dev")
-            if dev in ["cdrom", "hd"]:
+            if dev in ["cdrom", "hd", "network"]:
                 os_element.removeChild(el)
             else:
                 raise ValueError(f"Found unexpected boot device: '{dev}'")
 
-        for disk in node_xml.getElementsByTagName("disk"):
+        for disk in [*node_xml.getElementsByTagName("disk"), *node_xml.getElementsByTagName("network")]:
             for boot in disk.getElementsByTagName("boot"):
                 disk.removeChild(boot)
 
