@@ -21,6 +21,7 @@ from assisted_test_infra.test_infra.controllers import (
     AssistedInstallerInfraController,
     IptableRule,
     IPXEController,
+    IscsiTargetController,
     LibvirtController,
     NatController,
     Node,
@@ -820,6 +821,16 @@ class BaseTest:
             log.info("--- TEARDOWN --- ipxe controller")
             for server in ipxe_server_controllers:
                 server.remove()
+
+    @pytest.fixture()
+    def iscsi_target_controller(self) -> IscsiTargetController:
+        log.info("--- SETUP --- iscsi server controller")
+        _iscsi_target_controller = IscsiTargetController()
+
+        yield _iscsi_target_controller
+        if global_variables.test_teardown:
+            log.info("--- TEARDOWN --- iscsi controller")
+            _iscsi_target_controller.clean_target()
 
     @staticmethod
     def assert_http_error_code(api_call: Callable, status: int, reason: str, **kwargs) -> None:

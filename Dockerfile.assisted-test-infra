@@ -27,6 +27,7 @@ RUN dnf -y install --enablerepo=crb \
   libvirt-client \
   guestfs-tools \
   libvirt-devel \
+  targetcli \
   libguestfs-tools \
   libxslt \
   xorriso \

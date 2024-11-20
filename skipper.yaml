@@ -34,6 +34,7 @@ volumes:
   - /tmp:/tmp/
   - /dev/:/dev
   - /run/udev:/run/udev
+  - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
 
   # podman - sharing the podman.socket between the host and the skipper container
   - $XDG_RUNTIME_DIR/podman/podman.sock:/run/podman/podman.sock
