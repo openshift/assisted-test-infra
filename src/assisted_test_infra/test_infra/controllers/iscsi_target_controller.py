@@ -110,7 +110,7 @@ class IscsiBuilder:
     https://manpages.ubuntu.com/manpages/focal/man8/targetcli.8.html
     """
 
-    service_cmd = "targetcli"
+    service_cmd = "sudo targetcli"
 
     def __init__(self, receiver):
         self.receiver = receiver
