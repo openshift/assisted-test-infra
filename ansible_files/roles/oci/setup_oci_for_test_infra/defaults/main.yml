@@ -1,0 +1,5 @@
+oci_compute_shape: "VM.Standard.E4.Flex"
+oci_control_plane_shape: "VM.Standard.E4.Flex"
+
+oci_infrastructure_zip_url: "https://github.com/oracle-quickstart/oci-openshift/archive/refs/heads/beta-v1.zip"
+oci_infrastructure_zip_file: "{{ hostvars[ci_machine].ansible_user_dir }}/infrastructure.zip"
