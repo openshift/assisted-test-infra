@@ -45,4 +45,3 @@
     - name: oci/setup_oci_for_test_infra
       vars:
         ci_machine: "{{ groups['primary'][0] }}"
-        infra: "{{ deployed_tf.outputs.infra.value }}"

@@ -958,8 +958,7 @@ class Cluster(BaseCluster):
     def create_custom_manifests(self):
         log.info(f"Adding {len(self._config.custom_manifests)} custom manifests")
         for local_manifest in self._config.custom_manifests:
-            with open(local_manifest.local_path, "rb") as f:
-                encoded_content = base64.b64encode(f.read()).decode("utf-8", "ignore")
+            encoded_content = base64.b64encode(local_manifest.content.encode("utf-8")).decode("utf-8", "ignore")
 
             manifest = self.create_custom_manifest(local_manifest.folder, local_manifest.file_name, encoded_content)
 

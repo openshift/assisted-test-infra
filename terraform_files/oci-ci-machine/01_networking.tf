@@ -1,45 +1,42 @@
-module "vcn" {
-  source  = "oracle-terraform-modules/vcn/oci"
-  version = "3.5.4"
-  # insert the 5 required variables here
-
-  # Required Inputs
-  compartment_id = var.oci_compartment_id
-
-  internet_gateway_route_rules = null
-  local_peering_gateways       = null
-  nat_gateway_route_rules      = null
-
-  # Optional Inputs
-  vcn_name      = "vcn-ci-${var.unique_id}"
-  vcn_dns_label = "v${substr(var.unique_id, -14, -1)}" # dns label is limited to 15 chacracters
-  vcn_cidrs     = ["10.0.0.0/16"]
-
-  create_internet_gateway = true
-  create_nat_gateway      = true
+locals {
+  all_protocols = "all"
+  anywhere      = "0.0.0.0/0"
 }
 
-resource "oci_core_security_list" "private_security_list" {
-
-  # Required
+resource "oci_core_vcn" "ci_machine_vcn" {
+  cidr_blocks = [
+    "10.0.0.0/16",
+  ]
   compartment_id = var.oci_compartment_id
-  vcn_id         = module.vcn.vcn_id
+  display_name   = "vcn-ci-${var.unique_id}"
+  dns_label      = "v${substr(var.unique_id, -14, -1)}" # dns label is limited to 15 chacracters
+}
 
-  # Optional
-  display_name = "security-list-for-private-subnet"
+resource "oci_core_internet_gateway" "internet_gateway" {
+  compartment_id = var.oci_compartment_id
+  display_name   = "InternetGateway"
+  vcn_id         = oci_core_vcn.ci_machine_vcn.id
+}
 
-  egress_security_rules {
-    stateless        = false
-    destination      = "0.0.0.0/0"
-    destination_type = "CIDR_BLOCK"
-    protocol         = "all"
+resource "oci_core_route_table" "public_routes" {
+  compartment_id = var.oci_compartment_id
+  vcn_id         = oci_core_vcn.ci_machine_vcn.id
+  display_name   = "public"
+
+  route_rules {
+    destination       = local.anywhere
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = oci_core_internet_gateway.internet_gateway.id
   }
+}
+
+resource "oci_core_security_list" "public" {
+  compartment_id = var.oci_compartment_id
+  display_name   = "public"
+  vcn_id         = oci_core_vcn.ci_machine_vcn.id
 
   ingress_security_rules {
-    stateless   = false
-    source      = "10.0.0.0/16"
-    source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml TCP is 6
+    source   = local.anywhere
     protocol = "6"
     tcp_options {
       min = 22
@@ -47,112 +44,39 @@ resource "oci_core_security_list" "private_security_list" {
     }
   }
   ingress_security_rules {
-    stateless   = false
-    source      = "0.0.0.0/0"
-    source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml ICMP is 1
-    protocol = "1"
-
-    # For ICMP type and code see: https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml
-    icmp_options {
-      type = 3
-      code = 4
-    }
-  }
-  ingress_security_rules {
-    stateless   = false
-    source      = "10.0.0.0/16"
-    source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml ICMP is 1
-    protocol = "1"
-
-    # For ICMP type and code see: https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml
-    icmp_options {
-      type = 3
-    }
-  }
-}
-
-resource "oci_core_security_list" "public_security_list" {
-
-  # Required
-  compartment_id = var.oci_compartment_id
-  vcn_id         = module.vcn.vcn_id
-
-  # Optional
-  display_name = "security-list-for-public-subnet"
-
-  egress_security_rules {
-    stateless        = false
-    destination      = "0.0.0.0/0"
-    destination_type = "CIDR_BLOCK"
-    protocol         = "all"
-  }
-
-  ingress_security_rules {
-    stateless   = false
-    source      = "0.0.0.0/0"
-    source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml TCP is 6
+    source   = local.anywhere
     protocol = "6"
     tcp_options {
-      min = 22
-      max = 22
+      min = 8080
+      max = 8080
     }
   }
   ingress_security_rules {
-    stateless   = false
-    source      = "0.0.0.0/0"
-    source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml ICMP is 1
-    protocol = "1"
-
-    # For ICMP type and code see: https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml
-    icmp_options {
-      type = 3
-      code = 4
+    source   = local.anywhere
+    protocol = "6"
+    tcp_options {
+      min = 8090
+      max = 8090
     }
   }
-  ingress_security_rules {
-    stateless   = false
-    source      = "10.0.0.0/16"
-    source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml ICMP is 1
-    protocol = "1"
-
-    # For ICMP type and code see: https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml
-    icmp_options {
-      type = 3
-    }
+  egress_security_rules {
+    destination = local.anywhere
+    protocol    = local.all_protocols
   }
 }
 
-resource "oci_core_subnet" "vcn_private_subnet" {
-
-  # Required
-  compartment_id = var.oci_compartment_id
-  vcn_id         = module.vcn.vcn_id
-  cidr_block     = "10.0.1.0/24"
-  dns_label      = "private"
-
-  # Optional
-  # Caution: For the route table id, use module.vcn.nat_route_id.
-  # Do not use module.vcn.nat_gateway_id, because it is the OCID for the gateway and not the route table.
-  route_table_id    = module.vcn.nat_route_id
-  security_list_ids = [oci_core_security_list.private_security_list.id]
-  display_name      = "private-subnet"
-}
-
-resource "oci_core_subnet" "vcn_public_subnet" {
-
-  # Required
-  compartment_id = var.oci_compartment_id
-  vcn_id         = module.vcn.vcn_id
+resource "oci_core_subnet" "public" {
   cidr_block     = "10.0.0.0/24"
-  dns_label      = "public"
+  display_name   = "public"
+  compartment_id = var.oci_compartment_id
+  vcn_id         = oci_core_vcn.ci_machine_vcn.id
+  route_table_id = oci_core_route_table.public_routes.id
 
-  # Optional
-  route_table_id    = module.vcn.ig_route_id
-  security_list_ids = [oci_core_security_list.public_security_list.id]
-  display_name      = "public-subnet"
+  security_list_ids = [
+    oci_core_security_list.public.id,
+  ]
+
+  dns_label                  = "public"
+  prohibit_public_ip_on_vnic = false
 }
+
