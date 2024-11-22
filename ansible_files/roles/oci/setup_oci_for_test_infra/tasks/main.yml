@@ -16,6 +16,13 @@
     mode: '0600'
   delegate_to: "{{ ci_machine }}"
 
+- name: Create directory where OCI infrastructure archive will be stored on CI machine
+  ansible.builtin.file:
+    path: "{{ oci_infrastructure_zip_file | dirname }}"
+    state: directory
+    mode: '0700'
+  delegate_to: "{{ ci_machine }}"
+
 - name: Download terraform template to create the infrastructure on OCI
   ansible.builtin.get_url:
     url: "{{ oci_infrastructure_zip_url }}"
