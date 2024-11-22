@@ -45,7 +45,3 @@
     - name: oci/setup_oci_for_test_infra
       vars:
         ci_machine: "{{ groups['primary'][0] }}"
-  tasks:
-    - name: Wait 1h
-      ansible.builtin.pause:
-        minutes: 60
