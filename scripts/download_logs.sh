@@ -59,7 +59,7 @@ function download_cluster_logs() {
       elif [ "${DEPLOY_TARGET:-}" = "minikube" ]; then
         SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
       else
-        SERVICE_URL="${SERVICE_URL:-$(get_main_ip)}:8090"
+        SERVICE_URL="http://${SERVICE_URL:-$(get_main_ip)}:8090"
       fi
     fi
     skipper run -e JUNIT_REPORT_DIR "python3 ${DEBUG_FLAGS} -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}"

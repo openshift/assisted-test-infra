@@ -284,4 +284,6 @@ function get_pods_with_label() {
     kubectl get pods -n $namespace -l $pod_label -o name
 }
 
-"$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    "$@"
+fi
