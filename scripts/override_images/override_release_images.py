@@ -51,16 +51,15 @@ def main():
 
     elif (release_image_ref := os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE", "")) != "":
         ocp_semantic_version = utils.extract_version(release_image=release_image_ref)
-        ocp_xyz_version = f"{ocp_semantic_version.major}.{ocp_semantic_version.minor}.{ocp_semantic_version.patch}"
+        ocp_architecture = utils.extract_architecture(release_image=release_image_ref)
         ocp_xy_version = f"{ocp_semantic_version.major}.{ocp_semantic_version.minor}"
 
-        if (release_image := get_release_image(release_images=release_images, ocp_xy_version=ocp_xy_version)) is None:
-            release_image = ReleaseImage(
-                openshift_version=ocp_xy_version,
-                version=ocp_xyz_version,
-                cpu_architecture=DEFAULT_CPU_ARCHITECTURE,
-                url=release_image_ref,
-            )
+        release_image = ReleaseImage(
+            openshift_version=ocp_xy_version,
+            version=str(ocp_semantic_version),
+            cpu_architecture=ocp_architecture,
+            url=release_image_ref,
+        )
 
     else:
         raise ValueError(

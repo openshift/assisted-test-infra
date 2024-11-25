@@ -518,6 +518,28 @@ def get_openshift_version(allow_default=True, client=None) -> str:
     return None
 
 
+@retry(exceptions=RuntimeError, tries=5, delay=10, logger=log)
+def extract_architecture(release_image: str) -> str:
+    """
+    Extracts the version number from the release image.
+    Args:
+        release_image: The release image to extract the version from.
+    """
+    with pull_secret_file() as pull_secret:
+        stdout, _, _ = run_command(f"oc adm release info --registry-config '{pull_secret}' '{release_image}' -ojson")
+
+    parsed_result = json.loads(stdout)
+    metadata = parsed_result.get("metadata")
+
+    try:
+        inner_metadata = metadata["metadata"]
+        arch = inner_metadata["release.openshift.io/architecture"]
+    except KeyError:
+        arch = parsed_result.get("config", {}).get("architecture")
+
+    return arch if arch != "amd64" else "x86_64"
+
+
 def get_openshift_release_image(allow_default=True):
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
