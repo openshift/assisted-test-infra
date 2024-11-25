@@ -15,6 +15,7 @@ export OCI_COMPUTE_SHAPE="{{ oci_compute_shape }}"
 export OCI_CONTROL_PLANE_SHAPE="{{ oci_control_plane_shape }}"
 
 export BASE_DOMAIN="{{ unique_id }}.{{ oci_dns_zone }}"
+export SERVICE_URL="{{ oci_ci_machine_public_ip }}"
 
 export HOST_INSTALLER_ARGS='{"args": ["--append-karg", "console=ttyS0"]}'
 export KERNEL_ARGUMENTS='[{"operation": "append", "value": "console=ttyS0"}]'
