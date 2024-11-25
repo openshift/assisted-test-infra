@@ -250,7 +250,6 @@ class OciApiController(NodeController):
         template_config = {
             "config_source_type": "ZIP_UPLOAD",
             "zip_file_base64_encoded": self._base64_zip_file(terraform_zip_path),
-            "working_directory": "infrastructure",
         }
 
         template_config_create = oci.resource_manager.models.CreateZipUploadConfigSourceDetails(**template_config)
