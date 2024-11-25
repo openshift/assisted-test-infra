@@ -5,6 +5,8 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+source scripts/utils.sh
+
 NAMESPACE=${NAMESPACE:-assisted-installer}
 CLUSTER_ID=${CLUSTER_ID:-""}
 ADDITIONAL_PARAMS=${ADDITIONAL_PARAMS:-""}
@@ -54,8 +56,10 @@ function download_cluster_logs() {
     else
       if [ "${DEPLOY_TARGET:-}" = "onprem" ]; then
         SERVICE_URL=http://localhost:8090
-      else
+      elif [ "${DEPLOY_TARGET:-}" = "minikube" ]; then
         SERVICE_URL=$(KUBECONFIG=${HOME}/.kube/config minikube service assisted-service -n ${NAMESPACE} --url)
+      else
+        SERVICE_URL="${SERVICE_URL:-$(get_main_ip)}:8090"
       fi
     fi
     skipper run -e JUNIT_REPORT_DIR "python3 ${DEBUG_FLAGS} -m src.assisted_test_infra.download_logs ${SERVICE_URL} ${LOGS_DEST} --cluster-id ${CLUSTER_ID} ${ADDITIONAL_PARAMS}"
