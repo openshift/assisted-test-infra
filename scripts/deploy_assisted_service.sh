@@ -51,6 +51,7 @@ export OS_IMAGES=${OS_IMAGES:-}
 export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
 export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
 export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
+export OPENSHIFT_AI_REQUIRE_GPU=${OPENSHIFT_AI_REQUIRE_GPU:-false}
 
 if [ -n "${IMAGES_FLAVOR}" ]; then
     RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_${IMAGES_FLAVOR}_release_images.json"
