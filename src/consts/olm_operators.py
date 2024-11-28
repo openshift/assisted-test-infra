@@ -100,15 +100,11 @@ class OperatorResource:
             OperatorType.METALLB: cls.get_resource_dict(),
             OperatorType.OPENSHIFT_AI: cls.get_resource_dict(
                 # Note that these requirements are for OpenShift and all its dependencies, in particular ODF.
-                master_memory=40 * 1024,
-                worker_memory=64 * 1024,
-                master_vcpu=12,
-                worker_vcpu=20,
-                master_disk=100 * GB,
-                worker_disk=100 * GB,
-                master_disk_count=1,
-                worker_disk_count=2,
                 worker_count=3,
+                worker_disk=100 * GB,
+                worker_disk_count=2,
+                worker_memory=60 * 1024,
+                worker_vcpu=20,
             ),
         }
 
