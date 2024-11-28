@@ -74,6 +74,7 @@ _default_triggers = frozendict(
             conditions=[lambda config: "openshift-ai" in config.olm_operators],
             operator="openshift-ai",
         ),
+        "osc_operator": OlmOperatorsTrigger(conditions=[lambda config: "osc" in config.olm_operators], operator="osc"),
         "sno_mce_operator": OlmOperatorsTrigger(
             conditions=[lambda config: "mce" in config.olm_operators, lambda config2: config2.masters_count == 1],
             operator="mce",
