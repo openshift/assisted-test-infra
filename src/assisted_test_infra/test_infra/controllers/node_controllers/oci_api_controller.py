@@ -10,6 +10,7 @@ from typing import Any, Callable, List, Optional, Tuple
 import libvirt
 import oci
 import waiting
+import requests
 
 from assisted_test_infra.test_infra import BaseClusterConfig
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
@@ -183,14 +184,21 @@ class OciApiController(NodeController):
             bucket_name=bucket_name,
             create_preauthenticated_request_details=pre_authenticated_req,
         )
-        self._cleanup_resources.append(
-            CleanupResource(
-                self._object_storage_client.delete_preauthenticated_request, namespace, bucket_name, obj.data.id
-            )
-        )
+#        self._cleanup_resources.append(
+#            CleanupResource(
+#                self._object_storage_client.delete_preauthenticated_request, namespace, bucket_name, obj.data.id
+#            )
+#        )
 
         assert obj.status == 200
-        return obj.data.full_path
+        par = obj.data.full_path
+
+        r = requests.head(par)
+        print(r)
+        assert r.status_code == 200
+        print(f"content-length: {int(r.headers["Content-Length"])} file size: {os.path.getsize(file_path)}")
+
+        return par
 
     def _terraform_variables(
         self,
