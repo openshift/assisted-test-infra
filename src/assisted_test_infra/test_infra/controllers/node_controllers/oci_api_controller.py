@@ -194,9 +194,9 @@ class OciApiController(NodeController):
         par = obj.data.full_path
 
         r = requests.head(par)
-        print(r)
+        log.info("r = requests.head(par) -> {r}")
         assert r.status_code == 200
-        print(f"content-length: {int(r.headers["Content-Length"])} file size: {os.path.getsize(file_path)}")
+        log.info(f"r = requests.head(par) -> content-length: {int(r.headers["Content-Length"])} file size: {os.path.getsize(file_path)}")
 
         return par
 
