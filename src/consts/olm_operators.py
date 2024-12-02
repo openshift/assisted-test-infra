@@ -76,15 +76,15 @@ class OperatorResource:
     def get_osc_resource_dict(cls, is_sno: bool) -> dict:
         if not is_sno:
             return cls.get_resource_dict(
-                master_memory=1024,
-                worker_memory=1024,
-                master_vcpu=1,
-                worker_vcpu=1,
+                master_memory=16384,
+                worker_memory=8192,
+                master_vcpu=4,
+                worker_vcpu=2,
             )
         else:
             return cls.get_resource_dict(
-                master_memory=1024,
-                master_vcpu=1,
+                master_memory=16384,
+                master_vcpu=8,
             )
 
     @classmethod
