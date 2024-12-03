@@ -18,6 +18,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node import Nod
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_oci_config import BaseOciConfig
+from assisted_test_infra.test_infra.utils.manifests import Manifest
 from service_client import log
 
 
@@ -85,18 +86,11 @@ class OciApiController(NodeController):
 
     def __init__(self, config: BaseNodesConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
-        self._cloud_provider = None
+        self.cloud_provider = None
+        self.custom_manifests = None
         self._oci_compartment_oicd = self._config.oci_compartment_oicd
         self._initialize_oci_clients()
 
-    @property
-    def cloud_provider(self):
-        # Called from test_cases , modify manifests
-        return self._cloud_provider
-
-    @cloud_provider.setter
-    def cloud_provider(self, cloud_provider):
-        self._cloud_provider = cloud_provider
 
     def _initialize_oci_clients(self):
         """Initialize oci clients.
@@ -364,13 +358,9 @@ class OciApiController(NodeController):
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
             if item.output_name == "dynamic_custom_manifest":
-                file_path = (
-                    f"/tmp/oci-{self._entity_config.cluster_id}/terraform-output-{self._entity_config.cluster_id}.yml"
-                )
-                with open(file_path, "w") as f:
-                    f.write(item.output_value)
-                return item.output_value
-        raise RuntimeError(f"Missing dynamic_custom_manifest for stack {stack_id}")
+                manifest = Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
+                self._entity_config.custom_manifests.append(manifest)
+        raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
 
     @staticmethod
     def _waiter_status(client_callback: Callable, name: str, status: str, **callback_kwargs) -> None:
@@ -547,8 +537,12 @@ class OciApiController(NodeController):
             self._config.oci_infrastructure_zip_file,
             terraform_variables,
         )
+<<<<<<< HEAD
         terraform_output = self._apply_job_from_stack(stack_id, f"apply-job-{self._entity_config.cluster_id}")
         self.cloud_provider = terraform_output
+=======
+        self._apply_job_from_stack(stack_id, random_name("job-"))
+>>>>>>> bc450ea0 (add OCI custom manifests to cluster)
 
     def is_active(self, node_name) -> bool:
         pass
