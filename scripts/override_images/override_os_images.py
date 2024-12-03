@@ -4,6 +4,16 @@
 Overrides a given list of OS images to a list with a single OS image
 that matches the latest release image in RELEASE_IMAGES
 """
+
+# Disable E402 module level import not at top of file
+# triggered because of the logging import that should be on top
+# flake8: noqa: E402
+
+# disable all logging to not mess up with the output of this script
+import logging
+
+logging.disable(logging.CRITICAL)
+
 import json
 import os
 import sys
