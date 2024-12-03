@@ -194,9 +194,9 @@ class OciApiController(NodeController):
         par = obj.data.full_path
 
         r = requests.head(par)
-        log.info("r = requests.head(par) -> {r}")
+        log.info(f"r = requests.head(par) -> {r}")
         assert r.status_code == 200
-        log.info(f"r = requests.head(par) -> content-length: {int(r.headers["Content-Length"])} file size: {os.path.getsize(file_path)}")
+        assert int(r.headers["Content-Length"]) == os.path.getsize(file_path)
 
         return par
 
@@ -305,7 +305,7 @@ class OciApiController(NodeController):
         return obj.data.id
 
     def _apply_job_from_stack(
-        self, stack_id: str, display_name: str, timeout_seconds: int = 3200, interval_wait: int = 60
+        self, stack_id: str, display_name: str, timeout_seconds: int = 3600, interval_wait: int = 60
     ) -> str:
         """Apply job will run the stack terraform code and create the resources.
 
