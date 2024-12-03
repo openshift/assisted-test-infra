@@ -6,14 +6,18 @@ import time
 from collections import Counter
 from typing import List, Optional, Set
 
-import waiting
-import yaml
 from assisted_service_client import models
 from assisted_service_client.models.operator_type import OperatorType
+
+import consts
+
 from junit_report import JunitTestCase
 from netaddr import IPAddress, IPNetwork
 
-import consts
+import waiting
+
+import yaml
+
 from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, ClusterName, exceptions, utils
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
 from assisted_test_infra.test_infra.helper_classes.base_cluster import BaseCluster
@@ -22,6 +26,7 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import terraform_utils
 from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
+from assisted_test_infra.test_infra.utils.logs_utils import filter_controllers_logs
 from assisted_test_infra.test_infra.utils.waiting import (
     wait_till_all_hosts_are_in_status,
     wait_till_all_hosts_use_agent_image,
@@ -689,12 +694,20 @@ class Cluster(BaseCluster):
         fall_on_pending_status=False,
     ):
         self.start_install()
-        if wait_for_hosts:
-            self.wait_for_hosts_to_install(fall_on_pending_status=fall_on_pending_status)
-        if wait_for_operators:
-            self.wait_for_operators_to_finish()
-        if wait_for_cluster_install:
-            self.wait_for_install()
+        try:
+            if wait_for_hosts:
+                self.wait_for_hosts_to_install(fall_on_pending_status=fall_on_pending_status)
+            if wait_for_operators:
+                self.wait_for_operators_to_finish()
+            if wait_for_cluster_install:
+                self.wait_for_install()
+        except Exception as e:
+            filtered_messages = filter_controllers_logs(self.api_client.client, self.id,
+                                                        filters=["level=warning", "level=error"])
+            # In case of error or timeout we will add last filter_controllers_logs with more info
+            e.filter_message = str(filtered_messages)
+            raise Exception(e.__class__.__name__, e.__dict__)
+
         if download_kubeconfig:
             self.download_kubeconfig()
 
