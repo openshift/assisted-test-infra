@@ -346,15 +346,19 @@ class OciApiController(NodeController):
             log.info(f"Exception raised during apply_job_from_stack {e}: destroying")
             raise
         # on success, we return the jobs output - list
+        success = False
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
             if item.output_name == "oci_ccm_config":
                 self.cloud_provider = item.output_value
+                success = True
             elif item.output_name == "dynamic_custom_manifest":
                 self._entity_config.custom_manifests.append(
                     Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
                 )
-        raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
+                success = True
+        if not success:
+            raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
 
     @staticmethod
     def _waiter_status(client_callback: Callable, name: str, status: str, **callback_kwargs) -> None:
