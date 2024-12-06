@@ -4,6 +4,16 @@
 Overrides the list of release images according to
 OPENSHIFT_VERSION or OPENSHIFT_INSTALL_RELEASE_IMAGE environment variables
 """
+
+# Disable E402 module level import not at top of file
+# triggered because of the logging import that should be on top
+# flake8: noqa: E402
+
+# disable all logging to not mess up with the output of this script
+import logging
+
+logging.disable(logging.CRITICAL)
+
 import json
 import os
 import sys
