@@ -9,8 +9,8 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import libvirt
 import oci
-import waiting
 import requests
+import waiting
 
 from assisted_test_infra.test_infra import BaseClusterConfig
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
@@ -90,7 +90,6 @@ class OciApiController(NodeController):
         self.custom_manifests = None
         self._oci_compartment_oicd = self._config.oci_compartment_oicd
         self._initialize_oci_clients()
-
 
     def _initialize_oci_clients(self):
         """Initialize oci clients.
@@ -178,11 +177,11 @@ class OciApiController(NodeController):
             bucket_name=bucket_name,
             create_preauthenticated_request_details=pre_authenticated_req,
         )
-#        self._cleanup_resources.append(
-#            CleanupResource(
-#                self._object_storage_client.delete_preauthenticated_request, namespace, bucket_name, obj.data.id
-#            )
-#        )
+        self._cleanup_resources.append(
+            CleanupResource(
+                self._object_storage_client.delete_preauthenticated_request, namespace, bucket_name, obj.data.id
+            )
+        )
 
         assert obj.status == 200
         par = obj.data.full_path
@@ -358,8 +357,9 @@ class OciApiController(NodeController):
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
             if item.output_name == "dynamic_custom_manifest":
-                manifest = Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
-                self._entity_config.custom_manifests.append(manifest)
+                self._entity_config.custom_manifests.append(
+                    Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
+                )
         raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
 
     @staticmethod
@@ -537,12 +537,8 @@ class OciApiController(NodeController):
             self._config.oci_infrastructure_zip_file,
             terraform_variables,
         )
-<<<<<<< HEAD
         terraform_output = self._apply_job_from_stack(stack_id, f"apply-job-{self._entity_config.cluster_id}")
         self.cloud_provider = terraform_output
-=======
-        self._apply_job_from_stack(stack_id, random_name("job-"))
->>>>>>> bc450ea0 (add OCI custom manifests to cluster)
 
     def is_active(self, node_name) -> bool:
         pass
