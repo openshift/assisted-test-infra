@@ -21,6 +21,7 @@ from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHo
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import terraform_utils
+from assisted_test_infra.test_infra.utils import return_yaml_from_string 
 from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
 from assisted_test_infra.test_infra.utils.waiting import (
     wait_till_all_hosts_are_in_status,
@@ -997,6 +998,7 @@ class Cluster(BaseCluster):
             self.nodes.controller.set_dns(api_ip=ip, ingress_ip=ip)
 
         self.wait_for_ready_to_install()
+        self.validate_static_ip()
 
         # in case of regular cluster, need to set dns after vips exits
         # in our case when nodes are ready, vips will be there for sure
@@ -1290,3 +1292,63 @@ class Cluster(BaseCluster):
         # Kill installer to simulate host error
         selected_node = self.nodes.get_node_from_cluster_host(host)
         selected_node.kill_installer()
+
+
+    def validate_static_ip(self) -> None:
+        if self._infra_env_config.static_network_config is None:
+            log.debug("Skipping log validation")
+            return
+        log.info("Starting Ip validation")
+
+        ip_versions = ["ipv4", "ipv6"]
+        expected_hosts_mapping, host_failure = {}, []
+
+        """
+        Creating network adderss 
+        host_network["mac_address"] = {
+            ipv4 = [],
+            ipv6 = []
+        }
+        """
+        cluster_json = self.api_client.cluster_get(cluster_id=self._config.cluster_id).to_dict()
+        for node in cluster_json.hosts:
+            host = models.Host(node)
+            log.debug(f"Validation host {host.requested_hostname  }")
+            inventory  = host.inventory.to_dict()
+            host_network = {}
+
+            for interface in inventory["interfaces"]:
+                for address_version in ip_versions:
+                    if f'{address_version}_addresses' in interface.keys():
+                        host_network[interface["mac_address"]][address_version] = [f'{items["ip"]}/{items["prefix-length"]}' for items in interface[address_version]["address"]]
+
+        # network_static_config = yaml.load(str(self._infra_env_config.static_network_config))
+        # network_yaml = yaml.safe_load(return_yaml_from_string(network_static_config["network_yaml"]))
+
+
+        for expected_host_mapping in yaml.load(str(self._infra_env_config.static_network_config)):
+            for host_interfaces in expected_host_mapping["mac_interface_map"]:
+                config_interface_name, config_interface_mac = host_interfaces["logical_nic_name"], host_interfaces["mac_address"]
+
+                if config_interface_mac not in host_network.keys():
+                    host_failure += {"msg": f"missing mac address {config_interface_mac}"}
+                    continue
+
+                network_yaml = yaml.safe_load(return_yaml_from_string(expected_host_mapping["network_yaml"]))
+                for interface in network_yaml["interfaces"]:
+                    if interface["name"] == config_interface_name:
+                        for address_version in ip_versions:
+                            if address_version in network_yaml.keys():
+                                for address in interface[address_version]["address"]:
+                                    if address in host_network[config_interface_mac][address_version]:
+                                        continue
+                                    else:
+                                        host_failure += { "msg": f"missing address {address} with {config_interface_mac}"}
+                            else:
+                                host_failure += {"msg": f"missing address {interface[address_version]['address']}" }
+                    else:
+                        host_failure += {"msg": f"missing host interface name {config_interface_name}"}
+                        continue
+
+        if host_failure:
+            raise Exception(f"failed validating static IP's \n {host_failure}")
