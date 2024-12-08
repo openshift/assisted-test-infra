@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import random
+import re
 import shlex
 import shutil
 import socket
@@ -632,3 +633,16 @@ def get_release_images_path() -> str:
         return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_{flavor}_release_images.json"
 
     return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
+
+
+def return_yaml_from_string(string: str) -> str:
+    """format online string to yaml
+    input example: 'dns-resolver:\n  config:\n    server:\n    - 192.168.127.1`
+    output example: '
+        dns-resolver:
+          config:
+            server:
+            - 192.168.127.1
+    '
+    """
+    return re.sub(r"\\.", lambda x: {"\\n": "\n", "\\t": "\t"}.get(x[0], x[0]), string)
