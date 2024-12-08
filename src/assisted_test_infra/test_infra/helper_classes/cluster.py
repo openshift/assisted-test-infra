@@ -21,7 +21,7 @@ from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHo
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import terraform_utils
-from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils
+from assisted_test_infra.test_infra.utils import logs_utils, network_utils, operators_utils, unescape_string
 from assisted_test_infra.test_infra.utils.waiting import (
     wait_till_all_hosts_are_in_status,
     wait_till_all_hosts_use_agent_image,
@@ -940,6 +940,7 @@ class Cluster(BaseCluster):
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
         self.set_installer_args()
+        self.validate_static_ip()
 
     @JunitTestCase()
     def create_custom_manifests(self):
@@ -1292,3 +1293,108 @@ class Cluster(BaseCluster):
         # Kill installer to simulate host error
         selected_node = self.nodes.get_node_from_cluster_host(host)
         selected_node.kill_installer()
+
+    @staticmethod
+    def format_host_current_network(hosts_list: List) -> dict[str, dict[str, List[str]]]:
+        """
+        return:
+        host_network["mac_address"] = {
+            ipv4_addresseses = []
+            ipv4_addresseses = []
+        }
+        """
+        log.debug(f"hosts list is: {hosts_list}")
+        host_network = {}
+        for host in hosts_list:
+            log.debug(f"mapping host network for host: {host['requested_hostname']}")
+            inventory = yaml.safe_load(host["inventory"])
+
+            interfaces = inventory["interfaces"]
+            for interface in interfaces:
+                for _, address_version in consts.IP_VERSIONS.items():
+                    if address_version in interface.keys():
+                        if len(interface[address_version]) != 0:
+                            host_network[interface["mac_address"]] = {address_version: interface[address_version]}
+        log.debug(f"host_network {host_network}")
+        return host_network
+
+    @staticmethod
+    def format_host_from_config_mapping_file(config: str) -> dict[str, dict[str, List[str]]]:
+        """
+        return:
+        host_network["mac_address"] = {
+            ipv4_addresseses : [],
+            ipv4_addresseses : []
+        }
+        """
+        host_network = {}
+
+        _config = yaml.safe_load(config)
+
+        for host in _config:
+            for expected_host_interfaces in host["mac_interface_map"]:
+                expected_interface_name, expected_interface_mac = (
+                    expected_host_interfaces["logical_nic_name"],
+                    expected_host_interfaces["mac_address"],
+                )
+
+                network_yaml = yaml.safe_load(unescape_string(host["network_yaml"]))
+                for current_interface in network_yaml["interfaces"]:
+                    if current_interface["name"] == expected_interface_name:
+                        for address_version in consts.IP_VERSIONS.keys():
+                            if address_version not in current_interface.keys():
+                                continue
+                            address = current_interface[address_version]["address"]
+                            if len(address) == 0:
+                                continue
+                            host_network[expected_interface_mac] = {
+                                consts.IP_VERSIONS[address_version]: [
+                                    f'{item["ip"]}/{item["prefix-length"]}' for item in address
+                                ]
+                            }
+
+        return host_network
+
+    def validate_static_ip(self) -> None:
+        if self._infra_env_config.static_network_config is None:
+            log.debug("Skipping static IP validation")
+            return
+
+        log.info("Starting static IP validation")
+        self.wait_until_hosts_are_discovered()
+
+        current_host_network = self.format_host_current_network(
+            hosts_list=self.api_client.get_cluster_hosts(cluster_id=self._config.cluster_id)
+        )
+        if current_host_network == {}:
+            raise Exception("Couldn't get current host network")
+
+        config_host_network = self.format_host_from_config_mapping_file(
+            config=str(self._infra_env_config.static_network_config)
+        )
+        if config_host_network == {}:
+            raise Exception("Couldn't find host network configurations")
+
+        host_failure = []
+
+        for mac_address in config_host_network.keys():
+            if mac_address not in current_host_network.keys():
+                host_failure.append(f"missing mac address {mac_address}")
+                continue
+            for _, version in consts.IP_VERSIONS.items():
+                if version not in config_host_network:
+                    continue
+                config_address = config_host_network[mac_address][version]
+                if len(config_address) > 0:
+                    for addr in config_address:
+                        if addr not in config_host_network[mac_address][version]:
+                            host_failure.append(f"missing IP address {addr}")
+
+        log.info(f"Static IP validation: host network {current_host_network}")
+        log.info(f"Static IP validation:expected address {config_host_network} ")
+
+        if host_failure:
+            raise AssertionError(host_failure)
+
+        del host_failure, config_host_network, current_host_network
+        log.info("Static IP validation passed")

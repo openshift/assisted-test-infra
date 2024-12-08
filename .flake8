@@ -23,6 +23,12 @@ max-complexity = 18
 ; Exclude consts and utils __init__ files due to violation of F401 - imported but unused
 ; TODO - After removing import * from those init files delete this excluded files
 exclude =
+    venv/
+    .venv/
+    build/
+    .github/
+    .idea/
+    .code/
     src/consts/__init__.py
     src/assisted_test_infra/test_infra/utils/__init__.py
     .git

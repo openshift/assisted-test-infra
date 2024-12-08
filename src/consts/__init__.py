@@ -1,5 +1,5 @@
 from .consts import *  # TODO - temporary import all old consts
-from .consts import NUMBER_OF_MASTERS, ClusterStatus, HostsProgressStages, NetworkType, OpenshiftVersion
+from .consts import IP_VERSIONS, NUMBER_OF_MASTERS, ClusterStatus, HostsProgressStages, NetworkType, OpenshiftVersion
 from .env_defaults import DEFAULT_SSH_PRIVATE_KEY_PATH, DEFAULT_SSH_PUBLIC_KEY_PATH
 from .kube_api import (
     CRD_API_GROUP,
@@ -37,4 +37,5 @@ __all__ = [
     "DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT",
     "NUMBER_OF_MASTERS",
     "get_operator_properties",
+    "IP_VERSIONS",
 ]

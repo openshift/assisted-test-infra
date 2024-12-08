@@ -662,3 +662,16 @@ def get_release_images_path() -> str:
         return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_{flavor}_release_images.json"
 
     return f"{consts.ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
+
+
+def unescape_string(raw_string: str) -> str:
+    """
+    input example: 'dns-resolver:\n  config:\n    server:\n    - 192.168.127.1`
+    output example: '
+        dns-resolver:
+          config:
+            server:
+            - 192.168.127.1
+    '
+    """
+    return raw_string.encode("raw_unicode_escape").decode("unicode_escape")
