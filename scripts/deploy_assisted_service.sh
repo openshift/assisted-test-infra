@@ -52,6 +52,7 @@ export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
 export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
 export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
 
+
 if [ -n "${IMAGES_FLAVOR}" ]; then
     RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_${IMAGES_FLAVOR}_release_images.json"
     OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_${IMAGES_FLAVOR}_os_images.json"
@@ -81,10 +82,14 @@ if [ "${RELEASE_IMAGES}" = "" ] && { [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "
     fi
 fi
 
-if [ "${OS_IMAGES}" = "" ] && [ "${ENABLE_KUBE_API}" != "true" ] && [ "${DEPLOY_TARGET}" != "operator" ] && { [ "${OPENSHIFT_CI}" = "true" ] || [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ] || [ "${OPENSHIFT_VERSION}" != "" ]; }; then
+if [ "${OS_IMAGES}" = "" ] && [ "${ENABLE_KUBE_API}" != "true" ] && [ "${DEPLOY_TARGET}" != "operator" ] && { [ "${OPENSHIFT_INSTALL_RELEASE_IMAGE}" != "" ] || [ "${OPENSHIFT_VERSION}" != "" ]; }; then
     OS_IMAGES=$(skipper run ./scripts/override_images/override_os_images.py)
     export OS_IMAGES
 fi
+
+# assisted-service has a mechanism for filtering images which filters out multi-arch images.
+# This way we disable it as we already filtered here
+unset OPENSHIFT_VERSION
 
 if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     # Override assisted-service and assisted-image-service

@@ -112,8 +112,8 @@ class _EnvVariables(DataPool, ABC):
     bootstrap_in_place: EnvVar = EnvVar(
         ["BOOTSTRAP_IN_PLACE"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_BOOTSTRAP_IN_PLACE
     )
-    cpu_architecture: EnvVar = EnvVar(["CPU_ARCHITECTURE"])
-    day2_cpu_architecture: EnvVar = EnvVar(["DAY2_CPU_ARCHITECTURE"])
+    cpu_architecture: EnvVar = EnvVar(["CPU_ARCHITECTURE"], default=consts.DEFAULT_CPU_ARCHITECTURE)
+    day2_cpu_architecture: EnvVar = EnvVar(["DAY2_CPU_ARCHITECTURE"], default=consts.DEFAULT_CPU_ARCHITECTURE)
 
     single_node_ip: EnvVar = EnvVar(["SINGLE_NODE_IP"], default=env_defaults.DEFAULT_SINGLE_NODE_IP)
     worker_cpu_mode: EnvVar = EnvVar(["WORKER_CPU_MODE"], default=env_defaults.DEFAULT_TF_CPU_MODE)

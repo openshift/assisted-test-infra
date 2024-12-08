@@ -489,7 +489,30 @@ def extract_version(release_image) -> semver.VersionInfo:
     return semver.VersionInfo.parse(ocp_full_version)
 
 
-def get_openshift_version(allow_default=True, client=None) -> str:
+@retry(exceptions=RuntimeError, tries=5, delay=10, logger=log)
+def extract_architecture(release_image) -> str:
+    """
+    Extracts the version number from the release image.
+
+    Args:
+        release_image: The release image to extract the version from.
+    """
+    with pull_secret_file() as pull_secret:
+        stdout, _, _ = run_command(f"oc adm release info --registry-config '{pull_secret}' '{release_image}' -ojson")
+
+    parsed_result = json.loads(stdout)
+    metadata = parsed_result.get("metadata")
+
+    try:
+        inner_metadata = metadata["metadata"]
+        arch = inner_metadata["release.openshift.io/architecture"]
+    except KeyError:
+        arch = parsed_result.get("config", {}).get("architecture")
+
+    return arch if arch != "amd64" else "x86_64"
+
+
+def get_openshift_version(allow_default=True, client=None) -> str | None:
     """
     Return the openshift version that needs to be handled
     according to the following process:
@@ -504,13 +527,16 @@ def get_openshift_version(allow_default=True, client=None) -> str:
 
     version = get_env("OPENSHIFT_VERSION")
     if version:
-        return version
+        # Make sure the suffix exists once
+        return f"{version.removesuffix(f'-{consts.CPUArchitecture.MULTI}')}-{consts.CPUArchitecture.MULTI}"
 
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
     if release_image:
         version = extract_version(release_image)
-        return f"{version.major}.{version.minor}"
+        arch = extract_architecture(release_image)
+        suffix = f"-{consts.CPUArchitecture.MULTI}" if arch == consts.CPUArchitecture.MULTI else ""
+        return f"{version.major}.{version.minor}{suffix}"
 
     if allow_default:
         return get_default_openshift_version(client)
@@ -623,7 +649,12 @@ def get_iso_download_path(entity_name: str):
 
 def get_major_minor_version(openshift_full_version: str) -> str:
     semantic_version = semver.VersionInfo.parse(openshift_full_version, optional_minor_and_patch=True)
-    return f"{semantic_version.major}.{semantic_version.minor}"
+    suffix = (
+        f"-{consts.CPUArchitecture.MULTI}"
+        if openshift_full_version.endswith(f"-{consts.CPUArchitecture.MULTI}")
+        else ""
+    )
+    return f"{semantic_version.major}.{semantic_version.minor}{suffix}"
 
 
 def get_release_images_path() -> str:

@@ -348,3 +348,4 @@ class CPUArchitecture:
     ARM = "arm64"
     S390X = "s390x"
     PPC64 = "ppc64le"
+    MULTI = "multi"

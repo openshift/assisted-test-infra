@@ -18,10 +18,9 @@ import json
 import os
 import sys
 
-import semver
 from assisted_service_client.models import OsImage, ReleaseImage
 
-from consts import DEFAULT_CPU_ARCHITECTURE
+from consts import DEFAULT_CPU_ARCHITECTURE, CPUArchitecture
 
 
 def get_os_image(
@@ -47,40 +46,49 @@ def main():
         raise ValueError("RELEASE_IMAGES environment variable must be provided")
 
     try:
-        release_images = json.loads(release_images)
+        release_images = [ReleaseImage(**release_image_dict) for release_image_dict in json.loads(release_images)]
     except json.JSONDecodeError as e:
         raise ValueError("RELEASE_IMAGES enironment variable content is invalid JSON") from e
 
-    if len(release_images) == 0:
-        raise ValueError("RELEASE_IMAGES enironment variable content must contain at least one release")
-
-    # get latest default CPU architecture release image
-    release_image_objects = [
-        ReleaseImage(**release_image)
-        for release_image in release_images
-        if release_image["cpu_architecture"] == DEFAULT_CPU_ARCHITECTURE
-    ]
-    release_images_map = {
-        semver.VersionInfo.parse(
-            release_image.version.removesuffix("-multi"), optional_minor_and_patch=True
-        ): release_image
-        for release_image in release_image_objects
-    }
-    latest_release_image_version = sorted(release_images_map.keys(), key=lambda version: version)[-1]
-    latest_release_image = release_images_map[latest_release_image_version]
-
-    if (
-        os_image := get_os_image(os_images=os_images, openshift_version=str(latest_release_image.openshift_version))
-    ) is None:
+    if len(release_images) != 1:
         raise ValueError(
-            f"""no OS image found with openshift_version:
-            {latest_release_image.openshift_version} for the latest release image
-            """
+            "RELEASE_IMAGES enironment variable content must contain exactly one release image after its override"
         )
 
-    os_images_dict = [os_image.to_dict()]
+    release_image = release_images[0]
+    filtered_os_images: list[OsImage] = []
 
-    json.dump(os_images_dict, sys.stdout, separators=(",", ":"))
+    # Get all matching OS images
+    if release_image.cpu_architecture == CPUArchitecture.MULTI:
+        for arch in {CPUArchitecture.X86, CPUArchitecture.ARM, CPUArchitecture.S390X, CPUArchitecture.PPC64}:
+            if (
+                os_image := get_os_image(
+                    os_images=os_images,
+                    openshift_version=str(release_image.openshift_version).removesuffix(f"-{CPUArchitecture.MULTI}"),
+                    cpu_architecture=arch,
+                )
+            ) is not None:
+                filtered_os_images.append(os_image)
+
+    else:
+        if (
+            os_image := get_os_image(
+                os_images=os_images,
+                openshift_version=str(release_image.openshift_version),
+                cpu_architecture=str(release_image.cpu_architecture),
+            )
+        ) is None:
+            raise ValueError(
+                "Failed find get OS image matching openshift_version:"
+                f"{release_image.openshift_version} and CPU architecture: {release_image.cpu_architecture}"
+            )
+        filtered_os_images.append(os_image)
+
+    if filtered_os_images == 0:
+        raise ValueError("No OS Images found")
+
+    os_images = [os_image.to_dict() for os_image in filtered_os_images]
+    json.dump(os_images, sys.stdout, separators=(",", ":"))
 
 
 if __name__ == "__main__":

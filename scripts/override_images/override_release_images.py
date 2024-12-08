@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Overrides the list of release images according to
-OPENSHIFT_VERSION or OPENSHIFT_INSTALL_RELEASE_IMAGE environment variables
+OPENSHIFT_VERSION or OPENSHIFT_INSTALL_RELEASE_IMAGE environment variables.
+Should result in single release image.
 """
 
 # Disable E402 module level import not at top of file
@@ -22,7 +23,7 @@ import semver
 from assisted_service_client.models import ReleaseImage
 
 from assisted_test_infra.test_infra import utils
-from consts import DEFAULT_CPU_ARCHITECTURE
+from consts import DEFAULT_CPU_ARCHITECTURE, CPUArchitecture
 
 
 def get_release_image(
@@ -47,39 +48,51 @@ def main():
     if (version := os.getenv("OPENSHIFT_VERSION", "")) != "":
         try:
             sem_version = semver.VersionInfo.parse(version, optional_minor_and_patch=True)
-            ocp_xy_version = f"{sem_version.major}.{sem_version.minor}"
+            ocp_xy_version = f"{sem_version.major}.{sem_version.minor}-{CPUArchitecture.MULTI}"
         except ValueError as e:
             raise ValueError("provided OPENSHIFT_VERSION is not a valid semantic version") from e
 
-        if (release_image := get_release_image(release_images=release_images, ocp_xy_version=ocp_xy_version)) is None:
+        if (
+            release_image := get_release_image(
+                release_images=release_images, ocp_xy_version=ocp_xy_version, cpu_architecture=CPUArchitecture.MULTI
+            )
+        ) is None:
             raise ValueError(
                 f"""
                 No release image found with 'openshift_version':
-                {ocp_xy_version} and cpu_architecture: {DEFAULT_CPU_ARCHITECTURE}"
+                {ocp_xy_version} and cpu_architecture: {CPUArchitecture.MULTI}"
             """
             )
 
+        release_image.default = True
+
     elif (release_image_ref := os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE", "")) != "":
         ocp_semantic_version = utils.extract_version(release_image=release_image_ref)
-        ocp_xyz_version = f"{ocp_semantic_version.major}.{ocp_semantic_version.minor}.{ocp_semantic_version.patch}"
-        ocp_xy_version = f"{ocp_semantic_version.major}.{ocp_semantic_version.minor}"
+        cpu_architecture = utils.extract_architecture(release_image=release_image_ref)
+        cpu_architectures = (
+            [CPUArchitecture.X86, CPUArchitecture.ARM, CPUArchitecture.S390X, CPUArchitecture.PPC64]
+            if cpu_architecture == CPUArchitecture.MULTI
+            else [cpu_architecture]
+        )
+        suffix = CPUArchitecture.MULTI if cpu_architecture == CPUArchitecture.MULTI else ""
+        ocp_xy_version = f"{ocp_semantic_version.major}.{ocp_semantic_version.minor}{suffix}"
 
-        if (release_image := get_release_image(release_images=release_images, ocp_xy_version=ocp_xy_version)) is None:
-            release_image = ReleaseImage(
-                openshift_version=ocp_xy_version,
-                version=ocp_xyz_version,
-                cpu_architecture=DEFAULT_CPU_ARCHITECTURE,
-                url=release_image_ref,
-            )
+        release_image = ReleaseImage(
+            openshift_version=ocp_xy_version,
+            version=str(ocp_semantic_version),
+            cpu_architecture=cpu_architecture,
+            cpu_architectures=cpu_architectures,
+            default=True,
+            url=release_image_ref,
+        )
 
     else:
         raise ValueError(
             "OPENSHIFT_INSTALL_RELEASE_IMAGE or OPENSHIFT_VERSION must be specified in order to override RELEASE_IMAGES"
         )
 
-    release_images_dict = [release_image.to_dict()]
-
-    json.dump(release_images_dict, sys.stdout, separators=(",", ":"))
+    release_images = [release_image.to_dict()]
+    json.dump(release_images, sys.stdout, separators=(",", ":"))
 
 
 if __name__ == "__main__":
