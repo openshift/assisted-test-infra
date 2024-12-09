@@ -299,7 +299,7 @@ class OciApiController(NodeController):
 
     def _apply_job_from_stack(
         self, stack_id: str, display_name: str, timeout_seconds: int = 3600, interval_wait: int = 60
-    ) -> str:
+    ) -> None:
         """Apply job will run the stack terraform code and create the resources.
 
         On failure - raise Exception and cleanup resources
@@ -397,7 +397,7 @@ class OciApiController(NodeController):
         return "oci_core_instance"
 
     def list_nodes(self) -> List[Node]:
-        pass
+        return []
 
     def list_disks(self, node_name: str) -> List[Disk]:
         pass
