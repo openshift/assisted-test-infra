@@ -9,6 +9,7 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import libvirt
 import oci
+import requests
 import waiting
 
 from assisted_test_infra.test_infra import BaseClusterConfig
@@ -17,6 +18,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node import Nod
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_oci_config import BaseOciConfig
+from assisted_test_infra.test_infra.utils.manifests import Manifest
 from service_client import log
 
 
@@ -84,18 +86,10 @@ class OciApiController(NodeController):
 
     def __init__(self, config: BaseNodesConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
-        self._cloud_provider = None
+        self.cloud_provider = None
+        self.custom_manifests = None
         self._oci_compartment_oicd = self._config.oci_compartment_oicd
         self._initialize_oci_clients()
-
-    @property
-    def cloud_provider(self):
-        # Called from test_cases , modify manifests
-        return self._cloud_provider
-
-    @cloud_provider.setter
-    def cloud_provider(self, cloud_provider):
-        self._cloud_provider = cloud_provider
 
     def _initialize_oci_clients(self):
         """Initialize oci clients.
@@ -190,7 +184,14 @@ class OciApiController(NodeController):
         )
 
         assert obj.status == 200
-        return obj.data.full_path
+        par = obj.data.full_path
+
+        r = requests.head(par)
+        log.info(f"r = requests.head(par) -> {r}")
+        assert r.status_code == 200
+        assert int(r.headers["Content-Length"]) == os.path.getsize(file_path)
+
+        return par
 
     def _terraform_variables(
         self,
@@ -250,7 +251,6 @@ class OciApiController(NodeController):
         template_config = {
             "config_source_type": "ZIP_UPLOAD",
             "zip_file_base64_encoded": self._base64_zip_file(terraform_zip_path),
-            "working_directory": "infrastructure",
         }
 
         template_config_create = oci.resource_manager.models.CreateZipUploadConfigSourceDetails(**template_config)
@@ -290,8 +290,8 @@ class OciApiController(NodeController):
         return obj.data.id
 
     def _apply_job_from_stack(
-        self, stack_id: str, display_name: str, timeout_seconds: int = 1800, interval_wait: int = 60
-    ) -> str:
+        self, stack_id: str, display_name: str, timeout_seconds: int = 3600, interval_wait: int = 60
+    ) -> None:
         """Apply job will run the stack terraform code and create the resources.
 
         On failure - raise Exception and cleanup resources
@@ -346,11 +346,19 @@ class OciApiController(NodeController):
             log.info(f"Exception raised during apply_job_from_stack {e}: destroying")
             raise
         # on success, we return the jobs output - list
+        success = False
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
             if item.output_name == "oci_ccm_config":
-                return item.output_value
-        raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
+                self.cloud_provider = item.output_value
+                success = True
+            elif item.output_name == "dynamic_custom_manifest":
+                self._entity_config.custom_manifests.append(
+                    Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
+                )
+                success = True
+        if not success:
+            raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
 
     @staticmethod
     def _waiter_status(client_callback: Callable, name: str, status: str, **callback_kwargs) -> None:
@@ -377,7 +385,7 @@ class OciApiController(NodeController):
         return "oci_core_instance"
 
     def list_nodes(self) -> List[Node]:
-        pass
+        return []
 
     def list_disks(self, node_name: str) -> List[Disk]:
         pass
@@ -462,8 +470,7 @@ class OciApiController(NodeController):
         stack_id = self._create_stack(
             random_name("stack-"), namespace, bucket_name, self._config.oci_infrastructure_zip_file, terraform_variables
         )
-        terraform_output = self._apply_job_from_stack(stack_id, random_name("job-"))
-        self.cloud_provider = terraform_output
+        self._apply_job_from_stack(stack_id, random_name("job-"))
 
     def is_active(self, node_name) -> bool:
         pass
