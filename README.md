@@ -1,5 +1,7 @@
 # !! Warning !!
 
+TEST
+
 It's not recommended to run the code in this repo locally on your personal
 machine, as it makes some opinionated configuration changes to the machine it's
 running on
