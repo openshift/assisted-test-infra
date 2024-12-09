@@ -9,7 +9,6 @@ from scp import SCPException
 
 import consts
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
-from assisted_test_infra.test_infra.controllers.node_controllers.nutanix_controller import NutanixController
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.tools import run_concurrently
 from service_client.logger import SuppressAndLog, log
@@ -154,7 +153,7 @@ class Nodes:
 
     def run_for_given_nodes(self, nodes, func_name, *args):
         log.info("Running <%s> on nodes: %s", func_name, [node.name for node in nodes])
-        if isinstance(self.controller, NutanixController):
+        if self.controller._config.tf_platform == consts.Platforms.NUTANIX:
             # nutanix doesn't allow concurrent requests
             res = []
             for node in nodes:
