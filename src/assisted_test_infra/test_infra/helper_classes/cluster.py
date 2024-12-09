@@ -150,7 +150,6 @@ class Cluster(BaseCluster):
             high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
-            control_plane_count=self.nodes.masters_count,
             cpu_architecture=(
                 consts.CPUArchitecture.MULTI
                 if self._config.openshift_version.endswith(f"{consts.CPUArchitecture.MULTI}")
