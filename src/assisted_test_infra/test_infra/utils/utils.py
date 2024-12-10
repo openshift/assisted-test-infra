@@ -527,8 +527,7 @@ def get_openshift_version(allow_default=True, client=None) -> str | None:
 
     version = get_env("OPENSHIFT_VERSION")
     if version:
-        # Make sure the suffix exists once
-        return f"{version.removesuffix(f'-{consts.CPUArchitecture.MULTI}')}-{consts.CPUArchitecture.MULTI}"
+        return version
 
     release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
 
