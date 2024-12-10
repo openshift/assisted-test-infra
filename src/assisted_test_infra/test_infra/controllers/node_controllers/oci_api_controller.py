@@ -382,7 +382,7 @@ class OciApiController(NodeController):
         response = oci.pagination.list_call_get_all_results(
             self._compute_client.list_instances, self._oci_compartment_oicd
         )
-        return [instance for instance in response.data if self._entity_config.entity_name in instance.display_name]
+        return [instance for instance in response.data if str(self._entity_config.entity_name) in instance.display_name]
 
     @property
     def terraform_vm_name_key(self) -> str:
