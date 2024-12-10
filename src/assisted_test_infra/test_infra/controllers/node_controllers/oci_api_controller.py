@@ -103,6 +103,7 @@ class OciApiController(NodeController):
             self._object_storage_client = oci.object_storage.ObjectStorageClient(self._config.get_provider_config())
             self._compute_client = oci.core.ComputeClient(self._config.get_provider_config())
             self._volume_client = oci.core.BlockstorageClient(self._config.get_provider_config())
+            self._virtual_network_client = oci.core.VirtualNetworkClient(self._config.get_provider_config())
             # resource manager for stack creation and job
             self._resource_manager_client = oci.resource_manager.ResourceManagerClient(
                 self._config.get_provider_config()
@@ -389,6 +390,13 @@ class OciApiController(NodeController):
         )
 
     @property
+    def _instances(self) -> List[oci.core.models.Instance]:
+        response = oci.pagination.list_call_get_all_results(
+            self._compute_client.list_instances, self._oci_compartment_oicd
+        )
+        return [instance for instance in response.data if self._entity_config.entity_name in instance.display_name]
+
+    @property
     def terraform_vm_name_key(self) -> str:
         return "display_name"
 
@@ -397,7 +405,7 @@ class OciApiController(NodeController):
         return "oci_core_instance"
 
     def list_nodes(self) -> List[Node]:
-        return []
+        return [Node(instance.display_name, self) for instance in self._instances]
 
     def list_disks(self, node_name: str) -> List[Disk]:
         pass
@@ -565,8 +573,37 @@ class OciApiController(NodeController):
         """
         pass
 
+    def _get_vnic_attachments(self, instance: oci.core.models.Instance) -> List[oci.core.models.VnicAttachment]:
+        response = oci.pagination.list_call_get_all_results(
+            self._compute_client.list_vnic_attachments, self._oci_compartment_oicd, instance_id=instance.id
+        )
+        return response.data
+
+    def _get_vnics(self, instance: oci.core.models.Instance) -> List[oci.core.models.Vnic]:
+        vnic_attachments = self._get_vnic_attachments(instance.id)
+        reponses = [
+            self._virtual_network_client.get_vnic(vnic_id=vnic_attachment.vnic_id)
+            for vnic_attachment in vnic_attachments
+        ]
+        return [response.data for response in responses]
+
     def get_node_ips_and_macs(self, node_name) -> Tuple[List[str], List[str]]:
-        pass
+        instance = next(instance for instance in self._instances if node_name == instance.display_name)
+        vnic_attachments = self._get_vnic_attachments(instance.id)
+        vnics = [self.get_vnic(vnic_attachment.vnic_id) for vnic_attachment in vnic_attachments]
+        ips = []
+        macs = []
+        for vnic in vnics:
+            if vnic.private_ip:
+                ips.append(vnic.private_ip)
+            if vnic.public_ip:
+                ips.append(vnic.public_ip)
+            if vnic.ipv6_addresses:
+                ips.extend(vnic.ipv6_addresses)
+
+            macs.append(vnic.mac_address)
+
+        return (ips, macs)
 
     def set_single_node_ip(self, ip) -> None:
         pass
