@@ -48,19 +48,22 @@ def main():
     if (version := os.getenv("OPENSHIFT_VERSION", "")) != "":
         try:
             sem_version = semver.VersionInfo.parse(version, optional_minor_and_patch=True)
-            ocp_xy_version = f"{sem_version.major}.{sem_version.minor}-{CPUArchitecture.MULTI}"
         except ValueError as e:
             raise ValueError("provided OPENSHIFT_VERSION is not a valid semantic version") from e
 
+        suffix = f"-{CPUArchitecture.MULTI}" if version.endswith(f"-{CPUArchitecture.MULTI}") else ""
+        ocp_xy_version = f"{sem_version.major}.{sem_version.minor}{suffix}"
+        cpu_architecture = CPUArchitecture.MULTI if suffix == CPUArchitecture.MULTI else DEFAULT_CPU_ARCHITECTURE
+
         if (
             release_image := get_release_image(
-                release_images=release_images, ocp_xy_version=ocp_xy_version, cpu_architecture=CPUArchitecture.MULTI
+                release_images=release_images, ocp_xy_version=ocp_xy_version, cpu_architecture=cpu_architecture
             )
         ) is None:
             raise ValueError(
                 f"""
                 No release image found with 'openshift_version':
-                {ocp_xy_version} and cpu_architecture: {CPUArchitecture.MULTI}"
+                {ocp_xy_version} and cpu_architecture: {cpu_architecture}"
             """
             )
 
