@@ -1,3 +1,4 @@
+- meta: end_play
 - name: Destroy OCI instrastructure provisionned by test-infra
   hosts: primary
   tasks:
