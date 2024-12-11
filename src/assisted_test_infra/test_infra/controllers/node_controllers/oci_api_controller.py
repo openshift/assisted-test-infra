@@ -502,7 +502,7 @@ class OciApiController(NodeController):
         return response.data
 
     def _get_vnics(self, instance: oci.core.models.Instance) -> List[oci.core.models.Vnic]:
-        vnic_attachments = self._get_vnic_attachments(instance.id)
+        vnic_attachments = self._get_vnic_attachments(instance)
         reponses = [
             self._virtual_network_client.get_vnic(vnic_id=vnic_attachment.vnic_id)
             for vnic_attachment in vnic_attachments
