@@ -2,16 +2,21 @@ import contextlib
 import copy
 import hashlib
 import os
+import random
 import shutil
 import tarfile
 import time
 from pathlib import Path
+from string import ascii_lowercase
 from tempfile import TemporaryDirectory
 
-import waiting
+from assisted_service_client.rest import ApiException
 
 from consts import NUMBER_OF_MASTERS
+
 from service_client import log
+
+import waiting
 
 OC_DOWNLOAD_LOGS_INTERVAL = 5 * 60
 OC_DOWNLOAD_LOGS_TIMEOUT = 60 * 60
@@ -342,3 +347,50 @@ def _are_logs_in_status(client, cluster_id, statuses, check_host_logs_only=False
     except BaseException:
         log.exception("Failed to get cluster %s log info", cluster_id)
         return False
+
+
+def filter_controllers_logs(client, cluster_id, filters, last_messages=10):
+    """Get controller log file when possible when master's in finalized stage and filter messages.
+
+    Used to detect error or warning when timeout expires , will be added to the exception last known errors/warning
+    :param client:
+    :param cluster_id:
+    :param filters: list of string to match from assisted
+    :param last_messages:
+    :return:
+    """
+    installer_controller = 'assisted-installer-controller.logs'
+    tmp_file = f"/tmp/{''.join(random.choice(ascii_lowercase) for _ in range(10))}.tar.gz"
+    filtered_content = []
+    try:
+        log.info(f"Collecting controllers info from {installer_controller}")
+        controller_data = client.v2_download_cluster_logs(cluster_id, logs_type="controller",
+                                                          _preload_content=False).data
+        with open(tmp_file, "wb") as _file:
+            log.info(f"Write controllers content to file {tmp_file}")
+            _file.write(controller_data)
+
+        with tarfile.open(tmp_file, 'r') as tar:
+            log.info(f"Extract {tmp_file} and create object content")
+            content = tar.extractfile(installer_controller).readlines()
+            reversed_iterator = reversed(content)
+            content_lines = [(next(reversed_iterator).decode("utf-8")) for _ in range(last_messages)]
+
+            # filtered content - check if one of the filters in a line
+            log.info(f"Searching filters in object content {content_lines}")
+            for line in content_lines:
+                for f in filters:
+                    if f in line:
+                        filtered_content.append(line)
+
+    except ApiException as api_error:
+        log.info("Failed to get controller logs %s", api_error)
+
+    except Exception as e:
+        log.info("Error during controller log filtering %s", str(e))
+    finally:
+        try:
+            os.remove(tmp_file)
+        except FileNotFoundError:
+            log.info("Unable to remove tmp file %s", tmp_file)
+        return filtered_content
