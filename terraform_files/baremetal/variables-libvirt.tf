@@ -279,3 +279,21 @@ variable "enable_dhcp" {
   description = "Disabling DHCP for static IP"
   default = true
 }
+
+variable "load_balancer_config_file" {
+  type        = string
+  description = "Contents of load balancer configuration file"
+  default     = ""
+}
+
+variable "load_balancer_ip" {
+  type        = string
+  description = "IP address for load balancer"
+  default     = ""
+}
+
+variable "load_balancer_type" {
+  type        = string
+  description = "Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user."
+  default     = "cluster-managed"
+}

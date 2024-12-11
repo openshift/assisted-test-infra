@@ -71,6 +71,7 @@ DEPLOY_TAG := $(or $(DEPLOY_TAG), "")
 DEPLOY_MANIFEST_PATH := $(or $(DEPLOY_MANIFEST_PATH), "")
 DEPLOY_MANIFEST_TAG := $(or $(DEPLOY_MANIFEST_TAG), "")
 IMAGE_NAME=assisted-test-infra
+LOAD_BALANCER_TYPE := $(or $(LOAD_BALANCER_TYPE), "cluster-managed")
 
 # validate folder
 ifeq ($(CURDIR), /root/assisted-test-infra)
@@ -191,7 +192,7 @@ delete_minikube:
 # Map the directory $(HOME)/.test-infra/etc/nginx/conf.d to be /etc/nginx/conf.d
 # so it will be used by the python code to fill up load balancing definitions
 start_load_balancer: stop_load_balancer
-	@if [ "$(PLATFORM)" = "none"  ] || [ "$(PLATFORM)" = "external"  ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
+	@if [ "$(PLATFORM)" = "none"  ] || [ "$(PLATFORM)" = "external"  ] || [ "${LOAD_BALANCER_TYPE}" = "user-managed" ] || [ "$(START_LOAD_BALANCER)" = "true" ]; then \
 		id=$(shell $(CONTAINER_COMMAND) ps --quiet --filter "name=load_balancer"); \
 		( test -z "$$id" && echo "Starting load balancer ..." && \
 		$(CONTAINER_COMMAND) run -d --rm --dns=127.0.0.1 --net=host --name=load_balancer \
@@ -326,7 +327,7 @@ deploy_assisted_operator: clear_operator
 # Inventory #
 #############
 
-deploy_assisted_service: bring_assisted_service create_hub_cluster 
+deploy_assisted_service: bring_assisted_service create_hub_cluster
 	mkdir -p assisted-service/build
 	DEPLOY_TAG=$(DEPLOY_TAG) CONTAINER_COMMAND=$(CONTAINER_COMMAND) NAMESPACE_INDEX=$(shell bash scripts/utils.sh get_namespace_index $(NAMESPACE) $(OC_FLAG)) AUTH_TYPE=$(AUTH_TYPE) DEBUG_FLAGS="${DEBUG_FLAGS}" scripts/deploy_assisted_service.sh
 
