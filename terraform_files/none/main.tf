@@ -113,7 +113,7 @@ module "workers" {
   source = "../baremetal_host"
   count  = var.worker_count
 
-  name           = "${var.cluster_name}-worker-${count.index}"
+  name           = count.index % 2 == 0 ? "${var.cluster_name}-worker-${count.index}" : "${var.cluster_name}-worker-secondary-${count.index}"
   memory         = var.libvirt_worker_memory
   vcpu           = var.libvirt_worker_vcpu
   running        = var.running
