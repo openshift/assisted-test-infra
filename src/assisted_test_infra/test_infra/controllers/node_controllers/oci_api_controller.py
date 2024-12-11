@@ -589,7 +589,7 @@ class OciApiController(NodeController):
 
     def get_node_ips_and_macs(self, node_name) -> Tuple[List[str], List[str]]:
         instance = next(instance for instance in self._instances if node_name == instance.display_name)
-        vnics = self.get_vnics(instance)
+        vnics = self._get_vnics(instance)
         ips = []
         macs = []
         for vnic in vnics:
