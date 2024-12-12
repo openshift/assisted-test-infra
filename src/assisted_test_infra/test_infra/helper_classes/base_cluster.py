@@ -153,7 +153,7 @@ class BaseCluster(Entity, ABC):
         nodes = self.nodes.get_nodes(refresh=True)
 
         for host in hosts:
-            node = self.find_matching_node_name(host, nodes)
+            node = self.find_matching_node(host, nodes)
             assert node is not None, (
                 f"Failed to find matching node for host with mac address {host.macs()}"
                 f" nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
