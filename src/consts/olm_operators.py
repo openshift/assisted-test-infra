@@ -73,21 +73,6 @@ class OperatorResource:
             )
 
     @classmethod
-    def get_osc_resource_dict(cls, is_sno: bool) -> dict:
-        if not is_sno:
-            return cls.get_resource_dict(
-                master_memory=16384,
-                worker_memory=8192,
-                master_vcpu=4,
-                worker_vcpu=2,
-            )
-        else:
-            return cls.get_resource_dict(
-                master_memory=16384,
-                master_vcpu=8,
-            )
-
-    @classmethod
     def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
@@ -126,7 +111,12 @@ class OperatorResource:
                 worker_disk_count=2,
                 worker_count=3,
             ),
-            OperatorType.OSC: cls.get_osc_resource_dict(is_sno),
+            OperatorType.OSC: cls.get_resource_dict(
+                master_memory=1 * MiB_UNITS,
+                worker_memory=1 * MiB_UNITS,
+                master_vcpu=1,
+                worker_vcpu=1,
+            ),
         }
 
 
