@@ -40,6 +40,10 @@ class NodeController(ABC):
     def tf_platform(self):
         return self._config.tf_platform
 
+    @property
+    def load_balancer_type(self):
+        return self._config.load_balancer_type
+
     @abstractmethod
     def list_nodes(self) -> List[Node]:
         pass

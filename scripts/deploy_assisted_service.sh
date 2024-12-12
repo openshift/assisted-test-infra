@@ -48,6 +48,7 @@ export IMAGES_FLAVOR=${IMAGES_FLAVOR:-}
 export PLATFORM=${PLATFORM:-}
 export RELEASE_IMAGES=${RELEASE_IMAGES:-}
 export OS_IMAGES=${OS_IMAGES:-}
+export LOAD_BALANCER_TYPE=${LOAD_BALANCER_TYPE:-"cluster-managed"}
 export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
 export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
 export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
@@ -100,7 +101,7 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
         sed -i "s|quay.io/edge-infrastructure/assisted-image-service:latest|${IMAGE_SERVICE}|g" assisted-service/deploy/podman/pod.yml
     fi
 
-    # Override ConfigMap 
+    # Override ConfigMap
     if [ -n "${INSTALLER_IMAGE:-}" ]; then
         echo "  INSTALLER_IMAGE: ${INSTALLER_IMAGE}" >> assisted-service/deploy/podman/configmap.yml
     fi
@@ -163,10 +164,10 @@ EOF
 else
     print_log "Updating assisted_service params"
 
-    if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" ]]; then
+    if [[ "${PLATFORM}" == "none"  || "${PLATFORM}" == "external" || "${LOAD_BALANCER_TYPE}" == "user-managed" ]]; then
         # on RHEl9 we need to open ports in a new policy
         # between libvirt and HOST
-        print_log "Opening additional ports for none/external"
+        print_log "Opening additional ports for none/external platform or user-managed load balancer"
         firewall-cmd --policy=libvirt-to-host --add-port={22623/tcp,22624/tcp,6443/tcp}
         firewall-cmd --policy=libvirt-to-host --add-service={http,https}
         firewall-cmd --zone=libvirt-routed  --add-forward

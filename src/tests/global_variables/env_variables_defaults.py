@@ -198,3 +198,4 @@ class _EnvVariables(DataPool, ABC):
     external_cloud_controller_manager = EnvVar(
         ["EXTERNAL_CLOUD_CONTROLLER_MANAGER"], default=env_defaults.DEFAULT_EXTERNAL_CLOUD_CONTROLLER_MANAGER
     )
+    load_balancer_type = EnvVar(["LOAD_BALANCER_TYPE"], default=env_defaults.DEFAULT_LOAD_BALANCER_TYPE)

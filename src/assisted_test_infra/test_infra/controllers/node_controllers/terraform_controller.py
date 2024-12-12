@@ -207,6 +207,7 @@ class TerraformController(LibvirtController):
         tfvars["libvirt_worker_macs"] = self.generate_macs(self._params.worker_count)
         tfvars["master_boot_devices"] = self._params.master_boot_devices
         tfvars["worker_boot_devices"] = self._params.worker_boot_devices
+        tfvars["load_balancer_type"] = self._entity_config.load_balancer_type
         if self._entity_config.is_bonded:
             tfvars["slave_interfaces"] = True
             tfvars["network_interfaces_count"] = self._entity_config.num_bonded_slaves

@@ -109,7 +109,7 @@ function start_and_enable_libvirtd_tcp_socket() {
     fi
     echo "libvirtd version is greater then 5.5.x, starting libvirtd-tcp.socket"
     echo "Removing --listen flag to libvirt"
-    
+
     OS_VERSION=$(awk -F= '/^VERSION_ID=/ { print $2 }' /etc/os-release | tr -d '"' | cut -f1 -d'.')
     if [[ "${OS_VERSION}" ==  "8" ]]; then
         sudo sed -i -e 's/LIBVIRTD_ARGS="--listen"/#LIBVIRTD_ARGS="--listen"/g' /etc/sysconfig/libvirtd
@@ -241,8 +241,8 @@ function config_squid() {
     fi
 
     sudo systemctl restart squid
-    sudo firewall-cmd --zone=libvirt --add-port=3128/tcp
-    sudo firewall-cmd --zone=libvirt --add-port=3129/tcp
+    sudo firewall-cmd --permanent --zone=libvirt --add-port=3128/tcp
+    sudo firewall-cmd --permanent --zone=libvirt --add-port=3129/tcp
 }
 
 function fix_ipv6_routing() {
@@ -269,7 +269,7 @@ function config_chronyd() {
   sudo sed -i -e '/^[ \t]*server[ \t]/d' -e '/allow[ \t]*$/d' -e '/^[ \t]*local stratum/d' -e '/^[ \t]*manual[ \t]*$/d' /etc/chrony.conf
   sudo sed -i -e '$a allow' -e '$a manual' -e  '$a local stratum 10' /etc/chrony.conf
   sudo systemctl restart chronyd.service || systemctl status --no-pager chronyd.service
-  sudo firewall-cmd --zone=libvirt --add-port=123/udp
+  sudo firewall-cmd --permanent --zone=libvirt --add-port=123/udp
 }
 
 function config_nginx() {
@@ -280,10 +280,10 @@ function config_nginx() {
   # in directory /etc/nginx/conf.d. The nginx is refreshed every 60 seconds
   podman rm -f load_balancer --ignore
   sudo mkdir -p $HOME/.test-infra/etc/nginx/conf.d/{stream,http}.d
-  sudo firewall-cmd --zone=libvirt --add-port=6443/tcp
-  sudo firewall-cmd --zone=libvirt --add-port=22623/tcp
-  sudo firewall-cmd --zone=libvirt --add-port=443/tcp
-  sudo firewall-cmd --zone=libvirt --add-port=80/tcp
+  sudo firewall-cmd --permanent --zone=libvirt --add-port=6443/tcp
+  sudo firewall-cmd --permanent --zone=libvirt --add-port=22623/tcp
+  sudo firewall-cmd --permanent --zone=libvirt --add-port=443/tcp
+  sudo firewall-cmd --permanent --zone=libvirt --add-port=80/tcp
 }
 
 function config_sshd() {
@@ -326,7 +326,7 @@ function additional_configs() {
     fi
     sudo chmod 600 ~/.ssh/id_rsa
 
-    sudo firewall-cmd --zone=libvirt --add-port=59151-59154/tcp
+    sudo firewall-cmd --permanent --zone=libvirt --add-port=59151-59154/tcp
 
     echo "enabling ipv6"
     sudo sed -ir 's/net.ipv6.conf.all.disable_ipv6[[:blank:]]*=[[:blank:]]*1/net.ipv6.conf.all.disable_ipv6 = 0/g' /etc/sysctl.conf
@@ -334,10 +334,10 @@ function additional_configs() {
     sudo sysctl --load
 
     echo "opening port 8500 for iPXE boot"
-    sudo firewall-cmd --zone=libvirt --add-port=8500/tcp
+    sudo firewall-cmd --permanent --zone=libvirt --add-port=8500/tcp
 
     echo "opening port 7500 for Tang server"
-    sudo firewall-cmd --zone=libvirt --add-port=7500/tcp
+    sudo firewall-cmd --permanent --zone=libvirt --add-port=7500/tcp
 }
 
 function config_dnf() {
