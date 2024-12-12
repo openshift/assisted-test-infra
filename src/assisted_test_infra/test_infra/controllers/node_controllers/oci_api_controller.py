@@ -423,7 +423,9 @@ class OciApiController(NodeController):
         return consts.NodeRoles.WORKER
 
     def list_nodes(self) -> List[Node]:
-        return [Node(instance.display_name, self, role=_get_instance_role(instance)) for instance in self._instances]
+        return [
+            Node(instance.display_name, self, role=self._get_instance_role(instance)) for instance in self._instances
+        ]
 
     def list_disks(self, node_name: str) -> List[Disk]:
         pass
