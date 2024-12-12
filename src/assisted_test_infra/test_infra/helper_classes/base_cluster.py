@@ -150,7 +150,7 @@ class BaseCluster(Entity, ABC):
                 f"Failed to find matching node for host with mac address {host.macs()}"
                 f" nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
             )
-            self._infra_env.update_host(host_id=host.get_id(), host_role=node.role, host_name=name)
+            self._infra_env.update_host(host_id=host.get_id(), host_role=node.role, host_name=node.name)
 
     def set_installer_args(self):
         hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(self.id))
