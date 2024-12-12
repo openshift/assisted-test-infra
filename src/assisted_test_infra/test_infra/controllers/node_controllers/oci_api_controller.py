@@ -393,8 +393,7 @@ class OciApiController(NodeController):
     def terraform_vm_resource_type(self) -> str:
         return "oci_core_instance"
 
-    @staticmethod
-    def _get_instance_role(instance: oci.core.models.Instance) -> str:
+    def _get_instance_role(self, instance: oci.core.models.Instance) -> str:
         namespace_key = "openshift-{}".format(self._entity_config.entity_name)
         namespace = instance.defined_tags.get(tag_namespace_key)
         assert namespace, "expected namespace {} to exist in defined tags {}".format(
