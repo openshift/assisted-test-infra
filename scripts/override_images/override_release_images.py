@@ -53,7 +53,7 @@ def main():
 
         suffix = f"-{CPUArchitecture.MULTI}" if version.endswith(f"-{CPUArchitecture.MULTI}") else ""
         ocp_xy_version = f"{sem_version.major}.{sem_version.minor}{suffix}"
-        cpu_architecture = CPUArchitecture.MULTI if suffix == CPUArchitecture.MULTI else DEFAULT_CPU_ARCHITECTURE
+        cpu_architecture = CPUArchitecture.MULTI if CPUArchitecture.MULTI in suffix else DEFAULT_CPU_ARCHITECTURE
 
         if (
             release_image := get_release_image(
