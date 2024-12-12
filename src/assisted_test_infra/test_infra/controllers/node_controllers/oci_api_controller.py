@@ -395,7 +395,7 @@ class OciApiController(NodeController):
 
     def _get_instance_role(self, instance: oci.core.models.Instance) -> str:
         namespace_key = "openshift-{}".format(self._entity_config.entity_name)
-        namespace = instance.defined_tags.get(tag_namespace_key)
+        namespace = instance.defined_tags.get(namespace_key)
         assert namespace, "expected namespace {} to exist in defined tags {}".format(
             namespace_key, instance.defined_tags
         )
