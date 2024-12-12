@@ -20,6 +20,7 @@ from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_oci_config import BaseOciConfig
 from assisted_test_infra.test_infra.utils.manifests import Manifest
 from service_client import log
+import consts
 
 
 def random_name(prefix="", length=8):
@@ -404,8 +405,25 @@ class OciApiController(NodeController):
     def terraform_vm_resource_type(self) -> str:
         return "oci_core_instance"
 
+    @staticmethod
+    def _get_instance_role(instance: oci.core.models.Instance) -> str:
+        namespace_key = "openshift-{}".format(self._entity_config.entity_name)
+        namespace = instance.defined_tags.get(tag_namespace_key)
+        assert namespace, "expected namespace {} to exist in defined tags {}".format(
+            namespace_key, instance.defined_tags
+        )
+        role = namespace.get("instance-role")
+        assert role, "expected key instance-role to exist in namespace {} in defined tags {}".format(
+            namespace_key, instance.defined_tags
+        )
+
+        if role == "control_plane":
+            return consts.NodeRoles.MASTER
+
+        return consts.NodeRoles.WORKER
+
     def list_nodes(self) -> List[Node]:
-        return [Node(instance.display_name, self) for instance in self._instances]
+        return [Node(instance.display_name, self, role=_get_instance_role(instance)) for instance in self._instances]
 
     def list_disks(self, node_name: str) -> List[Disk]:
         pass
@@ -581,7 +599,7 @@ class OciApiController(NodeController):
 
     def _get_vnics(self, instance: oci.core.models.Instance) -> List[oci.core.models.Vnic]:
         vnic_attachments = self._get_vnic_attachments(instance)
-        reponses = [
+        responses = [
             self._virtual_network_client.get_vnic(vnic_id=vnic_attachment.vnic_id)
             for vnic_attachment in vnic_attachments
         ]
