@@ -1,7 +1,7 @@
 - name: Directory where OCI private key will be stored
   ansible.builtin.set_fact:
     oci_private_key_path_ci_machine: "{{ hostvars[ci_machine].ansible_user_dir }}/.oci/{{ oci_private_key_path | basename }}"
-    custom_manifests_dir: "{{ hostvars[ci_machine].ansible_user_dir }}/custom_manifests"
+    oci_ci_machine_public_ip: "{{ hostvars[ci_machine].ansible_host }}"
 
 - name: Create directory where OCI private key will be stored on CI machine
   ansible.builtin.file:
@@ -17,14 +17,24 @@
     mode: '0600'
   delegate_to: "{{ ci_machine }}"
 
+- name: Create directory where OCI infrastructure archive will be stored on CI machine
+  ansible.builtin.file:
+    path: "{{ oci_infrastructure_zip_file | dirname }}"
+    state: directory
+    mode: '0700'
+  delegate_to: "{{ ci_machine }}"
+
+- name: Download terraform template to create the infrastructure on OCI
+  ansible.builtin.get_url:
+    url: "{{ oci_infrastructure_zip_url }}"
+    dest: "{{ oci_infrastructure_zip_file }}"
+    mode: '0600'
+  delegate_to: "{{ ci_machine }}"
+
 - name: Export OCI configuration in assisted-additional-config to shared_dir
   ansible.builtin.template:
     src: "assisted-additional-config.j2"
     dest: "{{ shared_dir }}/assisted-additional-config"
-    mode: 0644
+    mode: '0644'
   when: shared_dir is defined
 
-- name: Create OCI custom manifests
-  ansible.builtin.import_tasks:
-    file: custom_manifests.yml
-  delegate_to: "{{ ci_machine }}"

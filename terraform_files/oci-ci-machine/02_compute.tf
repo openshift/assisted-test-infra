@@ -11,8 +11,8 @@ data "oci_marketplace_listings" "os_listings" {
   compartment_id = var.oci_compartment_id
   filter {
     name   = "name"
-    values = ["Rocky Linux 9\\.\\d+ Supported by CIQ - Free \\(x86_64\\)"]
-    regex  = true
+    values = ["Rocky Linux 9 x86 Supported by CIQ"]
+    regex  = false
   }
 }
 
@@ -100,12 +100,7 @@ resource "oci_core_instance" "ci_instance" {
     assign_public_ip          = true
     assign_private_dns_record = true
     hostname_label            = "ci-instance"
-    subnet_id                 = oci_core_subnet.vcn_public_subnet.id
-    nsg_ids = [
-      oci_core_network_security_group.nsg_ci_machine.id,
-      oci_core_network_security_group.nsg_load_balancer_ci_access.id, # allow access to load balancer
-      oci_core_network_security_group.nsg_cluster_ci_access.id        # allow access to cluster (SSH)
-    ]
+    subnet_id                 = oci_core_subnet.public.id
   }
   metadata = {
     user_data = data.cloudinit_config.config.rendered
