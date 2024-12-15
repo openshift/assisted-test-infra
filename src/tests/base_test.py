@@ -467,6 +467,7 @@ class BaseTest:
 
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
+
         if controller_configuration.tf_platform not in (
             consts.Platforms.BARE_METAL,
             consts.Platforms.NONE,

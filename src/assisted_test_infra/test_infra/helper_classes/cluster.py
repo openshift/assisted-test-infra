@@ -134,6 +134,9 @@ class Cluster(BaseCluster):
         if self.nodes.masters_count and self.nodes.masters_count > 3:
             extra_vars["control_plane_count"] = self.nodes.masters_count
 
+        """ if self._config.load_balancer_type == "user-managed":
+            extra_vars["load_balancer_type"] = self._config.load_balancer_type """
+
         if len(self._config.olm_operators) > 0:
             olm_operators = self.get_olm_operators()
             if olm_operators:
@@ -997,6 +1000,11 @@ class Cluster(BaseCluster):
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
             self.nodes.controller.set_single_node_ip(ip)
             self.nodes.controller.set_dns(api_ip=ip, ingress_ip=ip)
+        elif (
+            self.nodes.controller.tf_platform == consts.Platforms.BARE_METAL
+            and self._config.load_balancer_type == "user-managed"
+        ):
+            self._configure_load_balancer()
 
         self.wait_for_ready_to_install()
 
