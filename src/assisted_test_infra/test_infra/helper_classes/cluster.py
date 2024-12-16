@@ -9,6 +9,7 @@ from typing import List, Optional, Set
 import waiting
 import yaml
 from assisted_service_client import models
+from assisted_service_client.models.api_vip import ApiVip
 from assisted_service_client.models.operator_type import OperatorType
 from junit_report import JunitTestCase
 from netaddr import IPAddress, IPNetwork
@@ -133,6 +134,9 @@ class Cluster(BaseCluster):
 
         if self.nodes.masters_count and self.nodes.masters_count > 3:
             extra_vars["control_plane_count"] = self.nodes.masters_count
+
+        if self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
+            extra_vars["load_balancer"] = {"type": self._config.load_balancer_type}
 
         if len(self._config.olm_operators) > 0:
             olm_operators = self.get_olm_operators()
@@ -382,6 +386,11 @@ class Cluster(BaseCluster):
             log.info("Letting access VIPs be deducted from machine networks")
             api_vips = ingress_vips = None
             machine_networks = [self.get_machine_networks()[0]]
+
+        elif self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
+            log.info("User managed load balancer. Setting the VIPs to the load balancer IP")
+            api_vips = ingress_vips = [ApiVip(ip=self._get_load_balancer_ip()).to_dict()]
+            machine_networks = None
 
         else:
             log.info("Assigning VIPs statically")
@@ -985,11 +994,15 @@ class Cluster(BaseCluster):
         self.nodes.wait_for_networking()
         self.set_network_params(controller=self.nodes.controller)
 
-        # in case of None or External platform we need to specify dns records before hosts are ready
-        if self.nodes.controller.tf_platform in [
-            consts.Platforms.NONE,
-            consts.Platforms.EXTERNAL,
-        ]:
+        # in case of None / External platform / User Managed LB, we need to specify dns records before hosts are ready
+        if (
+            self.nodes.controller.tf_platform
+            in [
+                consts.Platforms.NONE,
+                consts.Platforms.EXTERNAL,
+            ]
+            or self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value
+        ):
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self._high_availability_mode == consts.HighAvailabilityMode.NONE:
@@ -1204,11 +1217,15 @@ class Cluster(BaseCluster):
         master_ips = self.get_master_ips(self.id, main_cidr) + self.get_master_ips(self.id, secondary_cidr)
         worker_ips = self.get_worker_ips(self.id, main_cidr)
 
-        load_balancer_ip = str(IPNetwork(main_cidr).ip + 1)
+        load_balancer_ip = self._get_load_balancer_ip()
 
         tf = terraform_utils.TerraformUtils(working_dir=self.nodes.controller.tf_folder)
         lb_controller = LoadBalancerController(tf)
         lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
+
+    def _get_load_balancer_ip(self) -> str:
+        main_cidr = self.get_primary_machine_cidr()
+        return str(IPNetwork(main_cidr).ip + 1)
 
     @classmethod
     def _get_namespace_index(cls, libvirt_network_if):

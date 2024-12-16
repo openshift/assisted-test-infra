@@ -86,6 +86,7 @@ Check the [Installation Guide](GUIDE.md) for installation instructions.
 | `SERVICE_REPO`                | assisted-service repository to use, default: https://github.com/openshift/assisted-service |
 | `USE_LOCAL_SERVICE`           | if equals `true`, assisted-service will be build from `assisted-test-infra/assisted-service` code |
 | `DEBUG_SERVICE`               | if equals `true`, assisted-service will be build from `assisted-test-infra/assisted-service` code and deployed in debug mode, exposing port `40000` for `dlv` connection. |
+| `LOAD_BALANCER_TYPE` | Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user. |
 
 **Note** - When using `USE_LOCAL_SERVICE` or `DEBUG_SERVICE` local assisted-service code will be used. Therefore `bring_assisted_service.sh` script will not change the local service code unless it is missing. If you want to import assisted-service changes, you can use -
 ```bash
@@ -111,12 +112,12 @@ before you run start the deployment.
 
 |   |   |
 |---|---|
-| `MINIKUBE_DRIVER`| set minikube driver, default = kvm2 | 
+| `MINIKUBE_DRIVER`| set minikube driver, default = kvm2 |
 | `MINIKUBE_CPUS`| set amount of cpus, default = 4|
 | `MINIKUBE_MEMORY`| set amount of memory, default = 8G|
 | `MINIKUBE_DISK_SIZE`| set disk size, default = 50G |
 | `MINIKUBE_HOME`| set default location for minikube, default = ~/.minikube |
-| `MINIKUBE_REGISTRY_IMAGE`| set registry image, default = "quay.io/libpod/registry:2.8" | 
+| `MINIKUBE_REGISTRY_IMAGE`| set registry image, default = "quay.io/libpod/registry:2.8" |
 ### Cluster configmap
 
 |     |     |
@@ -132,7 +133,7 @@ before you run start the deployment.
 | `OCM_BASE_URL`                          | OCM API URL used to communicate with OCM and AMS, default: https://api.integration.openshift.com/ |
 | `OCM_CLIENT_ID`                         | ID of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
 | `OCM_CLIENT_SECRET`                     | Password of Service Account used to communicate with OCM and AMS for Agent Auth and Authz |
-| `JWKS_URL`                              | URL for retrieving the JSON Web Key Set (JWKS) used for verifying JWT tokens in authentication. Defaults to https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/certs | 
+| `JWKS_URL`                              | URL for retrieving the JSON Web Key Set (JWKS) used for verifying JWT tokens in authentication. Defaults to https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/certs |
 | `OC_MODE`                               | if set, use oc instead of minikube |
 | `OC_SCHEME`                             | Scheme for assisted-service url on oc, default: http |
 | `OC_SERVER`                             | server for oc login, required if oc-token is provided, default: https://api.ocp.prod.psi.redhat.com:6443 |
@@ -185,6 +186,7 @@ before you run start the deployment.
 | `DISCONNECTED`               | Set to "true" if local mirror needs to be used                                                            |
 | `REGISTRY_CA_PATH`           | Path to mirror registry CA bundle                                                            |
 | `HOST_INSTALLER_ARGS`        | JSON formatted string used to customize installer arguments on all the hosts. Example: `{"args": ["--append-karg", "console=ttyS0"]}`                      |
+| `LOAD_BALANCER_TYPE` | Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user. |
 
 ## Vsphere parameters
 

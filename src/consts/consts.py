@@ -349,3 +349,8 @@ class CPUArchitecture:
     S390X = "s390x"
     PPC64 = "ppc64le"
     MULTI = "multi"
+
+
+class LoadBalancerType(Enum):
+    CLUSTER_MANAGED = "cluster-managed"
+    USER_MANAGED = "user-managed"
