@@ -154,6 +154,11 @@ REQUIRED_ASSET_FIELDS = (
     *IP_NETWORK_ASSET_FIELDS,
 )
 
+IP_VERSIONS = {
+    "ipv4": "ipv4_addresses",
+    "ipv6": "ipv6_addresses",
+}
+
 GB = 10**9
 MiB_UNITS = 1024
 
