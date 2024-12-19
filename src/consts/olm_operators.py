@@ -1,4 +1,4 @@
-from consts import GB
+from consts import GB, MiB_UNITS
 
 
 class OperatorType:
