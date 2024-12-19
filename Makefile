@@ -158,9 +158,7 @@ delete_hub_cluster:
 	(cd assisted-service && TARGET=${DEPLOY_TARGET} ROOT_DIR=${ROOT_DIR}/assisted-service hack/hub_cluster.sh delete)
 
 clean:
-	-rm -rf build assisted-service test_infra.log
-	-find -name '*.pyc' -delete
-	-find -name '*pycache*' -delete
+	-python3 ./src/cleanup.py
 
 delete_kind:
 	DEPLOY_TARGET=kind $(MAKE) delete_hub_cluster
