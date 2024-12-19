@@ -19,7 +19,7 @@ resource "libvirt_pool" "storage_pool" {
 
 resource "libvirt_network" "net" {
   name      = var.libvirt_network_name
-  mode      = "nat"
+  mode      = length(var.machine_cidr_addresses) == 1 && replace(var.machine_cidr_addresses[0], ":", "") != var.machine_cidr_addresses[0] ? "nat" : "route"
   bridge    = var.libvirt_network_if
   mtu       = var.libvirt_network_mtu
   domain    = "${var.cluster_name}.${var.cluster_domain}"
@@ -83,17 +83,35 @@ resource "libvirt_network" "net" {
 
 resource "libvirt_network" "secondary_net" {
   name      = var.libvirt_secondary_network_name
-  mode      = "nat"
+  mode      = length(var.provisioning_cidr_addresses) == 1 && replace(var.provisioning_cidr_addresses[0], ":", "") != var.provisioning_cidr_addresses[0] ? "nat" : "route"
   bridge    = var.libvirt_secondary_network_if
   addresses = var.provisioning_cidr_addresses
+  mtu       = var.libvirt_network_mtu
   autostart = true
+  dns {
+    local_only = true
+    dynamic "hosts" {
+      for_each = concat(
+        data.libvirt_network_dns_host_template.api.*.rendered,
+        data.libvirt_network_dns_host_template.api-int.*.rendered,
+        data.libvirt_network_dns_host_template.oauth.*.rendered,
+        data.libvirt_network_dns_host_template.console.*.rendered,
+        data.libvirt_network_dns_host_template.canary.*.rendered,
+        data.libvirt_network_dns_host_template.assisted_service.*.rendered,
+      )
+      content {
+        hostname = hosts.value.hostname
+        ip       = hosts.value.ip
+      }
+    }
+  }
 }
 
 module "masters" {
   source = "../baremetal_host"
   count  = var.master_count
 
-  name           = "${var.cluster_name}-master-${count.index}"
+  name           = var.load_balancer_type == "user-managed" ? (count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}") : "${var.cluster_name}-master-${count.index}"
   memory         = var.libvirt_master_memory
   vcpu           = var.libvirt_master_vcpu
   running        = var.running
@@ -103,27 +121,33 @@ module "masters" {
   vtpm2          = var.master_vtpm2
   boot_devices   = var.master_boot_devices
 
-  networks = flatten([for net in [
+  networks = var.load_balancer_type == "user-managed" ? [
     {
-          name     = libvirt_network.net.name
-          ips      = var.libvirt_master_ips
-          macs     = var.libvirt_master_macs
-          hostname = var.slave_interfaces ? null : "${var.cluster_name}-master-${count.index}"
+      name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+      hostname = count.index % 2 == 0 ? "${var.cluster_name}-master-${count.index}" : "${var.cluster_name}-master-secondary-${count.index}"
+      ips      = count.index % 2 == 0 ? var.libvirt_master_ips[count.index] : var.libvirt_secondary_master_ips[count.index]
+      mac      = var.libvirt_master_macs[count.index]
+    }
+  ] : flatten([for net in [
+    {
+      name     = libvirt_network.net.name
+      ips      = var.libvirt_master_ips
+      macs     = var.libvirt_master_macs
+      hostname = var.slave_interfaces ? null : "${var.cluster_name}-master-${count.index}"
     },
     {
-        name     = libvirt_network.secondary_net.name
-        ips      = var.libvirt_secondary_master_ips
-        macs     = var.libvirt_secondary_master_macs
-        hostname = null
+      name     = libvirt_network.secondary_net.name
+      ips      = var.libvirt_secondary_master_ips
+      macs     = var.libvirt_secondary_master_macs
+      hostname = null
     },
   ] : [for i in range(var.slave_interfaces ? var.network_interfaces_count : 1) :
        {
-           name     = net.name
-           ips      = var.slave_interfaces ? null : net.ips[count.index]
-           mac      = var.slave_interfaces ? net.macs[count.index*var.network_interfaces_count+i] : net.macs[count.index]
-           hostname = net.hostname
+         name     = net.name
+         ips      = var.slave_interfaces ? null : net.ips[count.index]
+         mac      = var.slave_interfaces ? net.macs[count.index * var.network_interfaces_count + i] : net.macs[count.index]
+         hostname = net.hostname
        }]])
-
 
   pool           = libvirt_pool.storage_pool.name
   disk_base_name = "${var.cluster_name}-master-${count.index}"
@@ -135,7 +159,7 @@ module "workers" {
   source = "../baremetal_host"
   count  = var.worker_count
 
-  name           = "${var.cluster_name}-worker-${count.index}"
+  name           = var.load_balancer_type == "user-managed" ? (count.index % 2 == 0 ? "${var.cluster_name}-worker-${count.index}" : "${var.cluster_name}-worker-secondary-${count.index}") : "${var.cluster_name}-worker-${count.index}"
   memory         = var.libvirt_worker_memory
   vcpu           = var.libvirt_worker_vcpu
   running        = var.running
@@ -145,7 +169,14 @@ module "workers" {
   vtpm2          = var.worker_vtpm2
   boot_devices   = var.worker_boot_devices
 
-  networks = flatten([for net in [
+  networks = var.load_balancer_type == "user-managed" ? [
+    {
+      name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+      hostname = count.index % 2 == 0 ? "${var.cluster_name}-worker-${count.index}" : "${var.cluster_name}-worker-secondary-${count.index}"
+      ips      = count.index % 2 == 0 ? var.libvirt_worker_ips[count.index] : var.libvirt_secondary_worker_ips[count.index]
+      mac      = var.libvirt_worker_macs[count.index]
+    }
+  ] : flatten([for net in [
     {
       name     = libvirt_network.net.name
       ips      = var.libvirt_worker_ips
@@ -159,12 +190,12 @@ module "workers" {
       hostname = null
     },
   ] : [for i in range(var.slave_interfaces ? var.network_interfaces_count : 1) :
-  {
-    name     = net.name
-    ips      = var.slave_interfaces ? null : net.ips[count.index]
-    mac      = var.slave_interfaces ? net.macs[count.index*var.network_interfaces_count+i] : net.macs[count.index]
-    hostname = net.hostname
-  }]])
+    {
+      name     = net.name
+      ips      = var.slave_interfaces ? null : net.ips[count.index]
+      mac      = var.slave_interfaces ? net.macs[count.index * var.network_interfaces_count + i] : net.macs[count.index]
+      hostname = net.hostname
+    }]])
 
   pool           = libvirt_pool.storage_pool.name
   disk_base_name = "${var.cluster_name}-worker-${count.index}"
@@ -184,13 +215,13 @@ data "libvirt_network_dns_host_template" "api" {
   # API VIP is always present. A value is set by the installation flow that updates
   # either the single node IP or API VIP, depending on the scenario
   count    = 1
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vips[0]
+  ip       = var.load_balancer_type == "user-managed" ? var.load_balancer_ip : (var.bootstrap_in_place ? var.single_node_ip : var.api_vips[0])
   hostname = "api.${local.base_cluster_domain}"
 }
 
 data "libvirt_network_dns_host_template" "api-int" {
   count    = 1
-  ip       = var.bootstrap_in_place ? var.single_node_ip : var.api_vips[0]
+  ip       = var.load_balancer_type == "user-managed" ? var.load_balancer_ip : (var.bootstrap_in_place ? var.single_node_ip : var.api_vips[0])
   hostname = "api-int.${local.base_cluster_domain}"
 }
 
@@ -227,4 +258,10 @@ data "libvirt_network_dns_host_template" "assisted_service" {
   count    = 1
   ip       = var.bootstrap_in_place ? var.single_node_ip : var.ingress_vips[0]
   hostname = "assisted-service-assisted-installer.apps.${local.base_cluster_domain}"
+}
+
+resource "local_file" "load_balancer_config" {
+  count    = var.load_balancer_ip != "" && var.load_balancer_config_file != "" ? 1 : 0
+  content  = var.load_balancer_config_file
+  filename = format("/etc/nginx/conf.d/stream_%s.conf", replace(var.load_balancer_ip, "/[:.]/", "_"))
 }
