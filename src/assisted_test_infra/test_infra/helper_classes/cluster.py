@@ -1373,7 +1373,7 @@ class Cluster(BaseCluster):
         return host_network
 
     def validate_static_ip(self) -> None:
-        if self._infra_env_config.static_network_config is None:
+        if self._infra_env_config.static_network_config is None or self._infra_env_config.is_bonded:
             log.debug("Skipping static IP validation")
             return
 
