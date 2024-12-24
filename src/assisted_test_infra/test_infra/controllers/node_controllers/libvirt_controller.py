@@ -700,7 +700,10 @@ def collect_virsh_logs(nodes, log_dir_name):
 
     network_name = nodes.get_cluster_network()
     virsh_leases_path = os.path.join(virsh_log_path, "net_dhcp_leases")
-    utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
+    try:
+        utils.run_command(f"virsh net-dhcp-leases {network_name} >> {virsh_leases_path}", shell=True)
+    except RuntimeError:
+        log.warning(f"Failed to collect network {network_name}, network does not exists")
 
     messages_log_path = os.path.join(virsh_log_path, "messages.log")
     try:
