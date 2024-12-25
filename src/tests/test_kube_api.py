@@ -8,8 +8,11 @@ import openshift_client as oc
 import pytest
 import waiting
 from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
+from netaddr import IPNetwork
 
+import consts
 from assisted_test_infra.test_infra import BaseInfraEnvConfig, Nodes, utils
+from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
@@ -21,6 +24,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
+from assisted_test_infra.test_infra.utils.k8s_utils import get_field_from_resource
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node, get_platform_type
 from service_client import log
 from tests.base_kubeapi_test import BaseKubeAPI
@@ -123,6 +127,12 @@ class TestKubeAPI(BaseKubeAPI):
         cluster_config.iso_download_path = utils.get_iso_download_path(infraenv.get("metadata", {}).get("name"))
         nodes.prepare_nodes()
 
+        load_balancer_type = (
+            consts.LoadBalancerType.USER_MANAGED_K8S_API.value
+            if cluster_config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value
+            else consts.LoadBalancerType.CLUSTER_MANAGED_K8S_API.value
+        )
+
         agent_cluster_install.create(
             cluster_deployment_ref=cluster_deployment.ref,
             image_set_ref=self.deploy_image_set(cluster_name, api_client),
@@ -135,6 +145,7 @@ class TestKubeAPI(BaseKubeAPI):
             worker_agents=nodes.workers_count,
             proxy=proxy.as_dict() if proxy else {},
             platform_type=get_platform_type(cluster_config.platform),
+            load_balancer_type=load_balancer_type,
         )
 
         agent_cluster_install.wait_to_be_ready(ready=False)
@@ -144,10 +155,9 @@ class TestKubeAPI(BaseKubeAPI):
 
         agents = self.start_nodes(nodes, infra_env, cluster_config, infra_env_configuration.is_static_ip)
 
+        self._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
+
         if len(nodes) == 1:
-            # for single node set the cidr and take the actual ip from the host
-            # the vips is the ip of the host
-            self._set_agent_cluster_install_machine_cidr(agent_cluster_install, nodes)
             # wait till the ip is set for the node and read it from its inventory
             single_node_ip = get_ip_for_single_node(cluster_deployment, nodes.is_ipv4)
             nodes.controller.tf.change_variables(
@@ -157,6 +167,14 @@ class TestKubeAPI(BaseKubeAPI):
                 }
             )
             api_vip = ingress_vip = single_node_ip
+        elif cluster_config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
+            log.info("Configuring user managed load balancer")
+            load_balancer_ip = self.configure_load_balancer(
+                nodes=nodes, infraenv=infra_env, aci=agent_cluster_install, cluster_config=cluster_config
+            )
+            api_vip = ingress_vip = load_balancer_ip
+            agent_cluster_install.set_api_vip(api_vip)
+            agent_cluster_install.set_ingress_vip(ingress_vip)
         else:
             # patch the aci with the vips. The cidr will be derived from the range
             access_vips = nodes.controller.get_ingress_and_api_vips()
@@ -166,10 +184,88 @@ class TestKubeAPI(BaseKubeAPI):
             agent_cluster_install.set_api_vip(api_vip)
             agent_cluster_install.set_ingress_vip(ingress_vip)
 
-        nodes.controller.set_dns(api_ip=api_vip, ingress_ip=ingress_vip)
+        nodes.controller.set_dns(api_ip=api_vip, ingress_ip=[ingress_vip])
 
         log.info("Waiting for install")
         self._wait_for_install(agent_cluster_install, agents, cluster_config.kubeconfig_path)
+
+    def wait_for_agent_role(self, agent: Agent) -> str:
+        def does_agent_has_role() -> bool:
+            log.info("Waiting for agent role to become master or worker...")
+            role = get_field_from_resource(resource=agent.get(), path="status.role")
+            log.info(f"current role: {role}")
+            return role == "master" or role == "worker"
+
+        waiting.wait(does_agent_has_role, sleep_seconds=1, timeout_seconds=120, waiting_for="agent to get a role")
+
+        return get_field_from_resource(resource=agent.get(), path="status.role")
+
+    def wait_for_agent_interface(self, agent: Agent, cluster_config: ClusterConfig) -> str:
+        def does_agent_has_ip() -> bool:
+            log.info("waiting for agent to have IP...")
+            try:
+                if cluster_config.is_ipv4:
+                    ip = get_field_from_resource(
+                        resource=agent.get(), path="status.inventory.interfaces[0].ipV4Addresses[0]"
+                    )
+                elif cluster_config.is_ipv6:
+                    ip = get_field_from_resource(
+                        resource=agent.get(), path="status.inventory.interfaces[0].ipV6Addresses[0]"
+                    )
+            except ValueError:
+                ip = ""
+
+            log.info(f"current IP: {ip}")
+            return ip != ""
+
+        waiting.wait(
+            does_agent_has_ip,
+            sleep_seconds=1,
+            timeout_seconds=60,
+            waiting_for="agent to get a role",
+        )
+
+        if cluster_config.is_ipv4:
+            return get_field_from_resource(resource=agent.get(), path="status.inventory.interfaces[0].ipV4Addresses[0]")
+        elif cluster_config.is_ipv6:
+            return get_field_from_resource(resource=agent.get(), path="status.inventory.interfaces[0].ipV6Addresses[0]")
+
+        raise ValueError("cluster is neither IPv4 nor IPv6")
+
+    def configure_load_balancer(
+        self, nodes: Nodes, infraenv: InfraEnv, aci: AgentClusterInstall, cluster_config: ClusterConfig
+    ) -> str:
+        aci_resource = aci.get()
+        machine_cidr = get_field_from_resource(resource=aci_resource, path="spec.networking.machineNetwork[0].cidr")
+        log.info(f"Got cluster machine CIDR: {machine_cidr}")
+        load_balancer_ip = str(IPNetwork(machine_cidr).ip + 1)
+        log.info(f"Calculated load balancer IP: {load_balancer_ip}")
+
+        agents = infraenv.list_agents()
+        master_ips = []
+        worker_ips = []
+
+        for agent in agents:
+            agent_role = self.wait_for_agent_role(agent=agent)
+            ip = self.wait_for_agent_interface(agent=agent, cluster_config=cluster_config)
+
+            # remove mask
+            ip = ip.split("/")[0]
+
+            if agent_role == "master":
+                master_ips.append(ip)
+            elif agent_role == "worker":
+                worker_ips.append(ip)
+
+        log.info(f"master IPs: {", ".join(master_ips)}")
+        log.info(f"worker IPs {", ".join(worker_ips)}")
+
+        load_balancer_controller = LoadBalancerController(nodes.controller.tf)
+        load_balancer_controller.set_load_balancing_config(
+            load_balancer_ip=load_balancer_ip, master_ips=master_ips, worker_ips=worker_ips
+        )
+
+        return load_balancer_ip
 
     @JunitTestCase()
     def capi_test(

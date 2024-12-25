@@ -358,4 +358,6 @@ class CPUArchitecture:
 
 class LoadBalancerType(Enum):
     CLUSTER_MANAGED = "cluster-managed"
+    CLUSTER_MANAGED_K8S_API = "ClusterManaged"
     USER_MANAGED = "user-managed"
+    USER_MANAGED_K8S_API = "UserManaged"

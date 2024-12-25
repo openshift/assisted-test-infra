@@ -288,7 +288,7 @@ deploy_nodes_with_networking: start_load_balancer
 	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_networking_with_nodes $(MAKE) test
 
 deploy_static_network_config_nodes:
-	make deploy_nodesdeploy_nodes_with_networking ADDITIONAL_PARAMS="'--with-static-network-config'"
+	make deploy_nodes_with_networking ADDITIONAL_PARAMS="'--with-static-network-config'"
 
 .PHONY: deploy_ibip
 deploy_ibip:
@@ -424,3 +424,6 @@ generate_python_client: bring_assisted_service
 
 test_ctlplane_scaleup:
 	TEST_TEARDOWN=false TEST=./src/tests/test_ctlplane_scaleup.py TEST_FUNC=test_ctlplane_scaleup $(MAKE) test
+
+install_k8s_api:
+	TEST_TEARDOWN=false TEST=./src/tests/test_kube_api.py TEST_FUNC=test_kubeapi $(MAKE) test

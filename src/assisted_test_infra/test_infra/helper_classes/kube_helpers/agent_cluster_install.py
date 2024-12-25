@@ -155,6 +155,9 @@ class AgentClusterInstall(BaseCustomResource):
         if "hyperthreading" in kwargs:
             self._set_hyperthreading(spec=spec, mode=kwargs.pop("hyperthreading"))
 
+        if "load_balancer_type" in kwargs:
+            spec["loadBalancer"] = {"type": kwargs.pop("load_balancer_type")}
+
         spec.update(kwargs)
         return spec
 
