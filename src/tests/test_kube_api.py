@@ -184,7 +184,7 @@ class TestKubeAPI(BaseKubeAPI):
             agent_cluster_install.set_api_vip(api_vip)
             agent_cluster_install.set_ingress_vip(ingress_vip)
 
-        nodes.controller.set_dns(api_ip=api_vip, ingress_ip=[ingress_vip])
+        nodes.controller.set_dns(api_ip=api_vip, ingress_ip=ingress_vip)
 
         log.info("Waiting for install")
         self._wait_for_install(agent_cluster_install, agents, cluster_config.kubeconfig_path)
