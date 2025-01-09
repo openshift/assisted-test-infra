@@ -150,8 +150,16 @@ class OciApiController(NodeController):
         # Need the namespace and bucket name
         return namespace
 
-    def _upload_iso_to_bucket(self, file_path: str, namespace: str, bucket_name: str) -> None:
-        log.info(f"Upload iso file to bucket object storage {file_path}")
+    def _upload_data_to_bucket(self, data: str, filename: str, namespace: str, bucket_name: str):
+        file_path = f"/tmp/{filename}"
+
+        with os.path.open(file_path, "w") as f:
+            f.write(data)
+
+        return self._upload_file_to_bucket(file_path, namespace, bucket_name)
+
+    def _upload_file_to_bucket(self, file_path: str, namespace: str, bucket_name: str):
+        log.info(f"Upload file to bucket object storage {file_path}")
         if os.path.isfile(file_path):
             try:
                 self._object_storage_client.put_object(
@@ -444,11 +452,11 @@ class OciApiController(NodeController):
 
     def prepare_nodes(self) -> None:
         log.info("OCI prepare all nodes")
-        bucket_name = random_name("bucket-")
+        bucket_name = f"bucket-{self._entity_config.cluster_id}"
         namespace = self._create_bucket(bucket_name)
-        self._upload_iso_to_bucket(self._entity_config.iso_download_path, namespace, bucket_name)
+        self._upload_file_to_bucket(self._entity_config.iso_download_path, namespace, bucket_name)
         url_path = self._create_pre_authenticated(
-            random_name("preauth-"), self._entity_config.iso_download_path, namespace, bucket_name
+            f"preauth-{self._entity_config.cluster_id}", self._entity_config.iso_download_path, namespace, bucket_name
         )
 
         terraform_variables = self._terraform_variables(
@@ -460,9 +468,16 @@ class OciApiController(NodeController):
             base_dns=self._entity_config.base_dns_domain,
         )
         stack_id = self._create_stack(
-            random_name("stack-"), namespace, bucket_name, self._config.oci_infrastructure_zip_file, terraform_variables
+            f"stack-{self._entity_config.cluster_id}",
+            namespace,
+            bucket_name,
+            self._config.oci_infrastructure_zip_file,
+            terraform_variables,
         )
         terraform_output = self._apply_job_from_stack(stack_id, random_name("job-"))
+        self._upload_data_to_bucket(
+            terraform_output, f"terraform-output-{self._entity_config.cluster_id}.yaml", namespace, bucket_name
+        )
         self.cloud_provider = terraform_output
 
     def is_active(self, node_name) -> bool:
