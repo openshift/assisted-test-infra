@@ -16,7 +16,6 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     All arguments must default to None and be type annotated.
     """
 
-    cluster_id: str = None
     cluster_tags: str = None
     olm_operators: List[str] = None
     vip_dhcp_allocation: bool = None
