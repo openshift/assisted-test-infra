@@ -390,7 +390,7 @@ class Cluster(BaseCluster):
         elif self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
             log.info("User managed load balancer. Setting the VIPs to the load balancer IP")
             api_vips = ingress_vips = [ApiVip(ip=self._get_load_balancer_ip()).to_dict()]
-            machine_networks = None
+            machine_networks = [self.get_machine_networks()[0], self.get_load_balancer_network_cidr()]
 
         else:
             log.info("Assigning VIPs statically")
@@ -424,6 +424,9 @@ class Cluster(BaseCluster):
             cidr = next(iter(matching_cidrs))
 
         return cidr
+
+    def get_load_balancer_network_cidr(self):
+        return consts.DEFAULT_LOAD_BALANCER_NETWORK_CIDR
 
     def get_machine_networks(self) -> List[str]:
         networks = []
@@ -1225,8 +1228,12 @@ class Cluster(BaseCluster):
         lb_controller.set_load_balancing_config(load_balancer_ip, master_ips, worker_ips)
 
     def _get_load_balancer_ip(self) -> str:
-        main_cidr = self.get_primary_machine_cidr()
-        return str(IPNetwork(main_cidr).ip + 1)
+        if self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
+            load_balancer_cidr = self.get_load_balancer_network_cidr()
+        else:
+            load_balancer_cidr = self.get_primary_machine_cidr()
+
+        return str(IPNetwork(load_balancer_cidr).ip + 1)
 
     @classmethod
     def _get_namespace_index(cls, libvirt_network_if):

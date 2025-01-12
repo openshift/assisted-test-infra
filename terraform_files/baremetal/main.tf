@@ -89,6 +89,15 @@ resource "libvirt_network" "secondary_net" {
   autostart = true
 }
 
+resource "libvirt_network" "load_balancer_net" {
+  count     = var.load_balancer_ip != "" ? 1 : 0
+  name      = var.libvirt_load_balancer_net_name
+  mode      = "nat"
+  bridge    = var.libvirt_load_balancer_network_if
+  addresses = ["${join(".", [chomp(split(".", var.load_balancer_ip)[0]), chomp(split(".", var.load_balancer_ip)[1]), chomp(split(".", var.load_balancer_ip)[2])])}.0/24"]
+  autostart = true
+}
+
 module "masters" {
   source = "../baremetal_host"
   count  = var.master_count
