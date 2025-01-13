@@ -90,16 +90,12 @@ class AgentClusterInstall(BaseCustomResource):
 
         log.info("patching agentclusterinstall %s: %s", self.ref, pformat(body))
 
-    def set_machinenetwork(self, machine_cidr):
-        self.patch(
-            networking={
-                "machineNetwork": [
-                    {
-                        "cidr": machine_cidr,
-                    }
-                ]
-            }
-        )
+    def set_machine_networks(self, machine_cidrs):
+        machine_networks: list[dict[str, str]] = []
+        for machine_cidr in machine_cidrs:
+            machine_networks.append({"cidr": machine_cidr})
+
+        self.patch(networking={"machineNetwork": machine_networks})
 
     def set_api_vip(self, vip):
         self.patch(apiVIPs=[vip])

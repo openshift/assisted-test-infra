@@ -137,7 +137,7 @@ class BaseKubeAPI(BaseTest):
     @classmethod
     def _set_agent_cluster_install_machine_cidr(cls, agent_cluster_install: AgentClusterInstall, nodes: Nodes):
         machine_cidr = nodes.controller.get_primary_machine_cidr()
-        agent_cluster_install.set_machinenetwork(machine_cidr)
+        agent_cluster_install.set_machine_networks([machine_cidr])
 
     @classmethod
     def download_iso_from_infra_env(cls, infra_env: InfraEnv, iso_download_path: str):

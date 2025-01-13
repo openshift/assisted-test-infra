@@ -427,3 +427,9 @@ test_ctlplane_scaleup:
 
 install_k8s_api:
 	TEST_TEARDOWN=false TEST=./src/tests/test_kube_api.py TEST_FUNC=test_kubeapi $(MAKE) test
+
+destroy_crs:
+	oc delete cd --all-namespaces --all
+	oc delete aci --all-namespaces --all
+	oc delete infraenv --all-namespaces --all
+	oc delete agents --all-namespaces --all
