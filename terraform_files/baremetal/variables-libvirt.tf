@@ -291,3 +291,15 @@ variable "load_balancer_ip" {
   description = "IP address for load balancer"
   default     = ""
 }
+
+variable "libvirt_load_balancer_net_name" {
+  type        = string
+  description = "The name of the load balancer network for user managed load balancer"
+  default     = "test-infra-load-balancer-net"
+}
+
+variable "libvirt_load_balancer_network_if" {
+  type        = string
+  description = "The name of the load balancer network interface"
+  default     = "lb"
+}
