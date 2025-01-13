@@ -150,14 +150,6 @@ class OciApiController(NodeController):
         # Need the namespace and bucket name
         return namespace
 
-    def _upload_data_to_bucket(self, data: str, filename: str, namespace: str, bucket_name: str):
-        file_path = f"/tmp/{filename}"
-
-        with os.path.open(file_path, "w") as f:
-            f.write(data)
-
-        return self._upload_file_to_bucket(file_path, namespace, bucket_name)
-
     def _upload_file_to_bucket(self, file_path: str, namespace: str, bucket_name: str):
         log.info(f"Upload file to bucket object storage {file_path}")
         if os.path.isfile(file_path):
@@ -205,7 +197,9 @@ class OciApiController(NodeController):
         cluster_name: str,
         image_source_uri: str,
         control_plane_shape: str,
+        control_plane_ocpu: str,
         compute_shape: str,
+        compute_ocpu: str,
         compute_count: str,
         base_dns: str,
         **kwargs,
@@ -213,7 +207,7 @@ class OciApiController(NodeController):
         """Terraform variables before running the stack job.
 
         All variables configured in variables.tf file.
-        Allow to extend variables based on terraform
+        Allow to extend variables based on terraform.
         Must use same cluster name and base domain -qeXXXX.oci-rhelcert.edge-sro.rhecoeng.com
         BM.Standard3.64 shape refers to boot from iscsi network
         VM.Standard3.64 shape refers to boot from local
@@ -231,7 +225,13 @@ class OciApiController(NodeController):
             "tag_namespace_name": f"openshift-{str(cluster_name)}",
             **kwargs,
         }
-        log.info(f"Terraform variables before apply setting  {variables}")
+
+        if control_plane_ocpu is not None:
+            variables["control_plane_ocpu"] = control_plane_ocpu
+        if compute_ocpu is not None:
+            variables["compute_ocpu"] = compute_ocpu
+
+        log.info(f"Terraform variables before apply setting: {variables}")
         return variables
 
     @staticmethod
@@ -252,7 +252,7 @@ class OciApiController(NodeController):
         bucket_name: str,
         terraform_zip_path: str,
         terraform_variable: dict,
-        timeout_seconds: int = 1200,
+        timeout_seconds: int = 2800,
     ) -> str:
 
         template_config = {
@@ -298,13 +298,13 @@ class OciApiController(NodeController):
         return obj.data.id
 
     def _apply_job_from_stack(
-        self, stack_id: str, display_name: str, timeout_seconds: int = 1800, interval_wait: int = 60
+        self, stack_id: str, display_name: str, timeout_seconds: int = 3200, interval_wait: int = 60
     ) -> str:
         """Apply job will run the stack terraform code and create the resources.
 
         On failure - raise Exception and cleanup resources
         On success - return output , a list with contents. cleanup on teardown
-        [{output_name: "oci_ccm_config", output_value: string_value},
+        [{output_name: "dynamic_custom_manifest", output_value: string_value},
          {output_name: "open_shift_api_apps_lb_addr", output_value: string_value},
          {output_name: "open_shift_api_int_lb_addr", output_value: string_value}]
         """
@@ -325,6 +325,7 @@ class OciApiController(NodeController):
         destroy_job_details.operation = "DESTROY"
         try:
             # Destroy the job when success or failed - remove all created resources - Waiting in cleanup
+
             self._cleanup_resources.append(
                 CleanupResource(
                     self._resource_manager_client_composite_operations.create_job_and_wait_for_state,
@@ -333,7 +334,6 @@ class OciApiController(NodeController):
                     waiter_kwargs={"max_wait_seconds": timeout_seconds, "succeed_on_not_found": False},
                 )
             )
-
             job = self._resource_manager_client_composite_operations.create_job_and_wait_for_state(
                 create_job_details,
                 wait_for_states=[OciState.FAILED.value, OciState.SUCCEEDED.value],
@@ -356,9 +356,14 @@ class OciApiController(NodeController):
         # on success, we return the jobs output - list
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
-            if item.output_name == "oci_ccm_config":
+            if item.output_name == "dynamic_custom_manifest":
+                file_path = (
+                    f"/tmp/oci-{self._entity_config.cluster_id}/terraform-output-{self._entity_config.cluster_id}.yml"
+                )
+                with open(file_path, "w") as f:
+                    f.write(item.output_value)
                 return item.output_value
-        raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
+        raise RuntimeError(f"Missing dynamic_custom_manifest for stack {stack_id}")
 
     @staticmethod
     def _waiter_status(client_callback: Callable, name: str, status: str, **callback_kwargs) -> None:
@@ -440,9 +445,68 @@ class OciApiController(NodeController):
 
     def destroy_all_nodes(self) -> None:
         log.info("OCI Destroying all nodes")
+        if not self._cleanup_resources:
+            self._generate_cleanup_resources()
         for resource in self._cleanup_resources[::-1]:
-            resource()
+            try:
+                resource()
+            except Exception as e:
+                log.error(f"Error during cleanup resource execution: {e}")
         pass
+
+    def _generate_cleanup_resources(self, timeout_seconds: int = 2800) -> None:
+        namespace = self._object_storage_client.get_namespace().data
+        stack_name = f"stack-{self._entity_config.cluster_id}"
+        bucket_name = f"bucket-{self._entity_config.cluster_id}"
+        pre_auths = self._object_storage_client.list_preauthenticated_requests(namespace, bucket_name).data
+        objects = self._object_storage_client.list_objects(namespace, bucket_name).data.objects
+
+        # Find relevant stack_id and create destroy job for it
+        stacks = self._resource_manager_client.list_stacks(
+            compartment_id=self._oci_compartment_oicd, display_name=stack_name
+        ).data
+        stack_id = stacks[0].id if stacks else None
+        job_info = {
+            "stack_id": stack_id,
+            "display_name": f"destroy-job-{self._entity_config.cluster_id}",
+            "operation": "DESTROY",
+            "apply_job_plan_resolution": oci.resource_manager.models.ApplyJobPlanResolution(
+                is_use_latest_job_id=False, is_auto_approved=True
+            ),
+        }
+        destroy_job_details = oci.resource_manager.models.CreateJobDetails(**job_info)
+
+        # Add all relevant jobs for execution in reversed order
+        self._cleanup_resources.append(
+            CleanupResource(
+                self._resource_manager_client_composite_operations.delete_stack_and_wait_for_state, stack_id
+            )
+        )
+
+        self._cleanup_resources.append(
+            CleanupResource(self._object_storage_client.delete_bucket, namespace, bucket_name)
+        )
+
+        for pre_auth in pre_auths:
+            self._cleanup_resources.append(
+                CleanupResource(
+                    self._object_storage_client.delete_preauthenticated_request, namespace, bucket_name, pre_auth.id
+                )
+            )
+
+        for obj in objects:
+            self._cleanup_resources.append(
+                CleanupResource(self._object_storage_client.delete_object, namespace, bucket_name, obj.name)
+            )
+
+        self._cleanup_resources.append(
+            CleanupResource(
+                self._resource_manager_client_composite_operations.create_job_and_wait_for_state,
+                destroy_job_details,
+                wait_for_states=[OciState.SUCCEEDED.value],
+                waiter_kwargs={"max_wait_seconds": timeout_seconds, "succeed_on_not_found": False},
+            )
+        )
 
     def get_cluster_network(self) -> str:
         pass
@@ -463,7 +527,9 @@ class OciApiController(NodeController):
             cluster_name=self._entity_config.entity_name,
             image_source_uri=url_path,
             control_plane_shape=self._config.oci_controller_plane_shape,
+            control_plane_ocpu=self._config.oci_controller_plane_cpu,
             compute_shape=self._config.oci_compute_shape,
+            compute_ocpu=self._config.oci_compute_cpu,
             compute_count=str(self._config.workers_count),
             base_dns=self._entity_config.base_dns_domain,
         )
@@ -474,10 +540,7 @@ class OciApiController(NodeController):
             self._config.oci_infrastructure_zip_file,
             terraform_variables,
         )
-        terraform_output = self._apply_job_from_stack(stack_id, random_name("job-"))
-        self._upload_data_to_bucket(
-            terraform_output, f"terraform-output-{self._entity_config.cluster_id}.yaml", namespace, bucket_name
-        )
+        terraform_output = self._apply_job_from_stack(stack_id, f"apply-job-{self._entity_config.cluster_id}")
         self.cloud_provider = terraform_output
 
     def is_active(self, node_name) -> bool:
