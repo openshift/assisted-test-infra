@@ -1357,7 +1357,10 @@ class Cluster(BaseCluster):
 
                 network_yaml = yaml.safe_load(unescape_string(host["network_yaml"]))
                 for current_interface in network_yaml["interfaces"]:
-                    if current_interface["name"] == expected_interface_name:
+                    if (
+                        current_interface["name"] == expected_interface_name
+                        or "bond" in str(current_interface["name"]).lower()
+                    ):
                         for address_version in consts.IP_VERSIONS.keys():
                             if address_version not in current_interface.keys():
                                 continue
@@ -1373,7 +1376,7 @@ class Cluster(BaseCluster):
         return host_network
 
     def validate_static_ip(self) -> None:
-        if self._infra_env_config.static_network_config is None or self._infra_env_config.is_bonded:
+        if self._infra_env_config.static_network_config is None:
             log.debug("Skipping static IP validation")
             return
 
@@ -1389,13 +1392,14 @@ class Cluster(BaseCluster):
         config_host_network = self.format_host_from_config_mapping_file(
             config=str(self._infra_env_config.static_network_config)
         )
+
         if config_host_network == {}:
             raise Exception("Couldn't find host network configurations")
 
         host_failure = []
 
         for mac_address in config_host_network.keys():
-            if mac_address not in current_host_network.keys():
+            if mac_address not in current_host_network.keys() and not self._infra_env_config.is_bonded:
                 host_failure.append(f"missing mac address {mac_address}")
                 continue
             for _, version in consts.IP_VERSIONS.items():
