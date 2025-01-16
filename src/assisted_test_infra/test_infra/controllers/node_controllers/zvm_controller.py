@@ -212,3 +212,13 @@ class ZVMController(NodeController, ABC):
 
     def get_day2_static_network_data(self):
         pass
+
+    # destroying network only for KVM (zVM and LPAR will be handled via HMC)
+    def destroy_network(self):
+        pass
+
+    def get_cluster_network(self):
+        pass
+
+    def set_per_device_boot_order(self):
+        pass
