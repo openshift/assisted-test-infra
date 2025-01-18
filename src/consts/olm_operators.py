@@ -11,6 +11,7 @@ class OperatorType:
     METALLB = "metallb"
     OPENSHIFT_AI = "openshift-ai"
     OSC = "osc"
+    NMSTATE = "nmstate"
 
 
 class OperatorStatus:
@@ -91,6 +92,9 @@ class OperatorResource:
     def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
+            OperatorType.NMSTATE: cls.get_resource_dict(
+                master_memory=100, worker_memory=100, master_vcpu=1, worker_vcpu=1
+            ),
             OperatorType.MTV: cls.get_resource_dict(
                 master_memory=1174, worker_memory=1384, master_vcpu=5, worker_vcpu=3
             ),
@@ -170,6 +174,10 @@ class OSCOperatorFailedError(OperatorFailedError):
     pass
 
 
+class NMStateOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
 
     if operator == OperatorType.CNV:
@@ -198,6 +206,9 @@ def get_exception_factory(operator: str):
 
     if operator == OperatorType.OSC:
         return OSCOperatorFailedError
+
+    if operator == OperatorType.NMSTATE:
+        return NMStateOperatorFailedError
 
     return OperatorFailedError
 
