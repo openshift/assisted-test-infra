@@ -9,6 +9,7 @@ from .node_controllers.node import Node
 from .node_controllers.nutanix_controller import NutanixController
 from .node_controllers.oci_api_controller import OciApiController
 from .node_controllers.oci_controller import OciController
+from .node_controllers.redfish_controller import RedfishController
 from .node_controllers.terraform_controller import TerraformController
 from .node_controllers.vsphere_controller import VSphereController
 from .proxy_controller.proxy_controller import ProxyController
@@ -31,4 +32,5 @@ __all__ = [
     "OciApiController",
     "VSphereController",
     "NutanixController",
+    "RedfishController",
 ]

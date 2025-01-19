@@ -29,12 +29,12 @@ from assisted_test_infra.test_infra.controllers import (
     NutanixController,
     OciApiController,
     ProxyController,
+    RedfishController,
     TangController,
     TerraformController,
     VSphereController,
 )
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import collect_virsh_logs
-from assisted_test_infra.test_infra.controllers.node_controllers.tf_controller import TFController
 from assisted_test_infra.test_infra.controllers.node_controllers.zvm_controller import ZVMController
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
@@ -45,7 +45,7 @@ from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from service_client import InventoryClient, SuppressAndLog, add_log_record, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
-from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, OciConfig, VSphereConfig
+from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, OciConfig, RedfishConfig, VSphereConfig
 from triggers import get_default_triggers
 from triggers.env_trigger import Trigger, VariableOrigin
 
@@ -121,6 +121,8 @@ class BaseTest:
             config = NutanixConfig()
         elif global_variables.tf_platform == consts.Platforms.OCI:
             config = OciConfig()
+        elif global_variables.redfish_enabled:
+            config = RedfishConfig()
         else:
             config = TerraformConfig()
 
@@ -382,17 +384,20 @@ class BaseTest:
     def controller(
         self, cluster_configuration: ClusterConfig, controller_configuration: BaseNodesConfig, trigger_configurations
     ) -> NodeController:
-        return self.get_terraform_controller(controller_configuration, cluster_configuration)
+        return self.get_node_controller(controller_configuration, cluster_configuration)
 
     @classmethod
-    def get_terraform_controller(
+    def get_node_controller(
         cls, controller_configuration: BaseNodesConfig, cluster_configuration: ClusterConfig
-    ) -> TerraformController | TFController:
+    ) -> NodeController:
+
         platform = (
             global_variables.tf_platform
             if global_variables.tf_platform != cluster_configuration.platform
             else cluster_configuration.platform
         )
+        if global_variables.redfish_enabled:
+            return RedfishController(controller_configuration, cluster_configuration)
 
         if platform == consts.Platforms.VSPHERE:
             return VSphereController(controller_configuration, cluster_configuration)
@@ -467,9 +472,8 @@ class BaseTest:
 
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
-        if controller_configuration.tf_platform not in (
-            consts.Platforms.BARE_METAL,
-            consts.Platforms.NONE,
+        if (controller_configuration.tf_platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE)) or (
+            hasattr(controller_configuration, "redfish_enabled") and controller_configuration.redfish_enabled
         ):
             yield prepared_nodes
             return

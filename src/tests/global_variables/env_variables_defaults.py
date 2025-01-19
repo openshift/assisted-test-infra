@@ -199,3 +199,10 @@ class _EnvVariables(DataPool, ABC):
         ["EXTERNAL_CLOUD_CONTROLLER_MANAGER"], default=env_defaults.DEFAULT_EXTERNAL_CLOUD_CONTROLLER_MANAGER
     )
     load_balancer_type = EnvVar(["LOAD_BALANCER_TYPE"], default=env_defaults.DEFAULT_LOAD_BALANCER_TYPE)
+
+    redfish_user: EnvVar = EnvVar(["REDFISH_USER"])
+    redfish_password: EnvVar = EnvVar(["REDFISH_PASSWORD"])
+    redfish_enabled: EnvVar = EnvVar(["REDFISH_ENABLED"])
+    redfish_machines: EnvVar = EnvVar(
+        ["REDFISH_MACHINES"], default=[], loader=lambda machines: re.split(r"\s|,", machines)
+    )
