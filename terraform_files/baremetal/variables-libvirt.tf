@@ -292,6 +292,12 @@ variable "load_balancer_ip" {
   default     = ""
 }
 
+variable "load_balancer_type" {
+  type        = string
+  description = "Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user."
+  default     = "cluster-managed"
+}
+
 variable "libvirt_load_balancer_net_name" {
   type        = string
   description = "The name of the load balancer network for user managed load balancer"
