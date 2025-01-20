@@ -18,6 +18,7 @@ class LoadBalancerController:
         self._tf.change_variables(
             {"load_balancer_ip": load_balancer_ip, "load_balancer_config_file": load_balancer_config_file}
         )
+        print("test")
         self._wait_for_load_balancer(load_balancer_ip)
 
     @staticmethod
