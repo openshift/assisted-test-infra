@@ -390,7 +390,7 @@ class Cluster(BaseCluster):
         elif self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
             log.info("User managed load balancer. Setting the VIPs to the load balancer IP")
             api_vips = ingress_vips = [ApiVip(ip=self._get_load_balancer_ip()).to_dict()]
-            machine_networks = [self.get_machine_networks()[0], self.get_load_balancer_network_cidr()]
+            machine_networks = self.get_machine_networks() + [self.get_load_balancer_network_cidr()]
 
         else:
             log.info("Assigning VIPs statically")
