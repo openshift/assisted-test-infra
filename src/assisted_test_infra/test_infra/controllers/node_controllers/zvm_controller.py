@@ -22,7 +22,6 @@ class ZVMController(NodeController, ABC):
         super().__init__(config, cluster_config)
         self.cluster_name = cluster_config.cluster_name.get()
         self._dir = os.path.dirname(os.path.realpath(__file__))
-        self._ipxe_scripts_folder = f"{self._dir}/zVM/ipxe_scripts"
         self._cfg_node_path = ""
 
     @property
@@ -48,10 +47,10 @@ class ZVMController(NodeController, ABC):
             raise exception
 
     # for zVm nodes only iPXE scripts are supported due to the lack of ISO support
-    def _download_ipxe_script(self, infra_env_id: str, cluster_name: str):
+    def download_ipxe_script(self, infra_env_id: str, cluster_name: str):
         log.info(f"Downloading iPXE script to {self._ipxe_scripts_folder}")
         utils.recreate_folder(self._ipxe_scripts_folder, force_recreate=False)
-        self._api_client.download_and_save_infra_env_file(
+        self.api_client.download_and_save_infra_env_file(
             infra_env_id=infra_env_id, file_name="ipxe-script", file_path=f"{self._ipxe_scripts_folder}/{cluster_name}"
         )
 

@@ -44,6 +44,10 @@ class TestMakefileTargets(BaseTest):
         cluster.download_image()
 
     @JunitTestSuite()
+    def test_target_download_files(self, cluster):
+        cluster.download_ipxe_script()
+
+    @JunitTestSuite()
     def test_delete_clusters(self, api_client: InventoryClient, cluster_configuration):
         """Delete all clusters or single cluster if CLUSTER_ID is given"""
 

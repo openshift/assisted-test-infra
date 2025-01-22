@@ -158,11 +158,14 @@ class _EnvVariables(DataPool, ABC):
     nutanix_cluster: EnvVar = EnvVar(["NUTANIX_CLUSTER_NAME"])
     nutanix_subnet: EnvVar = EnvVar(["NUTANIX_SUBNET_NAME"])
 
-    # all about zVM env vars
+    # all about s390x env vars
     zvm_bastion_host: EnvVar = EnvVar(["ZVM_BASTION_HOST"])
     zvm_bastion_user: EnvVar = EnvVar(["ZVM_BASTION_USER"])
     zvm_bastion_private_key: EnvVar = EnvVar(["ZVM_BASTION_PRIVATE_KEY"])
     zvm_node_cfg_path: EnvVar = EnvVar(["ZVM_NODE_CFG_PATH"])
+
+    # this is not exclusive for s390x but heavily used by s390x testcases
+    install_working_dir: EnvVar = EnvVar(["INSTALL_WORKING_DIR"])
 
     # day2 libvirt target and VM network configuration
     day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])

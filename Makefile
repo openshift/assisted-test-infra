@@ -354,6 +354,12 @@ download_capi_logs:
 download_iso:
 	$(MAKE) test TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_download_iso
 
+###################
+# infra_env files #
+###################
+download_files:
+	$(MAKE) test TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_download_files
+
 ########
 # Test #
 ########
