@@ -201,6 +201,15 @@ before you run start the deployment.
 | `VSPHERE_USERNAME`                | vSphere vcenter server username, mandatory for vsphere platform |
 | `VSPHERE_PASSWORD`                | vSphere vcenter server password, mandatory for vsphere platform |
 
+## Redfish parameters
+
+|     |     |
+| --- | --- |
+`REDFISH_ENABLED`                   | Redfish enable API for management hardware servers |
+`REDFISH_USER`                      | Redfish remote management user |
+`REDFISH_PASSWORD`                  | Redfish remote management password |
+`REDFISH_MACHINES`                  | Redfish list of remote ipv4 managnments |
+
 ## External parameters
 
 |     |     |

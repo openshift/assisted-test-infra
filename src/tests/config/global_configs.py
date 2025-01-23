@@ -5,6 +5,7 @@ from assisted_test_infra.test_infra import (
     BaseDay2ClusterConfig,
     BaseInfraEnvConfig,
     BaseNutanixConfig,
+    BaseRedfishConfig,
     BaseTerraformConfig,
     BaseVSphereConfig,
     ClusterName,
@@ -106,6 +107,14 @@ class NutanixConfig(BaseNutanixConfig):
 
 @dataclass
 class OciConfig(BaseOciConfig):
+    """A Nodes configuration with defaults that obtained from EnvConfig"""
+
+    def _get_data_pool(self):
+        return global_variables
+
+
+@dataclass
+class RedfishConfig(BaseRedfishConfig):
     """A Nodes configuration with defaults that obtained from EnvConfig"""
 
     def _get_data_pool(self):

@@ -176,8 +176,9 @@ class TestKubeAPI(BaseKubeAPI):
             agent_cluster_install.set_api_vip(api_vip)
             agent_cluster_install.set_ingress_vip(ingress_vip)
             primary_machine_cidr = nodes.controller.get_primary_machine_cidr()
+            provisioning_machine_cidr = nodes.controller.get_provisioning_cidr()
             agent_cluster_install.set_machine_networks(
-                [primary_machine_cidr, consts.DEFAULT_LOAD_BALANCER_NETWORK_CIDR]
+                [primary_machine_cidr, provisioning_machine_cidr, consts.DEFAULT_LOAD_BALANCER_NETWORK_CIDR]
             )
         else:
             access_vips = nodes.controller.get_ingress_and_api_vips()

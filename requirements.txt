@@ -1,26 +1,26 @@
-debugpy==1.8.9
+debugpy==1.8.12
 dnspython==2.7.0
 filelock==3.16.1
 frozendict==2.4.6
 ipdb==0.13.13
-ipython==8.30.0
+ipython==8.31.0
 jedi==0.19.2
 Jinja2===3.1.5
 junit-report==0.2.7
 kubernetes==31.0.0
-libvirt-python==10.10.0
+libvirt-python==11.0.0
 munch==4.0.0
 natsort==8.4.0 # natsort used in kni-assisted-installer-auto
 netaddr==1.3.0 ## from https://github.com/openshift/assisted-test-infra/pull/2398
 netifaces==0.11.0
-openshift-client==2.0.4
+openshift-client==2.0.5
 paramiko==3.5.0
-pre-commit==4.0.1
+pre-commit==4.1.0
 pycharm-remote-debugger==0.1.18
 pytest-xdist==3.6.1
 pytest==8.3.4
 python-dateutil==2.9.0.post0
-python-hcl2==5.1.1
+python-hcl2==6.0.0
 python-terraform==0.10.1
 PyYAML==6.0.2
 requests==2.32.3
@@ -32,14 +32,15 @@ tqdm==4.67.1
 urllib3<3.0
 pyvmomi==8.0.3.0.1
 waiting>=1.4.1
-prompt-toolkit==3.0.48
+prompt-toolkit==3.0.50
 nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
-ansible==11.0.0 # Fix for issues with DNF and ansible core 2.17 on RHEL8 / RHEL9 systems
+ansible==11.1.0 # Fix for issues with DNF and ansible core 2.17 on RHEL8 / RHEL9 systems
 jmespath==1.0.1
-oci==2.139.0
-setuptools==75.6.0
-pydantic==2.10.2
+oci==2.142.0
+setuptools==75.8.0
+pydantic==2.10.5
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
 cryptography>=42.0.8 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
+kfish==99.0.202501201910
