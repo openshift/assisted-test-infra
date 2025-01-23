@@ -44,7 +44,7 @@ class TestMakefileTargets(BaseTest):
         cluster.download_image()
 
     @JunitTestSuite()
-    def test_target_download_files(self, cluster):
+    def test_target_download_ipxe_script(self, cluster):
         cluster.download_ipxe_script()
 
     @JunitTestSuite()
