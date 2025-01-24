@@ -166,7 +166,7 @@ class _EnvVariables(DataPool, ABC):
 
     # this is not exclusive for s390x but heavily used by s390x testcases
     install_working_dir: EnvVar = EnvVar(["INSTALL_WORKING_DIR"])
-    libvirt_uri: EnvVar = EnvVar(["LIBVIRT_URI"], default="qemu:///system")
+    libvirt_uri: EnvVar = EnvVar(["LIBVIRT_URI"], default=consts.DEFAULT_LIBVIRT_URI)
 
     # day2 libvirt target and VM network configuration
     day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])

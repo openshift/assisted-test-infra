@@ -108,6 +108,7 @@ before you run start the deployment.
 | `OPENSHIFT_VERSION`                  | The OCP version which will be supported by the deployed components. Should be in `x.y` format |
 | `OPENSHIFT_INSTALL_RELEASE_IMAGE`    | The OCP release image reference which will be supported by the deployed components. For example - `quay.io/openshift-release-dev/ocp-release:4.16.0-x86_64` |
 | `INSTALL_WORKING_DIR`                | The path to a working directory where files like iPXE scripts, boot artefacts, etc are strored. For example `/tmp` |
+| `LIBVIRT_URI`                        | The connection URI to remote libvirt. For example `qemu+ssh://user@192.23.236.34/system`. Default is `qemu:///system` | 
 
 ### Minikube configuration
 

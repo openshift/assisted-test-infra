@@ -37,6 +37,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     registry_ca_path: str = None
     load_balancer_type: str = None
     install_working_dir: str = None
+    libvirt_uri: str = None
 
     @property
     def cluster_name(self) -> BaseName:

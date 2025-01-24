@@ -6,7 +6,7 @@ from typing import List, Tuple
 from paramiko import SSHException
 from scp import SCPException
 
-from assisted_test_infra.test_infra import BaseClusterConfig, utils
+from assisted_test_infra.test_infra import BaseClusterConfig
 from assisted_test_infra.test_infra.controllers.node_controllers import ssh
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
@@ -45,14 +45,6 @@ class ZVMController(NodeController, ABC):
 
         if exception is not None:
             raise exception
-
-    # for zVm nodes only iPXE scripts are supported due to the lack of ISO support
-    def download_ipxe_script(self, infra_env_id: str, cluster_name: str):
-        log.info(f"Downloading iPXE script to {self._ipxe_scripts_folder}")
-        utils.recreate_folder(self._ipxe_scripts_folder, force_recreate=False)
-        self.api_client.download_and_save_infra_env_file(
-            infra_env_id=infra_env_id, file_name="ipxe-script", file_path=f"{self._ipxe_scripts_folder}/{cluster_name}"
-        )
 
     def _remove_ipxe_scripts_folder(self):
         log.info(f"Removing iPXE scripts folder {self._ipxe_scripts_folder}")

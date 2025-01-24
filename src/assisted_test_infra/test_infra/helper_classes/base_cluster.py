@@ -75,7 +75,7 @@ class BaseCluster(Entity, ABC):
         if self._infra_env is None:
             log.warning("No infra_env found. Generating infra_env and downloading iPXE script file")
             self.generate_infra_env(
-                       static_network_config=static_network_config,
+                static_network_config=static_network_config,
             )
             self._infra_env.download_infra_env_file("ipxe-script", self._config.install_working_dir)
 
