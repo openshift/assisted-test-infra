@@ -35,6 +35,8 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     custom_manifests: List[Manifest] = None
     is_disconnected: bool = None
     registry_ca_path: str = None
+    load_balancer_type: str = None
+    install_working_dir: str = None
 
     @property
     def cluster_name(self) -> BaseName:

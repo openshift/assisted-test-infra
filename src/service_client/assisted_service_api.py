@@ -323,7 +323,7 @@ class InventoryClient(object):
         response = self.client.v2_download_infra_env_files(
             infra_env_id=infra_env_id, file_name=file_name, _preload_content=False
         )
-        with open(file_path, "wb") as _file:
+        with open(os.path.join (file_path, file_name), "wb") as _file:
             _file.write(response.data)
 
     def download_manifests(self, cluster_id: str, dir_path: str) -> None:

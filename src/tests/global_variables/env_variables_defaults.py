@@ -164,6 +164,10 @@ class _EnvVariables(DataPool, ABC):
     zvm_bastion_private_key: EnvVar = EnvVar(["ZVM_BASTION_PRIVATE_KEY"])
     zvm_node_cfg_path: EnvVar = EnvVar(["ZVM_NODE_CFG_PATH"])
 
+    # this is not exclusive for s390x but heavily used by s390x testcases
+    install_working_dir: EnvVar = EnvVar(["INSTALL_WORKING_DIR"])
+    libvirt_uri: EnvVar = EnvVar(["LIBVIRT_URI"], default="qemu:///system")
+
     # day2 libvirt target and VM network configuration
     day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])
     day2_machine_cidr: EnvVar = EnvVar(["DAY2_MACHINE_CIDR"])

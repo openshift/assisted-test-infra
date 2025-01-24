@@ -107,6 +107,7 @@ before you run start the deployment.
 | `SERVICE_NAME`                       | assisted-service target service name, default: assisted-service |
 | `OPENSHIFT_VERSION`                  | The OCP version which will be supported by the deployed components. Should be in `x.y` format |
 | `OPENSHIFT_INSTALL_RELEASE_IMAGE`    | The OCP release image reference which will be supported by the deployed components. For example - `quay.io/openshift-release-dev/ocp-release:4.16.0-x86_64` |
+| `INSTALL_WORKING_DIR`                | The path to a working directory where files like iPXE scripts, boot artefacts, etc are strored. For example `/tmp` |
 
 ### Minikube configuration
 
