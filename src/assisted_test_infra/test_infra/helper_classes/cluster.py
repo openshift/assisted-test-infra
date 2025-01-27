@@ -1219,7 +1219,7 @@ class Cluster(BaseCluster):
         secondary_cidr = self.nodes.controller.get_provisioning_cidr()
 
         master_ips = self.get_master_ips(self.id, main_cidr) + self.get_master_ips(self.id, secondary_cidr)
-        worker_ips = self.get_worker_ips(self.id, main_cidr)
+        worker_ips = self.get_worker_ips(self.id, main_cidr) + self.get_worker_ips(self.id, secondary_cidr)
 
         load_balancer_ip = self._get_load_balancer_ip()
 
