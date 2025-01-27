@@ -92,6 +92,10 @@ _default_triggers = frozendict(
             conditions=[lambda config: "osc" in config.olm_operators, lambda config2: config2.masters_count > 1],
             operator="osc",
         ),
+        "nmstate_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "nmstate" in config.olm_operators],
+            operator="nmstate",
+        ),
         "ipxe_boot": Trigger(
             conditions=[lambda config: config.ipxe_boot is True],
             download_image=False,
