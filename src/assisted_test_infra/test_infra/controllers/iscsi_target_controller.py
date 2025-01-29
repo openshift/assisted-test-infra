@@ -93,6 +93,7 @@ class IscsiTargetController:
         self.builder.create_portal(config.iqn, config.servers)
         self.builder.create_access_list(config.iqn, config.remote_iqn)
         self.builder.create_access_list_data_out(config.iqn, config.remote_iqn)
+        self.builder.create_access_list_nopin_timeout(config.iqn, config.remote_iqn)
         self.builder.save_config()
         self.builder.copy_to_created_disk(config.disk_name, config.data_file)
 
@@ -156,6 +157,11 @@ class IscsiBuilder:
     def create_access_list_data_out(self, iqn: Iqn, remote_iqn: Iqn, timeout: int = 60, retries: int = 10) -> None:
         cmd = f"{self.service_cmd} /iscsi/{str(iqn)}/tpg1/acls/{str(remote_iqn)}/ "
         for param in [f"set attribute dataout_timeout={timeout}", f"set attribute dataout_timeout_retries={retries}"]:
+            self.receiver.execute(cmd + param)
+
+    def create_access_list_nopin_timeout(self, iqn: Iqn, remote_iqn: Iqn, timeout: int = 60) -> None:
+        cmd = f"{self.service_cmd} /iscsi/{str(iqn)}/tpg1/acls/{str(remote_iqn)}/ "
+        for param in [f"set attribute nopin_timeout={timeout}", f"set attribute nopin_response_timeout={timeout}"]:
             self.receiver.execute(cmd + param)
 
     def save_config(self):
