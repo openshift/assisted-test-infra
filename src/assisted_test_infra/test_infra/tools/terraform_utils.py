@@ -36,6 +36,7 @@ class TerraformUtils:
         self.tf = _Terraform(
             working_dir=working_dir,
             state=consts.TFSTATE_FILE,
+            parallelism=6,
             var_file=consts.TFVARS_JSON_NAME,
             is_env_vars_included=True,
         )
@@ -74,6 +75,10 @@ class TerraformUtils:
         return_value, output, err = self.tf.apply(
             no_color=IsFlagged, refresh=refresh, input=False, skip_plan=True, capture_output=capture_output
         )
+        # print terraform output line by line without \n
+        if output and type(output) is str:
+            log.info(output)
+
         if return_value == 0:
             return
 
