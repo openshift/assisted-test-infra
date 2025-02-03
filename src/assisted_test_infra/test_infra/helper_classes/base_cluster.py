@@ -71,6 +71,14 @@ class BaseCluster(Entity, ABC):
             )
         return self._infra_env.download_image(iso_download_path or self._config.iso_download_path)
 
+    def download_ipxe_script(self, static_network_config=None) -> Path:
+        if self._infra_env is None:
+            log.warning("No infra_env found. Generating infra_env and downloading iPXE script file")
+            self.generate_infra_env(
+                static_network_config=static_network_config,
+            )
+            self._infra_env.download_infra_env_file("ipxe-script", self._config.install_working_dir)
+
     @JunitTestCase()
     def generate_and_download_infra_env(
         self,

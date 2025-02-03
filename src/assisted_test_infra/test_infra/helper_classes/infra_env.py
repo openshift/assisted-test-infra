@@ -73,6 +73,16 @@ class InfraEnv(Entity):
         return utils.download_file(iso_download_url, iso_download_path, self._config.verify_download_iso_ssl)
 
     @JunitTestCase()
+    def download_infra_env_file(self, file_name: str, file_path: str) -> Path:
+        log.info(f"Downloading file {file_name} to {file_path}")
+
+        # ensure file path exists before downloading
+        if not os.path.exists(file_path):
+            utils.recreate_folder(os.path.dirname(file_path), force_recreate=False)
+
+        self.api_client.download_and_save_infra_env_file(self.id, file_name, file_path)
+
+    @JunitTestCase()
     def wait_until_hosts_are_discovered(self, nodes_count: int, allow_insufficient=False):
         statuses = [consts.NodesStatus.KNOWN_UNBOUND]
         if allow_insufficient:
