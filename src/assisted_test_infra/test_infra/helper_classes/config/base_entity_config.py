@@ -34,4 +34,5 @@ class BaseEntityConfig(BaseConfig, ABC):
     is_bonded: bool = None
     num_bonded_slaves: int = None
     bonding_mode: str = None
+    cluster_id: str = None
     load_balancer_type: str = None

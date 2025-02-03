@@ -22,6 +22,15 @@ class TestMakefileTargets(BaseTest):
         cluster.prepare_nodes()
 
     @JunitTestSuite()
+    def test_target_deploy_nodes_oci(self, cluster):
+        cluster.generate_and_download_infra_env()
+        cluster.nodes.prepare_nodes()
+
+    @JunitTestSuite()
+    def test_target_destroy_nodes_oci(self, cluster):
+        cluster.nodes.destroy_all_nodes()
+
+    @JunitTestSuite()
     def test_target_deploy_networking_with_nodes(self, cluster):
         cluster.prepare_for_installation()
 
