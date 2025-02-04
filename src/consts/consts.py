@@ -330,8 +330,8 @@ class KubeAPIPlatforms:
 
 
 class HighAvailabilityMode:
-    FULL = "Full"
-    NONE = "None"
+    FULL = "3"
+    NONE = "1"
 
 
 class BaseAsset:
