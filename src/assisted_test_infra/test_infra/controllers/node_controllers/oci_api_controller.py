@@ -359,14 +359,7 @@ class OciApiController(NodeController):
         success = False
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
-<<<<<<< HEAD
             if item.output_name == "dynamic_custom_manifest":
-=======
-            if item.output_name == "oci_ccm_config":
-                self.cloud_provider = item.output_value
-                success = True
-            elif item.output_name == "dynamic_custom_manifest":
->>>>>>> a6df15cc (update success condition after stack is applied)
                 self._entity_config.custom_manifests.append(
                     Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
                 )

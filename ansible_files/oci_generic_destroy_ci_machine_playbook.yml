@@ -4,7 +4,7 @@
     - name: Destroy OCI instrastructure provisionned by test-infra
       ansible.builtin.shell: |
         source /root/config.sh
-        make destroy_oci
+        make destroy_nodes_oci
       args:
         chdir: /home/assisted
       retries: 5
