@@ -13,6 +13,14 @@ variable "public_ssh_key_path" {
   description = "Path to public key"
 }
 
+# Check the folowing URL to update the default value:
+# https://docs.oracle.com/en-us/iaas/images/oracle-linux-9x/index.htm
+variable "operating_system_source_id" {
+  type        = string
+  default     = "ocid1.image.oc1.us-sanjose-1.aaaaaaaaizqrsucjjxtqwnbhlxmmjtkj4qeebqhipp2d6m4rovhsdjjxbmzq"
+  description = "Base OS image ID being used to provision the CI machine"
+}
+
 ///////////
 // OCI variables
 ///////////
