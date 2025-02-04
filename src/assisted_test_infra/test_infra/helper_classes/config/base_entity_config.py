@@ -15,7 +15,7 @@ class BaseEntityConfig(BaseConfig, ABC):
     openshift_version: str = None
     additional_ntp_source: str = None
     user_managed_networking: bool = None
-    high_availability_mode: str = None
+    control_plane_count: str = None
     hyperthreading: str = None
     iso_download_path: str = None  # TODO Needed only on infra env. Remove from here and move to BaseInfraEnvConfig
     worker_iso_download_path: str = None
