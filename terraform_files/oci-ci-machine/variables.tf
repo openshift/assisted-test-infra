@@ -13,11 +13,14 @@ variable "public_ssh_key_path" {
   description = "Path to public key"
 }
 
-# Check the folowing URL to update the default value:
-# https://docs.oracle.com/en-us/iaas/images/oracle-linux-9x/index.htm
+# Rocky Linux image ID
+#
+# Best way to find it is to spawn an instance with Rocky Linux and then copy
+# the image ID that is in use. It is best to pin it, as the agreement system in
+# OCI is painful to get right programmatically.
 variable "operating_system_source_id" {
   type        = string
-  default     = "ocid1.image.oc1.us-sanjose-1.aaaaaaaaizqrsucjjxtqwnbhlxmmjtkj4qeebqhipp2d6m4rovhsdjjxbmzq"
+  default     = "ocid1.image.oc1..aaaaaaaauo3kyxlty6himw7uecc4xdzshdnc43qf4q2uyvy32gi3t3ixg5pa"
   description = "Base OS image ID being used to provision the CI machine"
 }
 
