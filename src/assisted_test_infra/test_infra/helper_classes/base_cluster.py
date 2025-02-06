@@ -38,6 +38,11 @@ class BaseCluster(Entity, ABC):
 
     @property
     def id(self) -> str:
+        if not self._config.cluster_id:
+            clusters = self.api_client.clusters_list()
+            found = [c for c in clusters if c["name"] == self._config.cluster_name]
+            self._config.cluster_id = found[0]["id"] if found else None
+
         return self._config.cluster_id
 
     def get_details(self) -> Union[models.infra_env.InfraEnv, models.cluster.Cluster]:
