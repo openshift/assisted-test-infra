@@ -1,4 +1,4 @@
-export CLUSTER_NAME=test-infra-oci-{{ lookup('community.general.random_string') }}
+export CLUSTER_NAME=test-infra-oci-{{ lookup('community.general.random_string', special=false) }}
 
 export PLATFORM=external
 export TF_PLATFORM=oci
