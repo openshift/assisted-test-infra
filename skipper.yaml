@@ -13,7 +13,7 @@ volumes:
   - $HOME/.minikube/:$HOME/.minikube/
   - $HOME/.ssh/:$HOME/.ssh/
   - $HOME/.oci/:$HOME/.oci/
-  - $HOME/custom_manifests/:$HOME/custom_manifests/
+  - $HOME/oci/:$HOME/oci/
 
   # logs
   - /var/log:/var/log

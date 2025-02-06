@@ -13,6 +13,17 @@ variable "public_ssh_key_path" {
   description = "Path to public key"
 }
 
+# Rocky Linux image ID
+#
+# Best way to find it is to spawn an instance with Rocky Linux and then copy
+# the image ID that is in use. It is best to pin it, as the agreement system in
+# OCI is painful to get right programmatically.
+variable "operating_system_source_id" {
+  type        = string
+  default     = "ocid1.image.oc1..aaaaaaaauo3kyxlty6himw7uecc4xdzshdnc43qf4q2uyvy32gi3t3ixg5pa"
+  description = "Base OS image ID being used to provision the CI machine"
+}
+
 ///////////
 // OCI variables
 ///////////

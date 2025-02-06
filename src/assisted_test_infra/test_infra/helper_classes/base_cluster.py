@@ -38,6 +38,11 @@ class BaseCluster(Entity, ABC):
 
     @property
     def id(self) -> str:
+        if not self._config.cluster_id:
+            clusters = self.api_client.clusters_list()
+            found = [c for c in clusters if c["name"] == self._config.cluster_name]
+            self._config.cluster_id = found[0]["id"] if found else None
+
         return self._config.cluster_id
 
     def get_details(self) -> Union[models.infra_env.InfraEnv, models.cluster.Cluster]:
@@ -153,13 +158,12 @@ class BaseCluster(Entity, ABC):
         nodes = self.nodes.get_nodes(refresh=True)
 
         for host in hosts:
-            name = self.find_matching_node_name(host, nodes)
-            assert name is not None, (
+            node = self.find_matching_node(host, nodes)
+            assert node is not None, (
                 f"Failed to find matching node for host with mac address {host.macs()}"
                 f" nodes: {[(n.name, n.ips, n.macs) for n in nodes]}"
             )
-            role = consts.NodeRoles.MASTER if consts.NodeRoles.MASTER in name else consts.NodeRoles.WORKER
-            self._infra_env.update_host(host_id=host.get_id(), host_role=role, host_name=name)
+            self._infra_env.update_host(host_id=host.get_id(), host_role=node.role, host_name=node.name)
 
     def set_installer_args(self):
         hosts = self.to_cluster_hosts(self.api_client.get_cluster_hosts(self.id))
@@ -170,21 +174,12 @@ class BaseCluster(Entity, ABC):
     def to_cluster_hosts(hosts: list[dict[str, Any]]) -> list[ClusterHost]:
         return [ClusterHost(models.Host(**h)) for h in hosts]
 
-    def find_matching_node_name(self, host: ClusterHost, nodes: list[Node]) -> Union[str, None]:
+    def find_matching_node(self, host: ClusterHost, nodes: list[Node]) -> Optional[Node]:
         # Looking for node matches the given host by its mac address (which is unique)
         for node in nodes:
             for mac in node.macs:
                 if mac.lower() in host.macs():
-                    return node.name
-
-        # IPv6 static ips
-        if self._infra_env_config.is_static_ip:
-            mappings = static_network.get_name_to_mac_addresses_mapping(self.nodes.controller.tf_folder)
-            for mac in host.macs():
-                for name, macs in mappings.items():
-                    if mac in macs:
-                        return name
-
+                    return node
         return None
 
     @JunitTestCase()

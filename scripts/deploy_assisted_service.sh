@@ -175,7 +175,7 @@ else
 
     skipper run src/update_assisted_service_cm.py
 
-    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD TARGET=$DEPLOY_TARGET DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-} IP=$(get_main_ip))
+    (cd assisted-service/ && skipper --env-file ../skipper.env run "make deploy-all" ${SKIPPER_PARAMS} $ENABLE_KUBE_API_CMD TARGET=$DEPLOY_TARGET DEPLOY_TAG=${DEPLOY_TAG} DEPLOY_MANIFEST_PATH=${DEPLOY_MANIFEST_PATH} DEPLOY_MANIFEST_TAG=${DEPLOY_MANIFEST_TAG} NAMESPACE=${NAMESPACE} AUTH_TYPE=${AUTH_TYPE} ${DEBUG_DEPLOY_AI_PARAMS:-} IP=${SERVICE_URL})
 
     add_firewalld_port $SERVICE_PORT
 
