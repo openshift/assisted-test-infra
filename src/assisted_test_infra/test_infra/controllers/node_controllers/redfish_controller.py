@@ -37,6 +37,7 @@ class RedfishEjectIso:
 
     @classmethod
     def execute(cls, receiver: RedfishReceiver):
+        log.info(f"{cls.__name__}: {receiver.__dict__}")
         iso, inserted = receiver.redfish.get_iso_status()
         if iso != "None":
             assert receiver.redfish.eject_iso().status == SUCCESS
@@ -46,6 +47,7 @@ class RedfishInsertIso:
 
     @classmethod
     def execute(cls, receiver: RedfishReceiver, nfs_iso):
+        log.info(f"{cls.__name__} inserting iso {nfs_iso}")
         assert receiver.redfish.insert_iso(nfs_iso).status == SUCCESS
 
 
@@ -54,6 +56,7 @@ class RedfishSetIsoOnce:
     @classmethod
     def execute(cls, receiver: RedfishReceiver):
         try:
+            log.info(f"{cls.__name__}: {receiver.__dict__}")
             receiver.redfish.set_iso_once()
         except Exception as e:
             log.info(f"Receiver host {receiver.host} failed to set iso once: {str(e)}")
@@ -63,6 +66,7 @@ class RedfishRestart:
 
     @classmethod
     def execute(cls, receiver: RedfishReceiver):
+        log.info(f"{cls.__name__}: {receiver.__dict__}")
         receiver.redfish.restart()
 
 
@@ -149,6 +153,7 @@ class RedfishController(NodeController):
         pass
 
     def set_nfs_mount_path(self, host, image_path) -> str:
+        log.info(f"{type(self).__name__} host {host} set mount path {image_path}")
         self.nfs_mount = f"{host}:{image_path}"
 
     def set_adapter_controller(self, cluster):
