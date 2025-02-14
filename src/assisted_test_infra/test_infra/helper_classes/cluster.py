@@ -45,7 +45,7 @@ class Cluster(BaseCluster):
 
         super().__init__(api_client, config, infra_env_config, nodes)
 
-        self.control_plane_count = config.control_plane_count
+        self._control_plane_count = config.control_plane_count
         self.name = config.cluster_name.get()
 
     @property
@@ -382,7 +382,7 @@ class Cluster(BaseCluster):
             log.info("On None/External platforms, leaving network management to the user")
             api_vips = ingress_vips = machine_networks = None
 
-        elif self._config.vip_dhcp_allocation or self._control_plane_count == consts.HighAvailabilityMode.NONE:
+        elif self._config.vip_dhcp_allocation or self._control_plane_count == consts.ControlPlaneCount.ONE:
             log.info("Letting access VIPs be deducted from machine networks")
             api_vips = ingress_vips = None
             machine_networks = [self.get_machine_networks()[0]]
@@ -935,7 +935,7 @@ class Cluster(BaseCluster):
         )
 
     def _ha_not_none_not_external(self):
-        return self._control_plane_count != consts.HighAvailabilityMode.NONE and self._config.platform not in [
+        return self._control_plane_count != consts.ControlPlaneCount.ONE and self._config.platform not in [
             consts.Platforms.NONE,
             consts.Platforms.EXTERNAL,
         ]
@@ -948,7 +948,7 @@ class Cluster(BaseCluster):
             and platform.external.platform_name == consts.ExternalPlatformNames.OCI
         )  # required to test against stage/production  # Patch for SNO OCI - currently not supported in the service
         self.set_hostnames_and_roles()
-        if self._control_plane_count != consts.HighAvailabilityMode.NONE:
+        if self._control_plane_count != consts.ControlPlaneCount.ONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
         self.set_installer_args()
@@ -1009,7 +1009,7 @@ class Cluster(BaseCluster):
         ):
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
-        elif self._control_plane_count == consts.HighAvailabilityMode.NONE:
+        elif self._control_plane_count == consts.ControlPlaneCount.ONE:
             main_cidr = self.get_primary_machine_cidr()
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
             self.nodes.controller.set_single_node_ip(ip)
