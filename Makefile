@@ -35,9 +35,9 @@ CONTAINER_RUNTIME_COMMAND := $(or ${CONTAINER_COMMAND}, ${CONTAINER_RUNTIME_COMM
 LINT_CODE_STYLING_DIRS := src/tests src/triggers src/assisted_test_infra/test_infra src/assisted_test_infra/download_logs src/service_client src/consts src/virsh_cleanup src/cli
 
 # assisted-service
-SERVICE := $(or $(SERVICE), quay.io/edge-infrastructure/assisted-service:latest)
+SERVICE := $(or $(SERVICE), quay.io/edge-infrastructure/assisted-service:ocm-2.13)
 SERVICE_NAME := $(or $(SERVICE_NAME),assisted-service)
-INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:latest)
+INDEX_IMAGE := $(or ${INDEX_IMAGE},quay.io/edge-infrastructure/assisted-service-index:ocm-2.13)
 REMOTE_SERVICE_URL := $(or $(REMOTE_SERVICE_URL), "")
 USE_LOCAL_SERVICE := $(or $(USE_LOCAL_SERVICE), false)
 DEBUG_SERVICE := $(or $(DEBUG_SERVICE), "")
