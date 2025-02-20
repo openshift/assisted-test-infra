@@ -23,7 +23,7 @@ SKIPPER_PARAMS ?= -i
 
 ASSISTED_SERVICE_HOST := $(or ${ASSISTED_SERVICE_HOST},$(shell hostname))
 
-# Openshift CI params
+# Openshift CI params 
 OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
 JOB_TYPE := $(or ${JOB_TYPE}, "")
 REPO_NAME := $(or ${REPO_NAME}, "")
