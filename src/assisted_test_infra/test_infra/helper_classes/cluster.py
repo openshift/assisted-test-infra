@@ -45,7 +45,6 @@ class Cluster(BaseCluster):
 
         super().__init__(api_client, config, infra_env_config, nodes)
 
-        self._control_plane_count = config.control_plane_count
         self.name = config.cluster_name.get()
 
     @property
@@ -69,6 +68,10 @@ class Cluster(BaseCluster):
     def control_plane_count(self):
         return self._config.control_plane_count
 
+    @property
+    def high_availability_mode(self):
+        return self._config.high_availability_mode
+
     def _update_existing_cluster_config(self, api_client: InventoryClient, cluster_id: str):
         existing_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
 
@@ -79,6 +82,7 @@ class Cluster(BaseCluster):
                 additional_ntp_source=existing_cluster.additional_ntp_source,
                 user_managed_networking=existing_cluster.user_managed_networking,
                 control_plane_count=existing_cluster.control_plane_count,
+                high_availability_mode=existing_cluster.high_availability_mode,
                 olm_operators=existing_cluster.monitored_operators,
                 base_dns_domain=existing_cluster.base_dns_domain,
                 vip_dhcp_allocation=existing_cluster.vip_dhcp_allocation,
@@ -132,9 +136,6 @@ class Cluster(BaseCluster):
         if self._config.registry_ca_path:
             extra_vars["registry_ca_path"] = self._config.registry_ca_path
 
-#        if self.nodes.masters_count and self.nodes.masters_count > 3:
-#            extra_vars["control_plane_count"] = self.nodes.masters_count
-
         if self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
             extra_vars["load_balancer"] = {"type": self._config.load_balancer_type}
 
@@ -152,6 +153,7 @@ class Cluster(BaseCluster):
             additional_ntp_source=self._config.additional_ntp_source,
             user_managed_networking=self._config.user_managed_networking,
             control_plane_count=self._config.control_plane_count,
+            high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
             cpu_architecture=(
@@ -382,7 +384,7 @@ class Cluster(BaseCluster):
             log.info("On None/External platforms, leaving network management to the user")
             api_vips = ingress_vips = machine_networks = None
 
-        elif self._config.vip_dhcp_allocation or self._control_plane_count == consts.ControlPlaneCount.ONE:
+        elif self._config.vip_dhcp_allocation or self.control_plane_count == consts.ControlPlaneCount.ONE:
             log.info("Letting access VIPs be deducted from machine networks")
             api_vips = ingress_vips = None
             machine_networks = [self.get_machine_networks()[0]]
@@ -935,7 +937,7 @@ class Cluster(BaseCluster):
         )
 
     def _ha_not_none_not_external(self):
-        return self._control_plane_count != consts.ControlPlaneCount.ONE and self._config.platform not in [
+        return self.control_plane_count != consts.ControlPlaneCount.ONE and self._config.platform not in [
             consts.Platforms.NONE,
             consts.Platforms.EXTERNAL,
         ]
@@ -948,7 +950,7 @@ class Cluster(BaseCluster):
             and platform.external.platform_name == consts.ExternalPlatformNames.OCI
         )  # required to test against stage/production  # Patch for SNO OCI - currently not supported in the service
         self.set_hostnames_and_roles()
-        if self._control_plane_count != consts.ControlPlaneCount.ONE:
+        if self.control_plane_count != consts.ControlPlaneCount.ONE:
             self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
 
         self.set_installer_args()
@@ -1009,7 +1011,7 @@ class Cluster(BaseCluster):
         ):
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
-        elif self._control_plane_count == consts.ControlPlaneCount.ONE:
+        elif self.control_plane_count == consts.ControlPlaneCount.ONE:
             main_cidr = self.get_primary_machine_cidr()
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
             self.nodes.controller.set_single_node_ip(ip)

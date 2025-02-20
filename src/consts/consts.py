@@ -334,6 +334,11 @@ class ControlPlaneCount:
     ONE = 1
 
 
+class HighAvailabilityMode:
+    FULL = "Full"
+    NONE = "None"
+
+
 class BaseAsset:
     MACHINE_CIDR = DEFAULT_MACHINE_NETWORKS_IPV4[0].cidr
     MACHINE_CIDR6 = DEFAULT_MACHINE_NETWORKS_IPV6[0].cidr
