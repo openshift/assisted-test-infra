@@ -35,6 +35,7 @@ _default_triggers = frozendict(
             conditions=[lambda config: config.masters_count == 1],
             workers_count=0,
             control_plane_count=consts.ControlPlaneCount.ONE,
+            high_availability_mode=consts.HighAvailabilityMode.NONE,
             user_managed_networking=True,
             master_memory=resources.DEFAULT_MASTER_SNO_MEMORY,
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,

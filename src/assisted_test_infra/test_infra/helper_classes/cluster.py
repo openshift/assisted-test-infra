@@ -69,6 +69,10 @@ class Cluster(BaseCluster):
     def control_plane_count(self):
         return self._config.control_plane_count
 
+    @property
+    def high_availability_mode(self):
+        return self._config.high_availability_mode
+
     def _update_existing_cluster_config(self, api_client: InventoryClient, cluster_id: str):
         existing_cluster: models.cluster.Cluster = api_client.cluster_get(cluster_id)
 
@@ -79,6 +83,7 @@ class Cluster(BaseCluster):
                 additional_ntp_source=existing_cluster.additional_ntp_source,
                 user_managed_networking=existing_cluster.user_managed_networking,
                 control_plane_count=existing_cluster.control_plane_count,
+                high_availability_mode=existing_cluster.high_availability_mode,
                 olm_operators=existing_cluster.monitored_operators,
                 base_dns_domain=existing_cluster.base_dns_domain,
                 vip_dhcp_allocation=existing_cluster.vip_dhcp_allocation,
@@ -152,6 +157,7 @@ class Cluster(BaseCluster):
             additional_ntp_source=self._config.additional_ntp_source,
             user_managed_networking=self._config.user_managed_networking,
             control_plane_count=self._config.control_plane_count,
+            high_availability_mode=self._config.high_availability_mode,
             disk_encryption=disk_encryption,
             tags=self._config.cluster_tags or None,
             cpu_architecture=(
