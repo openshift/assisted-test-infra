@@ -4,7 +4,6 @@ from .libvirt_controller import LibvirtController
 from .node import Node
 from .node_controller import NodeController
 from .oci_api_controller import OciApiController
-from .oci_controller import OciController
 from .redfish_controller import RedfishController
 from .terraform_controller import TerraformController
 from .vsphere_controller import VSphereController
@@ -17,7 +16,6 @@ __all__ = [
     "Disk",
     "Node",
     "LibvirtController",
-    "OciController",
     "OciApiController",
     "ZVMController",
     "RedfishController",

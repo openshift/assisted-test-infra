@@ -4,7 +4,9 @@
     - name: Destroy OCI instrastructure provisionned by test-infra
       ansible.builtin.shell: |
         source /root/config.sh
-        make destroy_oci
+        export AI_URL="http://${SERVICE_URL}:8090"
+        export CLUSTER_ID=$(aicli info cluster "${CLUSTER_NAME}" -f id -v)
+        make destroy_nodes_oci
       args:
         chdir: /home/assisted
       retries: 5

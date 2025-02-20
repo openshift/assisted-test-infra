@@ -234,9 +234,6 @@ destroy_nutanix:
 destroy_vsphere:
 	PLATFORM=vsphere make destroy_terraform_controller
 
-destroy_oci:
-	PLATFORM=oci make destroy_terraform_controller
-
 #######
 # Run #
 #######

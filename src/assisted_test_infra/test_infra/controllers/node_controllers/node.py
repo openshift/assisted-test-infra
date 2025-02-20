@@ -11,7 +11,14 @@ from service_client import log
 
 
 class Node:
-    def __init__(self, name, node_controller, private_ssh_key_path: Optional[Path] = None, username="core"):
+    def __init__(
+        self,
+        name,
+        node_controller,
+        private_ssh_key_path: Optional[Path] = None,
+        username="core",
+        role: Optional[str] = None,
+    ):
         self.name = name
         self.private_ssh_key_path = private_ssh_key_path
         self.username = username
@@ -20,6 +27,7 @@ class Node:
         self.original_ram_kib = self.get_ram_kib()
         self._ips = []
         self._macs = []
+        self._role = role
 
     def __str__(self):
         return self.name
@@ -28,11 +36,24 @@ class Node:
     def is_active(self):
         return self.node_controller.is_active(self.name)
 
-    def is_master_in_name(self):
-        return consts.NodeRoles.MASTER in self.name
+    def is_master_in_name(self) -> bool:
+        return self.role == consts.NodeRoles.MASTER
 
-    def is_worker_in_name(self):
-        return consts.NodeRoles.WORKER in self.name
+    def is_worker_in_name(self) -> bool:
+        return self.role == consts.NodeRoles.WORKER
+
+    @property
+    def role(self) -> str:
+        if self._role:
+            return self._role
+
+        if consts.NodeRoles.MASTER in self.name:
+            return consts.NodeRoles.MASTER
+
+        if consts.NodeRoles.WORKER in self.name:
+            return consts.NodeRoles.WORKER
+
+        return consts.NodeRoles.AUTO_ASSIGN
 
     def _set_ips_and_macs(self):
         self._ips, self._macs = self.node_controller.get_node_ips_and_macs(self.name)

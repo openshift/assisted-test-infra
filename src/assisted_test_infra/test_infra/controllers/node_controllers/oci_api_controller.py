@@ -11,12 +11,14 @@ import libvirt
 import oci
 import waiting
 
+import consts
 from assisted_test_infra.test_infra import BaseClusterConfig
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_oci_config import BaseOciConfig
+from assisted_test_infra.test_infra.utils.manifests import Manifest
 from service_client import log
 
 
@@ -84,18 +86,9 @@ class OciApiController(NodeController):
 
     def __init__(self, config: BaseNodesConfig, cluster_config: BaseClusterConfig):
         super().__init__(config, cluster_config)
-        self._cloud_provider = None
+        self.cloud_provider = None
         self._oci_compartment_oicd = self._config.oci_compartment_oicd
         self._initialize_oci_clients()
-
-    @property
-    def cloud_provider(self):
-        # Called from test_cases , modify manifests
-        return self._cloud_provider
-
-    @cloud_provider.setter
-    def cloud_provider(self, cloud_provider):
-        self._cloud_provider = cloud_provider
 
     def _initialize_oci_clients(self):
         """Initialize oci clients.
@@ -109,6 +102,7 @@ class OciApiController(NodeController):
             self._object_storage_client = oci.object_storage.ObjectStorageClient(self._config.get_provider_config())
             self._compute_client = oci.core.ComputeClient(self._config.get_provider_config())
             self._volume_client = oci.core.BlockstorageClient(self._config.get_provider_config())
+            self._virtual_network_client = oci.core.VirtualNetworkClient(self._config.get_provider_config())
             # resource manager for stack creation and job
             self._resource_manager_client = oci.resource_manager.ResourceManagerClient(
                 self._config.get_provider_config()
@@ -188,8 +182,6 @@ class OciApiController(NodeController):
                 self._object_storage_client.delete_preauthenticated_request, namespace, bucket_name, obj.data.id
             )
         )
-
-        assert obj.status == 200
         return obj.data.full_path
 
     def _terraform_variables(
@@ -258,7 +250,6 @@ class OciApiController(NodeController):
         template_config = {
             "config_source_type": "ZIP_UPLOAD",
             "zip_file_base64_encoded": self._base64_zip_file(terraform_zip_path),
-            "working_directory": "infrastructure",
         }
 
         template_config_create = oci.resource_manager.models.CreateZipUploadConfigSourceDetails(**template_config)
@@ -298,8 +289,8 @@ class OciApiController(NodeController):
         return obj.data.id
 
     def _apply_job_from_stack(
-        self, stack_id: str, display_name: str, timeout_seconds: int = 3200, interval_wait: int = 60
-    ) -> str:
+        self, stack_id: str, display_name: str, timeout_seconds: int = 3600, interval_wait: int = 60
+    ) -> None:
         """Apply job will run the stack terraform code and create the resources.
 
         On failure - raise Exception and cleanup resources
@@ -354,16 +345,16 @@ class OciApiController(NodeController):
             log.info(f"Exception raised during apply_job_from_stack {e}: destroying")
             raise
         # on success, we return the jobs output - list
+        success = False
         items = self._resource_manager_client.list_job_outputs(job.data.id).data.items
         for item in items:
             if item.output_name == "dynamic_custom_manifest":
-                file_path = (
-                    f"/tmp/oci-{self._entity_config.cluster_id}/terraform-output-{self._entity_config.cluster_id}.yml"
+                self._entity_config.custom_manifests.append(
+                    Manifest(folder="manifests", file_name="oci_custom_manifests.yaml", content=item.output_value)
                 )
-                with open(file_path, "w") as f:
-                    f.write(item.output_value)
-                return item.output_value
-        raise RuntimeError(f"Missing dynamic_custom_manifest for stack {stack_id}")
+                success = True
+        if not success:
+            raise RuntimeError(f"Missing oci_ccm_config for stack {stack_id}")
 
     @staticmethod
     def _waiter_status(client_callback: Callable, name: str, status: str, **callback_kwargs) -> None:
@@ -382,6 +373,13 @@ class OciApiController(NodeController):
         )
 
     @property
+    def _instances(self) -> List[oci.core.models.Instance]:
+        response = oci.pagination.list_call_get_all_results(
+            self._compute_client.list_instances, self._oci_compartment_oicd
+        )
+        return [instance for instance in response.data if str(self._entity_config.entity_name) in instance.display_name]
+
+    @property
     def terraform_vm_name_key(self) -> str:
         return "display_name"
 
@@ -389,8 +387,20 @@ class OciApiController(NodeController):
     def terraform_vm_resource_type(self) -> str:
         return "oci_core_instance"
 
+    def _get_instance_role(self, instance: oci.core.models.Instance) -> str:
+        namespace_key = f"openshift-{self._entity_config.entity_name}"
+        namespace = instance.defined_tags.get(namespace_key)
+        role = namespace.get("instance-role")
+
+        if role == "control_plane":
+            return consts.NodeRoles.MASTER
+
+        return consts.NodeRoles.WORKER
+
     def list_nodes(self) -> List[Node]:
-        pass
+        return [
+            Node(instance.display_name, self, role=self._get_instance_role(instance)) for instance in self._instances
+        ]
 
     def list_disks(self, node_name: str) -> List[Disk]:
         pass
@@ -503,7 +513,7 @@ class OciApiController(NodeController):
             CleanupResource(
                 self._resource_manager_client_composite_operations.create_job_and_wait_for_state,
                 destroy_job_details,
-                wait_for_states=[OciState.SUCCEEDED.value],
+                wait_for_states=[OciState.SUCCEEDED.value, OciState.FAILED.value],
                 waiter_kwargs={"max_wait_seconds": timeout_seconds, "succeed_on_not_found": False},
             )
         )
@@ -558,8 +568,36 @@ class OciApiController(NodeController):
         """
         pass
 
+    def _get_vnic_attachments(self, instance: oci.core.models.Instance) -> List[oci.core.models.VnicAttachment]:
+        response = oci.pagination.list_call_get_all_results(
+            self._compute_client.list_vnic_attachments, self._oci_compartment_oicd, instance_id=instance.id
+        )
+        return response.data
+
+    def _get_vnics(self, instance: oci.core.models.Instance) -> List[oci.core.models.Vnic]:
+        vnic_attachments = self._get_vnic_attachments(instance)
+        responses = [
+            self._virtual_network_client.get_vnic(vnic_id=vnic_attachment.vnic_id)
+            for vnic_attachment in vnic_attachments
+        ]
+        return [response.data for response in responses]
+
     def get_node_ips_and_macs(self, node_name) -> Tuple[List[str], List[str]]:
-        pass
+        instance = next(instance for instance in self._instances if node_name == instance.display_name)
+        vnics = self._get_vnics(instance)
+        ips = []
+        macs = []
+        for vnic in vnics:
+            if vnic.private_ip:
+                ips.append(vnic.private_ip)
+            if vnic.public_ip:
+                ips.append(vnic.public_ip)
+            if vnic.ipv6_addresses:
+                ips.extend(vnic.ipv6_addresses)
+
+            macs.append(vnic.mac_address)
+
+        return (ips, macs)
 
     def set_single_node_ip(self, ip) -> None:
         pass
