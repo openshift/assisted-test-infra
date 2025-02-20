@@ -608,4 +608,3 @@ export KUBECONFIG=./build/kubeconfig
 export KUBECONFIG=$(find ${KUBECONFIG} -type f)
 make test_parallel
 ```
-placeholder - will be reverted soon
