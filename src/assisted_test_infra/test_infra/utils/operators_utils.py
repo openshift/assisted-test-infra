@@ -94,10 +94,7 @@ def filter_operators_by_type(operators: List[MonitoredOperator], operator_types:
 
 def resource_param(base_value: int, resource_name: str, operator: str, is_sno: bool = False):
     try:
-        value = base_value
         resource = consts.OperatorResource.values(is_sno)[operator][resource_name]
-        if value <= resource:
-            value = value + resource
-        return value
+        return max(base_value, resource)
     except KeyError as e:
         raise ValueError(f"Unknown operator name {e.args[0]}") from e
