@@ -1,0 +1,5 @@
+oci_compute_shape: "VM.Standard.E5.Flex"
+oci_control_plane_shape: "VM.Standard.E5.Flex"
+
+oci_infrastructure_zip_url: "https://github.com/oracle-quickstart/oci-openshift/releases/download/v1.0.0/create-cluster-v1.0.0.zip"
+oci_infrastructure_zip_file: "{{ hostvars[ci_machine].ansible_user_dir }}/oci/infrastructure.zip"

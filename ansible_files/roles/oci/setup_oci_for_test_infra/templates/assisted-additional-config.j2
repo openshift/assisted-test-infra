@@ -1,3 +1,5 @@
+export CLUSTER_NAME=test-infra-oci-{{ lookup('community.general.random_string', special=false, upper=false) }}
+
 export PLATFORM=external
 export TF_PLATFORM=oci
 export EXTERNAL_PLATFORM_NAME=oci
@@ -9,20 +11,13 @@ export OCI_PRIVATE_KEY_PATH="{{ oci_private_key_path_ci_machine }}"
 export OCI_PUBLIC_KEY_FINGERPRINT="{{ oci_fingerprint }}"
 export OCI_TENANCY="{{ oci_tenancy_id }}"
 export OCI_REGION="{{ oci_region }}"
-export OCI_VCN="{{ infra.oci_vcn_id }}"
-export OCI_PUBLIC_SUBNET="{{ infra.oci_public_subnet_id }}"
-export OCI_PRIVATE_SUBNET="{{ infra.oci_private_subnet_id }}"
 
-# CI machine to access nodes (connect on them through SSH)
-# Nodes to access CI machine (assisted-service API through HTTP/HTTPS)
-export OCI_EXTRA_NODE_NSG_IDS="{{ infra.oci_ci_machine_access_nsg_id }},{{ infra.oci_cluster_ci_nsg_id }}"
+export OCI_INFRASTRUCTURE_ZIP_FILE="{{ oci_infrastructure_zip_file }}"
+export OCI_COMPUTE_SHAPE="{{ oci_compute_shape }}"
+export OCI_CONTROL_PLANE_SHAPE="{{ oci_control_plane_shape }}"
 
-# CI machine to access load balancer (cluster access through HTTP/HTTPS/MCS/API)
-export OCI_EXTRA_LOAD_BALANCER_NSG_IDS="{{ infra.oci_load_balancer_ci_nsg_id }}"
-
-export BASE_DOMAIN="{{ oci_dns_zone }}"
-
-export CUSTOM_MANIFESTS_FILES="{{ custom_manifests_dir }}"
+export BASE_DOMAIN="{{ unique_id }}.{{ oci_dns_zone }}"
+export SERVICE_URL="{{ oci_ci_machine_public_ip }}"
 
 export HOST_INSTALLER_ARGS='{"args": ["--append-karg", "console=ttyS0"]}'
 export KERNEL_ARGUMENTS='[{"operation": "append", "value": "console=ttyS0"}]'
