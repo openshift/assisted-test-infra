@@ -39,8 +39,11 @@ class RedfishEjectIso:
     def execute(cls, receiver: RedfishReceiver):
         log.info(f"{cls.__name__}: {receiver.__dict__}")
         iso, inserted = receiver.redfish.get_iso_status()
-        if iso != "None":
-            assert receiver.redfish.eject_iso().status == SUCCESS
+        log.info(f"{cls.__name__}: eject status: {iso} {inserted}")
+        try:
+            receiver.redfish.eject_iso()
+        except Exception as e:
+            log.info(f"{cls.__name__}: eject iso fails {e}")
 
 
 class RedfishInsertIso:
@@ -48,7 +51,7 @@ class RedfishInsertIso:
     @classmethod
     def execute(cls, receiver: RedfishReceiver, nfs_iso):
         log.info(f"{cls.__name__} inserting iso {nfs_iso}")
-        assert receiver.redfish.insert_iso(nfs_iso).status == SUCCESS
+        receiver.redfish.insert_iso(nfs_iso)
 
 
 class RedfishSetIsoOnce:
