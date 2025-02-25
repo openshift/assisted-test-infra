@@ -95,7 +95,8 @@ class _EnvVariables(DataPool, ABC):
         loader=lambda x: bool(strtobool(x)),
         default=env_defaults.DEFAULT_USER_MANAGED_NETWORKING,
     )
-    high_availability_mode: EnvVar = EnvVar(default=env_defaults.DEFAULT_HIGH_AVAILABILITY_MODE)
+    control_plane_count: EnvVar = EnvVar(default=env_defaults.DEFAULT_CONTROL_PLANE_COUNT)
+    high_availability_mode: EnvVar = EnvVar(default=consts.HighAvailabilityMode.FULL)
     download_image: EnvVar = EnvVar(
         ["DOWNLOAD_IMAGE"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_DOWNLOAD_IMAGE
     )

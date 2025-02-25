@@ -329,6 +329,11 @@ class KubeAPIPlatforms:
     VSPHERE = "VSphere"
 
 
+class ControlPlaneCount:
+    THREE = 3
+    ONE = 1
+
+
 class HighAvailabilityMode:
     FULL = "Full"
     NONE = "None"
