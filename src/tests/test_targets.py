@@ -25,6 +25,7 @@ class TestMakefileTargets(BaseTest):
     def test_target_deploy_nodes_oci(self, cluster):
         cluster.generate_and_download_infra_env()
         cluster.nodes.prepare_nodes()
+        cluster.create_custom_manifests()
 
     @JunitTestSuite()
     def test_target_destroy_nodes_oci(self, cluster):
