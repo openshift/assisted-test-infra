@@ -331,8 +331,10 @@ class KubeAPIPlatforms:
 
 
 class ControlPlaneCount:
-    THREE = 3
     ONE = 1
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
 
 
 class HighAvailabilityMode:
