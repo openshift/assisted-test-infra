@@ -136,6 +136,7 @@ class _EnvVariables(DataPool, ABC):
 
     api_vips: EnvVar = EnvVar(["API_VIPS"], loader=json.loads)
     ingress_vips: EnvVar = EnvVar(["INGRESS_VIPS"], loader=json.loads)
+    load_balancer_cidr: EnvVar = EnvVar(["LOAD_BALANCER_CIDR"])
 
     metallb_api_ip: EnvVar = EnvVar(["METALLB_API_IP"])
     metallb_ingress_ip: EnvVar = EnvVar(["METALLB_INGRESS_IP"])
