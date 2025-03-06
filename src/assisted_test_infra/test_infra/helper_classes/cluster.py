@@ -399,7 +399,7 @@ class Cluster(BaseCluster):
                 access_vips = controller.get_ingress_and_api_vips()
                 api_vips = access_vips["api_vips"] if access_vips else None
                 ingress_vips = access_vips["ingress_vips"] if access_vips else None
-                machine_networks = self.get_machine_networks() + [self._config.load_balancer_cidr]
+                machine_networks = self.get_machine_networks()
             else:
                 raise NotImplementedError("user-managed LB is supported for 'baremetal' and 'vsphere' platforms only")
 
