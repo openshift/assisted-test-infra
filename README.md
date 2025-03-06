@@ -17,9 +17,12 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Deployment parameters](#deployment-parameters)
     - [Components](#components)
     - [Deployment config](#deployment-config)
+    - [Minikube configuration](#minikube-configuration)
     - [Cluster configmap](#cluster-configmap)
   - [Installation parameters](#installation-parameters)
   - [Vsphere parameters](#vsphere-parameters)
+  - [Redfish parameters](#redfish-parameters)
+  - [External parameters](#external-parameters)
   - [Instructions](#instructions)
     - [Host preparation](#host-preparation)
   - [Usage](#usage)
@@ -40,6 +43,8 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
     - [start\_minikube and Deploy UI and open port forwarding on port 6008, allows to connect to it from browser](#start_minikube-and-deploy-ui-and-open-port-forwarding-on-port-6008-allows-to-connect-to-it-from-browser)
     - [Kill all open port forwarding commands, will be part of destroy target](#kill-all-open-port-forwarding-commands-will-be-part-of-destroy-target)
   - [Test `assisted-service` image](#test-assisted-service-image)
+    - [Initial Deployment with Custom Image](#initial-deployment-with-custom-image)
+    - [Updating a running `assisted-service` deployment](#updating-a-running-assisted-service-deployment)
     - [Test agent image](#test-agent-image)
     - [Test installer image or controller image](#test-installer-image-or-controller-image)
   - [Test installer, controller, `assisted-service` and agent images in the same flow](#test-installer-controller-assisted-service-and-agent-images-in-the-same-flow)
@@ -53,6 +58,7 @@ This project deploys the OpenShift Assisted Installer in Minikube and spawns lib
   - [Run operator](#run-operator)
   - [Cluster-API-provider-agent](#cluster-api-provider-agent)
   - [Test iPXE boot flow](#test-ipxe-boot-flow)
+  - [Test MCE and storage](#test-mce-and-storage)
 
 ## Prerequisites
 
@@ -375,10 +381,63 @@ make kill_all_port_forwardings
 
 ## Test `assisted-service` image
 
+### Initial Deployment with Custom Image
+
 ```bash
 make destroy run SERVICE=<image to test>
 ```
 
+### Updating a running `assisted-service` deployment
+
+If the environment is **already running**, you can manually update the image:
+
+```bash
+oc set image deployments/assisted-service assisted-service=quay.io/<your-username>/assisted-service:<tag> -n assisted-installer
+```
+
+After running this command, the pods will be restarted with the new image.
+
+**Handling same-tag image updates**
+
+If you **push an updated image with the same tag**, the new version will not be pulled automatically. To ensure the new image is used:
+
+1. **Recommended Approach (Trigger a rollout)**
+
+   ```bash
+   oc rollout restart deployment assisted-service -n assisted-installer
+   ```
+
+   This will gracefully restart the deployment, ensuring new pods pull the updated image.
+
+2. **Alternative Approach (Manually delete pods)**
+
+   ```bash
+   oc delete pods -l app=assisted-service -n assisted-installer
+   ```
+
+   The deleted pods will automatically be recreated with the new image.
+
+**Verification**
+
+To confirm that the new image is running:
+
+```bash
+oc get pods -n assisted-installer
+```
+
+Wait for the old pods to terminate and the new ones to start. You can also check the pod logs:
+
+```bash
+oc logs -f deployment/assisted-service -n assisted-installer
+```
+
+**Summary**
+
+* If you **set a custom image** before deployment → Use `make destroy run SERVICE=<image to test>` 
+* If you **change the image in a running environment** → Use `oc set image`
+* If you **push an updated image with the same tag**:
+  * **Preferred:** `oc rollout restart deployment assisted-service`
+  * **Alternative:** Delete the pods (`oc delete pods -l app=assisted-service`)
 ### Test agent image
 
 ```bash
