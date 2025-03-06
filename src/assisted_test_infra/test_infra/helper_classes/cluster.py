@@ -390,11 +390,11 @@ class Cluster(BaseCluster):
             machine_networks = [self.get_machine_networks()[0]]
 
         elif self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
-            if self._config.platform or self._config.platform == consts.Platforms.BARE_METAL:
+            if controller.tf_platform == consts.Platforms.BARE_METAL:
                 log.info("Setting the VIPs to the fixed load balancer IP")
                 api_vips = ingress_vips = [ApiVip(ip=self._get_load_balancer_ip()).to_dict()]
                 machine_networks = self.get_machine_networks() + [self.get_load_balancer_network_cidr()]
-            elif self._config.platform == consts.Platforms.VSPHERE:
+            elif controller.tf_platform == consts.Platforms.VSPHERE:
                 log.info("Setting the VIP and machine networks to the provided configuration")
                 access_vips = controller.get_ingress_and_api_vips()
                 api_vips = access_vips["api_vips"] if access_vips else None
@@ -1009,13 +1009,12 @@ class Cluster(BaseCluster):
         self.set_network_params(controller=self.nodes.controller)
 
         # in case of None / External platform / User Managed LB, we need to specify dns records before hosts are ready
-        if (
-            self.nodes.controller.tf_platform
-            in [
-                consts.Platforms.NONE,
-                consts.Platforms.EXTERNAL,
-            ]
-            or self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value
+        if self.nodes.controller.tf_platform in [
+            consts.Platforms.NONE,
+            consts.Platforms.EXTERNAL,
+        ] or (
+            self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value
+            and self.nodes.controller.tf_platform == consts.Platforms.BARE_METAL
         ):
             self._configure_load_balancer()
             self.nodes.controller.set_dns_for_user_managed_network()
