@@ -19,6 +19,7 @@ class BaseTerraformConfig(BaseNodesConfig, ABC):
     single_node_ip: str = None
     dns_records: Dict[str, str] = field(default_factory=dict)
 
+    libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI
     libvirt_master_ips: List[str] = None
     libvirt_secondary_master_ips: List[str] = None
     libvirt_worker_ips: List[str] = None

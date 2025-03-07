@@ -70,7 +70,7 @@ class Entity(ABC):
 
         if self._config.download_image and not is_static_ip:
             self.download_image()
-            
+
         self.nodes.prepare_nodes()
         if is_static_ip:
             # On static IP installation re-download the image after preparing nodes and setting the

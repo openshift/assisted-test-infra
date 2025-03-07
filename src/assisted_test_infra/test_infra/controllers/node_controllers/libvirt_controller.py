@@ -27,6 +27,7 @@ from tests.global_variables import DefaultVariables
 
 global_variables = DefaultVariables()
 
+
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 
@@ -34,10 +35,14 @@ class LibvirtController(NodeController, ABC):
         self,
         config: BaseNodesConfig,
         entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig],
+        libvirt_uri: str = None,
     ):
         super().__init__(config, entity_config)
-        log.info("Connection URI to KVM server: %s;", entity_config.libvirt_uri)
-        self.libvirt_uri: str = entity_config.libvirt_uri
+        if libvirt_uri is None:
+            self.libvirt_uri: str = entity_config.libvirt_uri
+        else:
+            self.libvirt_uri = libvirt_uri
+        log.info("Connection URI to KVM server: %s;", self.libvirt_uri)
         self.use_dhcp_for_libvirt: str = global_variables.use_dhcp_for_libvirt
         self.libvirt_connection: libvirt.virConnect = libvirt.open(self.libvirt_uri)
         self.private_ssh_key_path: Path = config.private_ssh_key_path
