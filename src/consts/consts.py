@@ -314,7 +314,6 @@ class Platforms:
     NUTANIX = "nutanix"
     OCI = "oci"
     EXTERNAL = "external"
-    S390X = "s390x"
 
 
 class ExternalPlatformNames:

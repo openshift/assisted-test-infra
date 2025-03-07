@@ -42,7 +42,7 @@ class Cluster(BaseCluster):
         nodes: Optional[Nodes] = None,
     ):
         self._is_installed = False
-        log.debug(f"--- TEST cluster init --- \n")
+        log.debug("--- TEST cluster init --- \n")
         super().__init__(api_client, config, infra_env_config, nodes)
 
         self.name = config.cluster_name.get()
@@ -739,10 +739,10 @@ class Cluster(BaseCluster):
         log.info("Start install on s390x and wait for be installed...")
         self.wait_for_ready_to_install()
         self.start_install()
-        
-        # for remote libvirt due to --noautoconsole option the VMs will not be automatic 
+
+        # for remote libvirt due to --noautoconsole option the VMs will not be automatic
         self.nodes.get_controller().check_vms_for_first_reboot_and_start()
-        
+
         if wait_for_hosts:
             self.wait_for_hosts_to_install(fall_on_pending_status=fall_on_pending_status)
         if wait_for_operators:
@@ -1455,5 +1455,6 @@ class Cluster(BaseCluster):
         del host_failure, config_host_network, current_host_network
         log.info("Static IP validation passed")
 
-    def get_infra_env(self):
+    @property
+    def infra_env(self):
         return self._infra_env

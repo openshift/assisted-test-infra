@@ -22,7 +22,7 @@ from service_client import log
 
 class TerraformController(LibvirtController):
     def __init__(self, config: BaseTerraformConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
-        super().__init__(config, entity_config)
+        super().__init__(config, entity_config, libvirt_uri=config.libvirt_uri)
         self._entity_name = self._entity_config.entity_name
         self._suffix = self._entity_name.suffix or get_name_suffix()
         self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.tf_platform)
@@ -176,7 +176,7 @@ class TerraformController(LibvirtController):
         tfvars = dict()
         machine_cidr = self.get_primary_machine_cidr()
 
-        tfvars["libvirt_uri"] = self._config.libvirt_uri
+        tfvars["libvirt_uri"] = self.libvirt_uri
         tfvars["master_count"] = self._params.master_count
         log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10)

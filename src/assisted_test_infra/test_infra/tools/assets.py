@@ -17,6 +17,7 @@ from tests.global_variables import DefaultVariables
 
 global_variables = DefaultVariables()
 
+
 class LibvirtNetworkAssets:
     """An assets class that stores values based on the current available
     resources, in order to allow multiple installations while avoiding

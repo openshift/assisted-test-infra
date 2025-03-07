@@ -113,7 +113,7 @@ _default_triggers = frozendict(
             conditions=[lambda config: config.cpu_architecture == consts.CPUArchitecture.S390X],
             user_managed_networking=True,
             iso_image_type=consts.ImageType.FULL_ISO,
-            tf_platform=consts.Platforms.S390X,
+            tf_platform="s390x",
         ),
     }
 )

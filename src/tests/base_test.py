@@ -34,8 +34,8 @@ from assisted_test_infra.test_infra.controllers import (
     TerraformController,
     VSphereController,
 )
-from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import collect_virsh_logs
 from assisted_test_infra.test_infra.controllers.node_controllers.kvm_s390x_controller import KVMs390xController
+from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import collect_virsh_logs
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodesConfig
@@ -474,9 +474,10 @@ class BaseTest:
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
         log.info("--- _prepare_nodes_network\n")
-        if (controller_configuration.tf_platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE, consts.Platforms.S390X)) or (
-            hasattr(controller_configuration, "redfish_enabled") and controller_configuration.redfish_enabled
-        ):
+        if (
+            (controller_configuration.tf_platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE))
+            or (hasattr(controller_configuration, "redfish_enabled") and controller_configuration.redfish_enabled)
+        ) and (global_variables.cpu_architecture != "s390x"):
             yield prepared_nodes
             log.info("--- _prepare_nodes_network :%s \n", prepared_nodes.get_nodes())
             return
