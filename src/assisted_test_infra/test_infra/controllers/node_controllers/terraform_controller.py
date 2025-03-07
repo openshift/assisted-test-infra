@@ -176,7 +176,7 @@ class TerraformController(LibvirtController):
         tfvars = dict()
         machine_cidr = self.get_primary_machine_cidr()
 
-        tfvars["libvirt_uri"] = self._config.libvirt_uri
+        tfvars["libvirt_uri"] = self.libvirt_uri
         tfvars["master_count"] = self._params.master_count
         log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10)

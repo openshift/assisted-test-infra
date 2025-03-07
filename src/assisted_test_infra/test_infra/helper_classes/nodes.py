@@ -1,6 +1,6 @@
 import json
 import random
-from typing import Dict, Iterator, List, Optional
+from typing import Dict, Iterator, List
 
 import waiting
 from munch import Munch
@@ -19,6 +19,7 @@ class NodeMapping:
         self.name = node.name
         self.node = node
         self.cluster_host = cluster_host
+
 
 class Nodes:
     DEFAULT_STATIC_IPS_CONFIG = False
@@ -249,6 +250,6 @@ class Nodes:
             waiting_for="nodes to allow ssh connection",
         )
         log.info("All nodes have booted, got ips, and ready for SSH")
-        
+
     def get_controller(self):
         return self.controller

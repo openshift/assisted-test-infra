@@ -4,8 +4,6 @@ from typing import Dict, List
 
 from munch import Munch
 
-import consts
-
 from .base_nodes_config import BaseNodesConfig
 
 

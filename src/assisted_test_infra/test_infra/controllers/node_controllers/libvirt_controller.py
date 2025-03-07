@@ -27,6 +27,7 @@ from tests.global_variables import DefaultVariables
 
 global_variables = DefaultVariables()
 
+
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
 

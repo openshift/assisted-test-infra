@@ -474,7 +474,8 @@ class BaseTest:
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
         log.info("--- _prepare_nodes_network\n")
-        if (controller_configuration.tf_platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE, consts.Platforms.S390X)) or (
+        if (controller_configuration.tf_platform not in
+            (consts.Platforms.BARE_METAL, consts.Platforms.NONE, consts.Platforms.S390X)) or (
             hasattr(controller_configuration, "redfish_enabled") and controller_configuration.redfish_enabled
         ):
             yield prepared_nodes
