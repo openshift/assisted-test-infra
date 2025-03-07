@@ -23,7 +23,9 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node import Nod
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config import BaseNodesConfig
 from service_client import log
+from tests.global_variables import DefaultVariables
 
+global_variables = DefaultVariables()
 
 class LibvirtController(NodeController, ABC):
     TEST_DISKS_PREFIX = "ua-TestInfraDisk"
@@ -32,10 +34,12 @@ class LibvirtController(NodeController, ABC):
         self,
         config: BaseNodesConfig,
         entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig],
-        libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI,
     ):
         super().__init__(config, entity_config)
-        self.libvirt_connection: libvirt.virConnect = libvirt.open(libvirt_uri)
+        log.info("Connection URI to KVM server: %s;", entity_config.libvirt_uri)
+        self.libvirt_uri: str = entity_config.libvirt_uri
+        self.use_dhcp_for_libvirt: str = global_variables.use_dhcp_for_libvirt
+        self.libvirt_connection: libvirt.virConnect = libvirt.open(self.libvirt_uri)
         self.private_ssh_key_path: Path = config.private_ssh_key_path
         self._setup_timestamp: str = utils.run_command('date +"%Y-%m-%d %T"')[0]
 
@@ -45,7 +49,8 @@ class LibvirtController(NodeController, ABC):
 
     @staticmethod
     @contextmanager
-    def connection_context(libvirt_uri: str = consts.DEFAULT_LIBVIRT_URI):
+    def connection_context(libvirt_uri: str = global_variables.libvirt_uri):
+        log.info("Connect to KVM server: %s;", libvirt_uri)
         conn = libvirt.open(libvirt_uri)
         try:
             yield conn

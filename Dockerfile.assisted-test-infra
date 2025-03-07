@@ -34,6 +34,9 @@ RUN dnf -y install --enablerepo=crb \
   iptables-nft \
    && dnf clean all
 
+RUN dnf -y install virt-install \
+   && dnf clean all
+
 # Git checks if the user that owns the files on the filesystem match the
 # current user.  We need to disable this check because tests in Prow are
 # running with a random user.

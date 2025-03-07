@@ -14,9 +14,12 @@ class NodeController(ABC):
     T = TypeVar("T", bound=SupportsAbs[BaseNodesConfig])
 
     def __init__(self, config: T, entity_config: BaseEntityConfig):
+        log.debug("NodeController: --- Init --- ")
         self._config = config
         self._entity_config = entity_config
 
+        self._download_path = None
+        
     def log_configuration(self):
         log.info(f"controller configuration={self._config}")
 
@@ -221,4 +224,14 @@ class NodeController(ABC):
         pass
 
     def get_day2_static_network_data(self):
+        pass
+
+    def set_download_path(self, download_path: str):
+        self._download_path = download_path
+        
+    def get_download_path(self) -> str:
+        return self._download_path
+    
+    @abstractmethod
+    def check_vms_for_first_reboot_and_start(self) -> None:
         pass

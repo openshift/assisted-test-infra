@@ -58,6 +58,13 @@ class TestMakefileTargets(BaseTest):
         cluster.download_ipxe_script()
 
     @JunitTestSuite()
+    def test_target_deploy_s390x_kvm_nodes_with_install(self, cluster):
+        log.info(f"Deploy on s390x KVM: prepare nodes") 
+        cluster.prepare_nodes()
+        log.info(f"Deploy on s390x KVM: prepare for installation") 
+        cluster.start_install_s390x_and_wait_for_installed()
+        
+    @JunitTestSuite()
     def test_delete_clusters(self, api_client: InventoryClient, cluster_configuration):
         """Delete all clusters or single cluster if CLUSTER_ID is given"""
 
@@ -119,3 +126,4 @@ class TestMakefileTargets(BaseTest):
                 shutil.rmtree(cluster_dir, onerror=onerror)
 
         log.info(f"Successfully destroyed {destroyed_clusters} clusters")
+        

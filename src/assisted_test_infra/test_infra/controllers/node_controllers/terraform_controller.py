@@ -22,7 +22,7 @@ from service_client import log
 
 class TerraformController(LibvirtController):
     def __init__(self, config: BaseTerraformConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
-        super().__init__(config, entity_config, libvirt_uri=config.libvirt_uri)
+        super().__init__(config, entity_config)
         self._entity_name = self._entity_config.entity_name
         self._suffix = self._entity_name.suffix or get_name_suffix()
         self.tf_folder = config.tf_folder or self._create_tf_folder(self._entity_name.get(), config.tf_platform)
