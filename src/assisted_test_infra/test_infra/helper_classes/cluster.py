@@ -1455,5 +1455,6 @@ class Cluster(BaseCluster):
         del host_failure, config_host_network, current_host_network
         log.info("Static IP validation passed")
 
-    def get_infra_env(self):
+    @property
+    def infra_env(self):
         return self._infra_env

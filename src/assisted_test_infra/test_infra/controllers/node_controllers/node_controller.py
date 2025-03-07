@@ -232,6 +232,5 @@ class NodeController(ABC):
     def get_download_path(self) -> str:
         return self._download_path
     
-    @abstractmethod
     def check_vms_for_first_reboot_and_start(self) -> None:
         pass
