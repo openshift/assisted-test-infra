@@ -26,12 +26,11 @@ class KVMs390xController(LibvirtController):
     def __init__(self, config: BaseNodesConfig, entity_config: Union[BaseClusterConfig, BaseInfraEnvConfig]):
         log.debug("KVMs390xController: --- Init --- ")
         super().__init__(config, entity_config)
-        self._entity_name = self._entity_config.entity_name
         self._default_variables = DefaultVariables()
         
     @property
     def entity_name(self) -> BaseName:
-        return self._entity_name
+        return self._entity_config.entity_name
  
     @property
     def cluster_name(self) -> str:
