@@ -94,6 +94,11 @@ function install_libvirt() {
     sudo gpasswd -a $current_user qemu
 }
 
+function install_virt_install() {
+    echo "Installing virt-install for remote libvirt access..." 
+    sudo dnf install -y virt-install
+}
+
 function add_libvirt_listen_flag() {
     if [[ -z $(sudo grep '#LIBVIRTD_ARGS="--listen"' /etc/sysconfig/libvirtd) ]]; then
         return
@@ -366,6 +371,7 @@ if [ $# -eq 0 ]; then
     config_chronyd
     config_nginx
     additional_configs
+    install_virt_install
 else
     $@
 fi
