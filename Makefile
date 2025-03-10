@@ -293,6 +293,9 @@ deploy_nodes_with_networking: start_load_balancer
 deploy_static_network_config_nodes:
 	make deploy_nodes_with_networking ADDITIONAL_PARAMS="'--with-static-network-config'"
 
+deploy_s390x_kvm_nodes_with_install:
+	$(MAKE) test TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_s390x_kvm_nodes_with_install
+
 .PHONY: deploy_ibip
 deploy_ibip:
 ifdef ADDITIONAL_MANIFEST_DIR

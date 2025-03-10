@@ -250,3 +250,6 @@ class Nodes:
             waiting_for="nodes to allow ssh connection",
         )
         log.info("All nodes have booted, got ips, and ready for SSH")
+
+    def get_controller(self):
+        return self.controller
