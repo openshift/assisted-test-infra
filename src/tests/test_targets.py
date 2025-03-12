@@ -22,13 +22,13 @@ class TestMakefileTargets(BaseTest):
         cluster.prepare_nodes()
 
     @JunitTestSuite()
-    def test_target_deploy_nodes_oci(self, cluster):
+    def test_target_oci_deploy_nodes(self, cluster):
         cluster.generate_and_download_infra_env()
         cluster.nodes.prepare_nodes()
         cluster.create_custom_manifests()
 
     @JunitTestSuite()
-    def test_target_destroy_nodes_oci(self, cluster):
+    def test_target_oci_destroy_nodes(self, cluster):
         cluster.nodes.destroy_all_nodes()
 
     @JunitTestSuite()
