@@ -282,10 +282,10 @@ deploy_nodes: start_load_balancer
 	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_nodes $(MAKE) test
 
 deploy_nodes_oci: start_load_balancer
-	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_nodes_oci $(MAKE) test
+	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_oci_deploy_nodes $(MAKE) test
 
 destroy_nodes_oci: start_load_balancer
-	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_destroy_nodes_oci $(MAKE) test
+	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_oci_destroy_nodes $(MAKE) test
 
 deploy_nodes_with_networking: start_load_balancer
 	TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_networking_with_nodes $(MAKE) test
