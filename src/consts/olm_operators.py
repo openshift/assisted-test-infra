@@ -12,6 +12,9 @@ class OperatorType:
     OPENSHIFT_AI = "openshift-ai"
     OSC = "osc"
     NMSTATE = "nmstate"
+    NHO = "node-healthcheck"
+    SNR = "self-node-remediation"
+    FAR = "fence-agents-remediation"
 
 
 class OperatorStatus:
@@ -178,6 +181,18 @@ class NMStateOperatorFailedError(OperatorFailedError):
     pass
 
 
+class NHOOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class SNROperatorFailedError(OperatorFailedError):
+    pass
+
+
+class FAROperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
 
     if operator == OperatorType.CNV:
@@ -209,6 +224,15 @@ def get_exception_factory(operator: str):
 
     if operator == OperatorType.NMSTATE:
         return NMStateOperatorFailedError
+
+    if operator == OperatorType.NHO:
+        return NHOOperatorFailedError
+
+    if operator == OperatorType.SNR:
+        return SNROperatorFailedError
+
+    if operator == OperatorType.FAR:
+        return SNROperatorFailedError
 
     return OperatorFailedError
 
