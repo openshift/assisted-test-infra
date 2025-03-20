@@ -42,7 +42,7 @@ class Cluster(BaseCluster):
         nodes: Optional[Nodes] = None,
     ):
         self._is_installed = False
-
+        log.debug("--- TEST cluster init --- \n")
         super().__init__(api_client, config, infra_env_config, nodes)
 
         self.name = config.cluster_name.get()
@@ -165,6 +165,7 @@ class Cluster(BaseCluster):
         )
 
         self._config.cluster_id = cluster.id
+        log.debug(f"Cluster created. ID={self._config.cluster_id}")
         return cluster.id
 
     def get_olm_operators(self) -> List:
@@ -735,10 +736,21 @@ class Cluster(BaseCluster):
         download_kubeconfig=True,
         fall_on_pending_status=False,
     ):
-        """
-        self.api_client.create_cluster(cluster_id=self.id)
-        """
         log.info("Start install on s390x and wait for be installed...")
+        self.wait_for_ready_to_install()
+        self.start_install()
+
+        # for remote libvirt due to --noautoconsole option the VMs will not be automatic
+        self.nodes.get_controller().check_vms_for_first_reboot_and_start()
+
+        if wait_for_hosts:
+            self.wait_for_hosts_to_install(fall_on_pending_status=fall_on_pending_status)
+        if wait_for_operators:
+            self.wait_for_operators_to_finish()
+        if wait_for_cluster_install:
+            self.wait_for_install()
+        if download_kubeconfig:
+            self.download_kubeconfig()
 
         log.info(f"Not implemented yet ... {self.get_details()}")
         self._is_installed = True
@@ -952,6 +964,7 @@ class Cluster(BaseCluster):
         ]
 
     def prepare_nodes(self, is_static_ip: bool = False, **kwargs):
+        log.debug(f"Nodes for architecture: {self._config.cpu_architecture}")
         super(Cluster, self).prepare_nodes(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
         platform = self.get_details().platform
         assert platform.type in self.api_client.get_cluster_supported_platforms(self.id) or (
@@ -1002,7 +1015,13 @@ class Cluster(BaseCluster):
     @JunitTestCase()
     def prepare_for_installation_s390x(self, **kwargs):
         log.info("Prepare for installation on s390x")
+        super().prepare_for_installation(**kwargs)
         self.create_custom_manifests()
+        log.info(
+            f"Preparing for installation with {self._entity_class_name} configurations: "
+            f"{self._entity_class_name}_config={self._config}"
+        )
+        self.nodes.controller.log_configuration()
 
     def prepare_networking(self):
         self.nodes.wait_for_networking()
@@ -1435,3 +1454,7 @@ class Cluster(BaseCluster):
 
         del host_failure, config_host_network, current_host_network
         log.info("Static IP validation passed")
+
+    @property
+    def infra_env(self):
+        return self._infra_env

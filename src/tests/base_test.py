@@ -34,8 +34,8 @@ from assisted_test_infra.test_infra.controllers import (
     TerraformController,
     VSphereController,
 )
+from assisted_test_infra.test_infra.controllers.node_controllers.kvm_s390x_controller import KVMs390xController
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import collect_virsh_logs
-from assisted_test_infra.test_infra.controllers.node_controllers.zvm_controller import ZVMController
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
 from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
 from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodesConfig
@@ -409,7 +409,7 @@ class BaseTest:
             return OciApiController(controller_configuration, cluster_configuration)
 
         if platform == consts.CPUArchitecture.S390X:
-            return ZVMController(controller_configuration, cluster_configuration)
+            return KVMs390xController(controller_configuration, cluster_configuration)
 
         return TerraformController(controller_configuration, entity_config=cluster_configuration)
 
@@ -449,6 +449,7 @@ class BaseTest:
     @JunitFixtureTestCase()
     def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
         try:
+            log.info("--- TEST prepare_nodes  ---")
             yield nodes
         finally:
             if global_variables.test_teardown:
@@ -472,10 +473,13 @@ class BaseTest:
 
     @classmethod
     def _prepare_nodes_network(cls, prepared_nodes: Nodes, controller_configuration: BaseNodesConfig) -> Nodes:
-        if (controller_configuration.tf_platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE)) or (
-            hasattr(controller_configuration, "redfish_enabled") and controller_configuration.redfish_enabled
-        ):
+        log.info("--- _prepare_nodes_network\n")
+        if (
+            (controller_configuration.tf_platform not in (consts.Platforms.BARE_METAL, consts.Platforms.NONE))
+            or (hasattr(controller_configuration, "redfish_enabled") and controller_configuration.redfish_enabled)
+        ) and (global_variables.cpu_architecture != "s390x"):
             yield prepared_nodes
+            log.info("--- _prepare_nodes_network :%s \n", prepared_nodes.get_nodes())
             return
 
         interfaces = cls.nat_interfaces(controller_configuration)  # todo need to fix mismatch config types

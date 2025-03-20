@@ -108,7 +108,10 @@ before you run start the deployment.
 | `OPENSHIFT_VERSION`                  | The OCP version which will be supported by the deployed components. Should be in `x.y` format |
 | `OPENSHIFT_INSTALL_RELEASE_IMAGE`    | The OCP release image reference which will be supported by the deployed components. For example - `quay.io/openshift-release-dev/ocp-release:4.16.0-x86_64` |
 | `INSTALL_WORKING_DIR`                | The path to a working directory where files like iPXE scripts, boot artefacts, etc are strored. For example `/tmp` |
-| `LIBVIRT_URI`                        | The connection URI to remote libvirt. For example `qemu+ssh://user@192.23.236.34/system`. Default is `qemu:///system` | 
+| `MACHINE_CIDR_IPV4`                  | The machine cidr for e.g. remote libvirt. Default is `192.168.127.0/24` |
+| `MACHINE_CIDR_IPV6`                  | The machine cidr for e.g. remote libvirt. Default is `1001:db9::/120` |
+| `USE_DHCP_FOR_LIBVIRT`               | Use DHCP for libvirt on s390x architecture. If set to true, the `MAC_LIBVIRT_PREFIX` parameter must be specified. Default is `True`.  
+| `MAC_LIBVIRT_PREFIX`                 | The mac used for DHCP for KVM. Example `54:52:00:00:7a:00`. The last two diggest will be increased for every node. The first node will get `54:52:00:00:7a:00` the second node will get `54:52:00:00:7a:01`
 
 ### Minikube configuration
 

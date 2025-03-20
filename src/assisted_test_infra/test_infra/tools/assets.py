@@ -13,6 +13,9 @@ from assisted_test_infra.test_infra import utils
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import LibvirtController
 from consts.consts import DEFAULT_LIBVIRT_URI
 from service_client import log
+from tests.global_variables import DefaultVariables
+
+global_variables = DefaultVariables()
 
 
 class LibvirtNetworkAssets:
@@ -22,8 +25,8 @@ class LibvirtNetworkAssets:
 
     ASSETS_LOCKFILE_DEFAULT_PATH = "/tmp"
     BASE_ASSET = {
-        "machine_cidr": consts.BaseAsset.MACHINE_CIDR,
-        "machine_cidr6": consts.BaseAsset.MACHINE_CIDR6,
+        "machine_cidr": global_variables.machine_cidr_ipv4,
+        "machine_cidr6": global_variables.machine_cidr_ipv6,
         "provisioning_cidr": consts.BaseAsset.PROVISIONING_CIDR,
         "provisioning_cidr6": consts.BaseAsset.PROVISIONING_CIDR6,
         "libvirt_network_if": consts.BaseAsset.NETWORK_IF,
@@ -35,7 +38,7 @@ class LibvirtNetworkAssets:
         assets_file: str = consts.TF_NETWORK_POOL_PATH,
         lock_file: Optional[str] = None,
         base_asset: dict[str, Any] = BASE_ASSET,
-        libvirt_uri: str = DEFAULT_LIBVIRT_URI,
+        libvirt_uri: str = global_variables.libvirt_uri,
     ):
         self._assets_file = assets_file
         self._lock_file = lock_file or os.path.join(
@@ -46,6 +49,7 @@ class LibvirtNetworkAssets:
         self._allocated_bridges = []
         self._taken_assets = set([])
         self._asset = base_asset.copy()
+        self._default_variables = DefaultVariables()
         self._libvirt_uri = libvirt_uri
 
     def get(self) -> Munch:

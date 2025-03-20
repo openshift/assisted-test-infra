@@ -169,6 +169,13 @@ class _EnvVariables(DataPool, ABC):
     # this is not exclusive for s390x but heavily used by s390x testcases
     install_working_dir: EnvVar = EnvVar(["INSTALL_WORKING_DIR"])
     libvirt_uri: EnvVar = EnvVar(["LIBVIRT_URI"], default=consts.DEFAULT_LIBVIRT_URI)
+    machine_cidr_ipv4: EnvVar = EnvVar(["MACHINE_CIDR_IPV4"], default=consts.BaseAsset.MACHINE_CIDR)
+    machine_cidr_ipv6: EnvVar = EnvVar(["MACHINE_CIDR_IPV6"], default=consts.BaseAsset.MACHINE_CIDR6)
+    use_dhcp_for_libvirt: EnvVar = EnvVar(["USE_DHCP_FOR_LIBVIRT"], default=env_defaults.DEFAULT_USE_DHCP_FOR_LIBVIRT)
+    libvirt_network_name: EnvVar = EnvVar(["LIBVIRT_NETWORK_NAME"], default="default")
+    disk_pool: EnvVar = EnvVar(["DISK_POOL"])
+    disk_pool_size: EnvVar = EnvVar(["DISK_POOL_SIZE"])
+    mac_libvirt_prefix: EnvVar = EnvVar(["MAC_LIBVIRT_PREFIX"])
 
     # day2 libvirt target and VM network configuration
     day2_libvirt_uri: EnvVar = EnvVar(["DAY2_LIBVIRT_URI"])
