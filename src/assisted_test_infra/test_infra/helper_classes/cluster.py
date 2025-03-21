@@ -1399,9 +1399,7 @@ class Cluster(BaseCluster):
                         for address_version in consts.IP_VERSIONS.keys():
                             if address_version not in current_interface.keys():
                                 continue
-                            address = current_interface[address_version]["address"]
-                            if len(address) == 0:
-                                continue
+                            address = current_interface[address_version].get("address", [])
                             host_network[expected_interface_mac] = {
                                 consts.IP_VERSIONS[address_version]: [
                                     f'{item["ip"]}/{item["prefix-length"]}' for item in address
