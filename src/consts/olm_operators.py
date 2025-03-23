@@ -15,6 +15,7 @@ class OperatorType:
     NHO = "node-healthcheck"
     SNR = "self-node-remediation"
     FAR = "fence-agents-remediation"
+    NMO = "node-maintenance"
 
 
 class OperatorStatus:
@@ -193,6 +194,10 @@ class FAROperatorFailedError(OperatorFailedError):
     pass
 
 
+class NMOOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
 
     if operator == OperatorType.CNV:
@@ -233,6 +238,9 @@ def get_exception_factory(operator: str):
 
     if operator == OperatorType.FAR:
         return SNROperatorFailedError
+
+    if operator == OperatorType.FAR:
+        return NMOOperatorFailedError
 
     return OperatorFailedError
 
