@@ -13,4 +13,4 @@ os.chdir(dir)
 # Create server object
 server_object = HTTPServer(server_address=(ip, port), RequestHandlerClass=CGIHTTPRequestHandler)
 # Start the web server
-server_object.serve_forever()
+server_object.serve_forever(poll_interval=1.5)
