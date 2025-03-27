@@ -97,9 +97,7 @@ class OperatorResource:
     def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
-            OperatorType.NMSTATE: cls.get_resource_dict(
-                master_memory=100, worker_memory=100, master_vcpu=1, worker_vcpu=1
-            ),
+            OperatorType.NMSTATE: cls.get_resource_dict(),
             OperatorType.MTV: cls.get_resource_dict(
                 master_memory=1174, worker_memory=1384, master_vcpu=5, worker_vcpu=3
             ),
