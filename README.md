@@ -1,19 +1,9 @@
-# !! Warning !!
-
-It's not recommended to run the code in this repo locally on your personal
-machine, as it makes some opinionated configuration changes to the machine it's
-running on
-
-# Test-Infra
-
-This project deploys the OpenShift Assisted Installer in Minikube and spawns libvirt VMs that represent bare metal hosts.
-
 **Table of contents**
 
-- [!! Warning !!](#-warning-)
-- [Test-Infra](#test-infra)
-  - [Prerequisites](#prerequisites)
-  - [Installation Guide](#installation-guide)
+- [⚠️ Warning ⚠️](docs/warning.md)
+- [Overview](docs/overview.md)
+- [Prerequisites](docs/prerequisites)
+- [getting-started](docs/getting-started.md)
   - [Deployment parameters](#deployment-parameters)
     - [Components](#components)
     - [Deployment config](#deployment-config)
