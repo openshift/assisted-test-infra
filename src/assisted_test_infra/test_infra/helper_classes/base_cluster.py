@@ -6,11 +6,12 @@ from assisted_service_client import models
 from junit_report import JunitTestCase
 
 import consts
-from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig, Nodes
+from assisted_test_infra.test_infra import BaseClusterConfig, BaseInfraEnvConfig
 from assisted_test_infra.test_infra.controllers.node_controllers import Node
 from assisted_test_infra.test_infra.helper_classes.cluster_host import ClusterHost
 from assisted_test_infra.test_infra.helper_classes.entity import Entity
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
+from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.utils.waiting import wait_till_all_hosts_are_in_status
 from service_client import InventoryClient, log
 

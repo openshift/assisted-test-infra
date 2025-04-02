@@ -9,7 +9,7 @@ from kubernetes.client import ApiClient, CoreV1Api
 from kubernetes.client.exceptions import ApiException as K8sApiException
 from netaddr import IPNetwork
 
-from assisted_test_infra.test_infra import BaseEntityConfig, BaseInfraEnvConfig, Nodes, utils
+from assisted_test_infra.test_infra import BaseEntityConfig, BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.controllers import Node
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
@@ -22,6 +22,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     KubeAPIContext,
     NMStateConfig,
 )
+from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
 from consts.consts import MiB_UNITS
