@@ -11,7 +11,7 @@ from junit_report import JunitFixtureTestCase, JunitTestCase, JunitTestSuite
 from netaddr import IPNetwork
 
 import consts
-from assisted_test_infra.test_infra import BaseInfraEnvConfig, Nodes, utils
+from assisted_test_infra.test_infra import BaseInfraEnvConfig, utils
 from assisted_test_infra.test_infra.controllers.load_balancer_controller import LoadBalancerController
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.hypershift import HyperShift
@@ -24,6 +24,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
     Proxy,
     Secret,
 )
+from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.utils.k8s_utils import get_field_from_resource
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node, get_platform_type
 from service_client import log

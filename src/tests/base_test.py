@@ -16,7 +16,7 @@ from paramiko import SSHException
 
 import consts
 from assisted_test_infra.download_logs.download_logs import download_logs
-from assisted_test_infra.test_infra import ClusterName, Nodes, utils
+from assisted_test_infra.test_infra import ClusterName, utils
 from assisted_test_infra.test_infra.controllers import (
     AssistedInstallerInfraController,
     IptableRule,
@@ -42,6 +42,7 @@ from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, Bas
 from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Cluster
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
+from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
 from service_client import InventoryClient, SuppressAndLog, add_log_record, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
