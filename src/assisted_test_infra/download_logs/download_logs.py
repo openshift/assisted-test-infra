@@ -3,7 +3,6 @@
 import filecmp
 import json
 import os
-import re
 import shutil
 import tarfile
 import tempfile
@@ -205,10 +204,16 @@ def download_logs(
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             install_config = Path(output_folder) / "cluster_files" / "install-config.yaml"
             client.download_and_save_file(cluster["id"], "install-config.yaml", str(install_config))
-            censored_content = re.sub(
-                r"(pullSecret:\s+)'(.*)'", r"\g<1>xxxx_PULL_SECRET_REDACTED_xxxx", install_config.read_text()
+
+            install_config_content: dict = json.loads(install_config.read_text())
+
+            if "pullSecret" in install_config_content:
+                install_config_content["pullSecret"] = "censored"
+
+            install_config.write_text(
+                json.dumps(install_config_content, indent=2),
+                encoding="utf-8",
             )
-            install_config.write_text(censored_content)
 
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             download_manifests(client, cluster["id"], output_folder)
