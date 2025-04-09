@@ -652,6 +652,8 @@ class TestLateBinding(BaseKubeAPI):
             secret=secret,
             proxy=None,
             ssh_pub_key=infraenv_config.ssh_public_key,
+            set_infraenv_version=infraenv_config.set_infraenv_version,
+            openshift_version=infraenv_config.openshift_version,
         )
 
         agents = self.start_nodes(nodes, infra_env, infraenv_config, infraenv_config.is_static_ip)
