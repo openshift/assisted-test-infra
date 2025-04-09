@@ -84,11 +84,13 @@ class InfraEnv(BaseCustomResource):
         self,
         cluster_deployment: Optional[ClusterDeployment],
         secret: Secret,
+        set_infraenv_version: bool = False,
         proxy: Optional[Proxy] = None,
         ignition_config_override: Optional[str] = None,
         nmstate_label: Optional[str] = None,
         ssh_pub_key: Optional[str] = None,
         additional_trust_bundle: Optional[str] = None,
+        openshift_version: Optional[str] = None,
         **kwargs,
     ) -> Dict:
         body = {
@@ -115,6 +117,9 @@ class InfraEnv(BaseCustomResource):
             spec["sshAuthorizedKey"] = ssh_pub_key
         if additional_trust_bundle:
             spec["additionalTrustBundle"] = additional_trust_bundle
+
+        if set_infraenv_version:
+            body["spec"]["osImageVersion"] = openshift_version
 
         spec.update(kwargs)
         infraenv = self.crd_api.create_namespaced_custom_object(

@@ -192,6 +192,7 @@ before you run start the deployment.
 | `REGISTRY_CA_PATH`           | Path to mirror registry CA bundle                                                            |
 | `HOST_INSTALLER_ARGS`        | JSON formatted string used to customize installer arguments on all the hosts. Example: `{"args": ["--append-karg", "console=ttyS0"]}`                      |
 | `LOAD_BALANCER_TYPE` | Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user. |
+| `SET_INFRAENV_VERSION` | If `true`, sets the `osImageVersion` field on the `InfraEnv` to the `OPENSHIFT_VERSION` to ensure the discovery ISO uses this OCP version for tests, default: `false` | 
 
 ## Vsphere parameters
 
