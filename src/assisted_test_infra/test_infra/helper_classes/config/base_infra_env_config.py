@@ -19,3 +19,4 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     is_static_ip: bool = None
     kernel_arguments: List[dict[str, str]] = None
     host_installer_args: List[dict[str, str]] = None
+    set_infraenv_version: bool = None
