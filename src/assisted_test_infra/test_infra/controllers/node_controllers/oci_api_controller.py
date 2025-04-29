@@ -532,7 +532,7 @@ class OciApiController(NodeController):
         url_path = self._create_pre_authenticated(
             f"preauth-{self._entity_config.cluster_id}", self._entity_config.iso_download_path, namespace, bucket_name
         )
-
+        # Terraform variables from https://github.com/oracle-quickstart/oci-openshift/releases
         terraform_variables = self._terraform_variables(
             cluster_name=self._entity_config.entity_name,
             image_source_uri=url_path,
@@ -541,6 +541,7 @@ class OciApiController(NodeController):
             compute_shape=self._config.oci_compute_shape,
             compute_ocpu=self._config.oci_compute_cpu,
             compute_count=str(self._config.workers_count),
+            control_plane_count=str(self._config.masters_count),
             base_dns=self._entity_config.base_dns_domain,
         )
         stack_id = self._create_stack(
