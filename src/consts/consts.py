@@ -371,3 +371,20 @@ class LoadBalancerType(Enum):
     CLUSTER_MANAGED_K8S_API = "ClusterManaged"
     USER_MANAGED = "user-managed"
     USER_MANAGED_K8S_API = "UserManaged"
+
+
+class CensoredConfig:
+    EXACT_PATHS = {
+        "/opt/openshift/openshift/99_openshift-cluster-api_master-user-data-secret.yaml",
+        "/opt/openshift/openshift/99_openshift-cluster-api_worker-user-data-secret.yaml",
+        "/opt/openshift/openshift/99_kubeadmin-password-secret.yaml",
+        "/opt/openshift/manifests/machine-config-server-ca-secret.yaml",
+        "/opt/openshift/manifests/machine-config-server-tls-secret.yaml",
+        "/opt/openshift/manifests/openshift-config-secret-pull-secret.yaml",
+        "/opt/openshift/auth/kubeconfig",
+        "/opt/openshift/auth/kubeconfig-kubelet",
+        "/opt/openshift/auth/kubeconfig-loopback",
+        "/opt/openshift/manifests/kube-system-configmap-root-ca.yaml",
+        "/opt/openshift/manifests/machine-config-server-ca-configmap.yaml",
+    }
+    SENSITIVE_EXTENSIONS = (".crt", ".key")
