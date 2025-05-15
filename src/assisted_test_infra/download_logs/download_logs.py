@@ -191,16 +191,6 @@ def download_logs(
         infra_envs = client.get_infra_envs_by_cluster_id(cluster["id"])
         write_metadata_file(client, cluster, infra_envs, os.path.join(output_folder, "metadata.json"))
 
-        for cluster_file in (
-            "bootstrap.ign",
-            "master.ign",
-            "worker.ign",
-        ):
-            with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-                client.download_and_save_file(
-                    cluster["id"], cluster_file, os.path.join(output_folder, "cluster_files", cluster_file)
-                )
-
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             install_config = Path(output_folder) / "cluster_files" / "install-config.yaml"
             client.download_and_save_file(cluster["id"], "install-config.yaml", str(install_config))
