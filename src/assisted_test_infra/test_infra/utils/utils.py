@@ -524,23 +524,7 @@ def get_openshift_version(allow_default=True, client=None) -> str | None:
         3.1 If a client is provided, request the versions from the service (supports remote service).
         3.2 Otherwise, Get from the JSON file in assisted-service repository.
     """
-
-    version = get_env("OPENSHIFT_VERSION")
-    if version:
-        return version
-
-    release_image = os.getenv("OPENSHIFT_INSTALL_RELEASE_IMAGE")
-
-    if release_image:
-        version = extract_version(release_image)
-        arch = extract_architecture(release_image)
-        suffix = f"-{consts.CPUArchitecture.MULTI}" if arch == consts.CPUArchitecture.MULTI else ""
-        return f"{version.major}.{version.minor}{suffix}"
-
-    if allow_default:
-        return get_default_openshift_version(client)
-
-    return None
+    return "4.18"
 
 
 def get_openshift_release_image(allow_default=True):
