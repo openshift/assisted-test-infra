@@ -124,7 +124,7 @@ if [ "${DEPLOY_TARGET}" == "onprem" ]; then
     HW_VALIDATOR_REQUIREMENTS_LOW_DISK=$(echo $validator_requirements | jq '(.[].worker.disk_size_gb, .[].master.disk_size_gb, .[].sno.disk_size_gb) |= 20' | tr -d "\n\t ")
     sed -i "s|HW_VALIDATOR_REQUIREMENTS:.*|HW_VALIDATOR_REQUIREMENTS: '${HW_VALIDATOR_REQUIREMENTS_LOW_DISK}'|" assisted-service/deploy/podman/configmap.yml
 
-    ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ deploy-onprem
+    ROOT_DIR=$(realpath assisted-service/) make -C assisted-service/ deploy-onprem || sleep 18000
 elif [ "${DEPLOY_TARGET}" == "operator" ]; then
     # This nginx would listen to http on OCP_SERVICE_PORT and it would proxy_pass it to the actual route.
     export SERVICE_BASE_URL=http://${SERVICE_URL}:${OCP_SERVICE_PORT}
