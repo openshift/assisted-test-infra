@@ -81,3 +81,6 @@ ENV PRE_COMMIT_HOME build
 # In the CI, it will be missing during the first build in "images" in prow,
 # but should be present after running "make image_build" during setup.
 RUN pip3 install --no-index ./.pip/* || true
+
+# Extract the commit reference from which the image is built and remove git directory
+RUN git rev-parse --short HEAD > /commit-reference.txt && rm -rf .git
