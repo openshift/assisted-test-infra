@@ -114,8 +114,13 @@ class TestKubeAPI(BaseKubeAPI):
         proxy = self.setup_proxy(nodes, cluster_config, proxy_server)
         ignition_config_override = None
         infra_env = InfraEnv(api_client, f"{cluster_name}-infra-env", spoke_namespace)
+
         infraenv = infra_env.create(
-            cluster_deployment, secret, proxy, ignition_config_override, ssh_pub_key=cluster_config.ssh_public_key
+            cluster_deployment=cluster_deployment,
+            secret=secret,
+            proxy=proxy,
+            ignition_config_override=ignition_config_override,
+            ssh_pub_key=cluster_config.ssh_public_key,
         )
         if is_disconnected and cluster_config.registry_ca_path is not None:
             log.info("setting additional trust bundle for disconnected install")
