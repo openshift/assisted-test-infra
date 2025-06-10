@@ -39,7 +39,7 @@ from assisted_test_infra.test_infra.utils import (
     verify_logs_uploaded,
 )
 from assisted_test_infra.test_infra.utils.kubeapi_utils import get_ip_for_single_node
-from consts import ClusterStatus, HostsProgressStages, env_defaults
+from consts import CensoredConfig, ClusterStatus, HostsProgressStages, env_defaults
 from service_client import InventoryClient, SuppressAndLog, log
 from tests.config import ClusterConfig, TerraformConfig
 
@@ -52,6 +52,60 @@ RETRY_INTERVAL = 5  # seconds
 SOSREPORT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "man_sosreport.sh")
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+def censor_sensitive_sources(json_path: str):
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        log.debug(f"File {json_path} loaded, keys: {list(data.keys())}")
+    except (FileNotFoundError, PermissionError, json.JSONDecodeError) as e:
+        log.warning(f"Failed to load or parse {json_path}: {e}")
+        return
+
+    changes_made = False
+    filename = os.path.basename(json_path)
+
+    if filename == "bootstrap.ign":
+        changes_made |= _censor_storage_files(data)
+    else:
+        changes_made |= _censor_tls_certificate_authorities(data)
+
+    if changes_made:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+
+def _censor_storage_files(data: dict) -> bool:
+    changes_made = False
+    files = data.get("storage", {}).get("files", [])
+    for file_entry in files:
+        path = file_entry.get("path", "")
+        if path.endswith(CensoredConfig.SENSITIVE_EXTENSIONS) or path in CensoredConfig.EXACT_PATHS:
+            if (
+                "contents" in file_entry
+                and "source" in file_entry["contents"]
+                and file_entry["contents"]["source"] != "censored"
+            ):
+                file_entry["contents"]["source"] = "censored"
+                changes_made = True
+                log.debug(f"Censored file source for path: {path}")
+    return changes_made
+
+
+def _censor_tls_certificate_authorities(data: dict) -> bool:
+    try:
+        ca_list = data["ignition"]["security"]["tls"]["certificateAuthorities"]
+        if isinstance(ca_list, list) and ca_list:
+            if not (len(ca_list) == 1 and ca_list[0].get("source") == "censored"):
+                data["ignition"]["security"]["tls"]["certificateAuthorities"] = [
+                    {"source": "censored", "verification": {}}
+                ]
+                log.debug("Censored certificate authorities")
+                return True
+    except KeyError:
+        pass
+    return False
 
 
 def download_cluster_logs(
@@ -197,9 +251,9 @@ def download_logs(
             "worker.ign",
         ):
             with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
-                client.download_and_save_file(
-                    cluster["id"], cluster_file, os.path.join(output_folder, "cluster_files", cluster_file)
-                )
+                file_path = os.path.join(output_folder, "cluster_files", cluster_file)
+                client.download_and_save_file(cluster["id"], cluster_file, file_path)
+                censor_sensitive_sources(file_path)
 
         with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
             install_config = Path(output_folder) / "cluster_files" / "install-config.yaml"
@@ -220,9 +274,11 @@ def download_logs(
 
         for host in cluster["hosts"]:
             with SuppressAndLog(assisted_service_client.rest.ApiException, KeyboardInterrupt):
+                file_path = os.path.join(output_folder, "cluster_files", f"host_{host['id']}.ign")
                 client.download_host_ignition(
                     host["infra_env_id"], host["id"], os.path.join(output_folder, "cluster_files")
                 )
+                censor_sensitive_sources(file_path)
 
         gather_event_files(client, cluster, infra_envs, output_folder)
 
