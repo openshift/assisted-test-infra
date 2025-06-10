@@ -1,0 +1,156 @@
+- hosts: localhost
+  gather_facts: true
+  vars:
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1') }}"
+    leak_threshold_seconds: "{{ lookup('env', 'LEAK_THRESHOLD_SECONDS') | default('21600') | int }}"
+    slack_token: "{{ lookup('env', 'SLACK_TOKEN') | default('') }}"
+    slack_channel: "{{ lookup('env', 'SLACK_CHANNEL') | default('#assisted-deployment-ci') }}"
+    slack_mention: "{{ lookup('env', 'SLACK_MENTION') | default('') }}"
+    leaked_instances: []
+    terminate_leaked_instances_flag: "{{ lookup('env', 'TERMINATE_LEAKED_INSTANCES_FLAG') | default(false) | bool }}"
+
+  tasks:
+    - name: Preliminary check for Slack Token
+      ansible.builtin.assert:
+        that:
+          - slack_token | trim != ""
+        fail_msg: "Slack Token (SLACK_TOKEN environment variable) is not configured or is empty. Please set it."
+      run_once: true
+
+    - name: Gather EC2 instance information for the specified region
+      amazon.aws.ec2_instance_info:
+        region: "{{ aws_region }}"
+        filters:
+          instance-state-name: running
+      register: ec2_info
+      failed_when: "'failed' in ec2_info and ec2_info.failed"
+
+    - name: Identify leaked instances based on uptime
+      ansible.builtin.set_fact:
+        leaked_instances: >-
+          {{ leaked_instances +
+             [
+               {
+                 'id': item.instance_id,
+                 'launch_time_str': item.launch_time,
+                 'uptime_seconds': (
+                                     (
+                                       ((ansible_date_time.iso8601 | regex_replace('Z$', '+0000')) | to_datetime('%Y-%m-%dT%H:%M:%S%z')) -
+                                       (item.launch_time | to_datetime('%Y-%m-%dT%H:%M:%S%z'))
+                                     ).total_seconds()
+                                   ) | int,
+                 'tags': item.tags | default({})
+               }
+             ]
+          }}
+      loop: "{{ ec2_info.instances | default([]) }}"
+      when:
+        - item.launch_time is defined
+        - (
+            (
+              (
+                ((ansible_date_time.iso8601 | regex_replace('Z$', '+0000')) | to_datetime('%Y-%m-%dT%H:%M:%S%z')) -
+                (item.launch_time | to_datetime('%Y-%m-%dT%H:%M:%S%z'))
+              ).total_seconds()
+            ) | int
+          ) > (leak_threshold_seconds | int)
+      loop_control:
+        label: "{{ item.instance_id }}"
+
+    - name: Prepare detailed report lines for Slack
+      ansible.builtin.set_fact:
+        report_lines_for_slack: >-
+          {%- set ns = namespace(report_text="") -%}
+          {%- for inst in leaked_instances -%}
+          {%-   set uptime_total_seconds = inst.uptime_seconds | int -%}
+          {%-   set uptime_days = uptime_total_seconds // 86400 -%}
+          {%-   set remainder_seconds_after_days = uptime_total_seconds % 86400 -%}
+          {%-   set uptime_hours = remainder_seconds_after_days // 3600 -%}
+          {%-   set remainder_seconds_after_hours = remainder_seconds_after_days % 3600 -%}
+          {%-   set uptime_minutes = remainder_seconds_after_hours // 60 -%}
+          {%-   set uptime_str_parts = [] -%}
+          {%-   if uptime_days > 0 %}{%- set _ = uptime_str_parts.append(uptime_days ~ 'd') -%}{%- endif -%}
+          {%-   if uptime_hours > 0 %}{%- set _ = uptime_str_parts.append(uptime_hours ~ 'h') -%}{%- endif -%}
+          {%-   if uptime_minutes > 0 %}{%- set _ = uptime_str_parts.append(uptime_minutes ~ 'm') -%}{%- endif -%}
+          {%-   if uptime_str_parts | length == 0 %}{%- set _ = uptime_str_parts.append('<1m') -%}{%- endif -%}
+          {%-   set uptime_str = uptime_str_parts | join(' ') -%}
+          {%-   set inst_name = inst.tags.Name | default('N/A') -%}
+          {%-   set display_launch_time = inst.launch_time_str | regex_replace('\\+00:00$', 'Z') | regex_replace('T', ' ') -%}
+          {%-   set ns.report_text = ns.report_text ~ "  - Instance ID: " ~ inst.id ~ "\n" -%}
+          {%-   set ns.report_text = ns.report_text ~ "    Name: " ~ inst_name ~ "\n" -%}
+          {%-   set ns.report_text = ns.report_text ~ "    Launch Time: " ~ display_launch_time ~ "\n" -%}
+          {%-   set ns.report_text = ns.report_text ~ "    Uptime: " ~ uptime_str ~ " (" ~ uptime_total_seconds ~ " sec)" -%}
+          {%-   if not loop.last -%}
+          {%-     set ns.report_text = ns.report_text ~ "\n\n" -%}
+          {%-   else -%}
+          {%-     set ns.report_text = ns.report_text ~ "\n" -%}
+          {%-   endif -%}
+          {%- endfor -%}
+          {{ ns.report_text }}
+      when:
+        - leaked_instances is defined
+        - leaked_instances | length > 0
+
+    - name: Compose Slack message content
+      ansible.builtin.set_fact:
+        slack_message_text: |
+          {% if slack_mention | trim != "" %}{{ slack_mention }} {% endif %}:aws: *EC2 Leaked Instance Report & Action*
+          *Region:* `{{ aws_region }}`
+          *Uptime Threshold:* Over {{ (leak_threshold_seconds | int) // 3600 }}h {{ ((leak_threshold_seconds | int) % 3600) // 60 }}m ({{ leak_threshold_seconds | int }} seconds)
+          *Termination Enabled:* `{{ terminate_leaked_instances_flag }}`
+          ---
+          {% if leaked_instances is defined and leaked_instances | length > 0 %}
+          Found *{{ leaked_instances | length }}* leaked instance(s):
+          ```
+          {{ report_lines_for_slack }}```
+          {% if terminate_leaked_instances_flag %}
+          *Action: These instances WILL BE TERMINATED.*
+          {% else %}
+          *Action: Dry Run - Instances listed above would be terminated if termination were enabled (TERMINATE_LEAKED_INSTANCES_FLAG=true).*
+          {% endif %}
+          {% else %}
+          No EC2 instances found exceeding the leak uptime threshold in region `{{ aws_region }}`.
+          {% endif %}
+      when:
+        - leaked_instances is defined
+        - leaked_instances | length > 0
+
+    - name: Display composed report and intended actions in console
+      ansible.builtin.debug:
+        msg: "{{ slack_message_text.split('\n') }}"
+      when:
+        - leaked_instances is defined
+        - leaked_instances | length > 0
+
+    - name: Send notification to Slack
+      community.general.slack:
+        token: "{{ slack_token }}"
+        channel: "{{ slack_channel }}"
+        msg: "{{ slack_message_text }}"
+      when:
+        - leaked_instances is defined
+        - leaked_instances | length > 0
+
+    - name: Terminate leaked instances (if termination flag is true)
+      amazon.aws.ec2_instance:
+        region: "{{ aws_region }}"
+        instance_ids: "{{ item.id }}"
+        state: absent
+        wait: false
+      loop: "{{ leaked_instances }}"
+      when:
+        - terminate_leaked_instances_flag | bool
+        - leaked_instances is defined
+        - leaked_instances | length > 0
+      loop_control:
+        label: "Terminating {{ item.id }} (Name: {{ item.tags.Name | default('N/A') }})"
+      register: termination_results
+
+    - name: Display termination results (if any)
+      ansible.builtin.debug:
+        var: termination_results.results
+      when:
+        - terminate_leaked_instances_flag | bool
+        - termination_results is defined
+        - termination_results.results is defined
+        - termination_results.results | length > 0
