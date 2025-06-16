@@ -7,7 +7,7 @@ ipython==9.0.2
 jedi==0.19.2
 Jinja2===3.1.6
 junit-report==0.2.7
-kubernetes==32.0.1
+kubernetes==33.1.0
 libvirt-python==11.4.0
 munch==4.0.0
 natsort==8.4.0 # natsort used in kni-assisted-installer-auto
@@ -39,7 +39,7 @@ ansible==11.3.0 # Fix for issues with DNF and ansible core 2.17 on RHEL8 / RHEL9
 jmespath==1.0.1
 oci==2.154.1
 setuptools==80.9.0
-pydantic==2.11.5
+pydantic==2.11.7
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
 cryptography>=42.0.8 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
