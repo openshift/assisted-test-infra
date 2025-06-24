@@ -18,7 +18,7 @@ paramiko==3.5.1
 pre-commit==4.2.0
 pycharm-remote-debugger==0.1.18
 pytest-xdist==3.7.0
-pytest==8.4.0
+pytest==8.4.1
 python-dateutil==2.9.0.post0
 python-hcl2==7.2.1
 python-terraform==0.10.1
@@ -30,14 +30,14 @@ semver==3.0.4
 tabulate==0.9.0
 tqdm==4.67.1
 urllib3<3.0
-pyvmomi==8.0.3.0.1
+pyvmomi==9.0.0.0
 waiting>=1.4.1
 prompt-toolkit==3.0.51
 nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==11.3.0 # Fix for issues with DNF and ansible core 2.17 on RHEL8 / RHEL9 systems
 jmespath==1.0.1
-oci==2.154.1
+oci==2.154.2
 setuptools==80.9.0
 pydantic==2.11.7
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
