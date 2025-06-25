@@ -1,0 +1,28 @@
+- name: Validate that all required variables have values
+  ansible.builtin.assert:
+    that:
+      - vars[item] is defined
+      - vars[item] | string | length > 0
+    fail_msg: "Variable '{{ item }}' is required"
+  loop:
+    - cir_type
+    - cir_identifier
+    - shared_dir
+    - ofcir_token
+    - ofcir_url
+
+- name: Define CI resource file path
+  ansible.builtin.set_fact:
+    cir_file_path: "{{ shared_dir }}/cir_{{ cir_type }}_{{ cir_identifier }}.json"
+
+- name: Parse CI resource file
+  ansible.builtin.set_fact:
+    ci_resource: "{{ lookup('file', cir_file_path) | from_json }}"
+
+- name: Release CI resource
+  ansible.builtin.include_role:
+    name: "ofcir/release"
+  vars:
+    cir_name: "{{ ci_resource.name }}"
+    ofcir_url: "{{ ofcir_url }}"
+    ofcir_token: "{{ ofcir_token }}"

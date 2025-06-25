@@ -1,28 +1,71 @@
-- name: Create and configure the equinix infrastructure to run heterogneous cluster tests
+- name: Create and configure infrastructure for heterogeneous cluster tests
   hosts: localhost
   vars_prompt:
-    - name: equinix_project_id
-      prompt: Equinix metal project ID in which the device(s) will be created
-      private: false
-    - name: equinix_auth_token
-      prompt: Equinix metal API token
-    - name: equinix_ssh_private_key_path
-      prompt: Path to an SSH private key allowed to connect on the created device(s)
-      private: false
-    - name: equinix_unique_id
-      prompt: Hostname prefix which will be used to identify the device(s)
-      private: false
-    - name: equinix_tf_vars_file
-      prompt: Place where the Terrafom variable file will be stored
-      private: false
-    - name: equinix_tf_state_file
-      prompt: Place where the Terrafom state file will be stored
-      private: false
-  vars:
-    terraform_equinix_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'equinix-ci-machine'] | path_join | realpath }}"
-  roles:
-    - equinix/heterogeneous_create_infra # Create the required devices to test heterogeneous scenarios
-    - equinix/export_primary_device_connection_details # Export the connection details, required for the common steps in Prow
+    - name: "ofcir_url"
+      prompt: "Enter the full URL for the OFCIR server API"
+      private: no
+
+    - name: "ofcir_token"
+      prompt: "Enter your OFCIR API Token"
+      private: yes
+
+    - name: "primary_cir_type"
+      prompt: "Enter the primary CI resource type you want to request"
+      private: no
+
+    - name: "secondary_cir_type"
+      prompt: "Enter the secondary CI resource type you want to request"
+      private: no
+
+    - name: "shared_dir"
+      prompt: "Enter the local path to store the final resource files"
+      private: no
+      default: "/tmp"
+  tasks:
+    - name: Acquire primary resource from OFCIR
+      ansible.builtin.include_role:
+        name: "ofcir/acquire"
+      vars:
+        cir_identifier: "{{ primary_cir_identifier }}"
+        cir_type: "{{ primary_cir_type }}"
+
+    - name: Acquire secondary resource from OFCIR
+      ansible.builtin.include_role:
+        name: "ofcir/acquire"
+      vars:
+        cir_identifier: "{{ secondary_cir_identifier }}"
+        cir_type: "{{ secondary_cir_type }}"
+
+
+    - name: "Parse primary CI resource file and add a new field"
+      ansible.builtin.set_fact:
+        primary_ci_resource: >-
+          {{
+            (lookup('file', shared_dir ~ '/cir_' ~ primary_cir_type ~ '_primary.json') | from_json)
+            | combine({'groups': ['primary', 'heterogeneous']})
+          }}
+
+    - name: "Parse secondary CI resource file and add a new field"
+      ansible.builtin.set_fact:
+        secondary_ci_resource: >-
+          {{
+            (lookup('file', shared_dir ~ '/cir_' ~ secondary_cir_type ~ '_secondary.json') | from_json)
+            | combine({'groups': ['secondary', 'heterogeneous']})
+          }}
+
+    - name: Create a list containing the two dictionaries
+      ansible.builtin.set_fact:
+        resource_list: "[ {{ primary_ci_resource }}, {{ secondary_ci_resource }} ]"
+
+    - name: Prepare the inventory 
+      ansible.builtin.include_role:
+        name: "hetrogeneous-cluster/prepare_inventory"
+      vars:
+        instances: "{{ resource_list }}"
+
+    - name: Export primary device connection details
+      ansible.builtin.include_role:
+        name: "hetrogeneous-cluster/export_primary_device_connection_details"
 
 # Here's the network configuration to setup between both devices:
 # ┌─────────────┐
@@ -31,8 +74,8 @@
 # │libvirt net  │            │
 # │172.16.16/20 ├─────────┐  │
 # └─────────────┘10/25    │  │
-#               Equinix   │  │IPIP
-#             managed net │  │tunnel
+#               Cloud     │  │IPIP
+#             Private Net │  │tunnel
 # ┌─────────────┐10/25    │  │
 # │Primary      ├─────────┘  │
 # │             │            │
@@ -52,8 +95,8 @@
       ansible.builtin.set_fact:
         internal_network_prefix_ipv4: "{{ primary_internal_network_prefix_ipv4 }}"
         internal_network_prefix_ipv6: "{{ primary_internal_network_prefix_ipv6 }}"
-        ipip_local_ipv4: "{{ access_private_ipv4 }}"
-        ipip_remote_ipv4: "{{ hostvars[groups['secondary'][0]].access_private_ipv4 }}"
+        ipip_local_ipv4: "{{ access_default_ipv4 }}"
+        ipip_remote_ipv4: "{{ hostvars[groups['secondary'][0]].access_default_ipv4 }}"
         ipip_route_to_network_ipv4: "{{ secondary_internal_network_prefix_ipv4 }}"
         ipip_route_to_network_ipv6: "{{ secondary_internal_network_prefix_ipv6 }}"
         ipip_tunnel_ipv4: >-
@@ -68,8 +111,8 @@
       ansible.builtin.set_fact:
         internal_network_prefix_ipv4: "{{ secondary_internal_network_prefix_ipv4 }}"
         internal_network_prefix_ipv6: "{{ secondary_internal_network_prefix_ipv6 }}"
-        ipip_local_ipv4: "{{ access_private_ipv4 }}"
-        ipip_remote_ipv4: "{{ hostvars[groups['primary'][0]].access_private_ipv4 }}"
+        ipip_local_ipv4: "{{ access_default_ipv4 }}"
+        ipip_remote_ipv4: "{{ hostvars[groups['primary'][0]].access_default_ipv4 }}"
         ipip_route_to_network_ipv4: "{{ primary_internal_network_prefix_ipv4 }}"
         ipip_route_to_network_ipv6: "{{ primary_internal_network_prefix_ipv6 }}"
         ipip_tunnel_ipv4: >-

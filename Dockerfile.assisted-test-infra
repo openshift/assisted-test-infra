@@ -69,7 +69,6 @@ COPY . .
 # init terraform in order to cache the provider
 RUN source scripts/utils.sh && \
     export TF_REGISTRY_CLIENT_TIMEOUT=60 && \
-    retry -- terraform -chdir=/home/assisted-test-infra/terraform_files/equinix-ci-machine init && \
     retry -- terraform -chdir=/home/assisted-test-infra/terraform_files/oci-ci-machine init && \
     chgrp -R 0 /home/assisted-test-infra && \
     chmod -R g=u /home/assisted-test-infra

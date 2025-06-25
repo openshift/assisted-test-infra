@@ -1,8 +1,0 @@
-# Adapt and use this var file if you want to easily provision devices from equinix outside of the CI environment, e.g.:
-# ansible-playbook -e "@vars/standalone_equinix_sample.yml" equinix_heterogeneous_create_infra_playbook.yml
-equinix_project_id: "{{ lookup('env', 'METAL_PROJECT_ID') }}"
-equinix_auth_token: "{{ lookup('env', 'METAL_AUTH_TOKEN') }}"
-equinix_ssh_private_key_path: "{{ lookup('env', 'HOME') }}/.ssh/equinix_id"
-equinix_unique_id: "ipi-{{ lookup('env', 'USER') }}-test"
-equinix_tf_vars_file: "/tmp/{{ equinix_unique_id }}.tfvars"
-equinix_tf_state_file: "/tmp/{{ equinix_unique_id }}.tfstate"

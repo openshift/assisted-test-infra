@@ -1,0 +1,34 @@
+- name: Validate that all required variables have values
+  ansible.builtin.assert:
+    that:
+      - vars[item] is defined
+      - vars[item] | string | length > 0
+    fail_msg: "Variable '{{ item }}' is required"
+  loop:
+    - cir_name
+    - ofcir_token
+    - ofcir_url
+
+- name: "Fail if cir_name is not defined"
+  ansible.builtin.fail:
+    msg: "The 'cir_name' variable is required to release a resource."
+  when: cir_name is not defined or cir_name | length == 0
+
+- name: "Release resource {{ cir_name }}"
+  ansible.builtin.uri:
+    url: "{{ ofcir_url }}/{{ cir_name }}"
+    method: DELETE
+    headers:
+      "X-OFCIRTOKEN": "{{ ofcir_token }}"
+    validate_certs: false
+    timeout: "{{ release_timeout_seconds | default(30) }}"
+  register: release_response
+  until: release_response.status in [200, 204]
+  retries: "{{ request_retries }}"
+  delay: "{{ request_delay_seconds }}"
+  failed_when: release_response.status == -1 or release_response.status >= 400
+
+- name: "Confirm resource release"
+  ansible.builtin.debug:
+    msg: "Successfully released CI resource {{ cir_name }}."
+  when: release_response.status in [200, 204]

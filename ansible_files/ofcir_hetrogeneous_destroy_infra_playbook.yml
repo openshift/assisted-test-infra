@@ -1,0 +1,41 @@
+- name: Destroy infrastructure for heterogeneous cluster tests
+  hosts: localhost
+  vars_prompt:
+    - name: "ofcir_url"
+      prompt: "Enter the full URL for the OFCIR server API"
+      private: no
+
+    - name: "ofcir_token"
+      prompt: "Enter your OFCIR API Token"
+      private: yes
+
+    - name: "primary_cir_type"
+      prompt: "Enter the primary CI resource type you want to request"
+      private: no
+
+    - name: "secondary_cir_type"
+      prompt: "Enter the secondary CI resource type you want to request"
+      private: no
+
+    - name: "shared_dir"
+      prompt: "Enter the local path to store the final resource files"
+      private: no
+      default: "/tmp"
+  tasks:
+    - name: Set CI resources to delete
+      ansible.builtin.set_fact:
+        ci_resources: {
+          "{{ primary_cir_identifier }}": "{{ primary_cir_type }}",
+          "{{ secondary_cir_identifier }}": "{{ secondary_cir_type }}"
+        }
+    
+    - name: Relase CI resources
+      ansible.builtin.include_role:
+        name: "hetrogeneous-cluster/release_cir"
+      vars: 
+        cir_type: "{{ item.value }}"
+        cir_identifier: "{{ item.key }}"
+        shared_dir: "{{ shared_dir }}"
+        ofcir_token: "{{ ofcir_token }}"
+        ofcir_url: "{{ ofcir_url }}"
+      loop: "{{ ci_resources | dict2items }}"
