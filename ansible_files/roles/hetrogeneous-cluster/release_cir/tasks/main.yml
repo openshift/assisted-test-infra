@@ -1,0 +1,15 @@
+- name: Define CI resource file path
+  ansible.builtin.set_fact:
+    cir_file_path: "{{ shared_dir }}/cir_{{ cir_type }}_{{ cir_identifier }}.json"
+
+- name: Parse CI resource file
+  ansible.builtin.set_fact:
+    ci_resource: "{{ lookup('file', cir_file_path) | from_json }}"
+
+- name: Release CI resource
+  ansible.builtin.include_role:
+    name: "ofcir/release"
+  vars:
+    cir_name: "{{ ci_resource.name }}"
+    ofcir_url: "{{ ofcir_url }}"
+    ofcir_token: "{{ ofcir_token }}"

@@ -1,0 +1,2 @@
+request_retries: 60
+request_delay_seconds: 30 

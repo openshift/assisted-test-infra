@@ -1,7 +1,0 @@
-# Equinix related vars, built from CI vars
-equinix_project_id: "{{ lookup('file', cluster_profile_dir + '/packet-project-id') | trim }}"
-equinix_auth_token: "{{ lookup('file', cluster_profile_dir + '/packet-auth-token') | trim }}"
-equinix_ssh_private_key_path: "{{ cluster_profile_dir }}/packet-ssh-key"
-equinix_unique_id: "ipi-{{ namespace }}-{{ job_name_hash }}-{{ build_id }}"
-equinix_tf_vars_file: "{{ shared_dir }}/{{ equinix_unique_id }}.tfvars"
-equinix_tf_state_file: "{{ shared_dir }}/{{ equinix_unique_id }}.tfstate"
