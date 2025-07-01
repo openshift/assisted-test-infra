@@ -24,10 +24,12 @@
   tasks:
     - name: Set CI resources to delete
       ansible.builtin.set_fact:
-        ci_resources: {
-          "{{ primary_cir_identifier }}": "{{ primary_cir_type }}",
-          "{{ secondary_cir_identifier }}": "{{ secondary_cir_type }}"
-        }
+        ci_resources: >-
+          {{
+            {} |
+            combine({primary_cir_identifier: primary_cir_type}) |
+            combine({secondary_cir_identifier: secondary_cir_type})
+          }}
     
     - name: Relase CI resources
       ansible.builtin.include_role:
