@@ -358,6 +358,16 @@ class Cluster(BaseCluster):
         self._config.olm_operators = olm_operators
         self.api_client.update_cluster(self.id, {"olm_operators": olm_operators})
 
+    def set_virt_bundle(self):
+        log.info(f"Setting virtualization bundle for cluster: {self.id}")
+        self.set_olm_operator("mtv")
+        self.set_olm_operator("nmstate")
+        self.set_olm_operator("node-healthcheck")
+        self.set_olm_operator("fence-agents-remediation")
+        self.set_olm_operator("kube-descheduler")
+        self.set_olm_operator("self-node-remediation")
+        self.set_olm_operator("node-maintenance")
+
     def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
         if requested_roles is None:
             requested_roles = Counter(
