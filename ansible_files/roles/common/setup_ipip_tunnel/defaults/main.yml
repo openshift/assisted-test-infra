@@ -1,2 +1,0 @@
-ipip_device_name: tun0
-ipip_connection_name: "{{ ipip_device_name }}"

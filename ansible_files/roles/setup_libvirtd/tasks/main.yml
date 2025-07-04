@@ -1,0 +1,25 @@
+---
+- name: Install libvirtd
+  ansible.builtin.package:
+    name:
+      - libvirt-client
+      - libvirt-daemon-kvm
+    state: present
+  notify:
+    - Restart libvirtd service
+
+- name: Create libvirt network hook directory
+  ansible.builtin.file:
+    path: /etc/libvirt/hooks/network.d
+    state: directory
+    mode: "0755"
+
+- name: Install libvirt network hook to allow cross network traffic
+  ansible.builtin.copy:
+    src: allow-cross-network-traffic.sh
+    dest: /etc/libvirt/hooks/network.d/allow-cross-network-traffic.sh
+    owner: root
+    group: root
+    mode: "0755"
+  notify:
+    - Restart libvirtd service

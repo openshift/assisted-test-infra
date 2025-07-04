@@ -1,3 +1,4 @@
+---
 - name: Cleanup expired resources in OCI
   hosts: localhost
   vars_prompt:
@@ -29,4 +30,4 @@
     TF_VAR_tenancy_ocid: "{{ oci_tenancy_id }}"
     TF_VAR_region: "{{ oci_region }}"
   roles:
-    - name: oci/cleanup_resources
+    - role: "oci_cleanup_resources"
