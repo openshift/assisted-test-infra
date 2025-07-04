@@ -1,3 +1,4 @@
+---
 - name: Create and configure the CI machine on OCI
   hosts: localhost
   vars_prompt:
@@ -37,11 +38,11 @@
   vars:
     oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
   roles:
-    - name: oci/create_infra
+    - role: oci_create_infra
       vars:
         private_ssh_key_path: "{{ oci_private_ssh_key_path }}"
         public_ssh_key_path: "{{ oci_public_ssh_key_path }}"
-    - name: oci/export_connection_details # Export connection details, required for the "common" steps in Prow
-    - name: oci/setup_oci_for_test_infra
+    - role: "oci_export_connection_details" # Export connection details, required for the "common" steps in Prow
+    - role: "oci_setup_for_test_infra"
       vars:
         ci_machine: "{{ groups['primary'][0] }}"

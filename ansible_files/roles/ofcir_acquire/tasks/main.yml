@@ -1,0 +1,54 @@
+---
+- name: Ensure the shared directory exists
+  ansible.builtin.file:
+    path: "{{ shared_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Define ofcir request details
+  ansible.builtin.set_fact:
+    request_url: "{{ ofcir_url }}?type={{ cir_type }}"
+    cir_file_path: "{{ shared_dir }}/cir_{{ cir_type }}_{{ cir_identifier }}.json"
+
+- name: "Attempt to acquire a Host from OFCIR"
+  ansible.builtin.uri:
+    url: "{{ request_url }}"
+    method: POST
+    headers:
+      "X-OFCIRTOKEN": "{{ ofcir_token }}"
+    validate_certs: false
+    return_content: true
+    timeout: "{{ acquire_timeout_seconds }}"
+  register: acquire_response
+  until: acquire_response.status == 200
+  retries: "{{ request_retries }}"
+  delay: "{{ request_delay_seconds }}"
+  failed_when: acquire_response.status == -1 or acquire_response.status >= 400
+
+- name: Extract resource name from response
+  ansible.builtin.set_fact:
+    resource_name: "{{ (acquire_response.json).name }}"
+
+- name: "Poll until resource is provisioned and has an IP"
+  ansible.builtin.uri:
+    url: "{{ ofcir_url }}/{{ resource_name }}"
+    method: GET
+    headers:
+      "X-OFCIRTOKEN": "{{ ofcir_token }}"
+    validate_certs: false
+    return_content: true
+  register: poll_response
+  until:
+    - poll_response.status == 200
+    - poll_response.json.status is defined
+    - poll_response.json.status == "in use"
+    - poll_response.json.ip is defined
+    - poll_response.json.ip != ""
+  retries: "{{ request_retries }}"
+  delay: "{{ request_delay_seconds }}"
+
+- name: "Save final CIR response to file"
+  ansible.builtin.copy:
+    content: "{{ poll_response.content }}"
+    dest: "{{ cir_file_path }}"
+    mode: "0644"

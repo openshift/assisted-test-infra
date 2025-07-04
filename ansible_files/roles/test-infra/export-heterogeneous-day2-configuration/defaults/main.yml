@@ -1,4 +1,0 @@
-subnet_length_ipv4: 24
-subnet_length_ipv6: 64
-network_if: tt0
-secondary_network_if: stt1

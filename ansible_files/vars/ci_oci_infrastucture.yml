@@ -1,3 +1,4 @@
+---
 # OCI related vars, built from CI vars
 unique_id: "{{ build_id }}"
 oci_tf_state_file: "{{ shared_dir }}/{{ unique_id }}.tfstate"

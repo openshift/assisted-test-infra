@@ -1,0 +1,32 @@
+---
+- name: Check if primary group exists and contains exactly 1 host
+  ansible.builtin.fail:
+    msg: Group primary must exits and contain exactly 1 host
+  when: groups[primary_device_group_name] is not defined or (groups[primary_device_group_name] | length != 1)
+
+- name: Export connection details of primary device
+  when: shared_dir is defined
+  block:
+    - name: "Export connection details of primary device"
+      ansible.builtin.template:
+        src: "ci-machine-config.sh.j2"
+        dest: "{{ shared_dir }}/ci-machine-config.sh"
+        mode: "0644"
+
+    - name: Write fix uid file
+      ansible.builtin.copy:
+        src: fix-uid.sh
+        dest: "{{ shared_dir }}/fix-uid.sh"
+        mode: "0644"
+
+    - name: Write Packet common configuration file
+      ansible.builtin.copy:
+        src: packet-conf.sh
+        dest: "{{ shared_dir }}/packet-conf.sh"
+        mode: "0644"
+
+    - name: Write Ansible inventory
+      ansible.builtin.template:
+        src: inventory.j2
+        dest: "{{ shared_dir }}/inventory"
+        mode: "0644"

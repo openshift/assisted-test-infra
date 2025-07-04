@@ -152,7 +152,7 @@ function allow_libvirt_cross_network_traffic() {
     # rootfs).
     echo "Installing libvirt network hook to allow cross network traffic"
 
-    hook_src="${SCRIPT_DIR}/../ansible_files/roles/common/setup_libvirtd/files/allow-cross-network-traffic.sh"
+    hook_src="${SCRIPT_DIR}/../ansible_files/roles/setup_libvirtd/files/allow-cross-network-traffic.sh"
 
     hook_dir="/etc/libvirt/hooks/network.d"
     hook_filename="${hook_dir}/allow-cross-network-traffic.sh"

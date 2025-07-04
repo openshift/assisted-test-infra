@@ -1,0 +1,32 @@
+---
+- name: Add provided instances to inventory
+  ansible.builtin.add_host:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups }}"
+    ansible_host: "{{ item.ip }}"
+    ansible_user: "root"
+    ansible_ssh_private_key_file: "{{ private_key_path }}"
+    access_public_ipv4: "{{ item.ip }}"
+  loop: "{{ instances }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Gather default IP from each instance
+  ansible.builtin.shell: |
+    set -o pipefail
+    ip route get 1 | sed 's/^.*src \([^ ]*\).*$/\1/;q'
+  delegate_to: "{{ item.name }}"
+  register: default_ip_results
+  loop: "{{ instances }}"
+  loop_control:
+    label: "{{ item.name }}"
+  changed_when: false
+
+- name: Re-add each host with its default IP
+  ansible.builtin.add_host:
+    name: "{{ item.item.name }}"
+    groups: "{{ item.item.groups }}"
+    access_default_ipv4: "{{ item.stdout }}"
+  loop: "{{ default_ip_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
