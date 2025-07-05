@@ -1,0 +1,185 @@
+---
+- name: Create and configure infrastructure for heterogeneous cluster tests
+  hosts: localhost
+  vars_prompt:
+    - name: "ofcir_url"
+      prompt: "Enter the full URL for the OFCIR server API"
+      private: false
+
+    - name: "ofcir_token"
+      prompt: "Enter your OFCIR API Token"
+      private: true
+
+    - name: "primary_cir_type"
+      prompt: "Enter the primary CI resource type you want to request"
+      private: false
+
+    - name: "secondary_cir_type"
+      prompt: "Enter the secondary CI resource type you want to request"
+      private: false
+
+    - name: "shared_dir"
+      prompt: "Enter the local path to store the final resource files"
+      private: false
+      default: "/tmp"
+  tasks:
+    - name: Acquire primary resource from OFCIR
+      ansible.builtin.include_role:
+        name: ofcir_acquire
+      vars:
+        cir_identifier: "{{ primary_cir_identifier }}"
+        cir_type: "{{ primary_cir_type }}"
+
+    - name: Acquire secondary resource from OFCIR
+      ansible.builtin.include_role:
+        name: ofcir_acquire
+      vars:
+        cir_identifier: "{{ secondary_cir_identifier }}"
+        cir_type: "{{ secondary_cir_type }}"
+
+    - name: "Parse primary CI resource file and add a new field"
+      ansible.builtin.set_fact:
+        primary_ci_resource: >-
+          {{
+            (lookup('file', shared_dir ~ '/cir_' ~ primary_cir_type ~ '_primary.json') | from_json)
+            | combine({'groups': ['primary', 'heterogeneous']})
+          }}
+
+    - name: "Parse secondary CI resource file and add a new field"
+      ansible.builtin.set_fact:
+        secondary_ci_resource: >-
+          {{
+            (lookup('file', shared_dir ~ '/cir_' ~ secondary_cir_type ~ '_secondary.json') | from_json)
+            | combine({'groups': ['secondary', 'heterogeneous']})
+          }}
+
+    - name: Create a list containing the two dictionaries
+      ansible.builtin.set_fact:
+        resource_list: "[ {{ primary_ci_resource }}, {{ secondary_ci_resource }} ]"
+
+    - name: Prepare the inventory
+      ansible.builtin.include_role:
+        name: heterogeneous_cluster_prepare_inventory
+      vars:
+        instances: "{{ resource_list }}"
+
+    - name: Export primary device connection details
+      ansible.builtin.include_role:
+        name: heterogeneous_cluster_export_primary_device_connection_details
+
+# Here's the network configuration to setup between both devices:
+# ┌─────────────┐
+# │Secondary    │172.16.0.2/30
+# │             ├────────────┐
+# │libvirt net  │            │
+# │172.16.16/20 ├─────────┐  │
+# └─────────────┘10/25    │  │
+#               Cloud     │  │IPIP
+#             Private Net │  │tunnel
+# ┌─────────────┐10/25    │  │
+# │Primary      ├─────────┘  │
+# │             │            │
+# │libvirt net  ├────────────┘
+# │192.168/16   │172.16.0.1/30
+# └─────────────┘
+- name: Configure and setup IPIP tunnel
+  hosts: heterogeneous
+  vars:
+    ipip_tunnel_network_prefix_ipv4: 172.16.0.0/30
+    primary_internal_network_prefix_ipv4: 192.168.0.0/16
+    secondary_internal_network_prefix_ipv4: 172.16.16.0/20
+    primary_internal_network_prefix_ipv6: 1001:db9::/120 # unconfigured as ipip doesn't support ipv6
+    secondary_internal_network_prefix_ipv6: fde0:bd0d:a8cb::/48 # unconfigured as ipip doesn't support ipv6
+  tasks:
+    - name: Set network facts on primary device
+      ansible.builtin.set_fact:
+        internal_network_prefix_ipv4: "{{ primary_internal_network_prefix_ipv4 }}"
+        internal_network_prefix_ipv6: "{{ primary_internal_network_prefix_ipv6 }}"
+        ipip_local_ipv4: "{{ access_default_ipv4 }}"
+        ipip_remote_ipv4: "{{ hostvars[groups['secondary'][0]].access_default_ipv4 }}"
+        ipip_route_to_network_ipv4: "{{ secondary_internal_network_prefix_ipv4 }}"
+        ipip_route_to_network_ipv6: "{{ secondary_internal_network_prefix_ipv6 }}"
+        ipip_tunnel_ipv4: >-
+          {{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('next_usable')
+          }}/{{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('prefix')
+          }}
+      when: inventory_hostname == groups['primary'][0]
+
+    - name: Set network facts on secondary device
+      ansible.builtin.set_fact:
+        internal_network_prefix_ipv4: "{{ secondary_internal_network_prefix_ipv4 }}"
+        internal_network_prefix_ipv6: "{{ secondary_internal_network_prefix_ipv6 }}"
+        ipip_local_ipv4: "{{ access_default_ipv4 }}"
+        ipip_remote_ipv4: "{{ hostvars[groups['primary'][0]].access_default_ipv4 }}"
+        ipip_route_to_network_ipv4: "{{ primary_internal_network_prefix_ipv4 }}"
+        ipip_route_to_network_ipv6: "{{ primary_internal_network_prefix_ipv6 }}"
+        ipip_tunnel_ipv4: >-
+          {{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('last_usable')
+          }}/{{
+            ipip_tunnel_network_prefix_ipv4 | ansible.utils.ipaddr('prefix')
+          }}
+      when: inventory_hostname == groups['secondary'][0]
+
+    - name: Setup IPIP between primary and secondary devices
+      ansible.builtin.import_role:
+        name: setup_ipip_tunnel
+
+- name: Check tunnel connectivity
+  hosts: all
+  tasks:
+    - name: Ping peer
+      ansible.builtin.command:
+        cmd: "ping -c 1 -w 2 {{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
+      retries: 10
+      delay: 1
+      register: result
+      until: result.rc == 0
+      changed_when: false
+
+- name: Share a unique SSH key pair among the created devices
+  hosts: heterogeneous
+  roles:
+    - role: "setup_ssh_key_pair"
+
+- name: Setup libvirtd on secondary machine
+  hosts: secondary[0]
+  roles:
+    - role: setup_libvirtd
+
+- name: Create directory were boot ISO will be placed
+  hosts: heterogeneous
+  vars:
+    iso_images_shared_directory: "/tmp/test_images" # value of IMAGE_FOLDER in test-infra
+  tasks:
+    - name: Create shared directory {{ iso_images_shared_directory }}
+      ansible.builtin.file:
+        path: "{{ iso_images_shared_directory }}"
+        state: directory
+        mode: "0755"
+
+    - name: Set shared directory as fact
+      ansible.builtin.set_fact:
+        iso_images_shared_directory: "{{ iso_images_shared_directory }}"
+
+- name: Setup shared filesystem to sync boot ISO images between hosts
+  hosts: primary[0]
+  roles:
+    - role: setup_sftp_share
+      vars:
+        rclone_remote_name: "iso-images"
+        remote_host_ip: "{{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
+        shared_directory: "{{ iso_images_shared_directory }}"
+
+- name: Export day2 heterogeneous configuration to assisted-test-infra
+  hosts: secondary[0]
+  tasks:
+    - name: Write day2 extra configuration
+      ansible.builtin.import_role:
+        name: heterogeneous_cluster_export_day2_configuration
+      delegate_to: localhost
+      vars:
+        assisted_service_url: "{{ ipip_tunnel_ipv4 | ansible.utils.ipaddr('peer') }}"
+        access_libvirt_ip: "{{ ipip_tunnel_ipv4 | ansible.utils.ipv4('address') }}"

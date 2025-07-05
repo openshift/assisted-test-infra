@@ -376,6 +376,9 @@ $(REPORTS):
 lint:
 	make _flake8
 
+ansible_lint:
+	HOME=$(ROOT_DIR) ansible-lint ansible_files/
+
 pre-commit:
 	# TODO not identifying all pep8 violation - WIP
 	mkdir -p build

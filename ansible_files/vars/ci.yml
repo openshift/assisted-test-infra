@@ -1,7 +1,8 @@
+---
 # CI related vars
-build_id:  "{{ lookup('env', 'BUILD_ID') }}"
+build_id: "{{ lookup('env', 'BUILD_ID') }}"
 cluster_profile_dir: "{{ lookup('env', 'CLUSTER_PROFILE_DIR') }}"
 job_name_hash: "{{ lookup('env', 'JOB_NAME_HASH') }}"
-namespace: "{{ lookup('env', 'NAMESPACE') }}"
-openshift_ci : "{{ lookup('env', 'OPENSHIFT_CI') | bool }}"
+ci_namespace: "{{ lookup('env', 'NAMESPACE') }}"
+openshift_ci: "{{ lookup('env', 'OPENSHIFT_CI') | bool }}"
 shared_dir: "{{ lookup('env', 'SHARED_DIR') }}"

@@ -1,0 +1,4 @@
+---
+acquire_timeout_seconds: 70
+request_retries: 60
+request_delay_seconds: 30

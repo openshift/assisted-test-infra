@@ -10,3 +10,4 @@ flake8-use-fstring==1.4             # Jump-start into modern Python by forcing y
 flake8-black==0.3.6                 # Check black formatting using flake8
 flake8-isort==6.1.2                 # Check isort formatting using flake8
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
+ansible-lint==25.6.1

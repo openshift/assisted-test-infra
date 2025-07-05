@@ -1,0 +1,57 @@
+---
+argument_specs:
+  main:
+    short_description: Prepare Ansible inventory from instance list
+    description:
+      - This role adds provided instances to the Ansible inventory
+      - It also gathers default IP addresses from each instance for networking configuration
+    author: Assisted Test Infrastructure Team
+    options:
+      instances:
+        description: List of instances to add to inventory
+        type: list
+        required: true
+        elements: dict
+        options:
+          name:
+            description: Name/hostname of the instance
+            type: str
+            required: true
+          groups:
+            description: Ansible groups to assign this instance to
+            type: list
+            elements: str
+            required: true
+          ip:
+            description: IP address of the instance
+            type: str
+            required: true
+          extra:
+            description: Additional metadata for the instance
+            type: str
+            required: false
+          pool:
+            description: Resource pool information
+            type: str
+            required: false
+          provider:
+            description: Cloud provider information
+            type: str
+            required: false
+          providerInfo:
+            description: Provider-specific information
+            type: str
+            required: false
+          status:
+            description: Current status of the instance
+            type: str
+            required: false
+          type:
+            description: Type or category of the instance
+            type: str
+            required: false
+
+      private_key_path:
+        description: Path to the SSH private key for connecting to instances
+        type: path
+        required: true

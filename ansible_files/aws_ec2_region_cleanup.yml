@@ -1,4 +1,6 @@
-- hosts: localhost
+---
+- name: Aws_ec2_region_cleanup
+  hosts: localhost
   gather_facts: true
   vars:
     aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1') }}"
@@ -14,8 +16,7 @@
       ansible.builtin.assert:
         that:
           - (ansible_python.version.major ~ '.' ~ ansible_python.version.minor) is version('3.6', '>=')
-        fail_msg: "The Ansible controller requires Python >= 3.6. Found {{ ansible_python.version.major }}.{{ ansible_python.version.minor }}.{{ ansible_python.version.micro }}"
-      run_once: true
+        fail_msg: "The Ansible controller requires Python >= 3.6."
 
     - name: Ensure Boto3 and Botocore are installed and up-to-date
       ansible.builtin.pip:
@@ -23,7 +24,6 @@
           - boto3>=1.28.0
           - botocore>=1.31.0
         state: present
-      run_once: true
 
   tasks:
     - name: Preliminary check for Slack Token
@@ -31,7 +31,6 @@
         that:
           - slack_token | trim != ""
         fail_msg: "Slack Token (SLACK_TOKEN environment variable) is not configured or is empty. Please set it."
-      run_once: true
 
     - name: Gather EC2 instance information for the specified region
       amazon.aws.ec2_instance_info:
@@ -62,14 +61,8 @@
       loop: "{{ ec2_info.instances | default([]) }}"
       when:
         - item.launch_time is defined
-        - (
-            (
-              (
-                ((ansible_date_time.iso8601 | regex_replace('Z$', '+0000')) | to_datetime('%Y-%m-%dT%H:%M:%S%z')) -
-                (item.launch_time | to_datetime('%Y-%m-%dT%H:%M:%S%z'))
-              ).total_seconds()
-            ) | int
-          ) > (leak_threshold_seconds | int)
+        - ( ( ( ((ansible_date_time.iso8601 | regex_replace('Z$', '+0000')) | to_datetime('%Y-%m-%dT%H:%M:%S%z')) - (item.launch_time |
+          to_datetime('%Y-%m-%dT%H:%M:%S%z')) ).total_seconds() ) | int ) > (leak_threshold_seconds | int)
       loop_control:
         label: "{{ item.instance_id }}"
 
@@ -110,9 +103,10 @@
     - name: Compose Slack message content
       ansible.builtin.set_fact:
         slack_message_text: |
+          {% set s = leak_threshold_seconds | int %}
           {% if slack_mention | trim != "" %}{{ slack_mention }} {% endif %}:aws: *EC2 Leaked Instance Report & Action*
           *Region:* `{{ aws_region }}`
-          *Uptime Threshold:* Over {{ (leak_threshold_seconds | int) // 3600 }}h {{ ((leak_threshold_seconds | int) % 3600) // 60 }}m ({{ leak_threshold_seconds | int }} seconds)
+          *Uptime Threshold:* Over {{ s // 3600 }}h {{ (s % 3600) // 60 }}m ({{ s }} seconds)
           *Termination Enabled:* `{{ terminate_leaked_instances_flag }}`
           ---
           {% if leaked_instances is defined and leaked_instances | length > 0 %}

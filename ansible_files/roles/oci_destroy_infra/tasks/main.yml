@@ -1,0 +1,17 @@
+---
+- name: "Restore Terraform state file from {{ oci_tf_state_file }}"
+  ansible.builtin.copy:
+    src: "{{ oci_tf_state_file }}"
+    dest: "{{ oci_terraform_workdir }}/terraform.tfstate"
+    force: true
+    mode: "0644"
+
+- name: "Destroy terraform infrastructure"
+  community.general.terraform:
+    project_path: "{{ oci_terraform_workdir }}"
+    state: absent
+    force_init: false
+    state_file: "{{ oci_tf_state_file }}"
+    variables_files:
+      - "{{ oci_tf_vars_file }}"
+  register: destroyed_tf
