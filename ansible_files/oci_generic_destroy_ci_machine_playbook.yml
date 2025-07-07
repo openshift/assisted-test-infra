@@ -1,3 +1,4 @@
+---
 - name: Destroy OCI instrastructure provisionned by test-infra
   hosts: primary
   tasks:
@@ -14,6 +15,8 @@
       register: result
       until: result is succeeded
       ignore_errors: true
+      changed_when: false
+
 - name: Destroy OCI infrastructure provisionned for CI machine
   hosts: localhost
   vars_prompt:
@@ -26,4 +29,4 @@
   vars:
     oci_terraform_workdir: "{{ [playbook_dir, '..', 'terraform_files', 'oci-ci-machine'] | path_join | realpath }}"
   roles:
-    - name: oci/destroy_infra
+    - role: oci_destroy_infra

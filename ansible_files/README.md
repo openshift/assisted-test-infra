@@ -165,12 +165,12 @@ Now that Ofcir is running and configured, you can run the test playbooks.
 
 **Create Infrastructure:**
 ```bash
-ansible-playbook -e "@vars/standalone_ofcir_hetrogeneous_infra_sample.yml" ofcir_hetrogeneous_create_infra_playbook.yml
+ansible-playbook -e "@vars/standalone_ofcir_heterogeneous_infra_sample.yml" ofcir_heterogeneous_create_infra_playbook.yml
 ```
 
 **Destroy Infrastructure:**
 ```bash
-ansible-playbook -e "@vars/standalone_ofcir_hetrogeneous_infra_sample.yml" ofcir_hetrogeneous_destroy_infra_playbook.yml
+ansible-playbook -e "@vars/standalone_ofcir_heterogeneous_infra_sample.yml" ofcir_heterogeneous_destroy_infra_playbook.yml
 ```
 
 ### 6. Cleanup

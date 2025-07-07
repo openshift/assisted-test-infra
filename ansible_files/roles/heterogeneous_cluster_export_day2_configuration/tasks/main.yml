@@ -1,0 +1,7 @@
+---
+- name: Export day2 configuration in assisted-additional-config to shared_dir
+  ansible.builtin.template:
+    src: "assisted-additional-config.j2"
+    dest: "{{ shared_dir }}/assisted-additional-config"
+    mode: "0644"
+  when: shared_dir is defined

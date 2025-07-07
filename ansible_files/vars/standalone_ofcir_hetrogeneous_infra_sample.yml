@@ -1,8 +1,0 @@
-ofcir_url: "https://127.0.0.1:8443/v1/ofcir"
-ofcir_token: "token"
-primary_cir_identifier: "primary"
-secondary_cir_identifier: "secondary"
-primary_cir_type: "assisted_medium_el9"
-secondary_cir_type: "assisted_arm64_el9"
-shared_dir: /tmp/test
-private_key_path: ~/Documents/auth/packet.pem

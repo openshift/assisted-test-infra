@@ -1,7 +1,0 @@
-ofcir_url: "{{ lookup('env', 'OFCIR_URL') | default('https://ofcir-service.ofcir-system.svc.cluster.local/v1/ofcir', true) }}"
-primary_cir_type: "{{ lookup('env', 'PRIMARY_CIR_TYPE') | default('assisted_medium_el9', true) }}"
-secondary_cir_type: "{{ lookup('env', 'SECONDARY_CIR_TYPE') | default('assisted_arm64_el9', true) }}"
-ofcir_token: "{{ lookup('file', cluster_profile_dir + '/ofcir-auth-token') | trim }}"
-private_key_path: "{{ cluster_profile_dir }}/packet-ssh-key"
-primary_cir_identifier: "primary"
-secondary_cir_identifier: "secondary"

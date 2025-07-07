@@ -1,0 +1,5 @@
+---
+ssh_user: root
+rclone_config_file: /etc/rclone.conf
+rclone_remote_name: share_dir
+rclone_type_sftp: sftp

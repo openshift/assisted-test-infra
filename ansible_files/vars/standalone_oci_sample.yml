@@ -1,3 +1,4 @@
+---
 # Adapt and use this var file if you want to easily provision OCI infra outside CI environment, e.g.:
 # ansible-playbook -e "@vars/standalone_oci_sample.yml" oci_generic_create_ci_machine_playbook.yml
 shared_dir: /tmp
