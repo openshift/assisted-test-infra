@@ -17,6 +17,9 @@ class OperatorType:
     FAR = "fence-agents-remediation"
     NMO = "node-maintenance"
     KDO = "kube-descheduler"
+    COO = "cluster-observability"
+    NUMA_RESOURCES = "numaresources"
+    OADP = "oadp"
 
 
 class OperatorStatus:
@@ -201,6 +204,18 @@ class KDOOperatorFailedError(OperatorFailedError):
     pass
 
 
+class COOOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class NUMAResourcesOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class OADPOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
 
     if operator == OperatorType.CNV:
@@ -248,16 +263,13 @@ def get_exception_factory(operator: str):
     if operator == OperatorType.KDO:
         return KDOOperatorFailedError
 
+    if operator == OperatorType.COO:
+        return COOOperatorFailedError
+
+    if operator == OperatorType.NUMA_RESOURCES:
+        return NUMAResourcesOperatorFailedError
+
+    if operator == OperatorType.OADP:
+        return OADPOperatorFailedError
+
     return OperatorFailedError
-
-
-def get_operator_properties(operator: str, **kwargs) -> str:
-    if operator == OperatorType.METALLB:
-        api_ip = kwargs.get("api_ip")
-        ingress_ip = kwargs.get("ingress_ip")
-        if api_ip and ingress_ip:
-            return f'{{"api_ip": "{api_ip}", "ingress_ip": "{ingress_ip}"}}'
-
-        raise ValueError(f"MetalLB properties are missing or invalid, got {api_ip} {ingress_ip}")
-
-    return ""
