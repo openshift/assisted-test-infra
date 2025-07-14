@@ -142,9 +142,6 @@ class _EnvVariables(DataPool, ABC):
     ingress_vips: EnvVar = EnvVar(["INGRESS_VIPS"], loader=json.loads)
     load_balancer_cidr: EnvVar = EnvVar(["LOAD_BALANCER_CIDR"])
 
-    metallb_api_ip: EnvVar = EnvVar(["METALLB_API_IP"])
-    metallb_ingress_ip: EnvVar = EnvVar(["METALLB_INGRESS_IP"])
-
     ipxe_boot: EnvVar = EnvVar(["IPXE_BOOT"], loader=lambda x: bool(strtobool(x)))
 
     vsphere_parent_folder: str = EnvVar(["VSPHERE_PARENT_FOLDER"], default=env_defaults.DEFAULT_VSHPERE_PARENT_FOLDER)
