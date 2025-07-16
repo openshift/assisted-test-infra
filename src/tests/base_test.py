@@ -715,11 +715,9 @@ class BaseTest:
                 if cluster.enable_image_download:
                     cluster.generate_and_download_infra_env(iso_download_path=cluster.iso_download_path)
                 cluster.nodes.start_given(given_nodes)
-                given_node_ips = [node.ips[0] for node in given_nodes]
                 cluster.nodes.shutdown_given(given_nodes)
-            else:
-                given_node_ips = [node.ips[0] for node in given_nodes]
 
+            given_node_ips = [ip for node in given_nodes for ip in node.ips]
             log.info(f"Given node ips: {given_node_ips}")
 
             for _rule in iptables_rules:
