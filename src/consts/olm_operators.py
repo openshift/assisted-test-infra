@@ -17,6 +17,9 @@ class OperatorType:
     FAR = "fence-agents-remediation"
     NMO = "node-maintenance"
     KDO = "kube-descheduler"
+    COO = "cluster-observability"
+    NUMA_RESOURCES = "numaresources"
+    OADP = "oadp"
 
 
 class OperatorStatus:
@@ -201,54 +204,42 @@ class KDOOperatorFailedError(OperatorFailedError):
     pass
 
 
+class COOOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class NUMAResourcesOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class OADPOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
+    exception_map = {
+        OperatorType.CNV: CNVOperatorFailedError,
+        OperatorType.MTV: MTVOperatorFailedError,
+        OperatorType.ODF: ODFOperatorFailedError,
+        OperatorType.LSO: LSOOperatorFailedError,
+        OperatorType.LVM: LVMOperatorFailedError,
+        OperatorType.MCE: MCEOperatorFailedError,
+        OperatorType.METALLB: MetalLBOperatorFailedError,
+        OperatorType.OPENSHIFT_AI: OpenShiftAIOperatorFailedError,
+        OperatorType.OSC: OSCOperatorFailedError,
+        OperatorType.NMSTATE: NMStateOperatorFailedError,
+        OperatorType.NHO: NHOOperatorFailedError,
+        OperatorType.SNR: SNROperatorFailedError,
+        OperatorType.FAR: FAROperatorFailedError,
+        OperatorType.NMO: NMOOperatorFailedError,
+        OperatorType.KDO: KDOOperatorFailedError,
+        OperatorType.COO: COOOperatorFailedError,
+        OperatorType.NUMA_RESOURCES: NUMAResourcesOperatorFailedError,
+        OperatorType.OADP: OADPOperatorFailedError,
+    }
 
-    if operator == OperatorType.CNV:
-        return CNVOperatorFailedError
-
-    if operator == OperatorType.MTV:
-        return MTVOperatorFailedError
-
-    if operator == OperatorType.ODF:
-        return ODFOperatorFailedError
-
-    if operator == OperatorType.LSO:
-        return LSOOperatorFailedError
-
-    if operator == OperatorType.LVM:
-        return LVMOperatorFailedError
-
-    if operator == OperatorType.MCE:
-        return MCEOperatorFailedError
-
-    if operator == OperatorType.METALLB:
-        return MetalLBOperatorFailedError
-
-    if operator == OperatorType.OPENSHIFT_AI:
-        return OpenShiftAIOperatorFailedError
-
-    if operator == OperatorType.OSC:
-        return OSCOperatorFailedError
-
-    if operator == OperatorType.NMSTATE:
-        return NMStateOperatorFailedError
-
-    if operator == OperatorType.NHO:
-        return NHOOperatorFailedError
-
-    if operator == OperatorType.SNR:
-        return SNROperatorFailedError
-
-    if operator == OperatorType.FAR:
-        return SNROperatorFailedError
-
-    if operator == OperatorType.FAR:
-        return NMOOperatorFailedError
-
-    if operator == OperatorType.KDO:
-        return KDOOperatorFailedError
-
-    return OperatorFailedError
+    # Use .get() to retrieve the exception, with a default if the operator isn't found
+    return exception_map.get(operator, OperatorFailedError)
 
 
 def get_operator_properties(operator: str, **kwargs) -> str:
