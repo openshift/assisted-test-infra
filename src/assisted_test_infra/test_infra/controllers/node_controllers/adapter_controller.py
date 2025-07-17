@@ -55,16 +55,26 @@ class AdapterController(NodeController):
 
     def list_nodes(self) -> List[Node]:
         nodes_list = []
-        for host in self._cluster.get_details().hosts:
-            nodes_list.append(Node(host.requested_hostname, self._cluster.nodes.controller, self.private_ssh_key_path))
-        return nodes_list
+        try:
+            for host in self._cluster.get_details().hosts:
+                nodes_list.append(
+                    Node(host.requested_hostname, self._cluster.nodes.controller, self.private_ssh_key_path)
+                )
+            return nodes_list
+        except Exception as e:
+            log.info(f"Unable to list nodes {str(e)}")
+            return nodes_list
 
     def list_disks(self, node_name: str) -> List[dict]:
-        for host in self._cluster.get_details().hosts:
-            if host.requested_hostname == node_name:
-                disks = json.loads(host.inventory)["disks"]
-                return disks
-        return {}
+        try:
+            for host in self._cluster.get_details().hosts:
+                if host.requested_hostname == node_name:
+                    disks = json.loads(host.inventory)["disks"]
+                    return disks
+            return {}
+        except Exception as e:
+            log.info(f"Unable to list disks {str(e)}")
+            return {}
 
     def list_networks(self) -> List[Any]:
         pass
@@ -127,11 +137,15 @@ class AdapterController(NodeController):
         pass
 
     def is_active(self, node_name: str) -> bool:
-        for host in self._cluster.get_details().hosts:
-            if host.requested_hostname == node_name:
-                if host.status not in ["disconnected"]:
-                    return True
-        return False
+        try:
+            for host in self._cluster.get_details().hosts:
+                if host.requested_hostname == node_name:
+                    if host.status not in ["disconnected"]:
+                        return True
+            return False
+        except Exception as e:
+            log.info(f"Unable to is active {str(e)}")
+            return False
 
     def set_boot_order(self, node_name: str, cd_first: bool = False, cdrom_iso_path: str = None) -> None:
         pass
@@ -148,14 +162,18 @@ class AdapterController(NodeController):
     def get_node_ips_and_macs(self, node_name) -> Tuple[List[str], List[str]]:
         ips = []
         macs = []
-        for host in self._cluster.get_details().hosts:
-            if host.requested_hostname == node_name:
-                interfaces = json.loads(host.inventory)["interfaces"]
-                for i in interfaces:
-                    ips.extend(i["ipv4_addresses"])
-                    macs.append(i["mac_address"])
-        ips = [ip.split("/")[0] for ip in ips]
-        return ips, macs
+        try:
+            for host in self._cluster.get_details().hosts:
+                if host.requested_hostname == node_name:
+                    interfaces = json.loads(host.inventory)["interfaces"]
+                    for i in interfaces:
+                        ips.extend(i["ipv4_addresses"])
+                        macs.append(i["mac_address"])
+            ips = [ip.split("/")[0] for ip in ips]
+            return ips, macs
+        except Exception as e:
+            log.info(f"Unable to get node ips and mac {str(e)}")
+            return ips, macs
 
     def set_single_node_ip(self, ip) -> None:
         pass
