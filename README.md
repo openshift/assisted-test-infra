@@ -1,4 +1,4 @@
-**Table of contents**
+ **Table of contents**
 
 - [⚠️ Warning ⚠️](docs/warning.md)
 - [Overview](docs/overview.md)
