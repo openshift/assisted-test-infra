@@ -13,7 +13,7 @@ from .kube_api import (
     HIVE_API_GROUP,
     HIVE_API_VERSION,
 )
-from .olm_operators import OperatorResource, OperatorStatus, OperatorType, get_operator_properties
+from .olm_operators import OperatorResource, OperatorStatus, OperatorType
 
 __all__ = [
     "OperatorType",
@@ -36,6 +36,5 @@ __all__ = [
     "HIVE_API_VERSION",
     "DEFAULT_WAIT_FOR_ISO_URL_TIMEOUT",
     "NUMBER_OF_MASTERS",
-    "get_operator_properties",
     "IP_VERSIONS",
 ]

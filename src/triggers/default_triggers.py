@@ -70,9 +70,6 @@ _default_triggers = frozendict(
             service_networks=consts.DEFAULT_SERVICE_NETWORKS_IPV4V6,
         ),
         "lso_operator": OlmOperatorsTrigger(conditions=[lambda config: "lso" in config.olm_operators], operator="lso"),
-        "metallb_operator": OlmOperatorsTrigger(
-            conditions=[lambda config: "metallb" in config.olm_operators], operator="metallb"
-        ),
         "cnv_operator": OlmOperatorsTrigger(conditions=[lambda config: "cnv" in config.olm_operators], operator="cnv"),
         "mtv_operator": OlmOperatorsTrigger(conditions=[lambda config: "mtv" in config.olm_operators], operator="mtv"),
         "odf_operator": OlmOperatorsTrigger(conditions=[lambda config: "odf" in config.olm_operators], operator="odf"),
