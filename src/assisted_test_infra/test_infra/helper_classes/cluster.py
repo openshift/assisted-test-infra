@@ -358,16 +358,26 @@ class Cluster(BaseCluster):
         self._config.olm_operators = olm_operators
         self.api_client.update_cluster(self.id, {"olm_operators": olm_operators})
 
-    def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
+    def set_host_roles(self, num_masters: int = None, num_workers: int = None, num_arbiters: int = None, requested_roles=None):
         if requested_roles is None:
+            # TNA (Two Node Architecture) logic: when masters_count=2, automatically set 1 arbiter
+            calculated_arbiters = num_arbiters
+            if calculated_arbiters is None:
+                masters = num_masters or self.nodes.masters_count
+                calculated_arbiters = 1 if masters == 2 else 0
+                
             requested_roles = Counter(
                 master=num_masters or self.nodes.masters_count,
                 worker=num_workers or self.nodes.workers_count,
+                arbiter=calculated_arbiters,
             )
         assigned_roles = self._get_matching_hosts(host_type=consts.NodeRoles.MASTER, count=requested_roles["master"])
 
         assigned_roles.extend(
             self._get_matching_hosts(host_type=consts.NodeRoles.WORKER, count=requested_roles["worker"])
+        )
+        assigned_roles.extend(
+            self._get_matching_hosts(host_type=consts.NodeRoles.ARBITER, count=requested_roles["arbiter"])
         )
         for role in assigned_roles:
             self._infra_env.update_host(host_id=role["id"], host_role=role["role"])

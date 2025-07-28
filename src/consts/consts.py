@@ -1,4 +1,5 @@
 from enum import Enum
+from re import T
 from typing import List
 
 from assisted_service_client import models
@@ -185,6 +186,7 @@ class ImageType:
 class NodeRoles:
     WORKER = "worker"
     MASTER = "master"
+    ARBITER = "arbiter"
     AUTO_ASSIGN = "auto-assign"
 
 
@@ -333,6 +335,7 @@ class KubeAPIPlatforms:
 
 class ControlPlaneCount:
     ONE = 1
+    TWO = 2    
     THREE = 3
     FOUR = 4
     FIVE = 5
