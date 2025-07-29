@@ -520,6 +520,14 @@ class InventoryClient(object):
     def get_supported_operators(self) -> List[str]:
         return self.operators.v2_list_supported_operators()
 
+    def get_supported_bundles(self) -> List[models.Bundle]:
+        """Get list of available bundles"""
+        return self.operators.v2_list_bundles()
+
+    def get_bundle(self, bundle_id: str) -> models.Bundle:
+        """Get bundle details including operators for a specific bundle"""
+        return self.operators.v2_get_bundle(bundle_id)
+
     # TODO remove in favor of get_preflight_requirements
     def get_cluster_host_requirements(self, cluster_id: str) -> models.ClusterHostRequirementsList:
         return self.client.get_cluster_host_requirements(cluster_id=cluster_id)

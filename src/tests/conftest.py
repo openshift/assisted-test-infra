@@ -37,6 +37,14 @@ def get_supported_operators() -> List[str]:
         return []  # if no service found return empty operator list
 
 
+def get_supported_bundles() -> List[str]:
+    try:
+        bundles = global_variables.get_api_client().get_supported_bundles()
+        return sorted([bundle.id for bundle in bundles if bundle.id])
+    except RuntimeError:
+        return []  # if no service found return empty bundle list
+
+
 def get_available_openshift_versions() -> List[str]:
     try:
         openshift_versions = global_variables.get_api_client().get_openshift_versions()
