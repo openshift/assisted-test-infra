@@ -139,7 +139,7 @@ class Cluster(BaseCluster):
         if self._config.load_balancer_type == consts.LoadBalancerType.USER_MANAGED.value:
             extra_vars["load_balancer"] = {"type": self._config.load_balancer_type}
 
-        if len(self._config.olm_operators) > 0:
+        if len(self._config.olm_operators) > 0 or len(self._config.olm_bundles) > 0:
             olm_operators = self.get_olm_operators()
             if olm_operators:
                 extra_vars["olm_operators"] = olm_operators
@@ -169,8 +169,15 @@ class Cluster(BaseCluster):
         return cluster.id
 
     def get_olm_operators(self) -> List:
+        all_operators = self._expand_bundles_to_operators()
+
+        if self._config.olm_operators:
+            all_operators.extend(self._config.olm_operators)
+
+        unique_operators = list(dict.fromkeys(all_operators))
+
         olm_operators = []
-        for operator_name in self._config.olm_operators:
+        for operator_name in unique_operators:
             operator_properties = consts.get_operator_properties(
                 operator_name,
                 api_ip=self._config.metallb_api_ip,
@@ -182,6 +189,22 @@ class Cluster(BaseCluster):
             olm_operators.append(operator)
 
         return olm_operators
+
+    def _expand_bundles_to_operators(self) -> List[str]:
+        """Expand bundle selections into their constituent operators"""
+        operators_from_bundles = []
+
+        if not self._config.olm_bundles:
+            return operators_from_bundles
+
+        for bundle_id in self._config.olm_bundles:
+            if bundle_id.strip():
+                log.info(f"Expanding bundle '{bundle_id}' to operators")
+                bundle = self.api_client.get_bundle(bundle_id.strip())
+                log.info(f"Bundle '{bundle_id}' contains operators: {bundle.operators}")
+                operators_from_bundles.extend(bundle.operators)
+
+        return operators_from_bundles
 
     @property
     def is_sno(self):

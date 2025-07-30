@@ -84,6 +84,9 @@ class _EnvVariables(DataPool, ABC):
     olm_operators: EnvVar = EnvVar(
         ["OLM_OPERATORS"], loader=lambda operators: re.split(r"\s|,", operators.lower()), default=[]
     )
+    olm_bundles: EnvVar = EnvVar(
+        ["OLM_BUNDLES"], loader=lambda bundles: re.split(r"\s|,", bundles.lower()) if bundles else [], default=[]
+    )
     custom_manifests: EnvVar = EnvVar(
         ["CUSTOM_MANIFESTS_FILES"],
         loader=lambda files: [m for path in re.split(r"\s|,", files) for m in Manifest.get_manifests(Path(path))],

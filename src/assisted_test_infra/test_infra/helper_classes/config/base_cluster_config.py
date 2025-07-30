@@ -18,6 +18,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
 
     cluster_tags: str = None
     olm_operators: List[str] = None
+    olm_bundles: List[str] = None
     vip_dhcp_allocation: bool = None
     cluster_networks: List[models.ClusterNetwork] = None
     service_networks: List[models.ServiceNetwork] = None

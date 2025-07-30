@@ -145,6 +145,8 @@ before you run start the deployment.
 | `AGENT_TIMEOUT_START`                   | Update assisted-service config map AGENT_TIMEOUT_START parameter. Default is 3m.
 | `OS_IMAGES`                             | A list of available OS images (one for each minor OCP version and CPU architecture) |
 | `RELEASE_IMAGES`                        | A list of available release images (one for each minor OCP version and CPU architecture) |
+| `NVIDIA_REQUIRE_GPU`                    | Boolean value indicating if NVIDIA GPU requirements should be enforced, default: `true` |
+| `AMD_REQUIRE_GPU`                       | Boolean value indicating if AMD GPU requirements should be enforced, default: `true` |
 
 ## Installation parameters
 
@@ -182,7 +184,9 @@ before you run start the deployment.
 | `REGISTRY_CA_PATH`           | Path to mirror registry CA bundle                                                            |
 | `HOST_INSTALLER_ARGS`        | JSON formatted string used to customize installer arguments on all the hosts. Example: `{"args": ["--append-karg", "console=ttyS0"]}`                      |
 | `LOAD_BALANCER_TYPE` | Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user. |
-| `SET_INFRAENV_VERSION` | If `true`, sets the `osImageVersion` field on the `InfraEnv` to the `OPENSHIFT_VERSION` to ensure the discovery ISO uses this OCP version for tests, default: `false` | 
+| `SET_INFRAENV_VERSION` | If `true`, sets the `osImageVersion` field on the `InfraEnv` to the `OPENSHIFT_VERSION` to ensure the discovery ISO uses this OCP version for tests, default: `false` |
+| `OLM_OPERATORS` | Comma-separated list of OLM operators to install on the cluster (e.g., `mce,odf,metallb`) |
+| `OLM_BUNDLES` | Comma-separated list of operator bundles to install on the cluster (e.g., `virtualization,openshift-ai`). Bundles are expanded to their constituent operators automatically | 
 
 ## Vsphere parameters
 
@@ -602,3 +606,5 @@ export KUBECONFIG=./build/kubeconfig
 export KUBECONFIG=$(find ${KUBECONFIG} -type f)
 make test_parallel
 ```
+
+export OLM_OPERATORS=mce,odf
