@@ -32,6 +32,13 @@ class NodeController(ABC):
         return self._config.masters_count
 
     @property
+    def arbiters_count(self):
+        # TNA (Two Node Architecture) logic: when masters_count=2, automatically set 1 arbiter
+        if self.masters_count == 2:
+            return 1
+        return 0
+
+    @property
     def is_ipv4(self):
         return self._config.is_ipv4
 

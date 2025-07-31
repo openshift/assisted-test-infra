@@ -43,8 +43,12 @@ class Nodes:
         return self.controller.workers_count
 
     @property
+    def arbiters_count(self):
+        return self.controller.arbiters_count
+
+    @property
     def nodes_count(self):
-        return self.workers_count + self.masters_count
+        return self.workers_count + self.masters_count + self.arbiters_count
 
     @property
     def nodes(self) -> List[Node]:
@@ -85,6 +89,9 @@ class Nodes:
 
     def get_workers(self):
         return [node for node in self.nodes if node.is_worker_in_name()]
+
+    def get_arbiters(self):
+        return [node for node in self.nodes if node.is_arbiter_in_name()]
 
     @property
     def nodes_as_dict(self):
