@@ -178,14 +178,7 @@ class Cluster(BaseCluster):
 
         olm_operators = []
         for operator_name in unique_operators:
-            operator_properties = consts.get_operator_properties(
-                operator_name,
-                api_ip=self._config.metallb_api_ip,
-                ingress_ip=self._config.metallb_ingress_ip,
-            )
             operator = {"name": operator_name}
-            if operator_properties:
-                operator["properties"] = operator_properties
             olm_operators.append(operator)
 
         return olm_operators
@@ -327,16 +320,6 @@ class Cluster(BaseCluster):
     def set_mce(self, properties: str = None, update: bool = False):
         self.set_olm_operator(consts.OperatorType.MCE, properties=properties, update=update)
 
-    def set_metallb(self, properties: str = None, update: bool = False):
-        if properties is None:
-            properties = consts.get_operator_properties(
-                consts.OperatorType.METALLB,
-                api_vip=self._config.api_vips[0].ip,
-                ingress_vip=self._config.ingress_vips[0].ip,
-            )
-
-        self.set_olm_operator(consts.OperatorType.METALLB, properties=properties, update=update)
-
     def unset_odf(self):
         self.unset_olm_operator(consts.OperatorType.ODF)
 
@@ -348,9 +331,6 @@ class Cluster(BaseCluster):
 
     def unset_mce(self):
         self.unset_olm_operator(consts.OperatorType.MCE)
-
-    def unset_metallb(self):
-        self.unset_olm_operator(consts.OperatorType.METALLB)
 
     def unset_olm_operator(self, operator_name):
         log.info(f"Unsetting {operator_name} for cluster: {self.id}")
