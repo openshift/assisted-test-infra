@@ -13,6 +13,11 @@ if [[ "${NO_UI}" != "n" ]] || [[ "${DEPLOY_TARGET}" != @(minikube|kind) ]]; then
     exit 0
 fi
 
+if [[ "${OPENSHIFT_CI}" == "true" ]]; then
+    echo "Skipping UI deployment in CI"
+    exit 0
+fi
+
 mkdir -p build
 
 print_log "Starting ui"
