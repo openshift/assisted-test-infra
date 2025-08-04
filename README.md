@@ -147,6 +147,7 @@ before you run start the deployment.
 | `RELEASE_IMAGES`                        | A list of available release images (one for each minor OCP version and CPU architecture) |
 | `NVIDIA_REQUIRE_GPU`                    | Boolean value indicating if NVIDIA GPU requirements should be enforced, default: `true` |
 | `AMD_REQUIRE_GPU`                       | Boolean value indicating if AMD GPU requirements should be enforced, default: `true` |
+| `TNA_CLUSTERS_SUPPORT`                  | Boolean value indicating if TNA clusters should be supported, default: `false` |
 
 ## Installation parameters
 
@@ -164,6 +165,7 @@ before you run start the deployment.
 | `NO_PROXY_VALUES`            | A comma-separated list of destination domain names, domains, IP addresses, or other network CIDRs to exclude proxying                                      |
 | `NUM_MASTERS`                | number of VMs to spawn as masters, default: 3                                                                                                              |
 | `NUM_WORKERS`                | number of VMs to spawn as workers, default: 0                                                                                                              |
+| `NUM_ARBITERS`               | number of VMs to spawn as arbiters, default: 0                                                                                                             |
 | `OPENSHIFT_VERSION`          | OpenShift version to install, default taken from the deployed assisted-service (`/v2/openshift-versions`)                                                  |
 | `HYPERTHREADING`             | Set node's CPU hyperthreading mode. Values are: all, none, masters, workers. default: all                                                                  |
 | `DISK_ENCRYPTION_MODE`       | Set disk encryption mode. Right now assisted-test-infra only supports "tpmv2", which is also the default.                                                  |

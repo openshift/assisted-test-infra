@@ -78,7 +78,11 @@ class LibvirtController(NodeController, ABC):
             domain_name = domain.name()
             if name_filter and name_filter not in domain_name:
                 continue
-            if (consts.NodeRoles.MASTER in domain_name) or (consts.NodeRoles.WORKER in domain_name):
+            if (
+                (consts.NodeRoles.MASTER in domain_name)
+                or (consts.NodeRoles.WORKER in domain_name)
+                or (consts.NodeRoles.ARBITER in domain_name)
+            ):
                 nodes.append(Node(domain_name, self, self.private_ssh_key_path))
 
         log.info("Found domains %s", [node.name for node in nodes])

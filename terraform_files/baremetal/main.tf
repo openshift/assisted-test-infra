@@ -251,6 +251,54 @@ module "workers" {
   disk_count     = var.worker_disk_count
 }
 
+module "arbiters" {
+  source = "../baremetal_host"
+  count  = var.arbiter_count
+
+  name           = var.load_balancer_type == "user-managed" ? (count.index % 2 == 0 ? "${var.cluster_name}-arbiter-${count.index}" : "${var.cluster_name}-arbiter-secondary-${count.index}") : "${var.cluster_name}-arbiter-${count.index}"
+  memory         = var.libvirt_arbiter_memory
+  vcpu           = var.libvirt_arbiter_vcpu
+  running        = var.running
+  image_path     = var.image_path
+  cpu_mode       = var.arbiter_cpu_mode
+  cluster_domain = var.cluster_domain
+  vtpm2          = var.arbiter_vtpm2
+  boot_devices   = var.arbiter_boot_devices
+
+  networks = var.load_balancer_type == "user-managed" ? [
+    {
+      name     = count.index % 2 == 0 ? libvirt_network.net.name : libvirt_network.secondary_net.name
+      hostname = count.index % 2 == 0 ? "${var.cluster_name}-arbiter-${count.index}" : "${var.cluster_name}-arbiter-secondary-${count.index}"
+      ips      = count.index % 2 == 0 ? var.libvirt_arbiter_ips[count.index] : var.libvirt_secondary_arbiter_ips[count.index]
+      mac      = var.libvirt_arbiter_macs[count.index]
+    }
+  ] : flatten([for net in [
+    {
+      name     = libvirt_network.net.name
+      ips      = var.libvirt_arbiter_ips
+      macs     = var.libvirt_arbiter_macs
+      hostname = var.slave_interfaces ? null : "${var.cluster_name}-arbiter-${count.index}"
+    },
+    {
+      name     = libvirt_network.secondary_net.name
+      ips      = var.libvirt_secondary_arbiter_ips
+      macs     = var.libvirt_secondary_arbiter_macs
+      hostname = null
+    },
+  ] : [for i in range(var.slave_interfaces ? var.network_interfaces_count : 1) :
+    {
+      name     = net.name
+      ips      = var.slave_interfaces ? null : net.ips[count.index]
+      mac      = var.slave_interfaces ? net.macs[count.index * var.network_interfaces_count + i] : net.macs[count.index]
+      hostname = net.hostname
+    }]])
+
+  pool           = libvirt_pool.storage_pool.name
+  disk_base_name = "${var.cluster_name}-arbiter-${count.index}"
+  disk_size      = var.libvirt_arbiter_disk
+  disk_count     = var.arbiter_disk_count
+}
+
 # Define DNS entries
 # Terraform doesn't have ability for conditional blocks (if cond { block }) so we're using
 # the count directive to include/exclude elements

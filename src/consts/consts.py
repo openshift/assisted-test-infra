@@ -46,10 +46,25 @@ class DiskEncryptionRoles:
     ALL = "all"
     MASTERS = "masters"
     WORKERS = "workers"
+    ARBITERS = "arbiters"
+    MASTERS_WORKERS = "masters,workers"
+    MASTERS_ARBITERS = "masters,arbiters"
+    ARBITERS_WORKERS = "arbiters,workers"
+    MASTERS_ARBITERS_WORKERS = "masters,arbiters,workers"
 
     @classmethod
     def all(cls):
-        return [cls.NONE, cls.ALL, cls.MASTERS, cls.WORKERS]
+        return [
+            cls.NONE,
+            cls.ALL,
+            cls.MASTERS,
+            cls.WORKERS,
+            cls.ARBITERS,
+            cls.MASTERS_WORKERS,
+            cls.MASTERS_ARBITERS,
+            cls.ARBITERS_WORKERS,
+            cls.MASTERS_ARBITERS_WORKERS,
+        ]
 
 
 # Files & Directories
@@ -130,6 +145,7 @@ TEST_SECONDARY_NETWORK = "test-infra-secondary-network-"
 HOST_PASSTHROUGH_CPU_MODE = "host-passthrough"
 MASTER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
 WORKER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
+ARBITER_TF_CPU_MODE = HOST_PASSTHROUGH_CPU_MODE
 NUMBER_OF_MASTERS = 3
 NAMESPACE_POOL_SIZE = 15
 DEFAULT_ADDITIONAL_NTP_SOURCE = "clock.redhat.com"
@@ -185,6 +201,7 @@ class ImageType:
 class NodeRoles:
     WORKER = "worker"
     MASTER = "master"
+    ARBITER = "arbiter"
     AUTO_ASSIGN = "auto-assign"
 
 
@@ -333,6 +350,7 @@ class KubeAPIPlatforms:
 
 class ControlPlaneCount:
     ONE = 1
+    TWO = 2
     THREE = 3
     FOUR = 4
     FIVE = 5
@@ -378,6 +396,7 @@ class CensoredConfig:
     EXACT_PATHS = {
         "/opt/openshift/openshift/99_openshift-cluster-api_master-user-data-secret.yaml",
         "/opt/openshift/openshift/99_openshift-cluster-api_worker-user-data-secret.yaml",
+        "/opt/openshift/openshift/99_openshift-cluster-api_arbiter-user-data-secret.yaml",
         "/opt/openshift/openshift/99_kubeadmin-password-secret.yaml",
         "/opt/openshift/manifests/machine-config-server-ca-secret.yaml",
         "/opt/openshift/manifests/machine-config-server-tls-secret.yaml",

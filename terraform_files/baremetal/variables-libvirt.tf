@@ -13,6 +13,11 @@ variable "worker_count" {
   description = "Number of workers."
 }
 
+variable "arbiter_count" {
+  type        = number
+  description = "Number of arbiters."
+}
+
 variable "master_disk_count" {
   type        = number
   description = "Number of master disks."
@@ -23,6 +28,11 @@ variable "worker_disk_count" {
   description = "Number of worker disks."
 }
 
+variable "arbiter_disk_count" {
+  type        = number
+  description = "Number of arbiter disks."
+}
+
 variable "master_boot_devices" {
   type        = list(string)
   description = "the list of boot devices in the desired order of boot for masters"
@@ -31,6 +41,11 @@ variable "master_boot_devices" {
 variable "worker_boot_devices" {
   type        = list(string)
   description = "the list of boot devices in the desired order of boot for workers"
+}
+
+variable "arbiter_boot_devices" {
+  type        = list(string)
+  description = "the list of boot devices in the desired order of boot for arbiters"
 }
 
 variable "cluster_domain" {
@@ -118,6 +133,26 @@ variable "libvirt_secondary_worker_macs" {
   description = "the list of the desired macs for secondary worker interface"
 }
 
+variable "libvirt_arbiter_ips" {
+  type        = list(list(string))
+  description = "the list of desired arbiter ips. Must match master_count"
+}
+
+variable "libvirt_secondary_arbiter_ips" {
+  type        = list(list(string))
+  description = "the list of desired arbiter second interface ips. Must match master_count"
+}
+
+variable "libvirt_arbiter_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for arbiter interface"
+}
+
+variable "libvirt_secondary_arbiter_macs" {
+  type        = list(string)
+  description = "the list of the desired macs for secondary arbiter interface"
+}
+
 variable "api_vips" {
   type        = list(string)
   description = "the API virtual IPs"
@@ -168,6 +203,24 @@ variable "libvirt_worker_memory" {
   default     = "4096"
 }
 
+variable "arbiter_cpu_mode" {
+  type        = string
+  description = "CPUs virtualization flag"
+  default     = "host-passthrough"
+}
+
+variable "libvirt_arbiter_vcpu" {
+  type        = string
+  description = "CPUs allocated to arbiters"
+  default     = "2"
+}
+
+variable "libvirt_arbiter_memory" {
+  type        = string
+  description = "RAM in MiB allocated to arbiter"
+  default     = "4096"
+}
+
 
 variable "image_path" {
   type        = string
@@ -197,6 +250,12 @@ variable "libvirt_master_disk" {
   default     = "21474836480"
 }
 
+variable "libvirt_arbiter_disk" {
+  type        = string
+  description = "Disk size in bytes allocated to arbiter"
+  default     = "21474836480"
+}
+
 variable "running" {
   type        = bool
   description = "Power on vms or not"
@@ -212,6 +271,12 @@ variable "master_vtpm2" {
 variable "worker_vtpm2" {
   type        = bool
   description = "Whether or not to emulate TPM v2 device on worker nodes."
+  default     = false
+}
+
+variable "arbiter_vtpm2" {
+  type        = bool
+  description = "Whether or not to emulate TPM v2 device on arbiter nodes."
   default     = false
 }
 

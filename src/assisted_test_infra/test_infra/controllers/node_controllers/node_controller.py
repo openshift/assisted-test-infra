@@ -32,6 +32,10 @@ class NodeController(ABC):
         return self._config.masters_count
 
     @property
+    def arbiters_count(self):
+        return self._config.arbiters_count
+
+    @property
     def is_ipv4(self):
         return self._config.is_ipv4
 

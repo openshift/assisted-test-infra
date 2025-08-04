@@ -361,16 +361,22 @@ class Cluster(BaseCluster):
         self._config.olm_operators = olm_operators
         self.api_client.update_cluster(self.id, {"olm_operators": olm_operators})
 
-    def set_host_roles(self, num_masters: int = None, num_workers: int = None, requested_roles=None):
+    def set_host_roles(
+        self, num_masters: int = None, num_workers: int = None, num_arbiters: int = None, requested_roles=None
+    ):
         if requested_roles is None:
             requested_roles = Counter(
                 master=num_masters or self.nodes.masters_count,
                 worker=num_workers or self.nodes.workers_count,
+                arbiter=num_arbiters or self.nodes.arbiters_count,
             )
         assigned_roles = self._get_matching_hosts(host_type=consts.NodeRoles.MASTER, count=requested_roles["master"])
 
         assigned_roles.extend(
             self._get_matching_hosts(host_type=consts.NodeRoles.WORKER, count=requested_roles["worker"])
+        )
+        assigned_roles.extend(
+            self._get_matching_hosts(host_type=consts.NodeRoles.ARBITER, count=requested_roles["arbiter"])
         )
         for role in assigned_roles:
             self._infra_env.update_host(host_id=role["id"], host_role=role["role"])
@@ -976,7 +982,9 @@ class Cluster(BaseCluster):
         )  # required to test against stage/production  # Patch for SNO OCI - currently not supported in the service
         self.set_hostnames_and_roles()
         if self.control_plane_count != consts.ControlPlaneCount.ONE:
-            self.set_host_roles(len(self.nodes.get_masters()), len(self.nodes.get_workers()))
+            self.set_host_roles(
+                len(self.nodes.get_masters()), len(self.nodes.get_workers()), len(self.nodes.get_arbiters())
+            )
 
         self.set_installer_args()
         self.validate_static_ip()
