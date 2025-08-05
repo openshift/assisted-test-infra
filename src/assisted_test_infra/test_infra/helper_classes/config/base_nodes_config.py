@@ -37,6 +37,15 @@ class BaseNodesConfig(BaseConfig, ABC):
     worker_disk_count: int = None
     worker_boot_devices: List[str] = None
 
+    arbiter_memory: int = None
+    arbiter_vcpu: int = None
+    arbiters_count: int = None
+    arbiter_cpu_mode: str = None
+    arbiter_disk: int = None
+    arbiter_disk_size_gib: str = None  # disk size in GB.
+    arbiter_disk_count: int = None
+    arbiter_boot_devices: List[str] = None
+
     api_vips: List[models.ApiVip] = None
     ingress_vips: List[models.IngressVip] = None
     base_cluster_domain: Optional[str] = None
@@ -49,7 +58,8 @@ class BaseNodesConfig(BaseConfig, ABC):
     @property
     def nodes_count(self):
         if self.workers_count is not None and self.masters_count is not None:
-            return self.masters_count + self.workers_count
+            arbiters = self.arbiters_count or 0
+            return self.masters_count + self.workers_count + arbiters
 
         return 0
 
