@@ -37,6 +37,15 @@ class BaseNodesConfig(BaseConfig, ABC):
     worker_disk_count: int = None
     worker_boot_devices: List[str] = None
 
+    arbiter_memory: int = None
+    arbiter_vcpu: int = None
+    arbiters_count: int = None
+    arbiter_cpu_mode: str = None
+    arbiter_disk: int = None
+    arbiter_disk_size_gib: str = None
+    arbiter_disk_count: int = None
+    arbiter_boot_devices: List[str] = None
+
     api_vips: List[models.ApiVip] = None
     ingress_vips: List[models.IngressVip] = None
     base_cluster_domain: Optional[str] = None
@@ -48,8 +57,8 @@ class BaseNodesConfig(BaseConfig, ABC):
 
     @property
     def nodes_count(self):
-        if self.workers_count is not None and self.masters_count is not None:
-            return self.masters_count + self.workers_count
+        if self.workers_count is not None and self.masters_count is not None and self.arbiters_count is not None:
+            return self.masters_count + self.workers_count + self.arbiters_count
 
         return 0
 
@@ -57,6 +66,6 @@ class BaseNodesConfig(BaseConfig, ABC):
     def nodes_count(self, nodes_count: int):
         warnings.warn(
             "Setting nodes_count is deprecated. nodes_count value is taken from masters_count plus"
-            " workers_count instead.",
+            " workers_count plus arbiters_count instead.",
             DeprecationWarning,
         )

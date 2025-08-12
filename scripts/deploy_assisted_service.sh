@@ -51,6 +51,7 @@ export OS_IMAGES=${OS_IMAGES:-}
 export LOAD_BALANCER_TYPE=${LOAD_BALANCER_TYPE:-"cluster-managed"}
 export NVIDIA_REQUIRE_GPU=${NVIDIA_REQUIRE_GPU:-true}
 export AMD_REQUIRE_GPU=${AMD_REQUIRE_GPU:-true}
+export TNA_CLUSTERS_SUPPORT=${TNA_CLUSTERS_SUPPORT:-false}
 export ASSISTED_SERVICE_DATA_BASE_PATH="./assisted-service/data"
 export RELEASE_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_release_images.json"
 export OS_IMAGES_PATH="${ASSISTED_SERVICE_DATA_BASE_PATH}/default_os_images.json"
@@ -192,6 +193,7 @@ else
         IP=${SERVICE_URL} \
         NVIDIA_REQUIRE_GPU=${NVIDIA_REQUIRE_GPU} \
         AMD_REQUIRE_GPU=${AMD_REQUIRE_GPU} \
+        TNA_CLUSTERS_SUPPORT=${TNA_CLUSTERS_SUPPORT} \
     )
 
     add_firewalld_port $SERVICE_PORT

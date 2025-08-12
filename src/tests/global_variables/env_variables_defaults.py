@@ -34,6 +34,9 @@ class _EnvVariables(DataPool, ABC):
     workers_count: EnvVar = EnvVar(
         ["WORKERS_COUNT", "NUM_WORKERS"], loader=int, default=env_defaults.DEFAULT_WORKERS_COUNT
     )
+    arbiters_count: EnvVar = EnvVar(
+        ["ARBITERS_COUNT", "NUM_ARBITERS"], loader=int, default=env_defaults.DEFAULT_ARBITERS_COUNT
+    )
     day2_workers_count: EnvVar = EnvVar(
         ["NUM_DAY2_WORKERS"], loader=int, default=env_defaults.DEFAULT_DAY2_WORKERS_COUNT
     )
@@ -43,12 +46,15 @@ class _EnvVariables(DataPool, ABC):
     vip_dhcp_allocation: EnvVar = EnvVar(["VIP_DHCP_ALLOCATION"], loader=lambda x: bool(strtobool(x)))
 
     worker_memory: EnvVar = EnvVar(["WORKER_MEMORY"], loader=int, default=resources.DEFAULT_WORKER_MEMORY)
+    arbiter_memory: EnvVar = EnvVar(["ARBITER_MEMORY"], loader=int, default=resources.DEFAULT_ARBITER_MEMORY)
     master_memory: EnvVar = EnvVar(["MASTER_MEMORY"], loader=int, default=resources.DEFAULT_MASTER_MEMORY)
     network_mtu: EnvVar = EnvVar(["NETWORK_MTU"], loader=int, default=resources.DEFAULT_MTU)
     worker_disk: EnvVar = EnvVar(["WORKER_DISK"], loader=int, default=resources.DEFAULT_WORKER_DISK)
+    arbiter_disk: EnvVar = EnvVar(["ARBITER_DISK"], loader=int, default=resources.DEFAULT_ARBITER_DISK)
     master_disk: EnvVar = EnvVar(["MASTER_DISK"], loader=int, default=resources.DEFAULT_MASTER_DISK)
     master_disk_count: EnvVar = EnvVar(["MASTER_DISK_COUNT"], loader=int, default=resources.DEFAULT_DISK_COUNT)
     worker_disk_count: EnvVar = EnvVar(["WORKER_DISK_COUNT"], loader=int, default=resources.DEFAULT_DISK_COUNT)
+    arbiter_disk_count: EnvVar = EnvVar(["ARBITER_DISK_COUNT"], loader=int, default=resources.DEFAULT_DISK_COUNT)
     storage_pool_path: EnvVar = EnvVar(["STORAGE_POOL_PATH"], default=env_defaults.DEFAULT_STORAGE_POOL_PATH)
     private_ssh_key_path: EnvVar = EnvVar(
         ["PRIVATE_KEY_PATH"], loader=Path, default=env_defaults.DEFAULT_SSH_PRIVATE_KEY_PATH
@@ -71,6 +77,7 @@ class _EnvVariables(DataPool, ABC):
     iso_image_type: EnvVar = EnvVar(["ISO_IMAGE_TYPE"], default=env_defaults.DEFAULT_IMAGE_TYPE)
     set_infraenv_version: EnvVar = EnvVar(["SET_INFRAENV_VERSION"], loader=lambda x: bool(strtobool(x)), default=False)
     worker_vcpu: EnvVar = EnvVar(["WORKER_CPU"], loader=int, default=resources.DEFAULT_WORKER_CPU)
+    arbiter_vcpu: EnvVar = EnvVar(["ARBITER_CPU"], loader=int, default=resources.DEFAULT_ARBITER_CPU)
     master_vcpu: EnvVar = EnvVar(["MASTER_CPU"], loader=int, default=resources.DEFAULT_MASTER_CPU)
     test_teardown: EnvVar = EnvVar(
         ["TEST_TEARDOWN"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_TEST_TEARDOWN
@@ -122,6 +129,7 @@ class _EnvVariables(DataPool, ABC):
 
     single_node_ip: EnvVar = EnvVar(["SINGLE_NODE_IP"], default=env_defaults.DEFAULT_SINGLE_NODE_IP)
     worker_cpu_mode: EnvVar = EnvVar(["WORKER_CPU_MODE"], default=env_defaults.DEFAULT_TF_CPU_MODE)
+    arbiter_cpu_mode: EnvVar = EnvVar(["ARBITER_CPU_MODE"], default=env_defaults.DEFAULT_TF_CPU_MODE)
     master_cpu_mode: EnvVar = EnvVar(["MASTER_CPU_MODE"], default=env_defaults.DEFAULT_TF_CPU_MODE)
     iso_download_path: EnvVar = EnvVar(["ISO_DOWNLOAD_PATH", "ISO"])  # todo replace ISO env var->ISO_DOWNLOAD_PATH
     hyperthreading: EnvVar = EnvVar(["HYPERTHREADING"])

@@ -42,6 +42,9 @@ class Node:
     def is_worker_in_name(self) -> bool:
         return self.role == consts.NodeRoles.WORKER
 
+    def is_arbiter_in_name(self) -> bool:
+        return self.role == consts.NodeRoles.ARBITER
+
     @property
     def role(self) -> str:
         if self._role:
@@ -52,6 +55,9 @@ class Node:
 
         if consts.NodeRoles.WORKER in self.name:
             return consts.NodeRoles.WORKER
+
+        if consts.NodeRoles.ARBITER in self.name:
+            return consts.NodeRoles.ARBITER
 
         return consts.NodeRoles.AUTO_ASSIGN
 

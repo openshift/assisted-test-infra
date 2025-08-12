@@ -41,6 +41,9 @@ _default_triggers = frozendict(
             master_vcpu=resources.DEFAULT_MASTER_SNO_CPU,
             network_type=None,
         ),
+        "control_plane_count_2": Trigger(
+            conditions=[lambda config: config.masters_count == 2], control_plane_count=consts.ControlPlaneCount.TWO
+        ),
         "control_plane_count_4": Trigger(
             conditions=[lambda config: config.masters_count == 4], control_plane_count=consts.ControlPlaneCount.FOUR
         ),

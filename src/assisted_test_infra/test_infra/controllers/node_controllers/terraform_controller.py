@@ -62,29 +62,35 @@ class TerraformController(LibvirtController):
             self._entity_config.disk_encryption_mode in consts.DiskEncryptionMode.all()
         ), f"{self._entity_config.disk_encryption_mode} is not a supported disk encryption mode"
 
-        master_vtpm2 = worker_vtpm2 = False
+        master_vtpm2 = worker_vtpm2 = arbiter_vtpm2 = False
 
         if self._entity_config.disk_encryption_mode == consts.DiskEncryptionMode.TPM_VERSION_2:
             if self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.ALL:
-                master_vtpm2 = worker_vtpm2 = True
-            elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.MASTERS:
+                master_vtpm2 = worker_vtpm2 = arbiter_vtpm2 = True
+            if consts.DiskEncryptionRoles.MASTERS in self._entity_config.disk_encryption_roles:
                 master_vtpm2 = True
-            elif self._entity_config.disk_encryption_roles == consts.DiskEncryptionRoles.WORKERS:
+            if consts.DiskEncryptionRoles.WORKERS in self._entity_config.disk_encryption_roles:
                 worker_vtpm2 = True
+            if consts.DiskEncryptionRoles.ARBITERS in self._entity_config.disk_encryption_roles:
+                arbiter_vtpm2 = True
 
-        return {"master_vtpm2": master_vtpm2, "worker_vtpm2": worker_vtpm2}
+        return {"master_vtpm2": master_vtpm2, "worker_vtpm2": worker_vtpm2, "arbiter_vtpm2": arbiter_vtpm2}
 
     # TODO move all those to conftest and pass it as kwargs
     # TODO-2 Remove all parameters defaults after moving to new workflow and use config object instead
     def _terraform_params(self, **kwargs) -> Munch:
         master_boot_devices = self._config.master_boot_devices
         worker_boot_devices = self._config.worker_boot_devices
+        arbiter_boot_devices = self._config.arbiter_boot_devices
         params = {
             "libvirt_worker_memory": kwargs.get("worker_memory"),
+            "libvirt_arbiter_memory": kwargs.get("arbiter_memory", resources.DEFAULT_ARBITER_MEMORY),
             "libvirt_master_memory": kwargs.get("master_memory", resources.DEFAULT_MASTER_MEMORY),
             "libvirt_worker_vcpu": kwargs.get("worker_vcpu", resources.DEFAULT_MASTER_CPU),
+            "libvirt_arbiter_vcpu": kwargs.get("arbiter_vcpu", resources.DEFAULT_ARBITER_CPU),
             "libvirt_master_vcpu": kwargs.get("master_vcpu", resources.DEFAULT_MASTER_CPU),
             "worker_count": kwargs.get("workers_count", 0),
+            "arbiter_count": kwargs.get("arbiters_count", 0),
             "master_count": kwargs.get("masters_count", consts.NUMBER_OF_MASTERS),
             "machine_cidr": self.get_primary_machine_cidr(),
             "libvirt_network_name": self.network_name,
@@ -93,6 +99,7 @@ class TerraformController(LibvirtController):
             # TODO change to namespace index
             "libvirt_network_if": self._config.net_asset.libvirt_network_if,
             "libvirt_worker_disk": kwargs.get("worker_disk", resources.DEFAULT_WORKER_DISK),
+            "libvirt_arbiter_disk": kwargs.get("arbiter_disk", resources.DEFAULT_ARBITER_DISK),
             "libvirt_master_disk": kwargs.get("master_disk", resources.DEFAULT_MASTER_DISK),
             "libvirt_secondary_network_name": consts.TEST_SECONDARY_NETWORK + self._suffix,
             "libvirt_storage_pool_path": kwargs.get("storage_pool_path", os.path.join(os.getcwd(), "storage_pool")),
@@ -104,13 +111,18 @@ class TerraformController(LibvirtController):
             "single_node_ip": kwargs.get("single_node_ip", ""),
             "master_disk_count": kwargs.get("master_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_disk_count": kwargs.get("worker_disk_count", resources.DEFAULT_DISK_COUNT),
+            "arbiter_disk_count": kwargs.get("arbiter_disk_count", resources.DEFAULT_DISK_COUNT),
             "worker_cpu_mode": kwargs.get("worker_cpu_mode", consts.WORKER_TF_CPU_MODE),
+            "arbiter_cpu_mode": kwargs.get("arbiter_cpu_mode", consts.ARBITER_TF_CPU_MODE),
             "master_cpu_mode": kwargs.get("master_cpu_mode", consts.MASTER_TF_CPU_MODE),
             "master_boot_devices": (
                 master_boot_devices if master_boot_devices is not None else consts.DEFAULT_BOOT_DEVICES
             ),
             "worker_boot_devices": (
                 worker_boot_devices if worker_boot_devices is not None else consts.DEFAULT_BOOT_DEVICES
+            ),
+            "arbiter_boot_devices": (
+                arbiter_boot_devices if arbiter_boot_devices is not None else consts.DEFAULT_BOOT_DEVICES
             ),
             **self._get_disk_encryption_appliance(),
         }
@@ -121,6 +133,8 @@ class TerraformController(LibvirtController):
             "libvirt_secondary_master_ips",
             "libvirt_worker_ips",
             "libvirt_secondary_worker_ips",
+            "libvirt_arbiter_ips",
+            "libvirt_secondary_arbiter_ips",
         ]:
             value = kwargs.get(key)
             if value is not None:
@@ -181,6 +195,12 @@ class TerraformController(LibvirtController):
         log.info("Machine cidr is: %s", machine_cidr)
         master_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10)
         worker_starting_ip = str(ip_address(ip_network(machine_cidr).network_address) + 10 + tfvars["master_count"])
+        arbiter_starting_ip = str(
+            ip_address(ip_network(machine_cidr).network_address)
+            + 10
+            + tfvars["master_count"]
+            + self._params.worker_count
+        )
         tfvars["image_path"] = self._entity_config.iso_download_path
         tfvars["worker_image_path"] = self._entity_config.worker_iso_download_path or tfvars["image_path"]
         self.master_ips = tfvars["libvirt_master_ips"] = self._create_address_list(
@@ -188,6 +208,9 @@ class TerraformController(LibvirtController):
         )
         tfvars["libvirt_worker_ips"] = self._create_address_list(
             self._params.worker_count, starting_ip_addr=worker_starting_ip
+        )
+        tfvars["libvirt_arbiter_ips"] = self._create_address_list(
+            self._params.arbiter_count, starting_ip_addr=arbiter_starting_ip
         )
         if self._config.ingress_dns:
             for service in ["console-openshift-console", "canary-openshift-ingress", "oauth-openshift"]:
@@ -205,8 +228,10 @@ class TerraformController(LibvirtController):
         tfvars["running"] = running
         tfvars["libvirt_master_macs"] = self.generate_macs(self._params.master_count)
         tfvars["libvirt_worker_macs"] = self.generate_macs(self._params.worker_count)
+        tfvars["libvirt_arbiter_macs"] = self.generate_macs(self._params.arbiter_count)
         tfvars["master_boot_devices"] = self._params.master_boot_devices
         tfvars["worker_boot_devices"] = self._params.worker_boot_devices
+        tfvars["arbiter_boot_devices"] = self._params.arbiter_boot_devices
         tfvars["load_balancer_type"] = self._entity_config.load_balancer_type
         if self._entity_config.is_bonded:
             tfvars["slave_interfaces"] = True
@@ -223,6 +248,12 @@ class TerraformController(LibvirtController):
         secondary_worker_starting_ip = str(
             ip_address(ip_network(provisioning_cidr).network_address) + 10 + int(self._params.master_count)
         )
+        secondary_arbiter_starting_ip = str(
+            ip_address(ip_network(provisioning_cidr).network_address)
+            + 10
+            + int(self._params.master_count)
+            + int(self._params.worker_count)
+        )
         return {
             "libvirt_secondary_worker_ips": self._create_address_list(
                 self._params.worker_count, starting_ip_addr=secondary_worker_starting_ip
@@ -230,8 +261,12 @@ class TerraformController(LibvirtController):
             "libvirt_secondary_master_ips": self._create_address_list(
                 self._params.master_count, starting_ip_addr=secondary_master_starting_ip
             ),
+            "libvirt_secondary_arbiter_ips": self._create_address_list(
+                self._params.arbiter_count, starting_ip_addr=secondary_arbiter_starting_ip
+            ),
             "libvirt_secondary_master_macs": self.generate_macs(self._params.master_count),
             "libvirt_secondary_worker_macs": self.generate_macs(self._params.worker_count),
+            "libvirt_secondary_arbiter_macs": self.generate_macs(self._params.arbiter_count),
         }
 
     def start_all_nodes(self):
