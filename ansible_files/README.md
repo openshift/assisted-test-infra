@@ -31,10 +31,12 @@ These steps will create a local Kubernetes cluster, build the Ofcir container im
     minikube start --driver=podman --container-runtime=containerd --rootless=true
 
     # Build the ofcir image directly into the minikube instance
-    minikube image build -t ofcir.io/ofcir:latest .
+    export IMG=localhost/ofcir:latest
+    minikube image build -t "${IMG}" .
 
     # Generate and apply the deployment manifests
     make generate-deploy-manifests
+    sed -i -E 's/^([[:space:]]*imagePullPolicy:[[:space:]]*)Always/\1IfNotPresent/' ./ofcir-manifests/ofcir-operator.yaml
     kubectl apply -f ofcir-manifests/
     ```
 
@@ -124,7 +126,7 @@ Now, we will define two different CI (Continuous Integration) resource pools and
 3.  **Authorize the New Pools:**
     Patch the `ofcir-tokens` secret. This secret maps an authentication token to a list of provider secrets that the token is allowed to use. Here, we allow the default `"token"` to access both of our new pools.
     ```bash
-    kubectl patch secret ofcir-tokens -n ofcir-system -p '{"stringData": {"token": "cipool-assisted-aws-medium-fallback-secret,cipool-assisted-aws-arm64-fallback-secret"}}'
+    kubectl patch secret ofcir-tokens -n ofcir-system -p '{"stringData": {"token": "cipool-assisted-aws-medium-fallback,cipool-assisted-aws-arm64-fallback"}}'
     ```
 
 ### 4. Test the Ofcir API
