@@ -10,6 +10,7 @@
     enablerepo: powertools
     name:
       - fuse
+      - fuse3
       - rclone
     update_cache: true # as we enabled EPEL previously
     state: present
