@@ -47,6 +47,7 @@ def get_ip_for_single_node(cluster_deployment, is_ipv4, timeout=300):
 def get_libvirt_nodes_from_tf_state(network_names: Union[List[str], Tuple[str]], tf_state):
     nodes = utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.MASTER)
     nodes.update(utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.WORKER))
+    nodes.update(utils.extract_nodes_from_tf_state(tf_state, network_names, consts.NodeRoles.ARBITER))
     return nodes
 
 
