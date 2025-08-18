@@ -127,6 +127,7 @@ class AgentClusterInstall(BaseCustomResource):
             "provisionRequirements": {
                 "controlPlaneAgents": control_plane_agents,
                 "workerAgents": kwargs.pop("worker_agents", 0),
+                "arbiterAgents": kwargs.pop("arbiter_agents", 0),
             },
         }
 

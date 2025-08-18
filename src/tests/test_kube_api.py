@@ -149,6 +149,7 @@ class TestKubeAPI(BaseKubeAPI):
             hyperthreading=cluster_config.hyperthreading,
             control_plane_agents=nodes.masters_count,
             worker_agents=nodes.workers_count,
+            arbiter_agents=nodes.arbiters_count,
             proxy=proxy.as_dict() if proxy else {},
             platform_type=get_platform_type(cluster_config.platform),
             load_balancer_type=load_balancer_type,
