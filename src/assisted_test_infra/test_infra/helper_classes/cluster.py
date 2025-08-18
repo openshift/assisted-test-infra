@@ -397,7 +397,18 @@ class Cluster(BaseCluster):
             if controller.tf_platform == consts.Platforms.BARE_METAL:
                 log.info("Setting the VIPs to the fixed load balancer IP")
                 api_vips = ingress_vips = [ApiVip(ip=self._get_load_balancer_ip()).to_dict()]
-                machine_networks = self.get_machine_networks() + [self.get_load_balancer_network_cidr()]
+                
+                # Ensure we always have 3 networks for user-managed LB (like deploy_nodes_with_networking)
+                machine_networks = self.get_machine_networks()
+                
+                # If we only got 1 network (missing provisioning), add it explicitly
+                if len(machine_networks) == 1:
+                    log.info("Adding missing provisioning CIDR for user-managed load balancer")
+                    # Use the standard provisioning CIDR from constants
+                    provisioning_cidr = consts.BaseAsset.PROVISIONING_CIDR  # "192.168.111.0/24"
+                    machine_networks.append(provisioning_cidr)
+                
+                machine_networks = machine_networks + [self.get_load_balancer_network_cidr()]
             elif controller.tf_platform == consts.Platforms.VSPHERE:
                 log.info("Setting the VIP and machine networks to the provided configuration")
                 access_vips = controller.get_ingress_and_api_vips()
