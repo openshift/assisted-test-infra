@@ -376,6 +376,12 @@ $(REPORTS):
 lint:
 	make _flake8
 
+# Lint all bash scripts under scripts/sno-ip-change with shellcheck
+.PHONY: bash_lint
+bash_lint:
+	@command -v shellcheck >/dev/null 2>&1 || { echo "shellcheck not found. Please install it (e.g., dnf install -y ShellCheck or apt install -y shellcheck)"; exit 1; }
+	@find scripts/sno-ip-change -type f -name "*.sh" -print0 | xargs -0 -n1 shellcheck -x || true
+
 ansible_lint:
 	ansible-lint ansible_files/
 
