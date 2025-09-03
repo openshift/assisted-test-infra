@@ -25,6 +25,17 @@ set_dnsmasq_new_ip_override() {
   systemctl restart dnsmasq.service || true
 }
 
+# Function: clear_dnsmasq_ip_override
+# Purpose: Remove SNO_DNSMASQ_IP_OVERRIDE line and restart dnsmasq
+clear_dnsmasq_ip_override() {
+  local overrides_path="/etc/default/sno_dnsmasq_configuration_overrides"
+  log "Clearing SNO_DNSMASQ_IP_OVERRIDE from ${overrides_path} and restarting dnsmasq"
+  if [[ -f "${overrides_path}" ]]; then
+    sed -i -e '/^SNO_DNSMASQ_IP_OVERRIDE=/d' "${overrides_path}" || true
+    systemctl restart dnsmasq.service || true
+  fi
+}
+
 # Function: update_dnsmasq
 # Purpose: Restart dnsmasq and ensure forcedns dispatcher presence.
 # Parameters:

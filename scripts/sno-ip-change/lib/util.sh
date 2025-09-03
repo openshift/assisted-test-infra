@@ -90,3 +90,46 @@ oc_retry() {
   done
   return 1
 }
+
+# Function: start_cluster_services
+# Purpose: Start kubelet and crio and optionally wait for API.
+# Parameters:
+# - $1: kubeconfig path (optional). If provided, waits for API.
+start_cluster_services() {
+  local kubeconfig="${1:-}"
+  ensure_kubelet_enabled || true
+  systemctl start kubelet.service || true
+  systemctl start crio.service || true
+  if [[ -n "$kubeconfig" ]]; then
+    wait_for_cluster_api "$kubeconfig" || true
+  fi
+}
+
+# Function: attempt_full_rollback
+# Purpose: Best-effort rollback to pre-run state: restore crypto, revert dnsmasq IP,
+#          bring cluster back up, and remove per-node nmstate MC.
+# Parameters:
+# - $1: backup directory path
+# - $2: recert image reference
+# - $3: kubeconfig path (internal)
+# - $4: old IPv4 address
+attempt_full_rollback() {
+  local backup_dir="$1"
+  local recert_image="$2"
+  local kubeconfig="$3"
+  local old_ipv4="$4"
+
+  # restore_seed_crypto, set_dnsmasq_new_ip_override, delete_nmstate_mc, wait_for_cluster_api
+  # are defined in other libs that should be sourced by the caller script.
+  log "Starting best-effort rollback using backup at ${backup_dir}"
+  restore_seed_crypto "$backup_dir" "$recert_image" "" || true
+  set_dnsmasq_new_ip_override "$old_ipv4" || true
+
+  ensure_kubelet_enabled || true
+  systemctl start kubelet.service || true
+  systemctl start crio.service || true
+
+  wait_for_cluster_api "$kubeconfig" || true
+  delete_nmstate_mc "$kubeconfig" || true
+  log "Rollback attempts completed"
+}

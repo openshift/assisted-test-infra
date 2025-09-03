@@ -143,6 +143,94 @@ EOF
     --authfile "$pull_secret_path"  "$recert_image"
 }
 
+# Function: run_recert_dual
+# Purpose: Prepare recert config with lists for ip and machine_network_cidr and run the recert container.
+# Parameters:
+# - $1: recert config path (output)
+# - $2: install-config path
+# - $3: pull-secret path
+# - $4: recert image
+# - $5: recert container data dir path (inside container)
+# - $6: old IPv4
+# - $7: new IPv4
+# - $8: new IPv6
+# - $9: old IPv6
+# - $10: IPv4 machine network CIDR
+# - $11: IPv6 machine network CIDR
+# - $12: crypto rules JSON path (optional)
+# - $13: crypto rules directory path (optional)
+run_recert_dual() {
+  local recert_cfg_path="$1"
+  local install_cfg_path="$2"
+  local pull_secret_path="$3"
+  local recert_image="$4"
+  local recert_container_data_dir_path="$5"
+  local old_ipv4="$6"
+  local new_ipv4="$7"
+  local new_ipv6="$8"
+  local old_ipv6="$9"
+  local cidr_v4="${10}"
+  local cidr_v6="${11}"
+  local crypto_json="${12:-}"
+  local crypto_dir="${13:-}"
+  log "Preparing dual-stack recert config at ${recert_cfg_path}"
+  mkdir -p "$(dirname "$recert_cfg_path")"
+  cat >"$recert_cfg_path" <<EOF
+etcd_endpoint: localhost:2379
+ip:
+- ${new_ipv4}
+- ${new_ipv6}
+machine_network_cidr:
+- ${cidr_v4}
+- ${cidr_v6}
+summary_file_clean: /var/tmp/recert-summary.yaml
+crypto_dirs:
+- /kubelet
+- /kubernetes
+- /machine-config-daemon
+crypto_files:
+- /host-etc/mcs-machine-config-content.json
+cluster_customization_dirs:
+- /kubelet
+- /kubernetes
+- /machine-config-daemon
+cluster_customization_files:
+- /host-etc/mcs-machine-config-content.json
+- /host-etc/mco/proxy.env	
+- /host-etc/chrony.conf
+cn_san_replace_rules:
+- ${old_ipv4},${new_ipv4}
+- ${old_ipv6},${new_ipv6}
+extend_expiration: true
+install_config: |
+$(cat "$install_cfg_path")
+EOF
+  if [[ -n "$crypto_json" && -f "$crypto_json" ]]; then
+    log "Including crypto rules from ${crypto_json}"
+    {
+      echo "use_key_rules:"
+      jq -r '.use_key_rules[] | "- \"" + . + "\""' "$crypto_json"
+      echo "use_cert_rules:"
+      jq -r '.use_cert_rules[] | "- \"" + . + "\""' "$crypto_json"
+    } >>"$recert_cfg_path"
+  fi
+  [[ -s "$recert_cfg_path" ]] || fail "Failed to write recert config"
+  log "Running recert container ${recert_image} (dual-stack)"
+  podman rm -f recert >/dev/null 2>&1 || true
+  podman run --pull=never --network=host --privileged --replace --name recert \
+    -v /etc:/host-etc \
+    -v /etc/ssh:/ssh \
+    -v /etc/kubernetes:/kubernetes \
+    -v /var/lib/kubelet/:/kubelet \
+    -v /var/tmp:/var/tmp \
+    -v /etc/machine-config-daemon:/machine-config-daemon \
+    -v /etc/pki:/pki \
+    -v "${crypto_dir}":"${recert_container_data_dir_path}" \
+    -v "${recert_cfg_path}":"${recert_container_data_dir_path}"/recert-config.yaml \
+    -e RECERT_CONFIG="${recert_container_data_dir_path}"/recert-config.yaml \
+    --authfile "$pull_secret_path"  "$recert_image"
+}
+
 # Function: teardown_etcd
 # Purpose: Remove the temporary etcd container used during recert.
 teardown_etcd() {

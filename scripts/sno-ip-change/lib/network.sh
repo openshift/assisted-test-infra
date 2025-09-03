@@ -124,6 +124,65 @@ YAML
   fi
 }
 
+# Function: build_nmstate_yaml_dual
+# Purpose: Generate nmstate YAML enabling both IPv4 and IPv6 on br-ex while enslaving a NIC.
+# Parameters:
+# - $1: Physical interface name to enslave into br-ex
+# - $2: IPv4 address for br-ex
+# - $3: IPv4 prefix length
+# - $4: IPv6 address for br-ex
+# - $5: IPv6 prefix length
+build_nmstate_yaml_dual() {
+  local interface_name="$1"
+  local ipv4_addr="$2"
+  local ipv4_prefix_len="$3"
+  local ipv6_addr="$4"
+  local ipv6_prefix_len="$5"
+  cat <<YAML
+interfaces:
+- name: ${interface_name}
+  type: ethernet
+  state: up
+  ipv4:
+    enabled: false
+  ipv6:
+    enabled: false
+- name: br-ex
+  type: ovs-bridge
+  state: up
+  ipv4:
+    enabled: false
+    dhcp: false
+  ipv6:
+    enabled: false
+    dhcp: false
+  bridge:
+    options:
+      mcast-snooping-enable: true
+    port:
+    - name: ${interface_name}
+    - name: br-ex
+- name: br-ex
+  type: ovs-interface
+  state: up
+  copy-mac-from: ${interface_name}
+  ipv4:
+    enabled: true
+    dhcp: false
+    address:
+    - ip: ${ipv4_addr}
+      prefix-length: ${ipv4_prefix_len}
+    auto-route-metric: 48
+  ipv6:
+    enabled: true
+    dhcp: false
+    address:
+    - ip: ${ipv6_addr}
+      prefix-length: ${ipv6_prefix_len}
+    auto-route-metric: 48
+YAML
+}
+
 # Function: create_nmstate_tmp_file
 # Purpose: Write nmstate YAML to a temp file and print the path.
 # Parameters:
@@ -144,6 +203,27 @@ create_nmstate_tmp_file() {
   fi
   build_nmstate_yaml "$interface_name" "$ip_addr" "$prefix_len" "$family" > "$f"
   log "Created nmstate configuration at ${f} for ${interface_name} (${ip_addr}/${prefix_len})"
+  echo "$f"
+}
+
+# Function: create_nmstate_tmp_file_dual
+# Purpose: Write dual-stack nmstate YAML to a temp file and print the path.
+# Parameters:
+# - $1: Physical interface name
+# - $2: IPv4 address
+# - $3: IPv4 prefix length
+# - $4: IPv6 address
+# - $5: IPv6 prefix length
+create_nmstate_tmp_file_dual() {
+  local interface_name="$1"
+  local ipv4_addr="$2"
+  local ipv4_prefix_len="$3"
+  local ipv6_addr="$4"
+  local ipv6_prefix_len="$5"
+  local f
+  f=$(mktemp)
+  build_nmstate_yaml_dual "$interface_name" "$ipv4_addr" "$ipv4_prefix_len" "$ipv6_addr" "$ipv6_prefix_len" > "$f"
+  log "Created dual-stack nmstate configuration at ${f} for ${interface_name} (v4 ${ipv4_addr}/${ipv4_prefix_len}, v6 ${ipv6_addr}/${ipv6_prefix_len})"
   echo "$f"
 }
 
