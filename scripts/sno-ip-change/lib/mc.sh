@@ -254,3 +254,19 @@ wait_for_node_config_contains_mc() {
     mcp_rendered=$(oc --kubeconfig "$kubeconfig" get mcp master -o json 2>/dev/null | jq -r '.status.configuration.name // ""' || printf "%s" "$mcp_rendered")
   done
 }
+
+# Delete the per-node nmstate MachineConfig and wait for MCP update
+# Function: delete_nmstate_mc
+# Purpose: Remove the MC named 10-br-ex-<node> if present.
+# Parameters:
+# - $1: kubeconfig path
+delete_nmstate_mc() {
+  local kubeconfig="$1"
+  local node_name mc_name
+  node_name=$(get_node_name "$kubeconfig")
+  [[ -n "$node_name" ]] || fail "Failed to determine node name"
+  mc_name="10-br-ex-${node_name}"
+  log "Deleting nmstate MachineConfig ${mc_name} if present"
+  oc --kubeconfig "$kubeconfig" delete mc "$mc_name" --ignore-not-found=true || true
+  wait_for_mcp_master_updated "$kubeconfig"
+}

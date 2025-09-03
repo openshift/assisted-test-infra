@@ -264,7 +264,7 @@ kill_all_port_forwardings:
 
 destroy_host_port_forwarding_and_firewall:
 	scripts/utils.sh delete_all_port_forwarding
-	firewall-cmd --reload
+	firewall-cmd --reload || true
 
 
 #########

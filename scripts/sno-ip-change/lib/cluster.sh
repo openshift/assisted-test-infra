@@ -86,6 +86,60 @@ verify_node_internal_ip() {
   done
 }
 
+# Function: verify_node_internal_ips
+# Purpose: Wait until the node InternalIP list contains the provided IPv4 and/or IPv6 addresses.
+# Parameters:
+# - $1: kubeconfig path
+# - $2: expected IPv4 address (optional)
+# - $3: expected IPv6 address (optional)
+verify_node_internal_ips() {
+  local kubeconfig="$1"
+  local expected_v4="${2:-}"
+  local expected_v6="${3:-}"
+  local timeout_secs=1200
+  local start_ts now_ts
+  start_ts=$(date +%s)
+
+  local expect_desc
+  expect_desc=""
+  if [[ -n "$expected_v4" ]]; then expect_desc+="v4=${expected_v4} "; fi
+  if [[ -n "$expected_v6" ]]; then expect_desc+="v6=${expected_v6}"; fi
+  log "Waiting for node InternalIP list to contain: ${expect_desc}"
+
+  while true; do
+    if oc --kubeconfig "$kubeconfig" get nodes >/dev/null 2>&1; then
+      # newline-separated list of InternalIP addresses
+      mapfile -t internal_ips < <(oc --kubeconfig "$kubeconfig" get node -o jsonpath='{range .items[0].status.addresses[?(@.type=="InternalIP")]}{.address}{"\n"}{end}' 2>/dev/null || true)
+      local have_v4 have_v6
+      have_v4="true"
+      have_v6="true"
+      if [[ -n "$expected_v4" ]]; then
+        have_v4="false"
+        for addr in "${internal_ips[@]}"; do
+          if [[ "$addr" == "$expected_v4" ]]; then have_v4="true"; break; fi
+        done
+      fi
+      if [[ -n "$expected_v6" ]]; then
+        have_v6="false"
+        for addr in "${internal_ips[@]}"; do
+          if [[ "$addr" == "$expected_v6" ]]; then have_v6="true"; break; fi
+        done
+      fi
+      if [[ "$have_v4" == "true" && "$have_v6" == "true" ]]; then
+        log "InternalIP list now contains required addresses: ${expect_desc}"
+        break
+      fi
+    fi
+    now_ts=$(date +%s)
+    if (( now_ts - start_ts > timeout_secs )); then
+      log "Timeout waiting for InternalIP list. Current node addresses:"
+      oc --kubeconfig "$kubeconfig" get node -o jsonpath='{.items[0].status.addresses}' | sed -n '1,200p' || true
+      break
+    fi
+    sleep 10
+  done
+}
+
 # Function: wait_for_cluster_api
 # Purpose: Wait for 'oc get nodes' to succeed within a timeout.
 # Parameters:
@@ -122,8 +176,9 @@ update_local_hosts_file() {
   local hosts_file="/etc/hosts"
   local domain
   domain="${cluster_name}.${base_domain}"
-  local escaped_old
-  escaped_old="${old_ip//\./\\.}"
+  # Use sed with '|' delimiter to avoid issues with ':' in IPv6 and '.' in IPv4
+  local escaped_domain
+  escaped_domain="${domain//\./\\.}"
 
   # Determine if we need sudo
   local SUDO
@@ -143,9 +198,9 @@ update_local_hosts_file() {
 
   # Replace old IP with new IP only on lines that reference cluster domains
   $SUDO sed -i \
-    -e "/\\bapi\\.${domain//\./\\.}\\b/ s/${escaped_old}/${new_ip}/g" \
-    -e "/\\bapi-int\\.${domain//\./\\.}\\b/ s/${escaped_old}/${new_ip}/g" \
-    -e "/\\.apps\\.${domain//\./\\.}\\b/ s/${escaped_old}/${new_ip}/g" \
+    -e "/\\bapi\\.${escaped_domain}\\b/ s|${old_ip}|${new_ip}|g" \
+    -e "/\\bapi-int\\.${escaped_domain}\\b/ s|${old_ip}|${new_ip}|g" \
+    -e "/\\.apps\\.${escaped_domain}\\b/ s|${old_ip}|${new_ip}|g" \
     "$hosts_file" || true
 
   log "Updated ${hosts_file} entries for ${domain} to ${new_ip} (backup at ${hosts_file}.bak)"
