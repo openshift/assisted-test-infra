@@ -44,7 +44,9 @@ NODEIP_RERUN_UNIT_PATH="/etc/systemd/system/sno-nodeip-rerun.service"
 KUBECONFIG_INTERNAL_PATH="/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig"
 BACKUP_DIR="/var/tmp/backupCertsDir"
 RESTORE_ON_ERROR="true"
+# shellcheck disable=SC2034
 backup_completed="false"
+# shellcheck disable=SC2034
 script_completed="false"
 
 while [[ $# -gt 0 ]]; do
@@ -62,8 +64,10 @@ while [[ $# -gt 0 ]]; do
     --nodeip-defaults-path) NODEIP_DEFAULTS_PATH="$2"; shift 2;;
     --nodeip-rerun-unit-path) NODEIP_RERUN_UNIT_PATH="$2"; shift 2;;
     --recert-image-archive) RECERT_IMAGE_ARCHIVE_PATH="$2"; shift 2;;
-    --backup-dir) BACKUP_DIR="$2"; shift 2;;
-    --no-restore-on-error) RESTORE_ON_ERROR="false"; shift 1;;
+    --backup-dir) # shellcheck disable=SC2034
+      BACKUP_DIR="$2"; shift 2;;
+    --no-restore-on-error) # shellcheck disable=SC2034
+      RESTORE_ON_ERROR="false"; shift 1;;
     *) fail "Unknown argument: $1";;
   esac
 done
