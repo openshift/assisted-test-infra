@@ -71,9 +71,10 @@ Use this when you only need to change the secondary address on a dual-stack SNO 
 
 ```bash
 scripts/sno-ip-change/flows/secondary-ip-change.sh \
-  --old-ip 192.168.200.10 \
-  --new-ip 192.168.201.20 \
-  --new-machine-network 192.168.201.0/24
+  --old-secondary-ip 192.168.200.10 \
+  --new-secondary-ip 192.168.201.20 \
+  --new-machine-network 192.168.201.0/24 \
+  --primary-ip 192.168.200.10
 ```
 
 ### Testing helpers
@@ -121,14 +122,15 @@ Secondary IP change test:
 
 ```bash
 scripts/sno-ip-change/tests/test-secondary-ip-change.sh \
-  --old-ip 192.168.200.10 \
-  --new-ip 192.168.201.20 \
+  --old-secondary-ip 192.168.200.10 \
+  --new-secondary-ip 192.168.201.20 \
   --new-machine-network 192.168.201.0/24 \
-  --kubeconfig-path /path/to/kubeconfig
+  --kubeconfig-path /path/to/kubeconfig \
+  --primary-ip 192.168.200.10
 ```
 
 ### Notes
 
 - Single-stack flows accept only three network-related flags: `--old-ip`, `--new-ip`, and `--new-machine-network` (IPv4 or IPv6 CIDR). Provide `--recert-image-tar` for offline operation.
 - Dual-stack flows require both IPv4 and IPv6 sets with `--primary-stack` to select which stack to use for the initial SSH connection.
-- Secondary IP flow accepts: `--old-ip`, `--new-ip`, and `--new-machine-network` plus optional SSH params. The first reboot is executed on-node; the flow waits for the node to come up on the new IP and reboots again.
+- Secondary IP flow accepts: `--old-ip`, `--new-ip`, `--new-machine-network`, and `--primary-ip` (the current primary address to SSH to) plus optional SSH params. The first reboot is executed on-node; the flow waits for the node to come up on the new IP and reboots again.

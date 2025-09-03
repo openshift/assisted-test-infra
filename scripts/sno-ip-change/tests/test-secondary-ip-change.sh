@@ -12,10 +12,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 . "${SCRIPT_DIR}/lib/cluster.sh"
 
-OLD_IP=""
-NEW_IP=""
+OLD_SECONDARY_IP=""
+NEW_SECONDARY_IP=""
 NEW_MACHINE_NETWORK=""
 KUBECONFIG_EXTERNAL_PATH=""
+PRIMARY_IP=""
 SSH_USER="core"
 SSH_PORT="22"
 SSH_KEY="${HOME}/.ssh/id_rsa"
@@ -26,16 +27,25 @@ ORIGINAL_ARGS=("$@")
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --old-ip) OLD_IP="$2"; shift 2;;
-    --new-ip) NEW_IP="$2"; shift 2;;
+    --old-secondary-ip) OLD_SECONDARY_IP="$2"; shift 2;;
+    --new-secondary-ip) NEW_SECONDARY_IP="$2"; shift 2;;
     --new-machine-network) NEW_MACHINE_NETWORK="$2"; shift 2;;
     --kubeconfig-path) KUBECONFIG_EXTERNAL_PATH="$2"; shift 2;;
-    --ssh-user) SSH_USER="$2"; shift 2;;
-    --ssh-port) SSH_PORT="$2"; shift 2;;
-    --ssh-key) SSH_KEY="$2"; shift 2;;
-    --ssh-strict-hostkey-checking) SSH_STRICT_HOSTKEY_CHECKING="$2"; shift 2;;
+    --primary-ip) PRIMARY_IP="$2"; shift 2;;
+    --ssh-user)
+      # shellcheck disable=SC2034
+      SSH_USER="$2"; shift 2;;
+    --ssh-port)
+      # shellcheck disable=SC2034
+      SSH_PORT="$2"; shift 2;;
+    --ssh-key)
+      # shellcheck disable=SC2034
+      SSH_KEY="$2"; shift 2;;
+    --ssh-strict-hostkey-checking)
+      # shellcheck disable=SC2034
+      SSH_STRICT_HOSTKEY_CHECKING="$2"; shift 2;;
     -h|--help)
-      echo "Usage: $0 --old-ip <ip> --new-ip <ip> --new-machine-network <cidr> --kubeconfig-path <path> [--ssh-user ...] [--ssh-port ...] [--ssh-key ...] [--ssh-strict-hostkey-checking yes|no]";
+      echo "Usage: $0 --old-secondary-ip <ip> --new-secondary-ip <ip> --new-machine-network <cidr> --kubeconfig-path <path> --primary-ip <ip> [--ssh-user ...] [--ssh-port ...] [--ssh-key ...] [--ssh-strict-hostkey-checking yes|no]";
       exit 0;;
     *) shift 1;;
   esac
@@ -46,9 +56,10 @@ need_cmd sed
 need_cmd oc
 
 [[ -n "$KUBECONFIG_EXTERNAL_PATH" && -f "$KUBECONFIG_EXTERNAL_PATH" ]] || fail "--kubeconfig-path is required and must exist"
-[[ -n "$OLD_IP" ]] || fail "--old-ip is required"
-[[ -n "$NEW_IP" ]] || fail "--new-ip is required"
+[[ -n "$OLD_SECONDARY_IP" ]] || fail "--old-secondary-ip is required"
+[[ -n "$NEW_SECONDARY_IP" ]] || fail "--new-secondary-ip is required"
 [[ -n "$NEW_MACHINE_NETWORK" ]] || fail "--new-machine-network is required"
+[[ -n "$PRIMARY_IP" ]] || fail "--primary-ip is required"
 
 # Early check: cluster API must be reachable before proceeding
 log "Checking cluster API reachability using ${KUBECONFIG_EXTERNAL_PATH}"
@@ -58,9 +69,9 @@ fi
 
 # Determine host device based on the old IP (v4 or v6)
 DEV=""
-DEV="$(ip route get "$OLD_IP" 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
+DEV="$(ip route get "$OLD_SECONDARY_IP" 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
 if [[ -z "$DEV" ]]; then
-  DEV="$(ip -6 route get "$OLD_IP" 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
+  DEV="$(ip -6 route get "$OLD_SECONDARY_IP" 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
 fi
 [[ -n "$DEV" ]] || fail "Failed to auto-detect host device for provided old IP"
 
@@ -114,7 +125,7 @@ fi
 cluster_name=""; base_domain=""
 read -r cluster_name base_domain < <(derive_cluster_domain_parts "$KUBECONFIG_EXTERNAL_PATH" "")
 if [[ -n "$cluster_name" && -n "$base_domain" ]]; then
-  update_local_hosts_file "$cluster_name" "$base_domain" "$OLD_IP" "$NEW_IP"
+  update_local_hosts_file "$cluster_name" "$base_domain" "$OLD_SECONDARY_IP" "$NEW_SECONDARY_IP"
 else
   log "WARNING: Could not update /etc/hosts (missing cluster/domain); skipping"
 fi
@@ -136,18 +147,18 @@ for idx in "${!ORIGINAL_ARGS[@]}"; do
 done
 
 log "Invoking secondary-ip-change.sh with provided arguments"
-"${SCRIPT_DIR}/flows/secondary-ip-change.sh" "${PASS_ARGS[@]}" --new-machine-network "$NEW_MACHINE_NETWORK"
+"${SCRIPT_DIR}/flows/secondary-ip-change.sh" "${PASS_ARGS[@]}" --new-machine-network "$NEW_MACHINE_NETWORK" --primary-ip "$PRIMARY_IP"
 
-# After flow completes (includes two reboots and SSH wait), wait for cluster API
+# After flow completes, wait for cluster API
 wait_for_cluster_api "$KUBECONFIG_EXTERNAL_PATH"
 
 # Verify the node InternalIP list contains the new IP
-if [[ "$NEW_IP" == *:* ]]; then
-  verify_node_internal_ips "$KUBECONFIG_EXTERNAL_PATH" "" "$NEW_IP"
+if [[ "$NEW_SECONDARY_IP" == *:* ]]; then
+  verify_node_internal_ips "$KUBECONFIG_EXTERNAL_PATH" "" "$NEW_SECONDARY_IP"
 else
-  verify_node_internal_ips "$KUBECONFIG_EXTERNAL_PATH" "$NEW_IP" ""
+  verify_node_internal_ips "$KUBECONFIG_EXTERNAL_PATH" "$NEW_SECONDARY_IP" ""
 fi
 
-log "Secondary IP change test completed successfully. New IP: ${NEW_IP}"
+log "Secondary IP change test completed successfully. New secondary IP: ${NEW_SECONDARY_IP}"
 
 
