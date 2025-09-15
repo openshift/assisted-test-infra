@@ -15,6 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OLD_IP=""
 NEW_IP=""
 NEW_MACHINE_NETWORK=""
+NEW_GATEWAY_IP=""
+NEW_DNS_SERVER=""
 RECERT_IMAGE_TAR=""
 REMOTE_NODE_ACTIONS_FILENAME="single-node-actions.sh"
 
@@ -30,6 +32,8 @@ while [[ $# -gt 0 ]]; do
     --old-ip) OLD_IP="$2"; shift 2;;
     --new-ip) NEW_IP="$2"; shift 2;;
     --new-machine-network) NEW_MACHINE_NETWORK="$2"; shift 2;;
+    --new-gateway-ip) NEW_GATEWAY_IP="$2"; shift 2;;
+    --new-dns-server) NEW_DNS_SERVER="$2"; shift 2;;
     --recert-image-tar) RECERT_IMAGE_TAR="$2"; shift 2;;
     --ssh-user) SSH_USER="$2"; shift 2;;
     --ssh-port) SSH_PORT="$2"; shift 2;;
@@ -46,6 +50,7 @@ main() {
   [[ -n "$OLD_IP" ]] || fail "--old-ip is required"
   [[ -n "$NEW_IP" ]] || fail "--new-ip is required"
   [[ -n "$NEW_MACHINE_NETWORK" ]] || fail "--new-machine-network is required (CIDR like a.b.c.0/24 or v6)"
+  [[ -n "$NEW_GATEWAY_IP" ]] || fail "--new-gateway-ip is required"
   [[ -n "$RECERT_IMAGE_TAR" && -f "$RECERT_IMAGE_TAR" ]] || fail "--recert-image-tar is required and must exist"
 
   if [[ "$OLD_IP" == "$NEW_IP" ]]; then
@@ -77,8 +82,12 @@ main() {
     "--old-ip" "$OLD_IP"
     "--new-ip" "$NEW_IP"
     "--new-machine-network" "$NEW_MACHINE_NETWORK"
+    "--new-gateway-ip" "$NEW_GATEWAY_IP"
     "--recert-image-archive" "${recert_archive_remote_path}"
   )
+  if [[ -n "$NEW_DNS_SERVER" ]]; then
+    remote_cmd+=("--new-dns-server" "$NEW_DNS_SERVER")
+  fi
   ssh_exec "$SSH_USER" "$SSH_HOST" "$SSH_PORT" "$SSH_KEY" "$SSH_STRICT_HOSTKEY_CHECKING" "${remote_cmd[@]}"
 }
 

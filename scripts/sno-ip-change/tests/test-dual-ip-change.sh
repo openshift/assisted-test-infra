@@ -21,6 +21,10 @@ NEW_MACHINE_NETWORK_V4=""
 OLD_IPV6=""
 NEW_IPV6=""
 NEW_MACHINE_NETWORK_V6=""
+NEW_GATEWAY_IPV4=""
+NEW_GATEWAY_IPV6=""
+NEW_DNS_SERVER_IPV4=""
+NEW_DNS_SERVER_IPV6=""
 PRIMARY_STACK="v4"
 KUBECONFIG_EXTERNAL_PATH=""
 SSH_USER="core"
@@ -39,6 +43,10 @@ while [[ $# -gt 0 ]]; do
     --old-ipv6) OLD_IPV6="$2"; shift 2;;
     --new-ipv6) NEW_IPV6="$2"; shift 2;;
     --new-machine-network-v6) NEW_MACHINE_NETWORK_V6="$2"; shift 2;;
+    --new-gateway-ipv4) NEW_GATEWAY_IPV4="$2"; shift 2;;
+    --new-gateway-ipv6) NEW_GATEWAY_IPV6="$2"; shift 2;;
+    --new-dns-server-ipv4) NEW_DNS_SERVER_IPV4="$2"; shift 2;;
+    --new-dns-server-ipv6) NEW_DNS_SERVER_IPV6="$2"; shift 2;;
     --primary-stack) PRIMARY_STACK="$2"; shift 2;;
     --kubeconfig-path) KUBECONFIG_EXTERNAL_PATH="$2"; shift 2;;
     --ssh-user) SSH_USER="$2"; shift 2;;
@@ -48,8 +56,10 @@ while [[ $# -gt 0 ]]; do
     -h|--help) echo "Usage: $0 \
       --old-ipv4 <ip> --new-ipv4 <ip> --new-machine-network-v4 <cidr> \
       --old-ipv6 <ip> --new-ipv6 <ip> --new-machine-network-v6 <cidr> \
+      --new-gateway-ipv4 <gateway> --new-gateway-ipv6 <gateway> \
       --primary-stack <v4|v6> \
       --recert-image-tar <path> \
+      [--new-dns-server-ipv4 <dns>] [--new-dns-server-ipv6 <dns>] \
       [--ssh-user ...] [--ssh-port ...] [--ssh-key ...] \
       --kubeconfig-path <path>"; exit 0;;
     *) shift 1;;

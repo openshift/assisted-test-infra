@@ -38,6 +38,7 @@ scripts/sno-ip-change/flows/single-ip-change.sh \
   --old-ip 192.168.200.10 \
   --new-ip 192.168.201.20 \
   --new-machine-network 192.168.201.0/24 \
+  --new-gateway-ip 192.168.201.1 \
   --recert-image-tar /path/to/recert-image.tar
 ```
 
@@ -48,6 +49,7 @@ scripts/sno-ip-change/flows/single-ip-change.sh \
   --old-ip fd2e:6f44:5dd8:c956::10 \
   --new-ip fd2e:6f44:5dd8:c957::10 \
   --new-machine-network fd2e:6f44:5dd8:c957::/64 \
+  --new-gateway-ip fd2e:6f44:5dd8:c957::1 \
   --recert-image-tar /path/to/recert-image.tar
 ```
 
@@ -61,6 +63,8 @@ scripts/sno-ip-change/flows/dual-ip-change.sh \
   --old-ipv6 2001:db8::10 \
   --new-ipv6 2001:db8::20 \
   --new-machine-network-v6 2001:db8::/64 \
+  --new-gateway-ipv4 192.168.201.1 \
+  --new-gateway-ipv6 2001:db8::1 \
   --primary-stack v4 \
   --recert-image-tar /path/to/recert-image.tar
 ```
@@ -73,7 +77,8 @@ Use this when you only need to change the secondary address on a dual-stack SNO 
 scripts/sno-ip-change/flows/secondary-ip-change.sh \
   --old-ip 192.168.200.10 \
   --new-ip 192.168.201.20 \
-  --new-machine-network 192.168.201.0/24
+  --new-machine-network 192.168.201.0/24 \
+  --new-gateway-ip 192.168.201.1
 ```
 
 ### Testing helpers
@@ -87,6 +92,7 @@ scripts/sno-ip-change/tests/test-single-ip-change.sh \
   --old-ip 192.168.200.10 \
   --new-ip 192.168.201.20 \
   --new-machine-network 192.168.201.0/24 \
+  --new-gateway-ip 192.168.201.1 \
   --kubeconfig-path /path/to/kubeconfig \
   --recert-image-tar /path/to/recert-image.tar
 ```
@@ -98,6 +104,7 @@ scripts/sno-ip-change/tests/test-single-ip-change.sh \
   --old-ip fd2e:6f44:5dd8:c956::10 \
   --new-ip fd2e:6f44:5dd8:c957::10 \
   --new-machine-network fd2e:6f44:5dd8:c957::/64 \
+  --new-gateway-ip fd2e:6f44:5dd8:c957::1 \
   --kubeconfig-path /path/to/kubeconfig \
   --recert-image-tar /path/to/recert-image.tar
 ```
@@ -112,6 +119,8 @@ scripts/sno-ip-change/tests/test-dual-ip-change.sh \
   --old-ipv6 2001:db8::10 \
   --new-ipv6 2001:db8::20 \
   --new-machine-network-v6 2001:db8::/64 \
+  --new-gateway-ipv4 192.168.201.1 \
+  --new-gateway-ipv6 2001:db8::1 \
   --primary-stack v4 \
   --kubeconfig-path /path/to/kubeconfig \
   --recert-image-tar /path/to/recert-image.tar
@@ -124,11 +133,12 @@ scripts/sno-ip-change/tests/test-secondary-ip-change.sh \
   --old-ip 192.168.200.10 \
   --new-ip 192.168.201.20 \
   --new-machine-network 192.168.201.0/24 \
+  --new-gateway-ip 192.168.201.1 \
   --kubeconfig-path /path/to/kubeconfig
 ```
 
 ### Notes
 
-- Single-stack flows accept only three network-related flags: `--old-ip`, `--new-ip`, and `--new-machine-network` (IPv4 or IPv6 CIDR). Provide `--recert-image-tar` for offline operation.
-- Dual-stack flows require both IPv4 and IPv6 sets with `--primary-stack` to select which stack to use for the initial SSH connection.
-- Secondary IP flow accepts: `--old-ip`, `--new-ip`, and `--new-machine-network` plus optional SSH params. The first reboot is executed on-node; the flow waits for the node to come up on the new IP and reboots again.
+- Single-stack flows require: `--old-ip`, `--new-ip`, `--new-machine-network` (IPv4 or IPv6 CIDR), and `--new-gateway-ip`. Optional `--new-dns-server` can be provided. Provide `--recert-image-tar` for offline operation.
+- Dual-stack flows require both IPv4 and IPv6 sets with `--primary-stack` to select which stack to use for the initial SSH connection, plus `--new-gateway-ipv4`, `--new-gateway-ipv6`, and optional `--new-dns-server-ipv4`, `--new-dns-server-ipv6`.
+- Secondary IP flow requires: `--old-ip`, `--new-ip`, `--new-machine-network`, and `--new-gateway-ip`, plus optional `--new-dns-server` and SSH params. The first reboot is executed on-node; the flow waits for the node to come up on the new IP and reboots again.

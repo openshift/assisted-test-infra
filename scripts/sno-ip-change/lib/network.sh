@@ -37,11 +37,15 @@ detect_br_ex_interface() {
 # - $2: New IP address for br-ex (IPv4 or IPv6)
 # - $3: Prefix length
 # - $4: Address family: v4 or v6
+# - $5: Gateway IP (required)
+# - $6: DNS server IP (optional)
 build_nmstate_yaml() {
   local interface_name="$1"
   local ip_addr="$2"
   local prefix_len="$3"
   local family="$4"
+  local gateway_ip="$5"
+  local dns_server="$6"
   if [[ "$family" == "v6" ]]; then
     cat <<YAML
 interfaces:
@@ -81,7 +85,22 @@ interfaces:
     - ip: ${ip_addr}
       prefix-length: ${prefix_len}
     auto-route-metric: 48
+routes:
+  config:
+  - destination: ::/0
+    next-hop-interface: br-ex
+    next-hop-address: ${gateway_ip}
+    metric: 1024
+    table-id: 254
 YAML
+    if [[ -n "$dns_server" ]]; then
+      cat <<YAML
+dns-resolver:
+  config:
+    server:
+    - ${dns_server}
+YAML
+    fi
   else
     cat <<YAML
 interfaces:
@@ -120,7 +139,22 @@ interfaces:
     auto-route-metric: 48
   ipv6:
     enabled: false
+routes:
+  config:
+  - destination: 0.0.0.0/0
+    next-hop-interface: br-ex
+    next-hop-address: ${gateway_ip}
+    metric: 100
+    table-id: 254
 YAML
+    if [[ -n "$dns_server" ]]; then
+      cat <<YAML
+dns-resolver:
+  config:
+    server:
+    - ${dns_server}
+YAML
+    fi
   fi
 }
 
@@ -132,12 +166,19 @@ YAML
 # - $3: IPv4 prefix length
 # - $4: IPv6 address for br-ex
 # - $5: IPv6 prefix length
+# - $6: IPv4 Gateway IP (required)
+# - $7: IPv4 DNS server IP (optional)
+# - $8: IPv6 DNS server IP (optional)
 build_nmstate_yaml_dual() {
   local interface_name="$1"
   local ipv4_addr="$2"
   local ipv4_prefix_len="$3"
   local ipv6_addr="$4"
   local ipv6_prefix_len="$5"
+  local ipv4_gateway_ip="$6"
+  local ipv6_gateway_ip="$7"
+  local ipv4_dns_server="$8"
+  local ipv6_dns_server="$9"
   cat <<YAML
 interfaces:
 - name: ${interface_name}
@@ -180,7 +221,36 @@ interfaces:
     - ip: ${ipv6_addr}
       prefix-length: ${ipv6_prefix_len}
     auto-route-metric: 48
+routes:
+  config:
+  - destination: 0.0.0.0/0
+    next-hop-interface: br-ex
+    next-hop-address: ${ipv4_gateway_ip}
+    metric: 100
+    table-id: 254
+  - destination: ::/0
+    next-hop-interface: br-ex
+    next-hop-address: ${ipv6_gateway_ip}
+    metric: 1024
+    table-id: 254
 YAML
+  if [[ -n "$ipv4_dns_server" || -n "$ipv6_dns_server" ]]; then
+    cat <<YAML
+dns-resolver:
+  config:
+    server:
+YAML
+    if [[ -n "$ipv4_dns_server" ]]; then
+      cat <<YAML
+    - ${ipv4_dns_server}
+YAML
+    fi
+    if [[ -n "$ipv6_dns_server" ]]; then
+      cat <<YAML
+    - ${ipv6_dns_server}
+YAML
+    fi
+  fi
 }
 
 # Function: create_nmstate_tmp_file
@@ -189,10 +259,14 @@ YAML
 # - $1: Physical interface name
 # - $2: New IPv4 address
 # - $3: Prefix length
+# - $4: Gateway IP (required)
+# - $5: DNS server IP (optional)
 create_nmstate_tmp_file() {
   local interface_name="$1"
   local ip_addr="$2"
   local prefix_len="$3"
+  local gateway_ip="${4:-}"
+  local dns_server="${5:-}"
   local f
   f=$(mktemp)
   local family
@@ -201,7 +275,7 @@ create_nmstate_tmp_file() {
   else
     family="v4"
   fi
-  build_nmstate_yaml "$interface_name" "$ip_addr" "$prefix_len" "$family" > "$f"
+  build_nmstate_yaml "$interface_name" "$ip_addr" "$prefix_len" "$family" "$gateway_ip" "$dns_server" > "$f"
   log "Created nmstate configuration at ${f} for ${interface_name} (${ip_addr}/${prefix_len})"
   echo "$f"
 }
@@ -214,15 +288,23 @@ create_nmstate_tmp_file() {
 # - $3: IPv4 prefix length
 # - $4: IPv6 address
 # - $5: IPv6 prefix length
+# - $6: IPv4 Gateway IP (required)
+# - $7: IPv6 Gateway IP (required)
+# - $8: IPv4 DNS server IP (optional)
+# - $9: IPv6 DNS server IP (optional)
 create_nmstate_tmp_file_dual() {
   local interface_name="$1"
   local ipv4_addr="$2"
   local ipv4_prefix_len="$3"
   local ipv6_addr="$4"
   local ipv6_prefix_len="$5"
+  local ipv4_gateway_ip="$6"
+  local ipv6_gateway_ip="$7"
+  local ipv4_dns_server="$8"
+  local ipv6_dns_server="$9"
   local f
   f=$(mktemp)
-  build_nmstate_yaml_dual "$interface_name" "$ipv4_addr" "$ipv4_prefix_len" "$ipv6_addr" "$ipv6_prefix_len" > "$f"
+  build_nmstate_yaml_dual "$interface_name" "$ipv4_addr" "$ipv4_prefix_len" "$ipv6_addr" "$ipv6_prefix_len" "$ipv4_gateway_ip" "$ipv6_gateway_ip" "$ipv4_dns_server" "$ipv6_dns_server" > "$f"
   log "Created dual-stack nmstate configuration at ${f} for ${interface_name} (v4 ${ipv4_addr}/${ipv4_prefix_len}, v6 ${ipv6_addr}/${ipv6_prefix_len})"
   echo "$f"
 }

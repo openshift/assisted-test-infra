@@ -17,14 +17,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 NEW_IP=""
 NEW_MACHINE_NETWORK=""
+NEW_GATEWAY_IP=""
+NEW_DNS_SERVER=""
 KUBECONFIG_INTERNAL_PATH="/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --new-ip) NEW_IP="$2"; shift 2;;
     --new-machine-network) NEW_MACHINE_NETWORK="$2"; shift 2;;
+    --new-gateway-ip) NEW_GATEWAY_IP="$2"; shift 2;;
+    --new-dns-server) NEW_DNS_SERVER="$2"; shift 2;;
     -h|--help)
-      echo "Usage: $0 --new-ip <ip> --new-machine-network <cidr>"; exit 0;;
+      echo "Usage: $0 --new-ip <ip> --new-machine-network <cidr> --new-gateway-ip <gateway> [--new-dns-server <dns>]"; exit 0;;
     *) shift 1;;
   esac
 done
@@ -37,6 +41,7 @@ main() {
 
   [[ -n "$NEW_IP" ]] || fail "--new-ip is required"
   [[ -n "$NEW_MACHINE_NETWORK" ]] || fail "--new-machine-network is required"
+  [[ -n "$NEW_GATEWAY_IP" ]] || fail "--new-gateway-ip is required"
   [[ -f "$KUBECONFIG_INTERNAL_PATH" ]] || fail "Internal kubeconfig not found at $KUBECONFIG_INTERNAL_PATH"
 
   local iface
@@ -75,7 +80,7 @@ main() {
   fi
 
   log "Building dual-stack nmstate configuration for br-ex (v4 ${v4_addr:-none}/${v4_prefix_len:-?}, v6 ${v6_addr:-none}/${v6_prefix_len:-?})"
-  nmstate_tmp=$(create_nmstate_tmp_file_dual "$iface" "$v4_addr" "$v4_prefix_len" "$v6_addr" "$v6_prefix_len")
+  nmstate_tmp=$(create_nmstate_tmp_file_dual "$iface" "$v4_addr" "$v4_prefix_len" "$v6_addr" "$v6_prefix_len" "$NEW_GATEWAY_IP" "$NEW_DNS_SERVER")
 
   log "Applying nmstate MachineConfig via internal kubeconfig"
   if is_nmstate_mc_up_to_date "$nmstate_tmp" "$KUBECONFIG_INTERNAL_PATH"; then

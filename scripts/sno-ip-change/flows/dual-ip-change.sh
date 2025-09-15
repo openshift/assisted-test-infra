@@ -18,6 +18,10 @@ NEW_MACHINE_NETWORK_V4=""
 OLD_IPV6=""
 NEW_IPV6=""
 NEW_MACHINE_NETWORK_V6=""
+NEW_GATEWAY_IPV4=""
+NEW_GATEWAY_IPV6=""
+NEW_DNS_SERVER_IPV4=""
+NEW_DNS_SERVER_IPV6=""
 PRIMARY_STACK="v4"
 SSH_USER="core"
 SSH_PORT="22"
@@ -33,6 +37,10 @@ while [[ $# -gt 0 ]]; do
     --old-ipv6) OLD_IPV6="$2"; shift 2;;
     --new-ipv6) NEW_IPV6="$2"; shift 2;;
     --new-machine-network-v6) NEW_MACHINE_NETWORK_V6="$2"; shift 2;;
+    --new-gateway-ipv4) NEW_GATEWAY_IPV4="$2"; shift 2;;
+    --new-gateway-ipv6) NEW_GATEWAY_IPV6="$2"; shift 2;;
+    --new-dns-server-ipv4) NEW_DNS_SERVER_IPV4="$2"; shift 2;;
+    --new-dns-server-ipv6) NEW_DNS_SERVER_IPV6="$2"; shift 2;;
     --primary-stack) PRIMARY_STACK="$2"; shift 2;;
     --ssh-user) SSH_USER="$2"; shift 2;;
     --ssh-port) SSH_PORT="$2"; shift 2;;
@@ -53,6 +61,8 @@ main() {
   [[ -n "$OLD_IPV6" ]] || fail "--old-ipv6 is required"
   [[ -n "$NEW_IPV6" ]] || fail "--new-ipv6 is required"
   [[ -n "$NEW_MACHINE_NETWORK_V6" ]] || fail "--new-machine-network-v6 is required (CIDR)"
+  [[ -n "$NEW_GATEWAY_IPV4" ]] || fail "--new-gateway-ipv4 is required"
+  [[ -n "$NEW_GATEWAY_IPV6" ]] || fail "--new-gateway-ipv6 is required"
   [[ "$PRIMARY_STACK" == "v4" || "$PRIMARY_STACK" == "v6" ]] || fail "--primary-stack must be 'v4' or 'v6'"
   [[ -n "$RECERT_IMAGE_TAR" && -f "$RECERT_IMAGE_TAR" ]] || fail "--recert-image-tar is required and must exist"
 
@@ -85,9 +95,17 @@ main() {
     "--old-ipv6" "$OLD_IPV6"
     "--new-ipv6" "$NEW_IPV6"
     "--new-machine-network-v6" "$NEW_MACHINE_NETWORK_V6"
+    "--new-gateway-ipv4" "$NEW_GATEWAY_IPV4"
+    "--new-gateway-ipv6" "$NEW_GATEWAY_IPV6"
     "--primary-stack" "$PRIMARY_STACK"
     "--recert-image-archive" "${remote_dir}/recert-image.tar"
   )
+  if [[ -n "$NEW_DNS_SERVER_IPV4" ]]; then
+    remote_cmd+=("--new-dns-server-ipv4" "$NEW_DNS_SERVER_IPV4")
+  fi
+  if [[ -n "$NEW_DNS_SERVER_IPV6" ]]; then
+    remote_cmd+=("--new-dns-server-ipv6" "$NEW_DNS_SERVER_IPV6")
+  fi
   ssh_exec "$SSH_USER" "$SSH_HOST" "$SSH_PORT" "$SSH_KEY" "$SSH_STRICT_HOSTKEY_CHECKING" "${remote_cmd[@]}"
 }
 

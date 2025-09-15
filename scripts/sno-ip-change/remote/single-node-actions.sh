@@ -30,6 +30,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)"
 OLD_IP=""
 NEW_IP=""
 NEW_MACHINE_NETWORK=""
+NEW_GATEWAY_IP=""
+NEW_DNS_SERVER=""
 RECERT_IMAGE="quay.io/dmanor/recert:demo"
 RECERT_CONFIG_PATH="$(mktemp)"
 RECERT_CONTAINER_DATA_DIR_PATH="/data"
@@ -48,6 +50,8 @@ while [[ $# -gt 0 ]]; do
 		--old-ip) OLD_IP="$2"; shift 2;;
 		--new-ip) NEW_IP="$2"; shift 2;;
 		--new-machine-network) NEW_MACHINE_NETWORK="$2"; shift 2;;
+		--new-gateway-ip) NEW_GATEWAY_IP="$2"; shift 2;;
+		--new-dns-server) NEW_DNS_SERVER="$2"; shift 2;;
 		--recert-image) RECERT_IMAGE="$2"; shift 2;;
 		--recert-container-data-dir-path) RECERT_CONTAINER_DATA_DIR_PATH="$2"; shift 2;;
 		--primary-ip-path) PRIMARY_IP_PATH="$2"; shift 2;;
@@ -71,6 +75,7 @@ main() {
 	[[ -n "$OLD_IP" ]] || fail "--old-ip is required"
 	[[ -n "$NEW_IP" ]] || fail "--new-ip is required"
 	[[ -n "$NEW_MACHINE_NETWORK" ]] || fail "--new-machine-network is required"
+	[[ -n "$NEW_GATEWAY_IP" ]] || fail "--new-gateway-ip is required"
 	[[ -n "$RECERT_IMAGE" ]] || fail "--recert-image is required"
 	[[ -n "$RECERT_CONTAINER_DATA_DIR_PATH" ]] || fail "--recert-container-data-dir-path is required"
 	[[ -n "$RECERT_IMAGE_ARCHIVE_PATH" && -f "$RECERT_IMAGE_ARCHIVE_PATH" ]] || fail "--recert-image-archive file missing"
@@ -100,7 +105,7 @@ main() {
 	iface=$(detect_br_ex_interface || true)
 	[[ -n "$iface" ]] || fail "Failed to auto-detect interface attached to br-ex or connected ethernet on node"
 	prefix="${NEW_MACHINE_NETWORK##*/}"
-	nmstate_tmp=$(create_nmstate_tmp_file "$iface" "$NEW_IP" "$prefix")
+	nmstate_tmp=$(create_nmstate_tmp_file "$iface" "$NEW_IP" "$prefix" "$NEW_GATEWAY_IP" "$NEW_DNS_SERVER")
 	oc --kubeconfig "$KUBECONFIG_INTERNAL_PATH" get mcp master >/dev/null 2>&1 || fail "Internal API is not reachable via $KUBECONFIG_INTERNAL_PATH"
 	log "Applying single-stack nmstate MachineConfig via internal kubeconfig"
 	if is_nmstate_mc_up_to_date "$nmstate_tmp" "$KUBECONFIG_INTERNAL_PATH"; then

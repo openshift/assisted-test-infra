@@ -33,6 +33,10 @@ NEW_MACHINE_NETWORK_V4=""
 OLD_IPV6=""
 NEW_IPV6=""
 NEW_MACHINE_NETWORK_V6=""
+NEW_GATEWAY_IPV4=""
+NEW_GATEWAY_IPV6=""
+NEW_DNS_SERVER_IPV4=""
+NEW_DNS_SERVER_IPV6=""
 PRIMARY_STACK="v4" # v4|v6
 RECERT_IMAGE="quay.io/dmanor/recert:demo"
 RECERT_CONFIG_PATH="$(mktemp)"
@@ -55,6 +59,10 @@ while [[ $# -gt 0 ]]; do
     --old-ipv6) OLD_IPV6="$2"; shift 2;;
     --new-ipv6) NEW_IPV6="$2"; shift 2;;
     --new-machine-network-v6) NEW_MACHINE_NETWORK_V6="$2"; shift 2;;
+    --new-gateway-ipv4) NEW_GATEWAY_IPV4="$2"; shift 2;;
+    --new-gateway-ipv6) NEW_GATEWAY_IPV6="$2"; shift 2;;
+    --new-dns-server-ipv4) NEW_DNS_SERVER_IPV4="$2"; shift 2;;
+    --new-dns-server-ipv6) NEW_DNS_SERVER_IPV6="$2"; shift 2;;
     --primary-stack) PRIMARY_STACK="$2"; shift 2;;
     --recert-image) RECERT_IMAGE="$2"; shift 2;;
     --recert-container-data-dir-path) RECERT_CONTAINER_DATA_DIR_PATH="$2"; shift 2;;
@@ -84,6 +92,8 @@ main() {
   [[ -n "$OLD_IPV6" ]] || fail "--old-ipv6 is required"
   [[ -n "$NEW_IPV6" ]] || fail "--new-ipv6 is required"
   [[ -n "$NEW_MACHINE_NETWORK_V6" ]] || fail "--new-machine-network-v6 is required"
+  [[ -n "$NEW_GATEWAY_IPV4" ]] || fail "--new-gateway-ipv4 is required"
+  [[ -n "$NEW_GATEWAY_IPV6" ]] || fail "--new-gateway-ipv6 is required"
   [[ "$PRIMARY_STACK" == "v4" || "$PRIMARY_STACK" == "v6" ]] || fail "--primary-stack must be 'v4' or 'v6'"
   [[ -n "$RECERT_CONTAINER_DATA_DIR_PATH" ]] || fail "--recert-container-data-dir-path is required"
   [[ -n "$RECERT_IMAGE_ARCHIVE_PATH" && -f "$RECERT_IMAGE_ARCHIVE_PATH" ]] || fail "--recert-image-archive file missing"
@@ -113,7 +123,7 @@ main() {
   [[ -n "$iface" ]] || fail "Failed to auto-detect interface attached to br-ex or connected ethernet on node"
   prefix_v4="${NEW_MACHINE_NETWORK_V4##*/}"
   prefix_v6="${NEW_MACHINE_NETWORK_V6##*/}"
-  nmstate_tmp=$(create_nmstate_tmp_file_dual "$iface" "$NEW_IPV4" "$prefix_v4" "$NEW_IPV6" "$prefix_v6")
+  nmstate_tmp=$(create_nmstate_tmp_file_dual "$iface" "$NEW_IPV4" "$prefix_v4" "$NEW_IPV6" "$prefix_v6" "$NEW_GATEWAY_IPV4" "$NEW_GATEWAY_IPV6" "$NEW_DNS_SERVER_IPV4" "$NEW_DNS_SERVER_IPV6")
   oc --kubeconfig "$KUBECONFIG_INTERNAL_PATH" get mcp master >/dev/null 2>&1 || fail "Internal API is not reachable via $KUBECONFIG_INTERNAL_PATH"
   log "Applying dual-stack nmstate MachineConfig via internal kubeconfig"
   if is_nmstate_mc_up_to_date "$nmstate_tmp" "$KUBECONFIG_INTERNAL_PATH"; then
