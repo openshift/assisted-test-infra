@@ -18,6 +18,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OLD_IP=""
 NEW_IP=""
 NEW_MACHINE_NETWORK=""
+NEW_GATEWAY_IP=""
+NEW_DNS_SERVER=""
 KUBECONFIG_EXTERNAL_PATH=""
 SSH_USER="core"
 SSH_PORT="22"
@@ -32,12 +34,14 @@ while [[ $# -gt 0 ]]; do
     --old-ip) OLD_IP="$2"; shift 2;;
     --new-ip) NEW_IP="$2"; shift 2;;
     --new-machine-network) NEW_MACHINE_NETWORK="$2"; shift 2;;
+    --new-gateway-ip) NEW_GATEWAY_IP="$2"; shift 2;;
+    --new-dns-server) NEW_DNS_SERVER="$2"; shift 2;;
     --kubeconfig-path) KUBECONFIG_EXTERNAL_PATH="$2"; shift 2;;
     --ssh-user) SSH_USER="$2"; shift 2;;
     --ssh-port) SSH_PORT="$2"; shift 2;;
     --ssh-key) SSH_KEY="$2"; shift 2;;
     --ssh-strict-hostkey-checking) SSH_STRICT_HOSTKEY_CHECKING="$2"; shift 2;;
-    -h|--help) echo "Usage: $0 --old-ip <ip> --new-ip <ip> --new-machine-network <cidr> --kubeconfig-path <path> --recert-image-tar <path> [--ssh-user ...] [--ssh-port ...] [--ssh-key ...]"; exit 0;;
+    -h|--help) echo "Usage: $0 --old-ip <ip> --new-ip <ip> --new-machine-network <cidr> --new-gateway-ip <ip> --kubeconfig-path <path> --recert-image-tar <path> [--new-dns-server <ip>] [--ssh-user ...] [--ssh-port ...] [--ssh-key ...]"; exit 0;;
     *) shift 1;;
   esac
 done

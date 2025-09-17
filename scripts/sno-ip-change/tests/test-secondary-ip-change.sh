@@ -15,6 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OLD_SECONDARY_IP=""
 NEW_SECONDARY_IP=""
 NEW_MACHINE_NETWORK=""
+NEW_GATEWAY_IP=""
+NEW_DNS_SERVER=""
 KUBECONFIG_EXTERNAL_PATH=""
 PRIMARY_IP=""
 SSH_USER="core"
@@ -30,6 +32,8 @@ while [[ $# -gt 0 ]]; do
     --old-secondary-ip) OLD_SECONDARY_IP="$2"; shift 2;;
     --new-secondary-ip) NEW_SECONDARY_IP="$2"; shift 2;;
     --new-machine-network) NEW_MACHINE_NETWORK="$2"; shift 2;;
+    --new-gateway-ip) NEW_GATEWAY_IP="$2"; shift 2;;
+    --new-dns-server) NEW_DNS_SERVER="$2"; shift 2;;
     --kubeconfig-path) KUBECONFIG_EXTERNAL_PATH="$2"; shift 2;;
     --primary-ip) PRIMARY_IP="$2"; shift 2;;
     --ssh-user)
@@ -45,7 +49,7 @@ while [[ $# -gt 0 ]]; do
       # shellcheck disable=SC2034
       SSH_STRICT_HOSTKEY_CHECKING="$2"; shift 2;;
     -h|--help)
-      echo "Usage: $0 --old-secondary-ip <ip> --new-secondary-ip <ip> --new-machine-network <cidr> --kubeconfig-path <path> --primary-ip <ip> [--ssh-user ...] [--ssh-port ...] [--ssh-key ...] [--ssh-strict-hostkey-checking yes|no]";
+      echo "Usage: $0 --old-secondary-ip <ip> --new-secondary-ip <ip> --new-machine-network <cidr> --new-gateway-ip <ip> --kubeconfig-path <path> --primary-ip <ip> [--new-dns-server <ip>] [--ssh-user ...] [--ssh-port ...] [--ssh-key ...] [--ssh-strict-hostkey-checking yes|no]";
       exit 0;;
     *) shift 1;;
   esac
@@ -59,6 +63,7 @@ need_cmd oc
 [[ -n "$OLD_SECONDARY_IP" ]] || fail "--old-secondary-ip is required"
 [[ -n "$NEW_SECONDARY_IP" ]] || fail "--new-secondary-ip is required"
 [[ -n "$NEW_MACHINE_NETWORK" ]] || fail "--new-machine-network is required"
+[[ -n "$NEW_GATEWAY_IP" ]] || fail "--new-gateway-ip is required"
 [[ -n "$PRIMARY_IP" ]] || fail "--primary-ip is required"
 
 # Early check: cluster API must be reachable before proceeding
@@ -147,7 +152,7 @@ for idx in "${!ORIGINAL_ARGS[@]}"; do
 done
 
 log "Invoking secondary-ip-change.sh with provided arguments"
-"${SCRIPT_DIR}/flows/secondary-ip-change.sh" "${PASS_ARGS[@]}" --new-machine-network "$NEW_MACHINE_NETWORK" --primary-ip "$PRIMARY_IP"
+"${SCRIPT_DIR}/flows/secondary-ip-change.sh" "${PASS_ARGS[@]}" --new-machine-network "$NEW_MACHINE_NETWORK" --new-gateway-ip "$NEW_GATEWAY_IP" --primary-ip "$PRIMARY_IP"
 
 # After flow completes, wait for cluster API
 wait_for_cluster_api "$KUBECONFIG_EXTERNAL_PATH"
