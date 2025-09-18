@@ -73,3 +73,48 @@ def pytest_runtest_makereport(item: Item, call):
     result = outcome.get_result()
 
     setattr(item, "result_" + result.when, result)
+
+
+# -------------------- vSphere fixtures (shared) --------------------
+import os  # noqa: E402  keep local to avoid leaking to import time before pytest collection
+from consts import consts as _consts  # noqa: E402
+from tests.config.global_configs import reset_global_variables  # noqa: E402
+
+
+@pytest.fixture
+def force_vsphere_platform():
+    os.environ["TF_PLATFORM"] = _consts.Platforms.VSPHERE
+    reset_global_variables()
+    yield
+
+
+@pytest.fixture
+def vsphere_cluster_config(new_cluster_configuration):
+    new_cluster_configuration.platform = _consts.Platforms.VSPHERE
+    base_dns = os.getenv("VSPHERE_BASE_DNS_DOMAIN")
+    if base_dns:
+        new_cluster_configuration.base_dns_domain = base_dns
+    lb_ip = os.getenv("VSPHERE_LB_IP")
+    if lb_ip:
+        new_cluster_configuration.api_vips = [{"ip": lb_ip}]
+        new_cluster_configuration.ingress_vips = [{"ip": lb_ip}]
+    return new_cluster_configuration
+
+
+@pytest.fixture
+def vsphere_controller_config(new_controller_configuration):
+    cfg = new_controller_configuration
+    # Map required vSphere variables from env (fallback to GOVC_* where applicable)
+    cfg.vsphere_server = os.getenv("VSPHERE_VCENTER") or os.getenv("GOVC_URL")
+    cfg.vsphere_username = os.getenv("VSPHERE_USERNAME") or os.getenv("GOVC_USERNAME")
+    cfg.vsphere_password = os.getenv("VSPHERE_PASSWORD") or os.getenv("GOVC_PASSWORD")
+    cfg.vsphere_datacenter = os.getenv("VSPHERE_DATACENTER") or os.getenv("GOVC_DATACENTER")
+    cfg.vsphere_datastore = os.getenv("VSPHERE_DATASTORE") or os.getenv("GOVC_DATASTORE")
+    # Defaults that are commonly used if not provided
+    cfg.vsphere_network = os.getenv("VSPHERE_NETWORK") or "VM Network"
+    cfg.vsphere_parent_folder = os.getenv("VSPHERE_PARENT_FOLDER") or "e2e-qe"
+    cfg.vsphere_folder = os.getenv("VSPHERE_FOLDER") or ""
+    cluster = os.getenv("VSPHERE_CLUSTER")
+    if cluster:
+        cfg.vsphere_cluster = cluster
+    return cfg
