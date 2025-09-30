@@ -22,7 +22,7 @@ pytest==8.4.2
 python-dateutil==2.9.0.post0
 python-hcl2==7.3.1
 python-terraform==0.10.1
-PyYAML==6.0.2
+PyYAML==6.0.3
 requests==2.32.5
 retry==0.9.2
 scp==0.15.0
@@ -37,7 +37,7 @@ nutanix-api==0.0.20
 pytest-error-for-skips==2.0.2
 ansible==11.3.0 # Fix for issues with DNF and ansible core 2.17 on RHEL8 / RHEL9 systems
 jmespath==1.0.1
-oci==2.160.1
+oci==2.160.2
 setuptools==80.9.0
 pydantic==2.11.9
 certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
