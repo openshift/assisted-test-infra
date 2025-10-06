@@ -1,5 +1,5 @@
 black==25.9.0
-isort==6.0.1
+isort==6.1.0
 flake8==7.1.2
 flake8-bugbear==23.12.2             # Flake8 plugin that help identify likely bugs and design problems
 flake8_formatter_junit_xml==0.0.6   # JUnit XML Formatter for flake8.
@@ -10,4 +10,4 @@ flake8-use-fstring==1.4             # Jump-start into modern Python by forcing y
 flake8-black==0.4.0                 # Check black formatting using flake8
 flake8-isort==6.1.2                 # Check isort formatting using flake8
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
-ansible-lint==25.6.1
+ansible-lint==25.9.1
