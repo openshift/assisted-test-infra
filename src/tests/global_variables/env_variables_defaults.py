@@ -12,6 +12,20 @@ from consts import env_defaults, resources
 from triggers.env_trigger import DataPool
 
 
+def _validate_primary_stack(primary_stack):
+    """Validate and normalize primary stack setting"""
+    if not primary_stack:
+        return "ipv4"
+
+    primary_stack = primary_stack.strip().lower()
+    valid_stacks = ["ipv4", "ipv6"]
+
+    if primary_stack not in valid_stacks:
+        raise ValueError(f"Invalid PRIMARY_STACK: '{primary_stack}'. " f"Must be one of: {valid_stacks}")
+
+    return primary_stack
+
+
 @dataclass(frozen=True)
 class _EnvVariables(DataPool, ABC):
     ssh_public_key: EnvVar = EnvVar(["SSH_PUB_KEY"])
@@ -229,4 +243,8 @@ class _EnvVariables(DataPool, ABC):
     redfish_enabled: EnvVar = EnvVar(["REDFISH_ENABLED"])
     redfish_machines: EnvVar = EnvVar(
         ["REDFISH_MACHINES"], default=[], loader=lambda machines: re.split(r"\s|,", machines)
+    )
+
+    primary_stack = EnvVar(
+        ["PRIMARY_STACK"], loader=lambda x: _validate_primary_stack(x), default=env_defaults.DEFAULT_PRIMARY_STACK
     )

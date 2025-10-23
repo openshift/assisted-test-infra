@@ -37,6 +37,7 @@ class BaseClusterConfig(BaseEntityConfig, ABC):
     load_balancer_cidr: str = None
     install_working_dir: str = None
     libvirt_uri: str = None
+    primary_stack: str = None
 
     @property
     def cluster_name(self) -> BaseName:

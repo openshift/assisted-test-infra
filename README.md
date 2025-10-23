@@ -119,8 +119,6 @@ before you run start the deployment.
 | --- | --- |
 | `BASE_DNS_DOMAINS`                      | base DNS domains that are managed by assisted-service, format: domain_name:domain_id/provider_type. |
 | `AUTH_TYPE`                             | configure the type of authentication assisted-service will use, default: none |
-| `IPv4`                                  | Boolean value indicating if IPv4 is enabled. Default is yes |
-| `IPv6`                                  | Boolean value indicating if IPv6 is enabled. Default is no |
 | `STATIC_IPS`                            | Boolean value indicating if static networking should be enabled. Default is no |
 | `IS_BONDED`                             | Boolean value indicating if bonding should be enabled. It also implies static networking. Default is no |
 | `NUM_BONDED_SLAVES`                     | Integer value indicating the number of bonded slaves per bond. It is only used if bonding support is enabled. Default is 2 |
@@ -189,6 +187,9 @@ before you run start the deployment.
 | `SET_INFRAENV_VERSION` | If `true`, sets the `osImageVersion` field on the `InfraEnv` to the `OPENSHIFT_VERSION` to ensure the discovery ISO uses this OCP version for tests, default: `false` |
 | `OLM_OPERATORS` | Comma-separated list of OLM operators to install on the cluster (e.g., `mce,odf,metallb`) |
 | `OLM_BUNDLES` | Comma-separated list of operator bundles to install on the cluster (e.g., `virtualization,openshift-ai`). Bundles are expanded to their constituent operators automatically | 
+| `IPv4`                                  | Boolean value indicating if IPv4 is enabled. Default is yes |
+| `IPv6`                                  | Boolean value indicating if IPv6 is enabled. Default is no |
+| `PRIMARY_STACK`                         | Indicates the primary IP family in a dual-stack setup. Accepted values: `ipv4` or `ipv6`, default: `ipv4`. This field is applicable only when both IPv4 and IPv6 are enabled (set to true). |
 
 ## Vsphere parameters
 
