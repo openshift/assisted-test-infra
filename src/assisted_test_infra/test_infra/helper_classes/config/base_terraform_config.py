@@ -32,3 +32,6 @@ class BaseTerraformConfig(BaseNodesConfig, ABC):
     network_name: str = None
     storage_pool_path: str = None
     running: bool = True
+
+    uefi_boot_firmware: str = None
+    uefi_boot_template: str = None

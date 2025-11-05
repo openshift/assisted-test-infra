@@ -20,6 +20,16 @@ resource "libvirt_domain" "host" {
   memory  = var.memory
   vcpu    = var.vcpu
   running = var.running
+ 
+  firmware = var.uefi_boot_firmware != "" ? var.uefi_boot_firmware : null
+  dynamic "nvram" {
+    for_each = var.uefi_boot_firmware != "" ? [1] : []
+
+    content {
+      file     = "/tmp/VARS_${var.name}.fd"
+      template = var.uefi_boot_template
+    }
+  }
 
   dynamic "disk" {
     for_each = {
