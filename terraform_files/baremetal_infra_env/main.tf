@@ -90,6 +90,8 @@ module "masters" {
   disk_base_name = "${var.infra_env_name}-master-${count.index}"
   disk_size      = var.libvirt_master_disk
   disk_count     = var.master_disk_count
+  uefi_boot_firmware = var.uefi_boot_firmware
+  uefi_boot_template = var.uefi_boot_template
 }
 
 module "workers" {
@@ -123,4 +125,6 @@ module "workers" {
   disk_base_name = "${var.infra_env_name}-worker-${count.index}"
   disk_size      = var.libvirt_worker_disk
   disk_count     = var.worker_disk_count
+  uefi_boot_firmware = var.uefi_boot_firmware
+  uefi_boot_template = var.uefi_boot_template
 }

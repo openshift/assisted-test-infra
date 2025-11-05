@@ -185,6 +185,9 @@ before you run start the deployment.
 | `HOST_INSTALLER_ARGS`        | JSON formatted string used to customize installer arguments on all the hosts. Example: `{"args": ["--append-karg", "console=ttyS0"]}`                      |
 | `LOAD_BALANCER_TYPE` | Set to `cluster-managed` if the load-balancer will be deployed by OpenShift, and `user-managed` if it will be deployed externally by the user. |
 | `SET_INFRAENV_VERSION` | If `true`, sets the `osImageVersion` field on the `InfraEnv` to the `OPENSHIFT_VERSION` to ensure the discovery ISO uses this OCP version for tests, default: `false` |
+| `UEFI_BOOT_FIRMWARE` | Path to UEFI firmware file (e.g., /usr/share/OVMF/OVMF_CODE.fd) booting libvirt vm with UEFI loader.  |
+| `UEFI_BOOT_TEMPLATE` | Path to UEFI NVRAM template file (e.g., /usr/share/OVMF/OVMF_VARS.fd) Holds boot entries.  |
+| `UEFI_BOOT` | Boots VMs using UEFI if set to `true`, default: `false`  |
 | `OLM_OPERATORS` | Comma-separated list of OLM operators to install on the cluster (e.g., `mce,odf,metallb`) |
 | `OLM_BUNDLES` | Comma-separated list of operator bundles to install on the cluster (e.g., `virtualization,openshift-ai`). Bundles are expanded to their constituent operators automatically | 
 | `IPv4`                                  | Boolean value indicating if IPv4 is enabled. Default is yes |

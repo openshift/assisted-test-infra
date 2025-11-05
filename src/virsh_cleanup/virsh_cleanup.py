@@ -23,7 +23,7 @@ def _clean_domains(skip_list, resource_filter):
         log.info("Deleting domain %s", domain)
         if domain and domain not in skip_list:
             _run_command(f"virsh -c qemu:///system destroy {domain}", check=False)
-            _run_command(f"virsh -c qemu:///system undefine {domain}", check=False)
+            _run_command(f"virsh -c qemu:///system undefine --nvram {domain}", check=False)
 
     log.info("---- CLEANING VIRSH DOMAINS DONE ----")
 
