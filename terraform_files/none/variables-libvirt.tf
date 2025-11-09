@@ -190,3 +190,15 @@ variable "worker_vtpm2" {
   description = "Whether or not to emulate TPM v2 device on worker nodes."
   default     = false
 }
+
+variable "uefi_boot_firmware" {
+  type        = string
+  description = "Path to UEFI firmware file (e.g., /usr/share/OVMF/OVMF_CODE.fd)"
+  default     = ""
+}
+
+variable "uefi_boot_template" {
+  type        = string
+  description = "Path to UEFI NVRAM template file (e.g., /usr/share/OVMF/OVMF_VARS.fd)"
+  default     = ""
+}

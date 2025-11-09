@@ -77,3 +77,16 @@ variable "boot_devices" {
   description = "the list of boot devices in the desired order of boot"
   default     = ["hd", "cdrom"]
 }
+
+variable "uefi_boot_firmware" {
+  description = "The uefi boot firmware path in hypervisor"
+  type        = string
+  default     = ""
+}
+
+variable "uefi_boot_template" {
+  description = "The uefi boot template path in hypervisor"
+  type        = string
+  default     = ""
+}
+
