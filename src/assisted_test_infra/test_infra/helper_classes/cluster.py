@@ -168,6 +168,31 @@ class Cluster(BaseCluster):
         log.debug(f"Cluster created. ID={self._config.cluster_id}")
         return cluster.id
 
+    def _get_primary_stack(self) -> str:
+        """Get the primary stack configuration, defaulting to 'ipv4'"""
+        return getattr(self._config, "primary_stack", "ipv4")
+
+    def _configure_networking_for_primary_stack(self):
+        """Configure networking based on primary stack setting"""
+        primary_stack = self._get_primary_stack()
+
+        # For dual-stack, validate that both IPv4 and IPv6 are enabled
+        if primary_stack == "ipv6" and not (self._config.is_ipv4 and self._config.is_ipv6):
+            log.warning("PRIMARY_STACK=ipv6 specified but cluster is not dual-stack. This setting will be ignored.")
+            return  # Not dual-stack, use existing logic
+        elif primary_stack == "ipv4" and not (self._config.is_ipv4 and self._config.is_ipv6):
+            log.debug("PRIMARY_STACK=ipv4 specified for non-dual-stack cluster. This is the default behavior.")
+            return  # Not dual-stack, use existing logic
+
+        if primary_stack == "ipv6":
+            # IPv6-primary dual-stack
+            self._config.cluster_networks = consts.DEFAULT_CLUSTER_NETWORKS_IPV6V4
+            self._config.service_networks = consts.DEFAULT_SERVICE_NETWORKS_IPV6V4
+        else:
+            # IPv4-primary dual-stack (default)
+            self._config.cluster_networks = consts.DEFAULT_CLUSTER_NETWORKS_IPV4V6
+            self._config.service_networks = consts.DEFAULT_SERVICE_NETWORKS_IPV4V6
+
     def get_olm_operators(self) -> List:
         all_operators = self._expand_bundles_to_operators()
 
@@ -1036,8 +1061,8 @@ class Cluster(BaseCluster):
 
     def prepare_networking(self):
         self.nodes.wait_for_networking()
+        self._configure_networking_for_primary_stack()
         self.set_network_params(controller=self.nodes.controller)
-
         # in case of None / External platform / User Managed LB, we need to specify dns records before hosts are ready
         if self.nodes.controller.tf_platform in [
             consts.Platforms.NONE,
@@ -1050,7 +1075,9 @@ class Cluster(BaseCluster):
             self.nodes.controller.set_dns_for_user_managed_network()
         elif self.control_plane_count == consts.ControlPlaneCount.ONE:
             main_cidr = self.get_primary_machine_cidr()
-            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr)
+            # Determine ipv4_first based on primary_stack
+            ipv4_first = self._get_primary_stack() != "ipv6"
+            ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr, ipv4_first=ipv4_first)
             self.nodes.controller.set_single_node_ip(ip)
             self.nodes.controller.set_dns(api_ip=ip, ingress_ip=ip)
 

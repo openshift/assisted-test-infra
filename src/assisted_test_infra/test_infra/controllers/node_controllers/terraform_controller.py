@@ -40,6 +40,12 @@ class TerraformController(LibvirtController):
         warnings.warn("cluster_name is deprecated. Use Controller.entity_name instead.", DeprecationWarning)
         return self._entity_name.get()
 
+    def _get_primary_stack(self) -> str:
+        """Get the primary stack configuration from entity_config (cluster config), defaulting to 'ipv4'"""
+        if self._entity_config:
+            return getattr(self._entity_config, "primary_stack", "ipv4")
+        return getattr(self._config, "primary_stack", "ipv4")
+
     def get_all_vars(self):
         cluster_name = self._entity_config.entity_name.get()
         return {**self._config.get_all(), **self._entity_config.get_all(), "cluster_name": cluster_name}
@@ -283,16 +289,46 @@ class TerraformController(LibvirtController):
         self.format_disk(f"{self._params.libvirt_storage_pool_path}/{self.entity_name}/{node_name}-disk-{disk_index}")
 
     def get_ingress_and_api_vips(self) -> Dict[str, List[dict]]:
-        """Pick two IPs for setting static access endpoint IPs.
+        """Pick IPs for setting static access endpoint IPs.
 
         Using <subnet>.100 for the API endpoint and <subnet>.101 for the ingress endpoint
         (the IPv6 values are appropriately <sub-net>:64 and <sub-net>:65).
 
+        For dual-stack clusters, returns both IPv4 and IPv6 VIPs, ordered by PRIMARY_STACK.
+
         This method is not applicable for SNO clusters, where access IPs should be the node's IP.
         """
-        network_subnet_starting_ip = ip_address(ip_network(self.get_primary_machine_cidr()).network_address)
-        ips = utils.create_ip_address_list(2, starting_ip_addr=network_subnet_starting_ip + 100)
-        return {"api_vips": [{"ip": ips[0]}], "ingress_vips": [{"ip": ips[1]}]}
+        api_vips = []
+        ingress_vips = []
+        primary_stack = self._get_primary_stack()
+
+        # For dual-stack, get VIPs from both networks
+        if self.is_ipv4 and self.is_ipv6:
+            ipv4_network = ip_network(self._config.net_asset.machine_cidr)
+            ipv4_starting_ip = ip_address(ipv4_network.network_address)
+            ipv4_ips = utils.create_ip_address_list(2, starting_ip_addr=ipv4_starting_ip + 100)
+
+            ipv6_network = ip_network(self._config.net_asset.machine_cidr6)
+            ipv6_starting_ip = ip_address(ipv6_network.network_address)
+            ipv6_ips = utils.create_ip_address_list(2, starting_ip_addr=ipv6_starting_ip + 100)
+
+            # Order based on PRIMARY_STACK
+            if primary_stack == "ipv6":
+                # IPv6-primary: IPv6 first, then IPv4
+                api_vips = [{"ip": ipv6_ips[0]}, {"ip": ipv4_ips[0]}]
+                ingress_vips = [{"ip": ipv6_ips[1]}, {"ip": ipv4_ips[1]}]
+            else:
+                # IPv4-primary: IPv4 first, then IPv6
+                api_vips = [{"ip": ipv4_ips[0]}, {"ip": ipv6_ips[0]}]
+                ingress_vips = [{"ip": ipv4_ips[1]}, {"ip": ipv6_ips[1]}]
+        else:
+            # Single-stack: use primary network only
+            network_subnet_starting_ip = ip_address(ip_network(self.get_primary_machine_cidr()).network_address)
+            ips = utils.create_ip_address_list(2, starting_ip_addr=network_subnet_starting_ip + 100)
+            api_vips = [{"ip": ips[0]}]
+            ingress_vips = [{"ip": ips[1]}]
+
+        return {"api_vips": api_vips, "ingress_vips": ingress_vips}
 
     @utils.on_exception(message="Failed to run terraform delete", silent=True)
     def _create_address_list(self, num, starting_ip_addr):
@@ -304,26 +340,51 @@ class TerraformController(LibvirtController):
         return utils.create_ip_address_nested_list(num, starting_ip_addr=starting_ip_addr)
 
     def get_primary_machine_cidr(self):
-        # In dualstack mode the primary network is IPv4
-        if self.is_ipv6 and not self.is_ipv4:
+        """Get the primary machine CIDR based on primary_stack setting"""
+        primary_stack = self._get_primary_stack()
+
+        if primary_stack == "ipv6" and self.is_ipv4 and self.is_ipv6:
+            # IPv6-primary dual-stack
             return self._config.net_asset.machine_cidr6
-        return self._config.net_asset.machine_cidr
+        elif self.is_ipv6 and not self.is_ipv4:
+            # IPv6-only
+            return self._config.net_asset.machine_cidr6
+        else:
+            # IPv4-primary or IPv4-only
+            return self._config.net_asset.machine_cidr
 
     def get_provisioning_cidr(self):
-        # In dualstack mode the primary network is IPv4
-        if self.is_ipv6 and not self.is_ipv4:
+        """Get the provisioning CIDR based on primary_stack setting"""
+        primary_stack = self._get_primary_stack()
+
+        if primary_stack == "ipv6" and self.is_ipv4 and self.is_ipv6:
+            # IPv6-primary dual-stack
             return self._config.net_asset.provisioning_cidr6
-        return self._config.net_asset.provisioning_cidr
+        elif self.is_ipv6 and not self.is_ipv4:
+            # IPv6-only
+            return self._config.net_asset.provisioning_cidr6
+        else:
+            # IPv4-primary or IPv4-only
+            return self._config.net_asset.provisioning_cidr
 
     def get_all_machine_addresses(self) -> List[str]:
         """Get all subnets that belong to the primary NIC."""
         addresses = []
+        primary_stack = self._get_primary_stack()
+        log.debug(f"primary_stack: {primary_stack}")
 
-        if self.is_ipv4:
-            addresses.append(self._config.net_asset.machine_cidr)
-
-        if self.is_ipv6:
-            addresses.append(self._config.net_asset.machine_cidr6)
+        if primary_stack == "ipv6" and self.is_ipv4 and self.is_ipv6:
+            # IPv6-primary dual-stack
+            if self.is_ipv6:
+                addresses.append(self._config.net_asset.machine_cidr6)  # IPv6 first
+            if self.is_ipv4:
+                addresses.append(self._config.net_asset.machine_cidr)  # IPv4 second
+        else:
+            # IPv4-primary dual-stack (default)
+            if self.is_ipv4:
+                addresses.append(self._config.net_asset.machine_cidr)  # IPv4 first
+            if self.is_ipv6:
+                addresses.append(self._config.net_asset.machine_cidr6)  # IPv6 second
 
         return addresses
 
