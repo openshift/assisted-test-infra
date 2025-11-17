@@ -39,6 +39,15 @@ class TestMakefileTargets(BaseTest):
     def test_target_install_with_deploy_nodes(self, prepared_cluster):
         prepared_cluster.start_install_and_wait_for_installed()
 
+    @JunitTestSuite()
+    def test_target_deploy_networking_with_nodes_and_install(self, cluster):
+        """Deploy nodes with networking and install cluster - combines networking setup + cluster creation"""
+        log.info("Preparing cluster for installation (networking + nodes)")
+        cluster.prepare_for_installation()
+        
+        log.info("Starting cluster installation and waiting for completion")
+        cluster.start_install_and_wait_for_installed()
+
     @pytest.fixture
     def download_iso_override_nodes_count(self, prepared_controller_configuration: BaseNodesConfig):
         """No need creating any nodes for creating a cluster and download its ISO
