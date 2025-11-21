@@ -30,7 +30,7 @@ function config_additional_modules() {
         sudo dnf module install -y container-tools:4.0
         ;;
 
-    "Red Hat Enterprise Linux 9"* | "CentOS Linux 9"*)
+    "Red Hat Enterprise Linux 9"* | "CentOS Linux 9"* | "CentOS Stream 9"*)
         echo "Enable EPEL for swtpm packages when on RHEL/CentOS based distributions"
         sudo dnf install -y \
             https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
