@@ -13,6 +13,19 @@ case ${DEPLOY_TARGET} in
         export IMAGE_SERVICE_PORT=8080
         export EXTERNAL_PORT=false
         ;;
+    onprem)
+        # Always use private IP for onprem to avoid NAT hairpinning issues
+        export ASSISTED_SERVICE_HOST=$(get_main_ip)
+
+        # Persist private IP to config.sh for test phase
+        if [ -f /root/config.sh ]; then
+            sed -i "s|export ASSISTED_SERVICE_HOST=.*|export ASSISTED_SERVICE_HOST=${ASSISTED_SERVICE_HOST}|" /root/config.sh
+        fi
+
+        export SERVICE_URL=${SERVICE_URL:-$(get_main_ip)}
+        export SERVICE_PORT=8090
+        export IMAGE_SERVICE_PORT=8888
+        ;;
     *)
         export SERVICE_URL=${SERVICE_URL:-$(get_main_ip)}
         export SERVICE_PORT=$(( 6000 + $NAMESPACE_INDEX ))
