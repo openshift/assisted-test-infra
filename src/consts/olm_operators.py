@@ -20,6 +20,8 @@ class OperatorType:
     COO = "cluster-observability"
     NUMA_RESOURCES = "numaresources"
     OADP = "oadp"
+    LOKI = "loki"
+    OPENSHIFT_LOGGING = "openshift-logging"
 
 
 class OperatorStatus:
@@ -137,6 +139,8 @@ class OperatorResource:
                 worker_count=3,
             ),
             OperatorType.OSC: cls.get_osc_resource_dict(is_sno),
+            OperatorType.LOKI: cls.get_resource_dict(),
+            OperatorType.OPENSHIFT_LOGGING: cls.get_resource_dict(),
         }
 
 
@@ -216,6 +220,14 @@ class OADPOperatorFailedError(OperatorFailedError):
     pass
 
 
+class LokiOperatorFailedError(OperatorFailedError):
+    pass
+
+
+class OpenShiftLoggingOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
     exception_map = {
         OperatorType.CNV: CNVOperatorFailedError,
@@ -236,6 +248,8 @@ def get_exception_factory(operator: str):
         OperatorType.COO: COOOperatorFailedError,
         OperatorType.NUMA_RESOURCES: NUMAResourcesOperatorFailedError,
         OperatorType.OADP: OADPOperatorFailedError,
+        OperatorType.LOKI: LokiOperatorFailedError,
+        OperatorType.OPENSHIFT_LOGGING: OpenShiftLoggingOperatorFailedError,
     }
 
     # Use .get() to retrieve the exception, with a default if the operator isn't found

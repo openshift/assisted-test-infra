@@ -103,6 +103,14 @@ _default_triggers = frozendict(
             conditions=[lambda config: "nmstate" in config.olm_operators],
             operator="nmstate",
         ),
+        "loki_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "loki" in config.olm_operators],
+            operator="loki",
+        ),
+        "openshift_logging_operator": OlmOperatorsTrigger(
+            conditions=[lambda config: "openshift-logging" in config.olm_operators],
+            operator="openshift-logging",
+        ),
         "ipxe_boot": Trigger(
             conditions=[lambda config: config.ipxe_boot is True],
             download_image=False,
