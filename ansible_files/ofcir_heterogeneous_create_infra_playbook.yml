@@ -55,7 +55,9 @@
 
     - name: Create a list containing the two dictionaries
       ansible.builtin.set_fact:
-        resource_list: "[ {{ primary_ci_resource }}, {{ secondary_ci_resource }} ]"
+        resource_list:
+          - "{{ primary_ci_resource }}"
+          - "{{ secondary_ci_resource }}"
 
     - name: Prepare the inventory
       ansible.builtin.include_role:
