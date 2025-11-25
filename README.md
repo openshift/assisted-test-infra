@@ -190,6 +190,8 @@ before you run start the deployment.
 | `IPv4`                                  | Boolean value indicating if IPv4 is enabled. Default is yes |
 | `IPv6`                                  | Boolean value indicating if IPv6 is enabled. Default is no |
 | `PRIMARY_STACK`                         | Indicates the primary IP family in a dual-stack setup. Accepted values: `ipv4` or `ipv6`, default: `ipv4`. This field is applicable only when both IPv4 and IPv6 are enabled (set to true). |
+| `STATIC_IPS_VLAN`                       | Boolean value indicating if static networking via VLAN should be enabled. Default is no. When true, STATIC_IPS is enabled automatically. |
+| `VLAN_ID`                               | VLAN ID to use when `STATIC_IPS_VLAN` is enabled. Default is 100 |
 
 ## Vsphere parameters
 

@@ -125,6 +125,8 @@ class _EnvVariables(DataPool, ABC):
     download_image: EnvVar = EnvVar(
         ["DOWNLOAD_IMAGE"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_DOWNLOAD_IMAGE
     )
+    static_ips_vlan: EnvVar = EnvVar(["STATIC_IPS_VLAN"], loader=lambda x: bool(strtobool(x)), default=False)
+    vlan_id: EnvVar = EnvVar(["VLAN_ID"], loader=int, default=100)
     verify_download_iso_ssl: EnvVar = EnvVar(
         ["VERIFY_DOWNLOAD_ISO_SSL"], loader=lambda x: bool(strtobool(x)), default=env_defaults.DEFAULT_VERIFY_SSL
     )

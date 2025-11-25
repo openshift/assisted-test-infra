@@ -20,3 +20,5 @@ class BaseInfraEnvConfig(BaseEntityConfig, ABC):
     kernel_arguments: List[dict[str, str]] = None
     host_installer_args: List[dict[str, str]] = None
     set_infraenv_version: bool = None
+    static_ips_vlan: bool = None
+    vlan_id: int = None
