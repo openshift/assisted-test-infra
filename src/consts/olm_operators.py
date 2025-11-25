@@ -102,7 +102,6 @@ class OperatorResource:
     def values(cls, is_sno: bool = False) -> dict:
         return {
             OperatorType.CNV: cls.get_resource_dict(master_memory=150, worker_memory=360, master_vcpu=4, worker_vcpu=2),
-            OperatorType.NMSTATE: cls.get_resource_dict(),
             OperatorType.MTV: cls.get_resource_dict(
                 master_memory=1174, worker_memory=1384, master_vcpu=5, worker_vcpu=3
             ),
@@ -117,7 +116,6 @@ class OperatorResource:
                 worker_disk_count=1,
                 worker_count=4,
             ),
-            OperatorType.LSO: cls.get_resource_dict(),
             OperatorType.LVM: cls.get_resource_dict(
                 master_memory=1200,
                 master_vcpu=1,
@@ -125,7 +123,6 @@ class OperatorResource:
                 master_disk_count=1,
             ),
             OperatorType.MCE: cls.get_mce_resource_dict(is_sno),
-            OperatorType.METALLB: cls.get_resource_dict(),
             OperatorType.OPENSHIFT_AI: cls.get_resource_dict(
                 # Note that these requirements are for OpenShift and all its dependencies, in particular ODF.
                 master_memory=40 * 1024,
@@ -139,8 +136,6 @@ class OperatorResource:
                 worker_count=3,
             ),
             OperatorType.OSC: cls.get_osc_resource_dict(is_sno),
-            OperatorType.LOKI: cls.get_resource_dict(),
-            OperatorType.OPENSHIFT_LOGGING: cls.get_resource_dict(),
         }
 
 
