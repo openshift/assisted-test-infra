@@ -32,3 +32,5 @@ class BaseTerraformConfig(BaseNodesConfig, ABC):
     network_name: str = None
     storage_pool_path: str = None
     running: bool = True
+    static_ips_vlan: bool = None
+    vlan_id: int = None

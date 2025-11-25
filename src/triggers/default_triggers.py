@@ -109,6 +109,10 @@ _default_triggers = frozendict(
             master_boot_devices=["hd", "network"],
             worker_boot_devices=["hd", "network"],
         ),
+        "static_ips_vlan_enables_static": Trigger(
+            conditions=[lambda config: getattr(config, "static_ips_vlan", False) is True],
+            is_static_ip=True,
+        ),
         "cpu_s390x": Trigger(
             conditions=[lambda config: config.cpu_architecture == consts.CPUArchitecture.S390X],
             user_managed_networking=True,

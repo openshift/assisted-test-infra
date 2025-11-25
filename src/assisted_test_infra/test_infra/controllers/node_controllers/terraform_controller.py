@@ -172,6 +172,8 @@ class TerraformController(LibvirtController):
         self._fill_tfvars(running)
         log.info("Start running terraform")
         self.tf.apply()
+        if self._config.static_ips_vlan:
+            self._ensure_vlan_interface()
         if self._params.running:
             self.wait_till_nodes_are_ready(network_name=self._params.libvirt_network_name)
 
@@ -425,6 +427,12 @@ class TerraformController(LibvirtController):
         log.info("Deleting all nodes")
         self._params = self._get_params_from_config()
 
+        if getattr(self._config, "static_ips_vlan", False):
+            try:
+                self._delete_vlan_interface()
+            except Exception:
+                log.exception("Failed deleting VLAN sub-interface on host")
+
         if os.path.exists(self.tf_folder):
             self._try_to_delete_nodes()
 
@@ -469,3 +477,80 @@ class TerraformController(LibvirtController):
 
     def wait_till_nodes_are_ready(self, network_name: str = None):
         return super().wait_till_nodes_are_ready(network_name or self.network_name)
+
+    def _get_vlan_iface_name(self) -> str:
+        bridge = self._config.net_asset.libvirt_network_if
+        vlan_id = getattr(self._config, "vlan_id", 100) or 100
+        return f"{bridge}.{vlan_id}"
+
+    def _get_ip_addrs_for_iface(self, iface: str, family_flag: str) -> list[str]:
+        """
+        Return CIDR strings for addresses on iface.
+        family_flag: '-4' or '-6'
+        """
+        out, _, _ = utils.run_command(f"ip -o {family_flag} addr show dev {iface}", raise_errors=False)
+        cidrs: list[str] = []
+        if not out:
+            return cidrs
+        for line in out.splitlines():
+            parts = line.split()
+            # Expected: <idx>: <name> inet|inet6 <addr>/<prefix> ...
+            if len(parts) >= 4 and parts[2] in ("inet", "inet6"):
+                addr = parts[3]
+                # Skip IPv6 link-local
+                if parts[2] == "inet6" and addr.lower().startswith("fe80:"):
+                    continue
+                cidrs.append(addr)
+        return cidrs
+
+    def _iface_has_addr(self, iface: str, cidr: str) -> bool:
+        family_flag = "-6" if ":" in cidr else "-4"
+        out, _, _ = utils.run_command(f"ip -o {family_flag} addr show dev {iface}", raise_errors=False)
+        if not out:
+            return False
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) >= 4 and parts[3] == cidr:
+                return True
+        return False
+
+    def _move_bridge_addresses_to_vlan(self, bridge: str, vlan_iface: str) -> None:
+        """Move all non-link-local IPv4/IPv6 addresses from bridge to vlan_iface."""
+        ipv4_cidrs = self._get_ip_addrs_for_iface(bridge, "-4")
+        ipv6_cidrs = self._get_ip_addrs_for_iface(bridge, "-6")
+
+        for cidr in ipv4_cidrs + ipv6_cidrs:
+            try:
+                if not self._iface_has_addr(vlan_iface, cidr):
+                    utils.run_command(f"ip addr add {cidr} dev {vlan_iface}")
+                utils.run_command(f"ip addr del {cidr} dev {bridge}")
+                log.info("Moved %s from %s to %s", cidr, bridge, vlan_iface)
+            except Exception:
+                log.exception("Failed moving address %s from %s to %s", cidr, bridge, vlan_iface)
+
+    def _ensure_vlan_interface(self) -> None:
+        vlan_iface = self._get_vlan_iface_name()
+        bridge = self._config.net_asset.libvirt_network_if
+        vlan_id = getattr(self._config, "vlan_id", 100) or 100
+
+        # Check if VLAN iface exists
+        _, _, rc = utils.run_command(f"ip link show dev {vlan_iface}", raise_errors=False)
+        if rc == 0:
+            log.info("VLAN interface %s already exists", vlan_iface)
+        else:
+            log.info("Creating VLAN interface %s on bridge %s (id %s)", vlan_iface, bridge, vlan_id)
+            utils.run_command(f"ip link add link {bridge} name {vlan_iface} type vlan id {vlan_id}")
+        # Bring VLAN iface up (idempotent)
+        utils.run_command(f"ip link set dev {vlan_iface} up")
+        # Move any IP addresses from bridge to VLAN iface
+        self._move_bridge_addresses_to_vlan(bridge, vlan_iface)
+
+    def _delete_vlan_interface(self) -> None:
+        vlan_iface = self._get_vlan_iface_name()
+        # Delete if exists
+        _, _, rc = utils.run_command(f"ip link show dev {vlan_iface}", raise_errors=False)
+        if rc == 0:
+            log.info("Deleting VLAN interface %s", vlan_iface)
+            utils.run_command(f"sudo ip link del dev {vlan_iface}")
+        else:
+            log.info("VLAN interface %s not present; nothing to delete", vlan_iface)
