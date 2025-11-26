@@ -72,7 +72,6 @@ _default_triggers = frozendict(
             cluster_networks=consts.DEFAULT_CLUSTER_NETWORKS_IPV4V6,
             service_networks=consts.DEFAULT_SERVICE_NETWORKS_IPV4V6,
         ),
-        "lso_operator": OlmOperatorsTrigger(conditions=[lambda config: "lso" in config.olm_operators], operator="lso"),
         "cnv_operator": OlmOperatorsTrigger(conditions=[lambda config: "cnv" in config.olm_operators], operator="cnv"),
         "mtv_operator": OlmOperatorsTrigger(conditions=[lambda config: "mtv" in config.olm_operators], operator="mtv"),
         "odf_operator": OlmOperatorsTrigger(conditions=[lambda config: "odf" in config.olm_operators], operator="odf"),
@@ -98,10 +97,6 @@ _default_triggers = frozendict(
         "osc_operator": OlmOperatorsTrigger(
             conditions=[lambda config: "osc" in config.olm_operators, lambda config2: config2.masters_count > 1],
             operator="osc",
-        ),
-        "nmstate_operator": OlmOperatorsTrigger(
-            conditions=[lambda config: "nmstate" in config.olm_operators],
-            operator="nmstate",
         ),
         "ipxe_boot": Trigger(
             conditions=[lambda config: config.ipxe_boot is True],
