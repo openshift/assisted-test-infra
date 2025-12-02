@@ -57,7 +57,8 @@ COPY requirements.txt requirements-dev.txt ./
 RUN pip3 install --upgrade pip && \
       pip3 install --no-cache-dir -I -r ./requirements.txt -r ./requirements-dev.txt
 
-RUN curl --retry 5 --connect-timeout 30 -s https://storage.googleapis.com/golang/go1.18.1.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV GO_VERSION=1.18.1
+RUN curl --retry 5 --connect-timeout 30 -s "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
 ENV GOPATH=/go
 ENV GOCACHE=/go/.cache
 ENV PATH=$PATH:/usr/local/go/bin:/go/bin
