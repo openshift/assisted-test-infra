@@ -21,7 +21,12 @@ PYTEST_FLAGS := $(or ${PYTEST_FLAGS}, --error-for-skips)
 
 SKIPPER_PARAMS ?= -i
 
-ASSISTED_SERVICE_HOST := $(or ${ASSISTED_SERVICE_HOST},$(shell hostname))
+# Set ASSISTED_SERVICE_HOST based on deployment mode
+ifeq ($(DEPLOY_TARGET),onprem)
+    ASSISTED_SERVICE_HOST := $(shell bash -c 'source scripts/utils.sh && get_main_ip')
+else
+    ASSISTED_SERVICE_HOST := $(or ${ASSISTED_SERVICE_HOST},$(shell hostname))
+endif
 
 # Openshift CI params
 OPENSHIFT_CI := $(or ${OPENSHIFT_CI}, "false")
