@@ -34,3 +34,7 @@ class BaseTerraformConfig(BaseNodesConfig, ABC):
     running: bool = True
     static_ips_vlan: bool = None
     vlan_id: int = None
+
+    uefi_boot_firmware: str = None
+    uefi_boot_template: str = None
+    uefi_boot: bool = False

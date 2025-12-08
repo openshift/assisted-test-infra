@@ -162,6 +162,11 @@ function allow_libvirt_cross_network_traffic() {
     sudo chmod +x "${hook_filename}"
 }
 
+function install_uefi_boot() {
+    echo "Installing UEFI booting virtual machines..."
+    sudo dnf install -y edk2-ovmf || true
+}
+
 function install_podman(){
     sudo systemctl disable --now podman.socket || true
     sudo rm -rf /run/user/${UID}/podman
@@ -363,6 +368,7 @@ if [ $# -eq 0 ]; then
     config_additional_modules
     install_packages
     install_libvirt
+    install_uefi_boot
     install_runtime_container
     install_skipper
     config_firewalld

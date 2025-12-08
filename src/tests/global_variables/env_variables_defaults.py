@@ -59,6 +59,10 @@ class _EnvVariables(DataPool, ABC):
     )
     vip_dhcp_allocation: EnvVar = EnvVar(["VIP_DHCP_ALLOCATION"], loader=lambda x: bool(strtobool(x)))
 
+    uefi_boot_firmware: EnvVar = EnvVar(["UEFI_BOOT_FIRMWARE"], default=env_defaults.DEFAULT_UEFI_BOOT_FIRMWARE)
+    uefi_boot_template: EnvVar = EnvVar(["UEFI_BOOT_TEMPLATE"], default=env_defaults.DEFAULT_UEFI_BOOT_TEMPLATE)
+    uefi_boot: EnvVar = EnvVar(["UEFI_BOOT"], default=env_defaults.DEFAULT_UEFI_BOOT)
+
     worker_memory: EnvVar = EnvVar(["WORKER_MEMORY"], loader=int, default=resources.DEFAULT_WORKER_MEMORY)
     arbiter_memory: EnvVar = EnvVar(["ARBITER_MEMORY"], loader=int, default=resources.DEFAULT_ARBITER_MEMORY)
     master_memory: EnvVar = EnvVar(["MASTER_MEMORY"], loader=int, default=resources.DEFAULT_MASTER_MEMORY)

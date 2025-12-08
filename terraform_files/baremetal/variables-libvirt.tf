@@ -374,3 +374,15 @@ variable "libvirt_load_balancer_network_if" {
   description = "The name of the load balancer network interface"
   default     = "lb"
 }
+
+variable "uefi_boot_firmware" {
+  type        = string
+  description = "Path to UEFI firmware file (e.g., /usr/share/OVMF/OVMF_CODE.fd)"
+  default     = ""
+}
+
+variable "uefi_boot_template" {
+  type        = string
+  description = "Path to UEFI NVRAM template file (e.g., /usr/share/OVMF/OVMF_VARS.fd)"
+  default     = ""
+}

@@ -241,6 +241,9 @@ class TerraformController(LibvirtController):
         tfvars["worker_boot_devices"] = self._params.worker_boot_devices
         tfvars["arbiter_boot_devices"] = self._params.arbiter_boot_devices
         tfvars["load_balancer_type"] = self._entity_config.load_balancer_type
+        if self._config.uefi_boot:
+            tfvars["uefi_boot_firmware"] = self._config.uefi_boot_firmware
+            tfvars["uefi_boot_template"] = self._config.uefi_boot_template
         if self._entity_config.is_bonded:
             tfvars["slave_interfaces"] = True
             tfvars["network_interfaces_count"] = self._entity_config.num_bonded_slaves
