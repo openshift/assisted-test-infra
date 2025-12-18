@@ -97,12 +97,9 @@ class TerraformUtils:
         self.apply(refresh=refresh)
 
     def update_variables_file(self, variables: Dict[str, str]):
-        with open(self.var_file_path, "r+") as _file:
-            tfvars = json.load(_file)
-            tfvars.update(variables)
-            _file.seek(0)
-            _file.truncate()
-            json.dump(tfvars, _file)
+        # Overwrite tfvars with only the provided variables to avoid leaking stale keys
+        with open(self.var_file_path, "w") as _file:
+            json.dump(variables, _file)
 
     def change_variables(self, variables: Dict[str, str], refresh: bool = True) -> None:
         self.update_variables_file(variables=variables)
