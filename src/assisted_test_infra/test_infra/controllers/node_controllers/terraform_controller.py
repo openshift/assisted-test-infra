@@ -43,8 +43,8 @@ class TerraformController(LibvirtController):
     def _get_primary_stack(self) -> str:
         """Get the primary stack configuration from entity_config (cluster config), defaulting to 'ipv4'"""
         if self._entity_config:
-            return getattr(self._entity_config, "primary_stack", "ipv4")
-        return getattr(self._config, "primary_stack", "ipv4")
+            return getattr(self._entity_config, "primary_stack", consts.PrimaryStack.ipv4)
+        return getattr(self._config, "primary_stack", consts.PrimaryStack.ipv4)
 
     def get_all_vars(self):
         cluster_name = self._entity_config.entity_name.get()
@@ -318,7 +318,7 @@ class TerraformController(LibvirtController):
             ipv6_ips = utils.create_ip_address_list(2, starting_ip_addr=ipv6_starting_ip + 100)
 
             # Order based on PRIMARY_STACK
-            if primary_stack == "ipv6":
+            if primary_stack == consts.PrimaryStack.ipv6:
                 # IPv6-primary: IPv6 first, then IPv4
                 api_vips = [{"ip": ipv6_ips[0]}, {"ip": ipv4_ips[0]}]
                 ingress_vips = [{"ip": ipv6_ips[1]}, {"ip": ipv4_ips[1]}]
@@ -348,7 +348,7 @@ class TerraformController(LibvirtController):
         """Get the primary machine CIDR based on primary_stack setting"""
         primary_stack = self._get_primary_stack()
 
-        if primary_stack == "ipv6" and self.is_ipv4 and self.is_ipv6:
+        if primary_stack == consts.PrimaryStack.ipv6 and self.is_ipv4 and self.is_ipv6:
             # IPv6-primary dual-stack
             return self._config.net_asset.machine_cidr6
         elif self.is_ipv6 and not self.is_ipv4:
@@ -362,7 +362,7 @@ class TerraformController(LibvirtController):
         """Get the provisioning CIDR based on primary_stack setting"""
         primary_stack = self._get_primary_stack()
 
-        if primary_stack == "ipv6" and self.is_ipv4 and self.is_ipv6:
+        if primary_stack == consts.PrimaryStack.ipv6 and self.is_ipv4 and self.is_ipv6:
             # IPv6-primary dual-stack
             return self._config.net_asset.provisioning_cidr6
         elif self.is_ipv6 and not self.is_ipv4:
@@ -378,7 +378,7 @@ class TerraformController(LibvirtController):
         primary_stack = self._get_primary_stack()
         log.debug(f"primary_stack: {primary_stack}")
 
-        if primary_stack == "ipv6" and self.is_ipv4 and self.is_ipv6:
+        if primary_stack == consts.PrimaryStack.ipv6 and self.is_ipv4 and self.is_ipv6:
             # IPv6-primary dual-stack
             if self.is_ipv6:
                 addresses.append(self._config.net_asset.machine_cidr6)  # IPv6 first
