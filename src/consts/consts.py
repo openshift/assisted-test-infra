@@ -412,3 +412,8 @@ class CensoredConfig:
         "/opt/openshift/manifests/machine-config-server-ca-configmap.yaml",
     }
     SENSITIVE_EXTENSIONS = (".crt", ".key")
+
+
+class PrimaryStack:
+    ipv4 = "ipv4"
+    ipv6 = "ipv6"

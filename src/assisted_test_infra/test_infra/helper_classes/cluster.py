@@ -170,21 +170,21 @@ class Cluster(BaseCluster):
 
     def _get_primary_stack(self) -> str:
         """Get the primary stack configuration, defaulting to 'ipv4'"""
-        return getattr(self._config, "primary_stack", "ipv4")
+        return getattr(self._config, "primary_stack", consts.PrimaryStack.ipv4)
 
     def _configure_networking_for_primary_stack(self):
         """Configure networking based on primary stack setting"""
         primary_stack = self._get_primary_stack()
 
         # For dual-stack, validate that both IPv4 and IPv6 are enabled
-        if primary_stack == "ipv6" and not (self._config.is_ipv4 and self._config.is_ipv6):
+        if primary_stack == consts.PrimaryStack.ipv6 and not (self._config.is_ipv4 and self._config.is_ipv6):
             log.warning("PRIMARY_STACK=ipv6 specified but cluster is not dual-stack. This setting will be ignored.")
             return  # Not dual-stack, use existing logic
-        elif primary_stack == "ipv4" and not (self._config.is_ipv4 and self._config.is_ipv6):
+        elif primary_stack == consts.PrimaryStack.ipv4 and not (self._config.is_ipv4 and self._config.is_ipv6):
             log.debug("PRIMARY_STACK=ipv4 specified for non-dual-stack cluster. This is the default behavior.")
             return  # Not dual-stack, use existing logic
 
-        if primary_stack == "ipv6":
+        if primary_stack == consts.PrimaryStack.ipv6:
             # IPv6-primary dual-stack
             self._config.cluster_networks = consts.DEFAULT_CLUSTER_NETWORKS_IPV6V4
             self._config.service_networks = consts.DEFAULT_SERVICE_NETWORKS_IPV6V4
@@ -1076,7 +1076,7 @@ class Cluster(BaseCluster):
         elif self.control_plane_count == consts.ControlPlaneCount.ONE:
             main_cidr = self.get_primary_machine_cidr()
             # Determine ipv4_first based on primary_stack
-            ipv4_first = self._get_primary_stack() != "ipv6"
+            ipv4_first = self._get_primary_stack() != consts.PrimaryStack.ipv6
             ip = Cluster.get_ip_for_single_node(self.api_client, self.id, main_cidr, ipv4_first=ipv4_first)
             self.nodes.controller.set_single_node_ip(ip)
             self.nodes.controller.set_dns(api_ip=ip, ingress_ip=ip)
