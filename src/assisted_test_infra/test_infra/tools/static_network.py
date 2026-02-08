@@ -44,34 +44,13 @@ def generate_day2_static_network_data_from_tf(tf_folder: str, num_day2_workers: 
     return network_config
 
 
-def _generate_physical_static_network_data_from_tf(tfvars: Dict[str, any]) -> List[Dict[str, List[dict]]]:
-    network_config = []
-
-    for count in range(tfvars["master_count"]):
-        host_data = _prepare_host_static_network_data(
-            tfvars["libvirt_master_macs"][count],
-            tfvars["libvirt_secondary_master_macs"][count],
-            tfvars["machine_cidr_addresses"],
-            tfvars["provisioning_cidr_addresses"],
-            count,
-        )
-        network_config.append(host_data)
-
-    for count in range(tfvars["worker_count"]):
-        host_data = _prepare_host_static_network_data(
-            tfvars["libvirt_worker_macs"][count],
-            tfvars["libvirt_secondary_worker_macs"][count],
-            tfvars["machine_cidr_addresses"],
-            tfvars["provisioning_cidr_addresses"],
-            tfvars["master_count"] + count,
-        )
-        network_config.append(host_data)
-
-    return network_config
-
-
 def _generate_bonded_static_network_data_from_tf(
-    tfvars: Dict[str, Any], num_bonded_slaves: int, bonding_mode: str
+    tfvars: Dict[str, Any],
+    num_bonded_slaves: int,
+    bonding_mode: str,
+    *,
+    vlan_enabled: bool,
+    vlan_id: int,
 ) -> List[Dict[str, List[dict]]]:
     network_config = []
 
@@ -84,6 +63,8 @@ def _generate_bonded_static_network_data_from_tf(
             count,
             num_bonded_slaves,
             bonding_mode,
+            vlan_enabled=vlan_enabled,
+            vlan_id=vlan_id,
         )
         network_config.append(host_data)
 
@@ -96,6 +77,8 @@ def _generate_bonded_static_network_data_from_tf(
             tfvars["master_count"] + count,
             num_bonded_slaves,
             bonding_mode,
+            vlan_enabled=vlan_enabled,
+            vlan_id=vlan_id,
         )
         network_config.append(host_data)
 
