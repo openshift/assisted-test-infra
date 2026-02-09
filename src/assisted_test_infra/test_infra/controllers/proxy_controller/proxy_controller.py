@@ -49,6 +49,7 @@ class ProxyController(ContainerizedController):
 
     def _create_conf_from_template(self, denied_port):
         log.info(f"Creating Config for Proxy Server {self._name}")
+        shutil.rmtree(f"/tmp/{self._name}", ignore_errors=True)
         os.mkdir(f"/tmp/{self._name}")
         self.config_dir_path = f"/tmp/{self._name}/{self._name}"
         os.mkdir(self.config_dir_path)
