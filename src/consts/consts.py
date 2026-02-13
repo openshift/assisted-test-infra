@@ -36,7 +36,7 @@ class NetworkType:
 
     @classmethod
     def all(cls):
-        return [cls.OpenShiftSDN, cls.OVNKubernetes]
+        return [cls.OpenShiftSDN, cls.OVNKubernetes, cls.Cilium, cls.Calico, cls.CiscoACI, cls.None_]
 
 
 class DiskEncryptionMode:
