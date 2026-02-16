@@ -28,10 +28,14 @@ class OpenshiftVersion(Enum):
 class NetworkType:
     OpenShiftSDN = "OpenShiftSDN"
     OVNKubernetes = "OVNKubernetes"
+    Cilium = "Cilium"
+    Calico = "Calico"
+    CiscoACI = "CiscoACI"
+    None_ = "None"
 
     @classmethod
     def all(cls):
-        return [cls.OpenShiftSDN, cls.OVNKubernetes]
+        return [cls.OpenShiftSDN, cls.OVNKubernetes, cls.Cilium, cls.Calico, cls.CiscoACI, cls.None_]
 
 
 class DiskEncryptionMode:
