@@ -927,6 +927,8 @@ class BaseTest:
                 log.warning(f"ip_vip for single node not found for {cluster.name}: {str(e)}")
                 ip_vip = ""
             api_vips = [{"ip": ip_vip}]
+        elif cluster._config.user_managed_networking:
+            api_vips = [{"ip": cluster._get_load_balancer_ip()}]
         else:
             try:
                 # Bubble up exception when vip not found for multiple nodes
