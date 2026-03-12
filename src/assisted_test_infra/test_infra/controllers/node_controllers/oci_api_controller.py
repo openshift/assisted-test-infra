@@ -88,6 +88,7 @@ class OciApiController(NodeController):
         super().__init__(config, cluster_config)
         self.cloud_provider = None
         self._oci_compartment_oicd = self._config.oci_compartment_oicd
+        self._tag_namespace_compartment_ocid = self._oci_compartment_oicd
         self._initialize_oci_clients()
 
     def _initialize_oci_clients(self):
@@ -103,6 +104,7 @@ class OciApiController(NodeController):
             self._compute_client = oci.core.ComputeClient(self._config.get_provider_config())
             self._volume_client = oci.core.BlockstorageClient(self._config.get_provider_config())
             self._virtual_network_client = oci.core.VirtualNetworkClient(self._config.get_provider_config())
+            self._identity_client = oci.identity.IdentityClient(self._config.get_provider_config())
             # resource manager for stack creation and job
             self._resource_manager_client = oci.resource_manager.ResourceManagerClient(
                 self._config.get_provider_config()
@@ -215,6 +217,8 @@ class OciApiController(NodeController):
             "compute_count": compute_count,
             "zone_dns": base_dns,
             "tag_namespace_name": f"openshift-{str(cluster_name)}",
+            "tag_namespace_compartment_ocid_resource_tagging": self._tag_namespace_compartment_ocid,
+            "enable_public_api_lb": "true",
             **kwargs,
         }
 
@@ -524,8 +528,49 @@ class OciApiController(NodeController):
     def setup_time(self) -> str:
         pass
 
+    def _ensure_resource_attribution_tags(self):
+        """Ensure the openshift-tags namespace and openshift-resource tag exist.
+
+        The create-cluster stack expects these to exist before it runs.
+        Searches the entire tenancy since tag namespace names are unique per-tenancy.
+        """
+        namespace_name = "openshift-tags"
+        tag_name = "openshift-resource"
+
+        tenancy_ocid = self._config.get_provider_config()["tenancy"]
+        existing = oci.pagination.list_call_get_all_results(
+            self._identity_client.list_tag_namespaces, tenancy_ocid, include_subcompartments=True
+        ).data
+        tag_namespace = next(
+            (ns for ns in existing if ns.name == namespace_name and ns.lifecycle_state == "ACTIVE"), None
+        )
+
+        if tag_namespace is not None:
+            log.info(f"Tag namespace '{namespace_name}' found in compartment {tag_namespace.compartment_id}")
+            self._tag_namespace_compartment_ocid = tag_namespace.compartment_id
+            return
+
+        log.info(f"Creating resource attribution tags in compartment {self._oci_compartment_oicd}")
+        ns_response = self._identity_client.create_tag_namespace(
+            oci.identity.models.CreateTagNamespaceDetails(
+                compartment_id=self._oci_compartment_oicd,
+                name=namespace_name,
+                description="Used for tracking openshift related resources for attribution and reporting",
+            )
+        )
+        self._identity_client.create_tag(
+            ns_response.data.id,
+            oci.identity.models.CreateTagDetails(
+                name=tag_name,
+                description="OpenShift Resource Tracking",
+                is_cost_tracking=True,
+            ),
+        )
+        self._tag_namespace_compartment_ocid = self._oci_compartment_oicd
+
     def prepare_nodes(self) -> None:
         log.info("OCI prepare all nodes")
+        self._ensure_resource_attribution_tags()
         bucket_name = f"bucket-{self._entity_config.cluster_id}"
         namespace = self._create_bucket(bucket_name)
         self._upload_file_to_bucket(self._entity_config.iso_download_path, namespace, bucket_name)
