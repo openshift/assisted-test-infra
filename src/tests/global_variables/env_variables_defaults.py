@@ -15,10 +15,10 @@ from triggers.env_trigger import DataPool
 def _validate_primary_stack(primary_stack):
     """Validate and normalize primary stack setting"""
     if not primary_stack:
-        return "ipv4"
+        return consts.PrimaryStack.ipv4
 
     primary_stack = primary_stack.strip().lower()
-    valid_stacks = ["ipv4", "ipv6"]
+    valid_stacks = [consts.PrimaryStack.ipv4, consts.PrimaryStack.ipv6]
 
     if primary_stack not in valid_stacks:
         raise ValueError(f"Invalid PRIMARY_STACK: '{primary_stack}'. " f"Must be one of: {valid_stacks}")
