@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 import json
 import os
 from contextlib import suppress
@@ -920,9 +921,17 @@ class BaseTest:
         if nodes.nodes_count == 1:
             try:
                 # Bubble up exception when vip not found for sno, returns ip string
+                machine_networks = [
+                    m.cidr for m in cluster.get_details().machine_networks if ipaddress.ip_network(m.cidr).version == 4
+                ]
+                if len(machine_networks) == 0:
+                    raise RuntimeError("Could not find any ipv4 networks for machine network")
+                cluster_network = cluster.get_primary_machine_cidr()
+                log.info(f"---> cluster_primary_cidr: {cluster_network} VS machine_networks: {machine_networks[0]}")
                 ip_vip = cluster.get_ip_for_single_node(
-                    cluster.api_client, cluster.id, cluster.get_primary_machine_cidr()
+                    cluster.api_client, cluster.id, machine_networks[0], ipv4_first=True
                 )
+                log.info(f"---> oc config vip : {ip_vip}")
             except Exception as e:
                 log.warning(f"ip_vip for single node not found for {cluster.name}: {str(e)}")
                 ip_vip = ""
