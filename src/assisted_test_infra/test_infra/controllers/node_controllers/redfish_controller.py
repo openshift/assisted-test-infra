@@ -1,9 +1,12 @@
+import threading
+import time
 from typing import Any, Callable, List, Optional, Tuple
 
 import kfish
 import libvirt
+import waiting
 
-from assisted_test_infra.test_infra import BaseClusterConfig
+from assisted_test_infra.test_infra import BaseClusterConfig, utils
 from assisted_test_infra.test_infra.controllers.node_controllers.adapter_controller import AdapterController
 from assisted_test_infra.test_infra.controllers.node_controllers.disk import Disk
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
@@ -11,6 +14,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.node_controller
 from assisted_test_infra.test_infra.helper_classes.config import BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.config.base_redfish_config import BaseRedfishConfig
 from service_client import log
+from src.service_client import InventoryClient
 
 SUCCESS = 204
 
@@ -51,7 +55,10 @@ class RedfishInsertIso:
     @classmethod
     def execute(cls, receiver: RedfishReceiver, nfs_iso):
         log.info(f"{cls.__name__} inserting iso {nfs_iso}")
-        receiver.redfish.insert_iso(nfs_iso)
+        try:
+            receiver.redfish.insert_iso(nfs_iso)
+        except Exception as e:
+            log.info(f"{cls.__name__}: insert iso fails {e}")
 
 
 class RedfishSetIsoOnce:
@@ -73,12 +80,24 @@ class RedfishRestart:
         receiver.redfish.restart()
 
 
+class RedfishReset:
+
+    @classmethod
+    def execute(cls, receiver: RedfishReceiver):
+        log.info(f"{cls.__name__}: {receiver.__dict__}")
+        receiver.redfish.reset()
+
+
 class RedfishController(NodeController):
     """Manage Dell's baremetal nodes.
 
     Allow to use baremetal machines directly by calling to racadm utils.
     It allows us to manage node - setting boot , reboot nodes and boot from iso.
     """
+
+    IDRAC_WAIT = 60 * 3
+    IDRAC_RETRY = 30
+    IDRAC_RESET_RECOVER = 60 * 4
 
     _config: BaseRedfishConfig
 
@@ -87,6 +106,71 @@ class RedfishController(NodeController):
         self.redfish_receivers = [RedfishReceiver(host, self._config) for host in self._config.redfish_machines]
         self.nfs_mount = None
         self._node_adapter = None
+
+    @staticmethod
+    def _nfs_server_local():
+        # Assume NFS server enabled on  /tmp/test_images/, return external interface address for nfs mount
+        command = """ip route get 1 | awk '{ printf  $7 }'"""
+        cmd_out, _, _ = utils.run_command(command, shell=True)
+        return cmd_out
+
+    @staticmethod
+    def _is_idrac_state(receiver: RedfishReceiver, states: list) -> bool:
+        try:
+            hostname = receiver.redfish.url.split("/")[2]
+            current_state = receiver.redfish.info()["BootProgress"]["LastState"]
+            log.info(f"Is idrac {hostname} status: {states}| current_state: {current_state}")
+            return current_state in states
+        except Exception as e:
+            log.info(e)
+            return False
+
+    def _stop_idrac_node(self, receiver: RedfishReceiver):
+        receiver.redfish.stop()
+        waiting.wait(
+            lambda: self._is_idrac_state(receiver, ["None", "Node already powered off"]),
+            timeout_seconds=self.IDRAC_WAIT,
+            sleep_seconds=self.IDRAC_RETRY,
+            waiting_for="Stopping IDRAC service",
+        )
+
+    def _start_idrac_node(self, receiver: RedfishReceiver):
+        receiver.redfish.start()
+        waiting.wait(
+            lambda: self._is_idrac_state(receiver, ["OSRunning"]),
+            timeout_seconds=self.IDRAC_WAIT,
+            sleep_seconds=self.IDRAC_RETRY,
+            waiting_for="Starting IDRAC service",
+        )
+
+    def _reset_idrac_node(self, receiver: RedfishReceiver):
+        receiver.redfish.reset()
+        # During reset no connectivity - ~3 minutes restart
+        time.sleep(self.IDRAC_RESET_RECOVER)
+
+        waiting.wait(
+            lambda: self._is_idrac_state(receiver, ["OSRunning"]),
+            timeout_seconds=self.IDRAC_WAIT,
+            sleep_seconds=self.IDRAC_RETRY,
+            waiting_for="Reset IDRAC service",
+        )
+
+    def stop_idrac(self, receivers: list[RedfishReceiver]):
+        for receiver in receivers:
+            self._stop_idrac_node(receiver)
+
+    def reset_idrac(self, receivers: list[RedfishReceiver]):
+        start_threads = []
+        for redfish in receivers:
+            t = threading.Thread(target=self._reset_idrac_node, args=(redfish,))
+            start_threads.append(t)
+            t.start()  # Start immediately so they all run at the same time
+        for t in start_threads:
+            t.join()
+
+    def start_idrac(self, receivers: list[RedfishReceiver]):
+        for receiver in receivers:
+            self._start_idrac_node(receiver)
 
     def list_nodes(self) -> List[Node]:
         if self._node_adapter:
@@ -159,15 +243,23 @@ class RedfishController(NodeController):
         log.info(f"{type(self).__name__} host {host} set mount path {image_path}")
         self.nfs_mount = f"{host}:{image_path}"
 
-    def set_adapter_controller(self, cluster):
-        self._node_adapter = AdapterController(cluster, self._config, self._entity_config)
+    def set_adapter_controller(self, inventory_client: InventoryClient):
+        self._node_adapter = AdapterController(inventory_client, self._config, self._entity_config)
 
     def prepare_nodes(self):
+        if not self.nfs_mount:
+            self.set_nfs_mount_path(self._nfs_server_local(), self._entity_config.iso_download_path)
+
+        # Reset idrac and start from  clean without leftovers - ~3.5 minutes
+        if not self._node_adapter:
+            self.set_adapter_controller(self.inventory_client)
+        self.reset_idrac(self.redfish_receivers)
         for receiver in self.redfish_receivers:
             RedfishEjectIso.execute(receiver)
             # ISO image shared by NFS by default
             RedfishSetIsoOnce.execute(receiver)
             RedfishInsertIso.execute(receiver, self.nfs_mount)
+
         for receiver_restart in self.redfish_receivers:
             RedfishRestart.execute(receiver_restart)
 

@@ -10,4 +10,4 @@ class BaseRedfishConfig(BaseNodesConfig, ABC):
     redfish_user: str = None
     redfish_password: str = None
     redfish_machines: List[str] = None
-    redfish_enabled: bool = False
+    redfish_enabled: bool = None

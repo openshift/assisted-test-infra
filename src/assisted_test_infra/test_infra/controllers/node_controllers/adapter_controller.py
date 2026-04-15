@@ -8,7 +8,7 @@ from assisted_test_infra.test_infra.controllers.node_controllers.disk import Dis
 from assisted_test_infra.test_infra.controllers.node_controllers.node import Node
 from assisted_test_infra.test_infra.controllers.node_controllers.node_controller import NodeController
 from assisted_test_infra.test_infra.helper_classes.config.base_nodes_config import BaseNodesConfig
-from service_client import log
+from service_client import InventoryClient, log
 
 
 class AdapterController(NodeController):
@@ -21,9 +21,10 @@ class AdapterController(NodeController):
 
     """
 
-    def __init__(self, cluster: dict, config: BaseNodesConfig, entity_config: BaseEntityConfig):
+    def __init__(self, inventory_client: InventoryClient, config: BaseNodesConfig, entity_config: BaseEntityConfig):
         super().__init__(config, entity_config)
-        self._cluster = cluster
+        self._inventory_client = inventory_client
+        self._cluster_id = entity_config.cluster_id
         self.private_ssh_key_path = config.private_ssh_key_path
 
     def log_configuration(self):
@@ -60,10 +61,8 @@ class AdapterController(NodeController):
     def list_nodes(self) -> List[Node]:
         nodes_list = []
         try:
-            for host in self._cluster.get_details().hosts:
-                nodes_list.append(
-                    Node(host.requested_hostname, self._cluster.nodes.controller, self.private_ssh_key_path)
-                )
+            for host in self._inventory_client.cluster_get(self._cluster_id).hosts:
+                nodes_list.append(Node(host.requested_hostname, self, self.private_ssh_key_path))
             return nodes_list
         except Exception as e:
             log.info(f"Unable to list nodes {str(e)}")
@@ -71,7 +70,7 @@ class AdapterController(NodeController):
 
     def list_disks(self, node_name: str) -> List[dict]:
         try:
-            for host in self._cluster.get_details().hosts:
+            for host in self._inventory_client.cluster_get(self._cluster_id).hosts:
                 if host.requested_hostname == node_name:
                     disks = json.loads(host.inventory)["disks"]
                     return disks
@@ -142,7 +141,7 @@ class AdapterController(NodeController):
 
     def is_active(self, node_name: str) -> bool:
         try:
-            for host in self._cluster.get_details().hosts:
+            for host in self._inventory_client.cluster_get(self._cluster_id).hosts:
                 if host.requested_hostname == node_name:
                     if host.status not in ["disconnected"]:
                         return True
@@ -167,7 +166,7 @@ class AdapterController(NodeController):
         ips = []
         macs = []
         try:
-            for host in self._cluster.get_details().hosts:
+            for host in self._inventory_client.cluster_get(self._cluster_id).hosts:
                 if host.requested_hostname == node_name:
                     interfaces = json.loads(host.inventory)["interfaces"]
                     for i in interfaces:

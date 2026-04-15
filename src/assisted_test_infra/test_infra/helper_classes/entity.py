@@ -67,6 +67,7 @@ class Entity(ABC):
         )
 
         self.nodes.controller.log_configuration()
+        self.nodes.controller.inventory_client = self.api_client
 
         if self._config.download_image and not is_static_ip:
             self.download_image()
