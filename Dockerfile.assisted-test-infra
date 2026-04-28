@@ -54,8 +54,9 @@ COPY --from=quay.io/ocp-splat/govc:v0.29.0 /govc /usr/local/bin
 WORKDIR /home/assisted-test-infra
 
 COPY requirements.txt requirements-dev.txt ./
+
 RUN pip3 install --upgrade pip && \
-      pip3 install --no-cache-dir -I -r ./requirements.txt -r ./requirements-dev.txt
+       pip3 install --no-cache-dir -I -r ./requirements.txt -r ./requirements-dev.txt
 
 ENV GO_VERSION=1.18.1
 RUN curl --retry 5 --connect-timeout 30 -s "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
