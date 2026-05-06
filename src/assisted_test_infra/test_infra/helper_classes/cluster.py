@@ -1,4 +1,5 @@
 import base64
+import enum
 import json
 import random
 import re
@@ -28,6 +29,32 @@ from assisted_test_infra.test_infra.utils.waiting import (
     wait_till_all_hosts_use_agent_image,
 )
 from service_client import InventoryClient, log
+
+
+def _cluster_is_sno(cluster: models.cluster.Cluster) -> bool:
+    ham = getattr(cluster, "high_availability_mode", None)
+    if ham is not None and isinstance(ham, enum.Enum):
+        ham = ham.value
+    if ham == consts.HighAvailabilityMode.NONE:
+        return True
+    cp = getattr(cluster, "control_plane_count", None)
+    if cp is not None and isinstance(cp, enum.Enum):
+        cp = cp.value
+    if cp is not None:
+        try:
+            if int(cp) == consts.ControlPlaneCount.ONE:
+                return True
+        except (TypeError, ValueError):
+            pass
+    return False
+
+
+def get_supported_cluster_platforms(client: InventoryClient, cluster_id: str) -> List[str]:
+    """Bare-metal CI topology: SNO uses none platform, HA uses baremetal."""
+    cluster = client.cluster_get(cluster_id)
+    if _cluster_is_sno(cluster):
+        return [consts.Platforms.NONE]
+    return [consts.Platforms.BARE_METAL, consts.Platforms.NONE]
 
 
 class Cluster(BaseCluster):
@@ -1001,7 +1028,7 @@ class Cluster(BaseCluster):
         log.debug(f"Nodes for architecture: {self._config.cpu_architecture}")
         super(Cluster, self).prepare_nodes(is_static_ip=self._infra_env_config.is_static_ip, **kwargs)
         platform = self.get_details().platform
-        assert platform.type in self.api_client.get_cluster_supported_platforms(self.id) or (
+        assert platform.type in get_supported_cluster_platforms(self.api_client, self.id) or (
             platform.type == consts.Platforms.EXTERNAL
             and platform.external.platform_name == consts.ExternalPlatformNames.OCI
         )  # required to test against stage/production  # Patch for SNO OCI - currently not supported in the service

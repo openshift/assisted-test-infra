@@ -641,9 +641,6 @@ class InventoryClient(object):
 
         return dict(api_vips=cluster_info.api_vips, ingress_vips=cluster_info.ingress_vips)
 
-    def get_cluster_supported_platforms(self, cluster_id: str) -> List[str]:
-        return self.client.get_cluster_supported_platforms(cluster_id)
-
     def create_custom_manifest(self, cluster_id: str, folder: str, file_name: str, base64_content: str) -> Manifest:
         params = CreateManifestParams(file_name=file_name, folder=folder, content=base64_content)
         return self.manifest.v2_create_cluster_manifest(cluster_id=cluster_id, create_manifest_params=params)

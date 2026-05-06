@@ -38,7 +38,7 @@ from assisted_test_infra.test_infra.controllers import (
 from assisted_test_infra.test_infra.controllers.node_controllers.kvm_s390x_controller import KVMs390xController
 from assisted_test_infra.test_infra.controllers.node_controllers.libvirt_controller import collect_virsh_logs
 from assisted_test_infra.test_infra.helper_classes import kube_helpers
-from assisted_test_infra.test_infra.helper_classes.cluster import Cluster
+from assisted_test_infra.test_infra.helper_classes.cluster import Cluster, get_supported_cluster_platforms
 from assisted_test_infra.test_infra.helper_classes.config import BaseConfig, BaseNodesConfig
 from assisted_test_infra.test_infra.helper_classes.day2_cluster import Day2Cluster
 from assisted_test_infra.test_infra.helper_classes.events_handler import EventsHandler
@@ -535,7 +535,7 @@ class BaseTest:
             nodes=prepare_nodes_network,
         )
 
-        assert consts.Platforms.NONE in api_client.get_cluster_supported_platforms(cluster.id)
+        assert consts.Platforms.NONE in get_supported_cluster_platforms(api_client, cluster.id)
 
         if self._does_need_proxy_server(prepare_nodes_network):
             self.__set_up_proxy_server(cluster, cluster_configuration, proxy_server)
