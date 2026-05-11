@@ -158,6 +158,13 @@ EOF
     ./assisted-service/deploy/operator/deploy.sh
     echo "Installation of Assisted Install operator passed successfully!"
 
+    # Kube-API CI sets ENABLE_KUBE_API=true: apply openshift-install image policy override
+    # (ConfigMap + AgentServiceConfig annotation) via Python; skips if already configured.
+    if [[ "${ENABLE_KUBE_API:-false}" == "true" ]]; then
+        _infra_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+        PYTHONPATH="${_infra_root}/src:${PYTHONPATH:-}" python3 -m assisted_test_infra.test_infra.helper_classes.kube_helpers.assisted_installer_config_override
+    fi
+
     # Update the LB configuration to point to the service route endpoint
     # Nginx is being updated every 60s
     # TODO: Restart nginx
