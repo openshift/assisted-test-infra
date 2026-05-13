@@ -63,7 +63,12 @@ class TestBootstrapInPlace(BaseTest):
     @JunitTestCase()
     def installer_generate(self, openshift_release_image: str):
         log.info("Installer generate ignitions")
-        bip_env = {"OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image}
+        bip_env = {
+            "OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE": openshift_release_image,
+            "OPENSHIFT_INSTALL_EXPERIMENTAL_DISABLE_IMAGE_POLICY": os.environ.get(
+                "OPENSHIFT_INSTALL_EXPERIMENTAL_DISABLE_IMAGE_POLICY", ""
+            ),
+        }
         install_manifests_dir = os.environ.get("INSTALL_MANIFESTS_DIR")
         if install_manifests_dir:
             log.info("Adding manifests from %s", install_manifests_dir)
