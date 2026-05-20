@@ -60,6 +60,7 @@ def get_supported_cluster_platforms(client: InventoryClient, cluster_id: str) ->
         pt = platform.type.value if isinstance(platform.type, enum.Enum) else platform.type
         if pt not in base:
             base.append(pt)
+    log.info("Supported platforms: %s", base)
     return base
 
 
