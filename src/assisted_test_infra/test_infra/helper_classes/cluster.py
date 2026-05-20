@@ -50,11 +50,17 @@ def _cluster_is_sno(cluster: models.cluster.Cluster) -> bool:
 
 
 def get_supported_cluster_platforms(client: InventoryClient, cluster_id: str) -> List[str]:
-    """Bare-metal CI topology: SNO uses none platform, HA uses baremetal."""
+    """SNO uses none; HA allows baremetal/none plus the cluster's configured platform."""
     cluster = client.cluster_get(cluster_id)
     if _cluster_is_sno(cluster):
         return [consts.Platforms.NONE]
-    return [consts.Platforms.BARE_METAL, consts.Platforms.NONE]
+    base = [consts.Platforms.BARE_METAL, consts.Platforms.NONE]
+    platform = cluster.platform
+    if platform and platform.type is not None:
+        pt = platform.type.value if isinstance(platform.type, enum.Enum) else platform.type
+        if pt not in base:
+            base.append(pt)
+    return base
 
 
 class Cluster(BaseCluster):
