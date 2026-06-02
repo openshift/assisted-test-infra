@@ -107,12 +107,23 @@ def update_requirements(requirements_json):
     return json.dumps(requirements)
 
 
+def _kube_api_installer_policy_env():
+    flag = os.getenv("ENABLE_KUBE_API", "").lower()
+    if flag not in ("true", "1", "yes"):
+        return {}
+    return {
+        "LOG_LEVEL": "debug",
+        "OPENSHIFT_INSTALL_EXPERIMENTAL_DISABLE_IMAGE_POLICY": "true",
+    }
+
+
 def set_envs_to_service_cm():
     cm_data = _read_yaml()
     if not cm_data:
         raise Exception(f"{CM_PATH} must exists before setting envs to it")
 
     cm_data["data"].update(_get_relevant_envs())
+    cm_data["data"].update(_kube_api_installer_policy_env())
     existing_requirements = cm_data["data"].get("HW_VALIDATOR_REQUIREMENTS", "")
     requirements = update_requirements(existing_requirements)
     cm_data["data"].update({"HW_VALIDATOR_REQUIREMENTS": requirements})
