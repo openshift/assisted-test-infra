@@ -21,7 +21,8 @@ class OpenshiftVersion(Enum):
     VERSION_4_20 = "4.20"
     VERSION_4_21 = "4.21"
     VERSION_4_22 = "4.22"
-    DEFAULT = VERSION_4_21
+    VERSION_5_0 = "5.0"
+    DEFAULT = VERSION_4_22
     MULTI_VERSION = "all"
 
 
