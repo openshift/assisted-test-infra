@@ -181,6 +181,10 @@ class _EnvVariables(DataPool, ABC):
     vsphere_server: EnvVar = EnvVar(["VSPHERE_VCENTER"])
     vsphere_datacenter: EnvVar = EnvVar(["VSPHERE_DATACENTER"])
     vsphere_datastore: EnvVar = EnvVar(["VSPHERE_DATASTORE"])
+    vsphere_resource_pool: EnvVar = EnvVar(["VSPHERE_RESOURCE_POOL"])
+    vsphere_disk_uuid_enabled: EnvVar = EnvVar(
+        ["VSPHERE_DISK_UUID_ENABLED"], loader=lambda x: bool(strtobool(x)), default=True
+    )
 
     nutanix_username: EnvVar = EnvVar(["NUTANIX_USERNAME"])
     nutanix_password: EnvVar = EnvVar(["NUTANIX_PASSWORD"])

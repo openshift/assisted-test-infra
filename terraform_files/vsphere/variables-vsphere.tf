@@ -142,6 +142,18 @@ variable "worker_vcpu" {
 }
 
 
+variable "vsphere_resource_pool" {
+  type        = string
+  default     = ""
+  description = "vSphere resource pool name under the compute cluster. If empty, uses the cluster's default resource pool."
+}
+
+variable "vsphere_disk_uuid_enabled" {
+  type        = bool
+  default     = true
+  description = "Enable disk UUID on virtual machines. Required for vSphere CSI driver and validated by the Assisted Installer."
+}
+
 variable "vsphere_control_plane_cores_per_socket" {
   type        = number
   default     = 1
