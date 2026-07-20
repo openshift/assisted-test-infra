@@ -22,6 +22,7 @@ class OperatorType:
     OADP = "oadp"
     LOKI = "loki"
     OPENSHIFT_LOGGING = "openshift-logging"
+    NETWORK_OBSERVABILITY = "network-observability"
 
 
 class OperatorStatus:
@@ -223,6 +224,10 @@ class OpenShiftLoggingOperatorFailedError(OperatorFailedError):
     pass
 
 
+class NetworkObservabilityOperatorFailedError(OperatorFailedError):
+    pass
+
+
 def get_exception_factory(operator: str):
     exception_map = {
         OperatorType.CNV: CNVOperatorFailedError,
@@ -245,6 +250,7 @@ def get_exception_factory(operator: str):
         OperatorType.OADP: OADPOperatorFailedError,
         OperatorType.LOKI: LokiOperatorFailedError,
         OperatorType.OPENSHIFT_LOGGING: OpenShiftLoggingOperatorFailedError,
+        OperatorType.NETWORK_OBSERVABILITY: NetworkObservabilityOperatorFailedError,
     }
 
     # Use .get() to retrieve the exception, with a default if the operator isn't found
