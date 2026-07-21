@@ -237,6 +237,11 @@ class Cluster(BaseCluster):
         olm_operators = []
         for operator_name in unique_operators:
             operator = {"name": operator_name}
+            # MetalLB requires runtime VIP kwargs; skip auto-properties for it here.
+            if operator_name != consts.OperatorType.METALLB:
+                properties = consts.olm_operators.get_operator_properties(operator_name)
+                if properties:
+                    operator["properties"] = properties
             olm_operators.append(operator)
 
         return olm_operators

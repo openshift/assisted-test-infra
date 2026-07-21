@@ -266,4 +266,10 @@ def get_operator_properties(operator: str, **kwargs) -> str:
 
         raise ValueError(f"MetalLB properties are missing or invalid, got {api_ip} {ingress_ip}")
 
+    if operator == OperatorType.NETWORK_OBSERVABILITY:
+        # Exercise FlowCollector custom manifests in e2e (default API path is operator-only).
+        create_flow_collector = kwargs.get("create_flow_collector", True)
+        sampling = kwargs.get("sampling", 50)
+        return f'{{"createFlowCollector": {str(create_flow_collector).lower()}, "sampling": {int(sampling)}}}'
+
     return ""
