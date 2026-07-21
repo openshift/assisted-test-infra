@@ -795,6 +795,11 @@ class Cluster(BaseCluster):
             self.wait_for_install()
         if download_kubeconfig:
             self.download_kubeconfig()
+            operators_utils.verify_network_observability_if_enabled(
+                operators=self.get_operators(),
+                olm_operators=self._config.olm_operators,
+                kubeconfig_path=self.kubeconfig_path,
+            )
 
         log.info(f"{self.get_details()}")
         self._is_installed = True

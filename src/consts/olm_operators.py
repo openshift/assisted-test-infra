@@ -228,6 +228,11 @@ class NetworkObservabilityOperatorFailedError(OperatorFailedError):
     pass
 
 
+# E2E uses a non-default sampling so CI proves properties are applied (API default is 50).
+NETWORK_OBSERVABILITY_E2E_CREATE_FLOW_COLLECTOR = True
+NETWORK_OBSERVABILITY_E2E_SAMPLING = 1
+
+
 def get_exception_factory(operator: str):
     exception_map = {
         OperatorType.CNV: CNVOperatorFailedError,
@@ -268,8 +273,8 @@ def get_operator_properties(operator: str, **kwargs) -> str:
 
     if operator == OperatorType.NETWORK_OBSERVABILITY:
         # Exercise FlowCollector custom manifests in e2e (default API path is operator-only).
-        create_flow_collector = kwargs.get("create_flow_collector", True)
-        sampling = kwargs.get("sampling", 50)
+        create_flow_collector = kwargs.get("create_flow_collector", NETWORK_OBSERVABILITY_E2E_CREATE_FLOW_COLLECTOR)
+        sampling = kwargs.get("sampling", NETWORK_OBSERVABILITY_E2E_SAMPLING)
         return f'{{"createFlowCollector": {str(create_flow_collector).lower()}, "sampling": {int(sampling)}}}'
 
     return ""
