@@ -207,6 +207,8 @@ before you run start the deployment.
 | `VSPHERE_DATASTORE`               | vSphere data store name, mandatory for vsphere platform |
 | `VSPHERE_USERNAME`                | vSphere vcenter server username, mandatory for vsphere platform |
 | `VSPHERE_PASSWORD`                | vSphere vcenter server password, mandatory for vsphere platform |
+| `VSPHERE_RESOURCE_POOL`           | vSphere resource pool name under the compute cluster. If empty, uses the cluster's default resource pool |
+| `VSPHERE_DISK_UUID_ENABLED`       | Enable disk UUID on virtual machines. Required for vSphere CSI driver (default: true) |
 
 ## Redfish parameters
 
