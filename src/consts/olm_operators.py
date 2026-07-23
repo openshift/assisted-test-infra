@@ -22,6 +22,7 @@ class OperatorType:
     OADP = "oadp"
     LOKI = "loki"
     OPENSHIFT_LOGGING = "openshift-logging"
+    NETWORK_OBSERVABILITY = "network-observability"
 
 
 class OperatorStatus:
@@ -223,6 +224,15 @@ class OpenShiftLoggingOperatorFailedError(OperatorFailedError):
     pass
 
 
+class NetworkObservabilityOperatorFailedError(OperatorFailedError):
+    pass
+
+
+# E2E uses a non-default sampling so CI proves properties are applied (API default is 50).
+NETWORK_OBSERVABILITY_E2E_CREATE_FLOW_COLLECTOR = True
+NETWORK_OBSERVABILITY_E2E_SAMPLING = 1
+
+
 def get_exception_factory(operator: str):
     exception_map = {
         OperatorType.CNV: CNVOperatorFailedError,
@@ -245,6 +255,7 @@ def get_exception_factory(operator: str):
         OperatorType.OADP: OADPOperatorFailedError,
         OperatorType.LOKI: LokiOperatorFailedError,
         OperatorType.OPENSHIFT_LOGGING: OpenShiftLoggingOperatorFailedError,
+        OperatorType.NETWORK_OBSERVABILITY: NetworkObservabilityOperatorFailedError,
     }
 
     # Use .get() to retrieve the exception, with a default if the operator isn't found
@@ -259,5 +270,11 @@ def get_operator_properties(operator: str, **kwargs) -> str:
             return f'{{"api_ip": "{api_ip}", "ingress_ip": "{ingress_ip}"}}'
 
         raise ValueError(f"MetalLB properties are missing or invalid, got {api_ip} {ingress_ip}")
+
+    if operator == OperatorType.NETWORK_OBSERVABILITY:
+        # Exercise FlowCollector custom manifests in e2e (default API path is operator-only).
+        create_flow_collector = kwargs.get("create_flow_collector", NETWORK_OBSERVABILITY_E2E_CREATE_FLOW_COLLECTOR)
+        sampling = kwargs.get("sampling", NETWORK_OBSERVABILITY_E2E_SAMPLING)
+        return f'{{"createFlowCollector": {str(create_flow_collector).lower()}, "sampling": {int(sampling)}}}'
 
     return ""
