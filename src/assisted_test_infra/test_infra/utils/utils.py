@@ -408,12 +408,10 @@ def update_etc_hosts(dns_map: dict[str, str]) -> None:
 
 def add_dns_record(cluster_name: str, base_dns_domain: str, api_ip: str = None, ingress_ip: str = None):
     fname = f"/etc/NetworkManager/dnsmasq.d/openshift-{cluster_name}.conf"
-    contents = dedent(
-        f"""
+    contents = dedent(f"""
                         address=/api.{cluster_name}.{base_dns_domain}/{api_ip}
                         address=/.apps.{cluster_name}.{base_dns_domain}/{ingress_ip}
-                        """
-    )
+                        """)
     with open(fname, "w") as f:
         f.write(contents)
         log.info(f"Added DNS records for {cluster_name}.{base_dns_domain}")
