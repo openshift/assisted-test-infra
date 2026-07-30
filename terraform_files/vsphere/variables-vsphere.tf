@@ -148,6 +148,12 @@ variable "vsphere_resource_pool" {
   description = "vSphere resource pool name under the compute cluster. If empty, uses the cluster's default resource pool."
 }
 
+variable "vsphere_guest_net_timeout" {
+  type        = number
+  default     = 5
+  description = "Timeout in minutes to wait for guest networking. Set to 0 to skip (e.g. discovery ISO has no VMware Tools)."
+}
+
 variable "vsphere_disk_uuid_enabled" {
   type        = bool
   default     = true

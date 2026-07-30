@@ -17,3 +17,4 @@ class BaseVSphereConfig(BaseNodesConfig, ABC):
     vsphere_folder: str = None
     vsphere_resource_pool: str = None
     vsphere_disk_uuid_enabled: bool = True
+    vsphere_guest_net_timeout: int = 5

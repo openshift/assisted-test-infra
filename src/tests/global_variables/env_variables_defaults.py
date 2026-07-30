@@ -185,6 +185,9 @@ class _EnvVariables(DataPool, ABC):
     vsphere_disk_uuid_enabled: EnvVar = EnvVar(
         ["VSPHERE_DISK_UUID_ENABLED"], loader=lambda x: bool(strtobool(x)), default=True
     )
+    vsphere_guest_net_timeout: EnvVar = EnvVar(
+        ["VSPHERE_GUEST_NET_TIMEOUT"], loader=lambda x: int(x), default=5
+    )
 
     nutanix_username: EnvVar = EnvVar(["NUTANIX_USERNAME"])
     nutanix_password: EnvVar = EnvVar(["NUTANIX_PASSWORD"])

@@ -98,9 +98,8 @@ resource "vsphere_virtual_machine" "master" {
   folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
   enable_disk_uuid            = var.vsphere_disk_uuid_enabled
   hardware_version            = 15
-  # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
-  wait_for_guest_net_routable = local.hasISO
-  wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
+  wait_for_guest_net_routable = var.vsphere_guest_net_timeout > 0
+  wait_for_guest_net_timeout  = var.vsphere_guest_net_timeout
 
   network_interface {
     network_id = data.vsphere_network.network.id
@@ -143,9 +142,8 @@ resource "vsphere_virtual_machine" "worker" {
   folder                      = var.vsphere_folder != "" ? "${var.vsphere_parent_folder}/${local.folder}" : vsphere_folder.folder[0].path
   enable_disk_uuid            = var.vsphere_disk_uuid_enabled
   hardware_version            = 15
-  # no network before booting from the ISO file, which isn't available until prepare_for_installation stage
-  wait_for_guest_net_routable = local.hasISO
-  wait_for_guest_net_timeout  = local.hasISO ? 5 : 0
+  wait_for_guest_net_routable = var.vsphere_guest_net_timeout > 0
+  wait_for_guest_net_timeout  = var.vsphere_guest_net_timeout
 
   network_interface {
     network_id = data.vsphere_network.network.id
