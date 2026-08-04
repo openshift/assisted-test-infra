@@ -123,15 +123,6 @@ ifeq ($(ENABLE_KUBE_API),true)
 	AUTH_TYPE=local
 endif
 
-ifdef ADDITIONAL_MANIFEST_DIR
-	INSTALL_MANIFESTS_DIR=$(ROOT_DIR)/sno-additional-manifests
-endif
-
-ifdef BIP_BUTANE_CONFIG
-	BOOTSTRAP_INJECT_DIR=$(ROOT_DIR)/sno-bootstrap-manifests/
-	BOOTSTRAP_INJECT_MANIFEST=$(BOOTSTRAP_INJECT_DIR}/$(notdir ${BIP_BUTANE_CONFIG}))
-endif
-
 .EXPORT_ALL_VARIABLES:
 
 
@@ -300,22 +291,6 @@ deploy_static_network_config_nodes:
 
 deploy_s390x_kvm_nodes_with_install:
 	$(MAKE) test TEST_TEARDOWN=no TEST=./src/tests/test_targets.py TEST_FUNC=test_target_deploy_s390x_kvm_nodes_with_install
-
-.PHONY: deploy_ibip
-deploy_ibip:
-ifdef ADDITIONAL_MANIFEST_DIR
-	@is_empty_dir=$(shell ls -A ${ADDITIONAL_MANIFEST_DIR}); \
-	if [ -n "$$is_empty_dir" ]; then \
-		rm -rf ${INSTALL_MANIFEST_DIR}; mkdir ${INSTALL_MANIFESTS_DIR}; \
-		mv ${ADDITIONAL_MANIFEST_DIR}/* ${INSTALL_MANIFESTS_DIR}/; \
-	fi
-endif
-	# To deploy with a worker node, set TEST_FUNC=test_bip_add_worker
-ifdef BIP_BUTANE_CONFIG
-	rm -rf ${BOOTSTRAP_INJECT_DIR}; mkdir ${BOOTSTRAP_INJECT_DIR}
-	mv $(dir ${BIP_BUTANE_CONFIG})/* ${BOOTSTRAP_INJECT_DIR}/
-endif
-	skipper make $(SKIPPER_PARAMS) _test TEST=./src/tests/test_bootstrap_in_place.py TEST_FUNC=$(or ${TEST_FUNC},'test_bootstrap_in_place_sno')
 
 redeploy_nodes: destroy_nodes deploy_nodes_with_networking
 
