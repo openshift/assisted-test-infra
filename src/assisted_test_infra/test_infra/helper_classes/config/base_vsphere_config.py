@@ -16,4 +16,4 @@ class BaseVSphereConfig(BaseNodesConfig, ABC):
     vsphere_parent_folder: str = None
     vsphere_folder: str = None
     vsphere_resource_pool: str = None
-    vsphere_disk_uuid_enabled: bool = True
+    vsphere_disk_uuid_enabled: bool = None
