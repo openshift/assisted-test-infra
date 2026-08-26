@@ -237,6 +237,11 @@ class Cluster(BaseCluster):
         olm_operators = []
         for operator_name in unique_operators:
             operator = {"name": operator_name}
+            # MetalLB requires runtime VIP kwargs; skip auto-properties for it here.
+            if operator_name != consts.OperatorType.METALLB:
+                properties = consts.olm_operators.get_operator_properties(operator_name)
+                if properties:
+                    operator["properties"] = properties
             olm_operators.append(operator)
 
         return olm_operators
@@ -790,6 +795,11 @@ class Cluster(BaseCluster):
             self.wait_for_install()
         if download_kubeconfig:
             self.download_kubeconfig()
+            operators_utils.verify_network_observability_if_enabled(
+                operators=self.get_operators(),
+                olm_operators=self._config.olm_operators,
+                kubeconfig_path=self.kubeconfig_path,
+            )
 
         log.info(f"{self.get_details()}")
         self._is_installed = True
