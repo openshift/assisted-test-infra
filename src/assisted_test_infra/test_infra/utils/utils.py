@@ -387,6 +387,9 @@ def update_etc_hosts(dns_map: dict[str, str]) -> None:
     lock_file = "/tmp/test_etc_hosts.lock"
 
     with file_lock_context(lock_file):
+        # Snapshot all entries for logging before dns_map gets mutated
+        all_entries = dict(dns_map)
+
         with open("/etc/hosts", "r") as f:
             hosts_lines = f.readlines()
 
@@ -403,6 +406,8 @@ def update_etc_hosts(dns_map: dict[str, str]) -> None:
 
         with open("/etc/hosts", "w") as f:
             f.writelines(hosts_lines)
+
+        for dns_name, ip in all_entries.items():
             log.info("Updated /etc/hosts with record: %s %s", ip, dns_name)
 
 
