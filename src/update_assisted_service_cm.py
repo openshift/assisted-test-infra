@@ -12,6 +12,7 @@ configmap:
 
 Hence, in order to support unset env vars, avoid override in Makefile.
 """
+
 import json
 import os
 

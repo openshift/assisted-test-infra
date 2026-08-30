@@ -60,12 +60,10 @@ def main():
                 release_images=release_images, ocp_xy_version=ocp_xy_version, cpu_architecture=cpu_architecture
             )
         ) is None:
-            raise ValueError(
-                f"""
+            raise ValueError(f"""
                 No release image found with 'openshift_version':
                 {ocp_xy_version} and cpu_architecture: {cpu_architecture}"
-            """
-            )
+            """)
 
         release_image.default = True
 
