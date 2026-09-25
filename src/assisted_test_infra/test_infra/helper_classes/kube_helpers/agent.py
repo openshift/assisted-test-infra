@@ -222,19 +222,54 @@ class Agent(BaseCustomResource):
         )
 
     @staticmethod
+    def format_agents_progress(agents: List["Agent"]) -> str:
+        """Human-readable install progress for timeout errors and debug logs."""
+        lines = []
+        for agent in agents:
+            try:
+                status = agent.status()
+            except Exception as exc:  # noqa: BLE001 - best effort for diagnostics
+                lines.append(f"{agent.ref.name}: failed to read status ({exc})")
+                continue
+            progress = status.get("progress") or {}
+            debug = status.get("debugInfo") or {}
+            conditions = {c.get("type"): c.get("status") for c in status.get("conditions", [])}
+            lines.append(
+                f"{agent.ref.name}: role={status.get('role')} bootstrap={status.get('bootstrap')} "
+                f"stage={progress.get('currentStage')!r} progressInfo={progress.get('progressInfo')!r} "
+                f"state={debug.get('state')!r} stateInfo={debug.get('stateInfo')!r} "
+                f"Installed={conditions.get('Installed')}"
+            )
+        return "\n".join(lines)
+
+    @staticmethod
     def are_agents_in_status(
         agents: List["Agent"],
         status_type: str,
         status: str,
     ) -> bool:
-        agents_conditions = {
-            agent.ref.name: {condition["type"]: condition["status"] for condition in agent.status()["conditions"]}
-            for agent in agents
-        }
+        agents_conditions = {}
+        agents_progress = {}
+        for agent in agents:
+            agent_status = agent.status()
+            agents_conditions[agent.ref.name] = {
+                condition["type"]: condition["status"] for condition in agent_status.get("conditions", [])
+            }
+            progress = agent_status.get("progress") or {}
+            debug = agent_status.get("debugInfo") or {}
+            agents_progress[agent.ref.name] = {
+                "stage": progress.get("currentStage"),
+                "progressInfo": progress.get("progressInfo"),
+                "state": debug.get("state"),
+                "stateInfo": debug.get("stateInfo"),
+                "role": agent_status.get("role"),
+                "bootstrap": agent_status.get("bootstrap"),
+            }
 
         log.info(
             f"Waiting for agents to have the condition '{status_type}' ="
-            f" '{status}' and currently agent conditions are {agents_conditions}"
+            f" '{status}' and currently agent conditions are {agents_conditions} "
+            f"progress={agents_progress}"
         )
 
         return all(agent_conditions.get(status_type, None) == status for agent_conditions in agents_conditions.values())
@@ -249,16 +284,24 @@ class Agent(BaseCustomResource):
     ) -> None:
         log.info(f"Now Wait till agents have status as {status_type}")
 
-        waiting.wait(
-            lambda: Agent.are_agents_in_status(
-                agents,
-                status_type,
-                status=status,
-            ),
-            timeout_seconds=timeout,
-            sleep_seconds=interval,
-            waiting_for=f"Agents to have {status_type} status",
-        )
+        try:
+            waiting.wait(
+                lambda: Agent.are_agents_in_status(
+                    agents,
+                    status_type,
+                    status=status,
+                ),
+                timeout_seconds=timeout,
+                sleep_seconds=interval,
+                waiting_for=f"Agents to have {status_type} status",
+            )
+        except waiting.TimeoutExpired as exc:
+            progress = Agent.format_agents_progress(agents)
+            log.error("Timed out waiting for agents %s status. Progress:\n%s", status_type, progress)
+            raise waiting.TimeoutExpired(
+                timeout,
+                f"Agents to have {status_type} status. Agent progress:\n{progress}",
+            ) from exc
 
     @classmethod
     def _are_agents_in_state(cls, agents: List["Agent"], expected_state: str) -> bool:

@@ -25,6 +25,7 @@ from assisted_test_infra.test_infra.helper_classes.kube_helpers import (
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import static_network
 from assisted_test_infra.test_infra.utils.entity_name import SpokeClusterNamespace
+from assisted_test_infra.test_infra.utils.install_debug import collect_nodes_install_debug, install_debug_destinations
 from consts.consts import MiB_UNITS
 from service_client import ClientFactory, log
 from tests.base_test import BaseTest
@@ -126,14 +127,59 @@ class BaseKubeAPI(BaseTest):
 
     @classmethod
     def _wait_for_install(
-        cls, agent_cluster_install: AgentClusterInstall, agents: List[Agent], kubeconfig_path: Optional[str] = None
+        cls,
+        agent_cluster_install: AgentClusterInstall,
+        agents: List[Agent],
+        kubeconfig_path: Optional[str] = None,
+        nodes: Optional[Nodes] = None,
     ):
-        agent_cluster_install.wait_to_be_ready(ready=True)
-        agent_cluster_install.wait_to_be_installing()
-        Agent.wait_for_agents_to_install(agents)
-        agent_cluster_install.wait_to_be_installed()
+        try:
+            agent_cluster_install.wait_to_be_ready(ready=True)
+            agent_cluster_install.wait_to_be_installing()
+            Agent.wait_for_agents_to_install(agents)
+            agent_cluster_install.wait_to_be_installed()
+        except Exception:
+            cls._collect_kubeapi_install_debug(agent_cluster_install, agents, nodes)
+            raise
         if kubeconfig_path:
             agent_cluster_install.download_kubeconfig(kubeconfig_path)
+
+    @classmethod
+    def _collect_kubeapi_install_debug(
+        cls,
+        agent_cluster_install: AgentClusterInstall,
+        agents: List[Agent],
+        nodes: Optional[Nodes],
+    ) -> None:
+        """Capture agent progress + SSH install journals while VMs are still up."""
+        try:
+            log.error("Install wait failed. Agent progress:\n%s", Agent.format_agents_progress(agents))
+        except Exception:
+            log.exception("Failed to format agent progress")
+
+        if nodes is None:
+            return
+
+        api_vips: List[str] = []
+        try:
+            status = agent_cluster_install.status()
+            for key in ("apiVIP", "apiVIPs"):
+                value = status.get(key)
+                if isinstance(value, str) and value:
+                    api_vips.append(value)
+                elif isinstance(value, list):
+                    api_vips.extend([vip for vip in value if vip])
+        except Exception:
+            log.exception("Failed to read API VIP from AgentClusterInstall")
+
+        try:
+            collect_nodes_install_debug(
+                nodes,
+                dest_dirs=install_debug_destinations(agent_cluster_install.ref.name),
+                api_vips=api_vips,
+            )
+        except Exception:
+            log.exception("Failed to collect install-debug logs from nodes")
 
     @classmethod
     def _set_agent_cluster_install_machine_cidr(cls, agent_cluster_install: AgentClusterInstall, nodes: Nodes):

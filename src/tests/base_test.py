@@ -45,6 +45,7 @@ from assisted_test_infra.test_infra.helper_classes.events_handler import EventsH
 from assisted_test_infra.test_infra.helper_classes.infra_env import InfraEnv
 from assisted_test_infra.test_infra.helper_classes.nodes import Nodes
 from assisted_test_infra.test_infra.tools import LibvirtNetworkAssets
+from assisted_test_infra.test_infra.utils.install_debug import collect_nodes_install_debug, install_debug_destinations
 from service_client import InventoryClient, SuppressAndLog, add_log_record, log
 from tests.config import ClusterConfig, InfraEnvConfig, TerraformConfig, global_variables
 from tests.config.global_configs import Day2ClusterConfig, NutanixConfig, OciConfig, RedfishConfig, VSphereConfig
@@ -449,11 +450,18 @@ class BaseTest:
 
     @pytest.fixture
     @JunitFixtureTestCase()
-    def prepare_nodes(self, nodes: Nodes, cluster_configuration: ClusterConfig) -> Nodes:
+    def prepare_nodes(
+        self, request: FixtureRequest, nodes: Nodes, cluster_configuration: ClusterConfig
+    ) -> Nodes:
         try:
             log.info("--- TEST prepare_nodes  ---")
             yield nodes
         finally:
+            # Collect before destroy — kube-api tests do not use the cluster fixture path that
+            # already gathers journals, and CI gather runs after VMs are gone.
+            if self._is_test_failed(request):
+                log.info(f"--- TEARDOWN --- Collecting install-debug logs for: {request.node.name}\n")
+                self.collect_nodes_failure_logs(nodes, request)
             if global_variables.test_teardown:
                 log.info("--- TEARDOWN --- node controller\n")
                 nodes.destroy_all_nodes()
@@ -895,6 +903,29 @@ class BaseTest:
             collect_virsh_logs(nodes, log_dir_name)
 
         self._collect_journalctl(nodes, log_dir_name)
+        if self._is_test_failed(request):
+            self.collect_nodes_failure_logs(nodes, request)
+
+    def collect_nodes_failure_logs(self, nodes: Nodes, request: pytest.FixtureRequest) -> None:
+        """SSH into VMs for install hang triage and copy virsh console logs into reports/."""
+        log_dir_name = f"{global_variables.log_folder}/{request.node.name}"
+        utils.recreate_folder(log_dir_name, with_chmod=False, force_recreate=False)
+
+        if isinstance(nodes.controller, LibvirtController):
+            with SuppressAndLog(Exception):
+                collect_virsh_logs(nodes, log_dir_name)
+
+        api_vips: List[str] = []
+        with SuppressAndLog(Exception):
+            vips = nodes.controller.get_ingress_and_api_vips()
+            api_vips = [vip.get("ip", "") for vip in vips.get("api_vips", []) if vip.get("ip")]
+
+        with SuppressAndLog(Exception):
+            collect_nodes_install_debug(
+                nodes,
+                dest_dirs=install_debug_destinations(request.node.name),
+                api_vips=api_vips,
+            )
 
     @classmethod
     def _is_test_failed(cls, test: pytest.FixtureRequest) -> bool:
