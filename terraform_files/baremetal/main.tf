@@ -330,8 +330,8 @@ data "libvirt_network_dns_host_template" "api-int" {
 # TODO: leave only the wildcard address entry defined and remove the other specific DNS assignments
 # Read more at: https://bugzilla.redhat.com/show_bug.cgi?id=1532856
 data "libvirt_network_dnsmasq_options_template" "wildcard-apps-ingress" {
-  # Enable "apps" wildcard in case of SNO and when we try to add day2 worker to SNO
-  count        = var.ingress_vips == var.api_vips ? 1 : 0
+  # Enable "apps" wildcard in case of SNO/CMN/UMN and when we try to add day2 worker to SNO
+  count        = 1
   option_name  = "address"
   option_value = "/apps.${local.base_cluster_domain}/${var.ingress_vips[0]}"
 }
