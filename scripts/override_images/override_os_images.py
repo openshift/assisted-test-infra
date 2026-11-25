@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Overrides a given list of OS images to a list with a single OS image
-that matches the latest release image in RELEASE_IMAGES
+Overrides a given list of OS images to the OS images that match the
+release image in RELEASE_IMAGES (same OpenShift version and CPU architecture).
 """
 
 # Disable E402 module level import not at top of file
@@ -25,13 +25,12 @@ from consts import DEFAULT_CPU_ARCHITECTURE, CPUArchitecture
 
 def get_os_image(
     os_images: list[OsImage], openshift_version: str, cpu_architecture: str = DEFAULT_CPU_ARCHITECTURE
-) -> OsImage | None:
-    archs_images = [v for v in os_images if v.cpu_architecture == cpu_architecture]
-    os_images = [v for v in archs_images if v.openshift_version == openshift_version]
-    if len(os_images) >= 1:
-        return os_images[0]
-
-    return None
+) -> list[OsImage]:
+    return [
+        v
+        for v in os_images
+        if v.cpu_architecture == cpu_architecture and v.openshift_version == openshift_version
+    ]
 
 
 def main():
@@ -61,30 +60,28 @@ def main():
     # Get all matching OS images
     if release_image.cpu_architecture == CPUArchitecture.MULTI:
         for arch in {CPUArchitecture.X86, CPUArchitecture.ARM, CPUArchitecture.S390X, CPUArchitecture.PPC64}:
-            if (
-                os_image := get_os_image(
+            filtered_os_images.extend(
+                get_os_image(
                     os_images=os_images,
                     openshift_version=str(release_image.openshift_version).removesuffix(f"-{CPUArchitecture.MULTI}"),
                     cpu_architecture=arch,
                 )
-            ) is not None:
-                filtered_os_images.append(os_image)
+            )
 
     else:
-        if (
-            os_image := get_os_image(
-                os_images=os_images,
-                openshift_version=str(release_image.openshift_version),
-                cpu_architecture=str(release_image.cpu_architecture),
-            )
-        ) is None:
+        matching_os_images = get_os_image(
+            os_images=os_images,
+            openshift_version=str(release_image.openshift_version),
+            cpu_architecture=str(release_image.cpu_architecture),
+        )
+        if not matching_os_images:
             raise ValueError(
                 "Failed find get OS image matching openshift_version:"
                 f"{release_image.openshift_version} and CPU architecture: {release_image.cpu_architecture}"
             )
-        filtered_os_images.append(os_image)
+        filtered_os_images.extend(matching_os_images)
 
-    if filtered_os_images == 0:
+    if not filtered_os_images:
         raise ValueError("No OS Images found")
 
     os_images = [os_image.to_dict() for os_image in filtered_os_images]
